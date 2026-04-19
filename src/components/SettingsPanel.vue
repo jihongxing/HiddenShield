@@ -1,0 +1,220 @@
+<script setup lang="ts">
+import { onMounted, ref } from "vue";
+import {
+  getTelemetryEnabled,
+  setTelemetryEnabled,
+  getDataUsage,
+  clearAllData,
+  clearCacheOnly,
+  exportCrashLog,
+  type DataUsageInfo,
+} from "../lib/tauri-api";
+
+const telemetryEnabled = ref(true);
+const dataUsage = ref<DataUsageInfo | null>(null);
+const clearing = ref(false);
+const message = ref("");
+
+async function loadState() {
+  telemetryEnabled.value = await getTelemetryEnabled();
+  dataUsage.value = await getDataUsage();
+}
+
+async function toggleTelemetry() {
+  telemetryEnabled.value = !telemetryEnabled.value;
+  await setTelemetryEnabled(telemetryEnabled.value);
+}
+
+async function handleClearCache() {
+  if (!confirm("确定清除 FFmpeg 缓存和日志？版权库数据将保留。")) return;
+  clearing.value = true;
+  try {
+    message.value = await clearCacheOnly();
+    dataUsage.value = await getDataUsage();
+  } catch (e: unknown) {
+    message.value = String(e);
+  } finally {
+    clearing.value = false;
+  }
+}
+
+async function handleClearAll() {
+  if (!confirm("⚠️ 确定删除所有数据？包括版权库，此操作不可恢复！")) return;
+  if (!confirm("再次确认：删除后版权存证记录将永久丢失，是否继续？")) return;
+  clearing.value = true;
+  try {
+    message.value = await clearAllData();
+    dataUsage.value = await getDataUsage();
+  } catch (e: unknown) {
+    message.value = String(e);
+  } finally {
+    clearing.value = false;
+  }
+}
+
+async function handleExportLog() {
+  const log = await exportCrashLog();
+  if (!log.trim()) {
+    message.value = "暂无崩溃日志";
+    return;
+  }
+  await navigator.clipboard.writeText(log);
+  message.value = "日志已复制到剪贴板";
+}
+
+onMounted(loadState);
+</script>
+
+<template>
+  <div class="settings-panel">
+    <h3 class="settings-panel__title">设置</h3>
+
+    <!-- Telemetry toggle -->
+    <div class="settings-section">
+      <div class="settings-row">
+        <div>
+          <strong>崩溃信息上报</strong>
+          <p class="settings-hint">仅上报崩溃堆栈和 FFmpeg 错误码，不含任何个人文件信息</p>
+        </div>
+        <button
+          class="toggle-btn"
+          :class="{ 'toggle-btn--on': telemetryEnabled }"
+          type="button"
+          @click="toggleTelemetry"
+        >
+          {{ telemetryEnabled ? "已开启" : "已关闭" }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Data usage -->
+    <div class="settings-section" v-if="dataUsage">
+      <strong>数据占用</strong>
+      <div class="usage-grid">
+        <span>FFmpeg 缓存</span><span>{{ dataUsage.ffmpegSizeMb }} MB</span>
+        <span>版权库数据</span><span>{{ dataUsage.dbSizeMb }} MB</span>
+        <span>日志文件</span><span>{{ dataUsage.logSizeMb }} MB</span>
+        <span class="usage-total">总计</span><span class="usage-total">{{ dataUsage.totalSizeMb }} MB</span>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="settings-section">
+      <div class="settings-actions">
+        <button class="btn btn--secondary" :disabled="clearing" @click="handleClearCache">
+          清除缓存
+        </button>
+        <button class="btn btn--danger" :disabled="clearing" @click="handleClearAll">
+          清除所有数据
+        </button>
+        <button class="btn btn--secondary" @click="handleExportLog">
+          导出崩溃日志
+        </button>
+      </div>
+      <p class="settings-hint mac-hint">
+        💡 macOS 拖拽卸载不会清理应用数据，建议卸载前点击「清除所有数据」
+      </p>
+    </div>
+
+    <!-- Message -->
+    <p v-if="message" class="settings-message">{{ message }}</p>
+  </div>
+</template>
+
+<style scoped>
+.settings-panel {
+  padding: 1.5rem;
+  background: var(--surface, #1a1a2e);
+  border-radius: 12px;
+  border: 1px solid var(--border, #2a2a4a);
+}
+.settings-panel__title {
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+  color: var(--text-primary, #e0e0e0);
+}
+.settings-section {
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border, #2a2a4a);
+}
+.settings-section:last-of-type {
+  border-bottom: none;
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.settings-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted, #888);
+  margin: 0.25rem 0 0;
+}
+.mac-hint {
+  margin-top: 0.75rem;
+}
+.toggle-btn {
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  border: 1px solid var(--border, #2a2a4a);
+  background: var(--surface-alt, #252545);
+  color: var(--text-muted, #888);
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}
+.toggle-btn--on {
+  background: #2d5a2d;
+  color: #8f8;
+  border-color: #3a7a3a;
+}
+.usage-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.4rem 1rem;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #aaa);
+}
+.usage-total {
+  font-weight: 600;
+  color: var(--text-primary, #e0e0e0);
+}
+.settings-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.btn {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: opacity 0.2s;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn--secondary {
+  background: var(--surface-alt, #252545);
+  color: var(--text-primary, #e0e0e0);
+  border: 1px solid var(--border, #2a2a4a);
+}
+.btn--danger {
+  background: #5a2020;
+  color: #f88;
+  border: 1px solid #7a3030;
+}
+.settings-message {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface-alt, #252545);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #aaa);
+}
+</style>

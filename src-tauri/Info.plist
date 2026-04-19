@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>NSDesktopFolderUsageDescription</key>
+    <string>HiddenShield 需要访问桌面文件夹以读取您拖入的视频文件</string>
+    <key>NSDocumentsFolderUsageDescription</key>
+    <string>HiddenShield 需要访问文稿文件夹以读取您拖入的视频文件</string>
+    <key>NSDownloadsFolderUsageDescription</key>
+    <string>HiddenShield 需要访问下载文件夹以读取您拖入的视频文件</string>
+    <key>NSRemovableVolumesUsageDescription</key>
+    <string>HiddenShield 需要访问外置存储设备以读取您的视频文件</string>
+</dict>
+</plist>

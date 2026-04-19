@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+dist/
+
+# Rust build artifacts
+src-tauri/target/
+src-tauri/gen/schemas/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+cargo-check.log
+
+# Environment
+.env
+.env.local
+
+# User identity (contains device fingerprint)
+# Note: identity.json is in AppData, not in repo, but just in case
+identity.json
+
+# TSA tokens (stored in AppData)
+tsa_tokens/
+
+# Package lock (keep package-lock.json for reproducible builds)
+yarn.lock
+pnpm-lock.yaml
