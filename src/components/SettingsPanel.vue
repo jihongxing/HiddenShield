@@ -1,4 +1,4 @@
-<script setup lang="ts">
+qwa<script setup lang="ts">
 import { onMounted, ref } from "vue";
 import {
   getTelemetryEnabled,
@@ -14,6 +14,19 @@ const telemetryEnabled = ref(true);
 const dataUsage = ref<DataUsageInfo | null>(null);
 const clearing = ref(false);
 const message = ref("");
+const copyMsg = ref("");
+
+async function copyText(text: string) {
+  await navigator.clipboard.writeText(text);
+  copyMsg.value = `已复制: ${text}`;
+  setTimeout(() => { copyMsg.value = ""; }, 2000);
+}
+
+async function copyWechat() {
+  await navigator.clipboard.writeText("Zoro998877");
+  copyMsg.value = "微信号已复制，快去微信添加吧 👋";
+  setTimeout(() => { copyMsg.value = ""; }, 3000);
+}
 
 async function loadState() {
   telemetryEnabled.value = await getTelemetryEnabled();
@@ -118,6 +131,33 @@ onMounted(loadState);
 
     <!-- Message -->
     <p v-if="message" class="settings-message">{{ message }}</p>
+
+    <!-- Feedback -->
+    <div class="settings-section feedback-section">
+      <strong>💡 意见反馈与技术支持</strong>
+      <p class="settings-hint">隐盾由独立开发者打磨，遇到 Bug 或有新需求，请直接联系：</p>
+      <div class="feedback-items">
+        <div class="feedback-item">
+          <span class="feedback-icon">💬</span>
+          <span class="feedback-label">微信直连</span>
+          <span class="feedback-value">Zoro998877</span>
+          <button class="feedback-btn" type="button" @click="copyWechat">复制微信</button>
+        </div>
+        <div class="feedback-item">
+          <span class="feedback-icon">📧</span>
+          <span class="feedback-label">专属邮箱</span>
+          <span class="feedback-value">jhx800@163.com</span>
+          <a class="feedback-btn" href="mailto:jhx800@163.com?subject=隐盾 V1.0 用户反馈">发邮件</a>
+        </div>
+      </div>
+      <div class="feedback-log">
+        <p class="settings-hint">遇到压制失败或崩溃？请导出日志一并发送</p>
+        <button class="btn btn--secondary" type="button" @click="handleExportLog">
+          📦 一键导出诊断日志
+        </button>
+      </div>
+      <p v-if="copyMsg" class="settings-message feedback-toast">{{ copyMsg }}</p>
+    </div>
   </div>
 </template>
 
@@ -216,5 +256,65 @@ onMounted(loadState);
   border-radius: 6px;
   font-size: 0.85rem;
   color: var(--text-secondary, #aaa);
+}
+.feedback-section {
+  border-bottom: none;
+}
+.feedback-items {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.feedback-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--surface-alt, #252545);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: var(--text-primary, #e0e0e0);
+}
+.feedback-icon {
+  font-size: 1rem;
+}
+.feedback-label {
+  color: var(--text-muted, #888);
+  min-width: 60px;
+}
+.feedback-value {
+  font-weight: 600;
+  font-family: monospace;
+}
+.feedback-btn {
+  margin-left: auto;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #fff;
+  background: var(--brand, #c65b20);
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+.feedback-btn:hover {
+  opacity: 0.85;
+}
+.feedback-log {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.feedback-log .settings-hint {
+  margin: 0;
+}
+.feedback-toast {
+  margin-top: 0.5rem;
+  color: #8f8;
 }
 </style>

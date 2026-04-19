@@ -158,6 +158,7 @@ button {
   display: grid;
   gap: 20px;
   min-width: 0;
+  align-content: start;
 }
 
 .content-header {
