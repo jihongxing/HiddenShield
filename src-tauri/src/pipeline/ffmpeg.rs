@@ -153,6 +153,7 @@ pub fn parse_progress_line(line: &str, total_duration: f64) -> Option<f64> {
 // Internal helpers
 // ---------------------------------------------------------------------------
 
+#[allow(dead_code)]
 fn binary_names() -> (&'static str, &'static str) {
     if cfg!(target_os = "windows") {
         ("ffmpeg.exe", "ffprobe.exe")

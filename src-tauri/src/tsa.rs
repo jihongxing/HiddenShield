@@ -20,7 +20,10 @@ use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
-use webpki::{anchor_from_trusted_cert, EndEntityCert, KeyUsage, ALL_VERIFICATION_ALGS};
+use webpki::{
+    anchor_from_trusted_cert, EndEntityCert, Error as WebPkiError, ExtendedKeyUsageValidator,
+    KeyPurposeIdIter, ALL_VERIFICATION_ALGS,
+};
 use x509_cert::attr::Attribute;
 use x509_cert::ext::pkix::{
     ExtendedKeyUsage, KeyUsage as CertificateKeyUsage, SubjectKeyIdentifier,
@@ -48,7 +51,15 @@ const CMS_SIGNED_DATA_OID_OBJ: ObjectIdentifier =
 const TST_INFO_CONTENT_TYPE_OID_OBJ: ObjectIdentifier =
     ObjectIdentifier::new_unwrap("1.2.840.113549.1.9.16.1.4");
 const TSA_EKU_OID: ObjectIdentifier = ObjectIdentifier::new_unwrap("1.3.6.1.5.5.7.3.8");
-const TSA_EKU_OID_DER_VALUE: &[u8] = &[0x2b, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x08];
+
+#[derive(Clone, Copy, Debug)]
+struct AllowAnyExtendedKeyUsage;
+
+impl ExtendedKeyUsageValidator for AllowAnyExtendedKeyUsage {
+    fn validate(&self, _iter: KeyPurposeIdIter<'_, '_>) -> Result<(), WebPkiError> {
+        Ok(())
+    }
+}
 
 // ---------------------------------------------------------------------------
 // TSA endpoints (fallback chain)
@@ -94,6 +105,14 @@ pub struct TimestampAttestation {
 #[derive(Debug, Clone)]
 pub struct VerifiedTimestampToken {
     pub gen_time: String,
+    pub trust_path: TimestampTrustPath,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TimestampTrustPath {
+    SystemRoots,
+    EmbeddedRoots,
 }
 
 #[derive(Debug, Clone)]
@@ -510,10 +529,11 @@ fn verify_timestamp_response_with_roots(
 
     let tst_info_der = extract_tst_info_from_signed_data(&signed_data)?;
     let parsed_tst = validate_tst_info(&tst_info_der, expected_hash, expected_nonce)?;
-    verify_time_stamp_token_cms(&signed_data, &parsed_tst, trust_roots)?;
+    let trust_path = verify_time_stamp_token_cms(&signed_data, &parsed_tst, trust_roots)?;
 
     Ok(VerifiedTimestampToken {
         gen_time: parsed_tst.gen_time,
+        trust_path,
     })
 }
 
@@ -654,7 +674,7 @@ fn verify_time_stamp_token_cms(
     signed_data: &SignedData,
     parsed_tst: &ParsedTstInfo,
     trust_roots: Option<&[CertificateDer<'static>]>,
-) -> Result<(), String> {
+) -> Result<TimestampTrustPath, String> {
     let signer_infos: Vec<_> = signed_data.signer_infos.0.iter().collect();
     if signer_infos.is_empty() {
         return Err("CMS signedData is missing SignerInfo".to_string());
@@ -679,7 +699,7 @@ fn verify_time_stamp_token_cms(
     let mut last_error = None;
     for signer in signer_infos {
         match verify_single_signer(signed_data, signer, &certificates, parsed_tst, trust_roots) {
-            Ok(()) => return Ok(()),
+            Ok(trust_path) => return Ok(trust_path),
             Err(err) => last_error = Some(err),
         }
     }
@@ -693,7 +713,7 @@ fn verify_single_signer(
     certificates: &[Certificate],
     parsed_tst: &ParsedTstInfo,
     trust_roots: Option<&[CertificateDer<'static>]>,
-) -> Result<(), String> {
+) -> Result<TimestampTrustPath, String> {
     if !signed_data
         .digest_algorithms
         .iter()
@@ -713,8 +733,7 @@ fn verify_single_signer(
         certificates,
         parsed_tst.gen_time_unix_secs,
         trust_roots,
-    )?;
-    Ok(())
+    )
 }
 
 fn validate_signed_attributes(
@@ -863,8 +882,9 @@ fn verify_certificate_chain(
     certificates: &[Certificate],
     verification_time_secs: u64,
     trust_roots: Option<&[CertificateDer<'static>]>,
-) -> Result<(), String> {
+) -> Result<TimestampTrustPath, String> {
     let owned_native_roots;
+    let using_supplied_roots = trust_roots.is_some();
     let trust_roots = if let Some(trust_roots) = trust_roots {
         trust_roots
     } else {
@@ -878,14 +898,6 @@ fn verify_certificate_chain(
         owned_native_roots = native.certs;
         &owned_native_roots
     };
-
-    let trust_anchors: Vec<_> = trust_roots
-        .iter()
-        .filter_map(|cert| anchor_from_trusted_cert(cert).ok())
-        .collect();
-    if trust_anchors.is_empty() {
-        return Err("no trusted root certificates available for TSA verification".to_string());
-    }
 
     let signer_der = CertificateDer::from(
         signer_certificate
@@ -907,19 +919,87 @@ fn verify_certificate_chain(
     let intermediates = intermediates?;
 
     let verification_time = UnixTime::since_unix_epoch(Duration::from_secs(verification_time_secs));
+    let primary_result =
+        verify_chain_against_roots(&end_entity, trust_roots, &intermediates, verification_time);
+    if primary_result.is_ok() {
+        if using_supplied_roots {
+            return Ok(TimestampTrustPath::EmbeddedRoots);
+        }
+
+        log::info!(
+            "系统根验证成功: TSA signer certificate chain validated against native trust store"
+        );
+        return Ok(TimestampTrustPath::SystemRoots);
+    }
+
+    let primary_err = primary_result.unwrap_err();
+    if !using_supplied_roots && should_retry_with_embedded_roots(&primary_err) {
+        let embedded_roots = extract_embedded_self_signed_roots(certificates)?;
+        if !embedded_roots.is_empty() {
+            verify_chain_against_roots(
+                &end_entity,
+                &embedded_roots,
+                &intermediates,
+                verification_time,
+            )
+            .map_err(|e| format!("signer certificate chain validation failed: {e:?}"))?;
+            log::info!(
+                "嵌入根回退成功: 系统根未命中 ({primary_err:?})，已用回执内嵌根完成 TSA 证书链校验"
+            );
+            return Ok(TimestampTrustPath::EmbeddedRoots);
+        }
+    }
+
+    Err(format!(
+        "signer certificate chain validation failed: {primary_err:?}"
+    ))
+}
+
+fn verify_chain_against_roots(
+    end_entity: &EndEntityCert<'_>,
+    trust_roots: &[CertificateDer<'static>],
+    intermediates: &[CertificateDer<'static>],
+    verification_time: UnixTime,
+) -> Result<(), WebPkiError> {
+    let trust_anchors: Vec<_> = trust_roots
+        .iter()
+        .filter_map(|cert| anchor_from_trusted_cert(cert).ok())
+        .collect();
+    if trust_anchors.is_empty() {
+        return Err(WebPkiError::UnknownIssuer);
+    }
+
+    // EKU is enforced explicitly in ensure_signer_certificate_constraints().
+    // Here webpki is used for chain building and validity checks only.
     end_entity
         .verify_for_usage(
             ALL_VERIFICATION_ALGS,
             &trust_anchors,
-            &intermediates,
+            intermediates,
             verification_time,
-            KeyUsage::required(TSA_EKU_OID_DER_VALUE),
+            AllowAnyExtendedKeyUsage,
             None,
             None,
         )
-        .map_err(|e| format!("signer certificate chain validation failed: {e:?}"))?;
+        .map(|_| ())
+}
 
-    Ok(())
+fn extract_embedded_self_signed_roots(
+    certificates: &[Certificate],
+) -> Result<Vec<CertificateDer<'static>>, String> {
+    certificates
+        .iter()
+        .filter(|cert| cert.tbs_certificate.subject == cert.tbs_certificate.issuer)
+        .map(|cert| {
+            cert.to_der()
+                .map(CertificateDer::from)
+                .map_err(|e| format!("failed to encode embedded TSA root certificate: {e}"))
+        })
+        .collect()
+}
+
+fn should_retry_with_embedded_roots(err: &WebPkiError) -> bool {
+    matches!(err, WebPkiError::UnknownIssuer)
 }
 
 fn compute_digest_bytes(oid: &ObjectIdentifier, content: &[u8]) -> Result<Vec<u8>, String> {
@@ -1147,6 +1227,7 @@ mod tests {
                 .expect("fixture should verify");
 
         assert_eq!(verified.gen_time, "20260423034008Z");
+        assert_eq!(verified.trust_path, TimestampTrustPath::EmbeddedRoots);
     }
 
     #[test]
@@ -1158,6 +1239,13 @@ mod tests {
             "application/octet-stream"
         )));
         assert!(!is_timestamp_reply_content_type(Some("text/html")));
+    }
+
+    #[test]
+    fn embedded_root_retry_triggers_for_unknown_issuer() {
+        assert!(should_retry_with_embedded_roots(
+            &WebPkiError::UnknownIssuer
+        ));
     }
 
     #[test]

@@ -152,7 +152,7 @@ async fn run_video_pipeline(
     let ffmpeg_paths = params
         .ffmpeg_paths
         .as_ref()
-        .ok_or_else(|| PipelineError::FfmpegNotFound)?;
+        .ok_or(PipelineError::FfmpegNotFound)?;
     let hw_info = params
         .hw_info
         .as_ref()
@@ -626,7 +626,7 @@ async fn run_audio_pipeline(
     let ffmpeg_paths = params
         .ffmpeg_paths
         .as_ref()
-        .ok_or_else(|| PipelineError::FfmpegNotFound)?;
+        .ok_or(PipelineError::FfmpegNotFound)?;
     let start = Instant::now();
     let input_str = params.input_path.to_string_lossy().to_string();
 

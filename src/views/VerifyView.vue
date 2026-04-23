@@ -5,6 +5,7 @@ import CopyrightCard from "../components/CopyrightCard.vue";
 import ProBadge from "../components/ProBadge.vue";
 import {
   buildVerificationSummary,
+  getTsaVerificationLabel,
   verifySuspect,
   type VerificationResult,
 } from "../lib/tauri-api";
@@ -148,7 +149,7 @@ function getUnmatchedReason(confidence: number): string {
         <div v-if="result.tsaTokenPresent || result.networkTime" class="verify-tsa">
           <strong>时间信息</strong>
           <p v-if="result.tsaTokenPresent && result.tsaTokenVerified">
-            时间回执已复验
+            {{ getTsaVerificationLabel(result.tsaVerificationPath) ?? "时间回执已复验" }}
           </p>
           <p v-else-if="result.tsaTokenPresent">
             时间回执已获取

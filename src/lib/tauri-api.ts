@@ -47,11 +47,14 @@ export interface VerificationResult {
   disclaimer: string;
   tsaTokenPresent: boolean;
   tsaTokenVerified: boolean;
+  tsaVerificationPath: TsaVerificationPath | null;
   tsaSource: string | null;
   networkTime: string | null;
   createdAt: string | null;
   originalHash: string | null;
 }
+
+export type TsaVerificationPath = "systemRoots" | "embeddedRoots";
 
 export interface TranscodeOptions {
   aspectStrategy: "letterbox" | "smart_crop";
@@ -241,6 +244,7 @@ export async function verifySuspect(path: string): Promise<VerificationResult> {
       disclaimer: "本报告仅基于既定算法进行特征码技术提取，仅供参考，不代表任何司法鉴定意见。平台不对因本报告引发的连带法律责任负责。",
       tsaTokenPresent: true,
       tsaTokenVerified: true,
+      tsaVerificationPath: "systemRoots",
       tsaSource: "https://freetsa.org/tsr",
       networkTime: "Sat, 19 Apr 2026 10:30:00 GMT",
       createdAt: "2026-04-19T10:30:00Z",
@@ -452,7 +456,13 @@ export function buildVerificationSummary(result: VerificationResult, filePath: s
     if (result.tsaTokenPresent && result.tsaSource) {
       lines.push(`RFC 3161 时间戳回执: 已获取`);
       lines.push(`回执来源: ${result.tsaSource}`);
-      lines.push(`状态: ${result.tsaTokenVerified ? "已完成 CMS/证书链验签" : "已获取但未完成独立验签"}`);
+      lines.push(
+        `状态: ${
+          result.tsaTokenVerified
+            ? getTsaVerificationLabel(result.tsaVerificationPath) ?? "已复验"
+            : "已获取未复验"
+        }`,
+      );
     }
     if (result.networkTime) {
       lines.push(`网络授时 (GMT): ${result.networkTime}`);
@@ -472,7 +482,11 @@ export function buildVerificationSummary(result: VerificationResult, filePath: s
         ``,
       );
     } else {
-      lines.push(``, `RFC 3161 回执已通过本地 CMS/证书链复验，可作为补充取证材料引用。`, ``);
+      lines.push(
+        ``,
+        `RFC 3161 回执：${getTsaVerificationLabel(result.tsaVerificationPath) ?? "已完成本地复验"}。`,
+        ``,
+      );
     }
   }
 
@@ -487,6 +501,12 @@ export function buildVerificationSummary(result: VerificationResult, filePath: s
   );
 
   return lines.filter(l => l !== undefined).join("\n");
+}
+
+export function getTsaVerificationLabel(path: TsaVerificationPath | null): string | null {
+  if (path === "systemRoots") return "系统根已验证";
+  if (path === "embeddedRoots") return "嵌入根已验证";
+  return null;
 }
 
 // ---------------------------------------------------------------------------

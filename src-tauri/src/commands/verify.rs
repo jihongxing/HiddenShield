@@ -30,6 +30,7 @@ pub struct VerificationResult {
     /// Whether a TSA token file is present locally. This is not a cryptographic verification.
     pub tsa_token_present: bool,
     pub tsa_token_verified: bool,
+    pub tsa_verification_path: Option<tsa::TimestampTrustPath>,
     pub tsa_source: Option<String>,
     pub network_time: Option<String>,
     pub created_at: Option<String>,
@@ -93,23 +94,27 @@ pub async fn verify_suspect(
                 .as_ref()
                 .map(|p| std::path::Path::new(p).exists())
                 .unwrap_or(false);
-            let tsa_token_verified = match (matched_record.as_ref(), tsa_token_path.as_ref()) {
-                (Some(record), Some(token_path)) if tsa_token_present => tsa::verify_saved_token(
-                    std::path::Path::new(token_path),
-                    &record.original_hash,
-                    record.tsa_request_nonce.as_deref(),
-                )
-                .map(|_| true)
-                .unwrap_or_else(|err| {
-                    log::warn!(
-                        "TSA token revalidation failed for record {}: {}",
-                        record.id,
-                        err
-                    );
-                    false
-                }),
-                _ => false,
-            };
+            let (tsa_token_verified, tsa_verification_path) =
+                match (matched_record.as_ref(), tsa_token_path.as_ref()) {
+                    (Some(record), Some(token_path)) if tsa_token_present => {
+                        match tsa::verify_saved_token(
+                            std::path::Path::new(token_path),
+                            &record.original_hash,
+                            record.tsa_request_nonce.as_deref(),
+                        ) {
+                            Ok(verified) => (true, Some(verified.trust_path)),
+                            Err(err) => {
+                                log::warn!(
+                                    "TSA token revalidation failed for record {}: {}",
+                                    record.id,
+                                    err
+                                );
+                                (false, None)
+                            }
+                        }
+                    }
+                    _ => (false, None),
+                };
             let tsa_source = matched_record.as_ref().and_then(|r| r.tsa_source.clone());
             let network_time = matched_record.as_ref().and_then(|r| r.network_time.clone());
             let created_at = matched_record.as_ref().map(|r| r.created_at.clone());
@@ -123,6 +128,7 @@ pub async fn verify_suspect(
                 disclaimer: DISCLAIMER.to_string(),
                 tsa_token_present,
                 tsa_token_verified,
+                tsa_verification_path,
                 tsa_source,
                 network_time,
                 created_at,
@@ -140,6 +146,7 @@ pub async fn verify_suspect(
                 disclaimer: DISCLAIMER.to_string(),
                 tsa_token_present: false,
                 tsa_token_verified: false,
+                tsa_verification_path: None,
                 tsa_source: None,
                 network_time: None,
                 created_at: None,
@@ -158,6 +165,7 @@ pub async fn verify_suspect(
         disclaimer: DISCLAIMER.to_string(),
         tsa_token_present: false,
         tsa_token_verified: false,
+        tsa_verification_path: None,
         tsa_source: None,
         network_time: None,
         created_at: None,
