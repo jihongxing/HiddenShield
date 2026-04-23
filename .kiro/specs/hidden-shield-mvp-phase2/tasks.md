@@ -248,24 +248,21 @@
     - 根据用户选择清理 `$APPDATA/com.hiddenshield.desktop/` 对应内容
     - _Requirements: FR-11.1_
 
-- [x] 15. 配置：Tauri Updater 插件
-  - [x] 15.1 启用 tauri-plugin-updater
-    - 在 `Cargo.toml` 添加 `tauri-plugin-updater` 依赖
-    - 在 `lib.rs` 注册 `.plugin(tauri_plugin_updater::init())`
-    - 在 `tauri.conf.json` 的 `plugins.updater` 中配置端点和公钥占位
+- [x] 15. 配置：受控发布升级
+  - [x] 15.1 移除 Tauri Updater 依赖与配置
+    - 不再注册 `tauri-plugin-updater`
+    - 清理 `tauri.conf.json` 中的 updater 端点、公钥和占位值
+    - 确保正式版不会暴露半成品自动更新入口
     - _Requirements: FR-10.1_
 
-  - [x] 15.2 前端更新检查逻辑
-    - 在 `src/lib/tauri-api.ts` 新增 `checkForUpdate()` 和 `installUpdate()` 函数
-    - 在 `App.vue` 的 `onMounted` 中延迟 5 秒调用 `checkForUpdate()`
-    - 有更新时设置响应式状态，展示更新横幅
+  - [x] 15.2 前端升级提示改为手动发布说明
+    - 在 `src/lib/tauri-api.ts` 中保留明确报错："请使用受控发布包升级"
+    - 移除启动时静默检查更新逻辑
     - _Requirements: FR-10.2, FR-10.3_
 
-  - [x] 15.3 创建更新横幅 UI
-    - 在 App.vue 顶部添加条件渲染的更新横幅
-    - 展示版本号、"立即更新"按钮、"稍后"按钮
-    - 点击"立即更新"后展示下载进度条
-    - 下载完成后提示重启
+  - [x] 15.3 发布文档与运维链路收口
+    - 通过发布说明、签名配置文档和 CI/CD 流程描述升级路径
+    - 不再生成 `latest.json` 或下载进度 UI
     - _Requirements: FR-10.2, FR-10.3_
 
 - [x] 16. CI/CD：GitHub Actions 发布流水线
@@ -276,7 +273,7 @@
     - Windows：从 secrets 注入签名证书环境变量
     - macOS：从 secrets 注入 Apple 证书 + Notarization 凭据
     - 产物上传到 GitHub Releases
-    - 同时生成 `latest.json` 供 Updater 消费
+    - 不生成 `latest.json`，发布产物仅通过受控安装包分发
     - _Requirements: FR-12.1, FR-12.2, FR-12.3, FR-12.4_
 
   - [x] 16.2 文档：Secrets 配置说明
@@ -320,7 +317,7 @@
 
 ### 商业分发相关说明
 - 遥测模块遵循最小数据原则：只上报 panic 堆栈和 FFmpeg exit code，绝不上报用户文件名或本地路径
-- Updater 端点初期可使用 GitHub Releases + `latest.json` 静态文件，无需自建服务器
+- 应用内自动更新已禁用，升级通过 GitHub Releases 上的签名安装包或企业分发链路完成
 - NSIS 卸载钩子是 Windows 平台特有配置，macOS 通过应用内"清除数据"按钮引导
 - CI/CD 流水线依赖 GitHub Secrets 中的证书配置，本地开发不受影响
 - 签名证书（EV Code Signing / Apple Developer）需要创始人自行购买并配置到 Secrets

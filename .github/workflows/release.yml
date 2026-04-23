@@ -4,33 +4,81 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing git tag to publish, for example v0.1.0
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "20"
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
 
 jobs:
-  build-and-release:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: windows-latest
-            args: ""
-          - platform: macos-latest
-            args: "--target universal-apple-darwin"
-
-    runs-on: ${{ matrix.platform }}
+  verify-release:
+    name: Verify release inputs
+    runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ env.RELEASE_TAG }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: "npm"
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Validate release metadata
+        run: node scripts/release/verify-release.mjs
+
+  build-release:
+    name: Build ${{ matrix.name }}
+    needs: verify-release
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows
+            runner: windows-latest
+            platform: windows
+            tauri_args: ""
+            rust_targets: ""
+          - name: macOS Universal
+            runner: macos-latest
+            platform: macos
+            tauri_args: "--target universal-apple-darwin"
+            rust_targets: "aarch64-apple-darwin,x86_64-apple-darwin"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+          targets: ${{ matrix.rust_targets }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
@@ -40,27 +88,89 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Build and release (Tauri)
-        uses: tauri-apps/tauri-action@v0
+      - name: Prepare Windows signing
+        if: matrix.platform == 'windows'
+        shell: pwsh
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Tauri updater signing key
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          # Windows code signing
           WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
           WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
-          # macOS code signing & notarization
+          WINDOWS_TIMESTAMP_URL: ${{ secrets.WINDOWS_TIMESTAMP_URL }}
+          WINDOWS_TSP: ${{ secrets.WINDOWS_TSP }}
+        run: |
+          $useTsp = $false
+          if (-not [string]::IsNullOrWhiteSpace($env:WINDOWS_TSP)) {
+            $useTsp = [System.Convert]::ToBoolean($env:WINDOWS_TSP)
+          }
+
+          .\scripts\release\inject-windows-signing.ps1 `
+            -CertificateBase64 $env:WINDOWS_CERTIFICATE `
+            -CertificatePassword $env:WINDOWS_CERTIFICATE_PASSWORD `
+            -ConfigPath "src-tauri/tauri.conf.json" `
+            -TimestampUrl $env:WINDOWS_TIMESTAMP_URL `
+            -UseTsp:$useTsp
+
+      - name: Prepare macOS signing
+        if: matrix.platform == 'macos'
+        shell: bash
+        env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          chmod +x scripts/release/*.sh
+          ./scripts/release/import-apple-certificate.sh
+
+      - name: Prepare macOS notarization
+        if: matrix.platform == 'macos'
+        shell: bash
+        env:
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY_CONTENT: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: ./scripts/release/prepare-apple-notarization.sh
+
+      - name: Build and upload release assets
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_SIGNING_IDENTITY: ${{ env.APPLE_SIGNING_IDENTITY }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY_PATH: ${{ env.APPLE_API_KEY_PATH }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: "HiddenShield ${{ github.ref_name }}"
-          releaseBody: "See the assets below to download and install this version."
+          tagName: ${{ env.RELEASE_TAG }}
+          releaseName: HiddenShield ${{ env.RELEASE_TAG }}
+          releaseBody: |
+            Production release bundle.
+
+            Notes:
+            - Desktop in-app updater is disabled; upgrade through controlled release packages only.
+            - Production deployments must provide `ffmpeg` and `ffprobe` through the target system PATH.
           releaseDraft: true
           prerelease: false
-          args: ${{ matrix.args }}
+          generateReleaseNotes: true
+          uploadUpdaterJson: false
+          uploadUpdaterSignatures: false
+          args: ${{ matrix.tauri_args }}
+
+      - name: Cleanup Windows signing material
+        if: always() && matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          if (Test-Path certificate) {
+            Remove-Item -LiteralPath certificate -Recurse -Force
+          }
+
+      - name: Cleanup macOS keychain
+        if: always() && matrix.platform == 'macos'
+        shell: bash
+        run: |
+          if [[ -n "${APPLE_KEYCHAIN_PATH:-}" && -f "${APPLE_KEYCHAIN_PATH}" ]]; then
+            security delete-keychain "${APPLE_KEYCHAIN_PATH}" || true
+          fi

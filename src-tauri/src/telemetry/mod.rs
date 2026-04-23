@@ -48,6 +48,7 @@ pub struct DataUsageInfo {
 struct TelemetryConfig {
     enabled: bool,
     acknowledged: bool,
+    network_enabled: bool,
 }
 
 impl Default for TelemetryConfig {
@@ -55,6 +56,7 @@ impl Default for TelemetryConfig {
         Self {
             enabled: true,
             acknowledged: false,
+            network_enabled: true,
         }
     }
 }
@@ -133,6 +135,16 @@ pub fn set_acknowledged(app_data_dir: &Path) {
     save_config(app_data_dir, &config);
 }
 
+pub fn is_network_enabled(app_data_dir: &Path) -> bool {
+    load_config(app_data_dir).network_enabled
+}
+
+pub fn set_network_enabled(app_data_dir: &Path, enabled: bool) {
+    let mut config = load_config(app_data_dir);
+    config.network_enabled = enabled;
+    save_config(app_data_dir, &config);
+}
+
 // ---------------------------------------------------------------------------
 // Crash log
 // ---------------------------------------------------------------------------
@@ -170,12 +182,10 @@ pub fn read_crash_log(app_data_dir: &Path) -> String {
 /// Remove local file paths from text, replacing with [path].
 pub fn sanitize_paths(text: &str) -> String {
     // Match common path patterns: C:\..., /Users/..., /home/..., etc.
-    let re_win = regex_lite::Regex::new(r"[A-Z]:\\[^\s:]+").unwrap_or_else(|_| {
-        regex_lite::Regex::new(r"NOMATCH").unwrap()
-    });
-    let re_unix = regex_lite::Regex::new(r"(/(?:Users|home|tmp|var|opt|mnt)[^\s:]+)").unwrap_or_else(|_| {
-        regex_lite::Regex::new(r"NOMATCH").unwrap()
-    });
+    let re_win = regex_lite::Regex::new(r"[A-Z]:\\[^\s:]+")
+        .unwrap_or_else(|_| regex_lite::Regex::new(r"NOMATCH").unwrap());
+    let re_unix = regex_lite::Regex::new(r"(/(?:Users|home|tmp|var|opt|mnt)[^\s:]+)")
+        .unwrap_or_else(|_| regex_lite::Regex::new(r"NOMATCH").unwrap());
 
     let result = re_win.replace_all(text, "[path]");
     re_unix.replace_all(&result, "[path]").to_string()
@@ -356,5 +366,10 @@ pub fn install_panic_hook(app_data_dir: PathBuf) {
 }
 
 fn os_version() -> String {
-    format!("{} {} {}", std::env::consts::OS, std::env::consts::ARCH, std::env::consts::FAMILY)
+    format!(
+        "{} {} {}",
+        std::env::consts::OS,
+        std::env::consts::ARCH,
+        std::env::consts::FAMILY
+    )
 }

@@ -42,8 +42,8 @@ async function handleCopyPath() {
 <template>
   <div class="result-page">
     <section class="result-page__header">
-      <h3>✅ 处理完成</h3>
-      <p>版权保护已启用 ✓ — 水印 UID: {{ payload.watermarkUid }}</p>
+      <h3>✅ 已完成</h3>
+      <p>UID: {{ payload.watermarkUid }}</p>
     </section>
 
     <section class="result-page__outputs">
@@ -61,7 +61,7 @@ async function handleCopyPath() {
     </section>
 
     <section class="result-page__compare">
-      <h4>前后对比</h4>
+      <h4>结果</h4>
       <table class="result-page__table">
         <thead>
           <tr><th></th><th>源文件</th><th>输出</th></tr>
@@ -82,11 +82,6 @@ async function handleCopyPath() {
             <td>{{ sourceMeta.fps }}fps</td>
             <td>{{ payload.outputs.map(o => `${o.fps}fps`).join(' / ') }}</td>
           </tr>
-          <tr>
-            <td>色彩空间</td>
-            <td>{{ sourceMeta.colorProfile }}</td>
-            <td>BT.709 / SDR</td>
-          </tr>
         </tbody>
       </table>
     </section>
@@ -94,12 +89,11 @@ async function handleCopyPath() {
     <!-- File size inflation notice -->
     <section v-if="sizeInflated" class="result-page__size-notice" role="note">
       <span class="result-page__size-notice-icon">ℹ️</span>
-      <span>为了满足各平台最高画质标准，引擎为您重构了更高规格的码率，文件变大属于提升画质的正常现象。如需更小体积，可尝试"高质量 CPU"模式。</span>
+      <span>文件偏大，当前更偏向画质。</span>
     </section>
 
     <section class="result-page__info">
       <span>耗时 {{ processTimeFormatted }}</span>
-      <span>编码器 {{ payload.encoderUsed }}</span>
     </section>
 
     <CopyrightCard :record="payload.vaultRecord" highlight />

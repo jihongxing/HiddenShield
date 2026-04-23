@@ -1,8 +1,10 @@
-qwa<script setup lang="ts">
+<script setup lang="ts">
 import { onMounted, ref } from "vue";
 import {
   getTelemetryEnabled,
   setTelemetryEnabled,
+  getNetworkEnabled,
+  setNetworkEnabled,
   getDataUsage,
   clearAllData,
   clearCacheOnly,
@@ -11,31 +13,32 @@ import {
 } from "../lib/tauri-api";
 
 const telemetryEnabled = ref(true);
+const networkEnabled = ref(true);
 const dataUsage = ref<DataUsageInfo | null>(null);
 const clearing = ref(false);
 const message = ref("");
 const copyMsg = ref("");
 
-async function copyText(text: string) {
-  await navigator.clipboard.writeText(text);
-  copyMsg.value = `已复制: ${text}`;
-  setTimeout(() => { copyMsg.value = ""; }, 2000);
-}
-
 async function copyWechat() {
   await navigator.clipboard.writeText("Zoro998877");
-  copyMsg.value = "微信号已复制，快去微信添加吧 👋";
+  copyMsg.value = "微信号已复制";
   setTimeout(() => { copyMsg.value = ""; }, 3000);
 }
 
 async function loadState() {
   telemetryEnabled.value = await getTelemetryEnabled();
+  networkEnabled.value = await getNetworkEnabled();
   dataUsage.value = await getDataUsage();
 }
 
 async function toggleTelemetry() {
   telemetryEnabled.value = !telemetryEnabled.value;
   await setTelemetryEnabled(telemetryEnabled.value);
+}
+
+async function toggleNetwork() {
+  networkEnabled.value = !networkEnabled.value;
+  await setNetworkEnabled(networkEnabled.value);
 }
 
 async function handleClearCache() {
@@ -57,7 +60,7 @@ async function handleClearAll() {
   clearing.value = true;
   try {
     message.value = await clearAllData();
-    dataUsage.value = await getDataUsage();
+    window.location.reload();
   } catch (e: unknown) {
     message.value = String(e);
   } finally {
@@ -86,8 +89,8 @@ onMounted(loadState);
     <div class="settings-section">
       <div class="settings-row">
         <div>
-          <strong>崩溃信息上报</strong>
-          <p class="settings-hint">仅上报崩溃堆栈和 FFmpeg 错误码，不含任何个人文件信息</p>
+          <strong>异常上报</strong>
+          <p class="settings-hint">仅上传必要诊断信息</p>
         </div>
         <button
           class="toggle-btn"
@@ -100,13 +103,30 @@ onMounted(loadState);
       </div>
     </div>
 
+    <div class="settings-section">
+      <div class="settings-row">
+        <div>
+          <strong>联网取证</strong>
+          <p class="settings-hint">时间回执与网络时间</p>
+        </div>
+        <button
+          class="toggle-btn"
+          :class="{ 'toggle-btn--on': networkEnabled }"
+          type="button"
+          @click="toggleNetwork"
+        >
+          {{ networkEnabled ? "已开启" : "已关闭" }}
+        </button>
+      </div>
+    </div>
+
     <!-- Data usage -->
     <div class="settings-section" v-if="dataUsage">
-      <strong>数据占用</strong>
+      <strong>占用</strong>
       <div class="usage-grid">
         <span>FFmpeg 缓存</span><span>{{ dataUsage.ffmpegSizeMb }} MB</span>
-        <span>版权库数据</span><span>{{ dataUsage.dbSizeMb }} MB</span>
-        <span>日志文件</span><span>{{ dataUsage.logSizeMb }} MB</span>
+        <span>版权库</span><span>{{ dataUsage.dbSizeMb }} MB</span>
+        <span>日志</span><span>{{ dataUsage.logSizeMb }} MB</span>
         <span class="usage-total">总计</span><span class="usage-total">{{ dataUsage.totalSizeMb }} MB</span>
       </div>
     </div>
@@ -120,12 +140,9 @@ onMounted(loadState);
         <button class="btn btn--danger" :disabled="clearing" @click="handleClearAll">
           清除所有数据
         </button>
-        <button class="btn btn--secondary" @click="handleExportLog">
-          导出崩溃日志
-        </button>
       </div>
       <p class="settings-hint mac-hint">
-        💡 macOS 拖拽卸载不会清理应用数据，建议卸载前点击「清除所有数据」
+        卸载前可先清空数据
       </p>
     </div>
 
@@ -134,26 +151,24 @@ onMounted(loadState);
 
     <!-- Feedback -->
     <div class="settings-section feedback-section">
-      <strong>💡 意见反馈与技术支持</strong>
-      <p class="settings-hint">隐盾由独立开发者打磨，遇到 Bug 或有新需求，请直接联系：</p>
+      <strong>反馈</strong>
       <div class="feedback-items">
         <div class="feedback-item">
-          <span class="feedback-icon">💬</span>
-          <span class="feedback-label">微信直连</span>
+          <span class="feedback-icon">微</span>
+          <span class="feedback-label">微信</span>
           <span class="feedback-value">Zoro998877</span>
-          <button class="feedback-btn" type="button" @click="copyWechat">复制微信</button>
+          <button class="feedback-btn" type="button" @click="copyWechat">复制</button>
         </div>
         <div class="feedback-item">
-          <span class="feedback-icon">📧</span>
-          <span class="feedback-label">专属邮箱</span>
+          <span class="feedback-icon">@</span>
+          <span class="feedback-label">邮箱</span>
           <span class="feedback-value">jhx800@163.com</span>
-          <a class="feedback-btn" href="mailto:jhx800@163.com?subject=隐盾 V1.0 用户反馈">发邮件</a>
+          <a class="feedback-btn" href="mailto:jhx800@163.com?subject=隐盾 V1.0 用户反馈">发送</a>
         </div>
       </div>
       <div class="feedback-log">
-        <p class="settings-hint">遇到压制失败或崩溃？请导出日志一并发送</p>
         <button class="btn btn--secondary" type="button" @click="handleExportLog">
-          📦 一键导出诊断日志
+          导出日志
         </button>
       </div>
       <p v-if="copyMsg" class="settings-message feedback-toast">{{ copyMsg }}</p>

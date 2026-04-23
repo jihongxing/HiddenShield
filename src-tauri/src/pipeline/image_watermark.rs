@@ -40,9 +40,8 @@ pub fn embed_image_watermark(
     payload: &WatermarkPayload,
     output_path: &Path,
 ) -> Result<(), PipelineError> {
-    let img = image::open(image_path).map_err(|e| {
-        PipelineError::WatermarkEmbedFailed(format!("failed to open image: {e}"))
-    })?;
+    let img = image::open(image_path)
+        .map_err(|e| PipelineError::WatermarkEmbedFailed(format!("failed to open image: {e}")))?;
 
     let (w, h) = img.dimensions();
     let half_w = (w / 2) as usize;
@@ -64,7 +63,8 @@ pub fn embed_image_watermark(
     let bits = bytes_to_bits(&payload_bytes);
 
     // Build redundant bit sequence (each bit repeated REDUNDANCY times)
-    let redundant_bits: Vec<bool> = bits.iter()
+    let redundant_bits: Vec<bool> = bits
+        .iter()
         .flat_map(|&b| std::iter::repeat(b).take(REDUNDANCY))
         .collect();
 
@@ -104,12 +104,9 @@ pub fn embed_image_watermark(
 }
 
 /// Extract a watermark from an image using DWT-DCT-SVD.
-pub fn extract_image_watermark(
-    image_path: &Path,
-) -> Result<WatermarkPayload, PipelineError> {
-    let img = image::open(image_path).map_err(|e| {
-        PipelineError::WatermarkExtractFailed(format!("failed to open image: {e}"))
-    })?;
+pub fn extract_image_watermark(image_path: &Path) -> Result<WatermarkPayload, PipelineError> {
+    let img = image::open(image_path)
+        .map_err(|e| PipelineError::WatermarkExtractFailed(format!("failed to open image: {e}")))?;
 
     let (w, h) = img.dimensions();
     let half_w = (w / 2) as usize;
@@ -153,7 +150,6 @@ pub fn extract_image_watermark(
     arr.copy_from_slice(&payload_bytes[..32]);
     decode_payload(&arr)
 }
-
 
 // ---------------------------------------------------------------------------
 // DWT-DCT-SVD core
@@ -229,12 +225,7 @@ fn embed_bits_dct_svd(
 }
 
 /// Extract payload bits from the LL sub-band using DCT + SVD on 4×4 blocks.
-fn extract_bits_dct_svd(
-    ll: &[f64],
-    ll_w: usize,
-    blocks_x: usize,
-    blocks_y: usize,
-) -> Vec<bool> {
+fn extract_bits_dct_svd(ll: &[f64], ll_w: usize, blocks_x: usize, blocks_y: usize) -> Vec<bool> {
     let total_bits = PAYLOAD_BITS * REDUNDANCY;
     let mut bits = Vec::with_capacity(total_bits);
 
@@ -300,7 +291,11 @@ fn quantize_extract(value: f64, alpha: f64) -> bool {
 
 /// 1-level 2D Haar DWT. Returns (LL, LH, HL, HH) sub-bands.
 /// Uses the standard unnormalized Haar: average and difference.
-fn haar_dwt_2d(data: &[f64], half_w: usize, half_h: usize) -> (Vec<f64>, Vec<f64>, Vec<f64>, Vec<f64>) {
+fn haar_dwt_2d(
+    data: &[f64],
+    half_w: usize,
+    half_h: usize,
+) -> (Vec<f64>, Vec<f64>, Vec<f64>, Vec<f64>) {
     let full_w = half_w * 2;
     let full_h = half_h * 2;
 
@@ -311,8 +306,8 @@ fn haar_dwt_2d(data: &[f64], half_w: usize, half_h: usize) -> (Vec<f64>, Vec<f64
             let x2 = x * 2;
             let a = data[y * full_w + x2];
             let b = data[y * full_w + x2 + 1];
-            temp[y * full_w + x] = (a + b) / 2.0;           // Low
-            temp[y * full_w + half_w + x] = (a - b) / 2.0;  // High
+            temp[y * full_w + x] = (a + b) / 2.0; // Low
+            temp[y * full_w + half_w + x] = (a - b) / 2.0; // High
         }
     }
 
@@ -343,8 +338,12 @@ fn haar_dwt_2d(data: &[f64], half_w: usize, half_h: usize) -> (Vec<f64>, Vec<f64
 /// Inverse 1-level 2D Haar DWT. Reconstructs full-size data from sub-bands.
 fn haar_idwt_2d(
     data: &mut [f64],
-    ll: &[f64], lh: &[f64], hl: &[f64], hh: &[f64],
-    half_w: usize, half_h: usize,
+    ll: &[f64],
+    lh: &[f64],
+    hl: &[f64],
+    hh: &[f64],
+    half_w: usize,
+    half_h: usize,
 ) {
     let full_w = half_w * 2;
     let full_h = half_h * 2;
@@ -378,7 +377,6 @@ fn haar_idwt_2d(
     }
 }
 
-
 // ---------------------------------------------------------------------------
 // DCT 4×4 (Type-II, orthonormal)
 // ---------------------------------------------------------------------------
@@ -393,13 +391,23 @@ fn dct4x4(block: &Matrix4<f64>) -> Matrix4<f64> {
             let mut sum = 0.0;
             for x in 0..BLOCK_SIZE {
                 for y in 0..BLOCK_SIZE {
-                    let cos_x = ((2 * x + 1) as f64 * u as f64 * std::f64::consts::PI / (2.0 * n)).cos();
-                    let cos_y = ((2 * y + 1) as f64 * v as f64 * std::f64::consts::PI / (2.0 * n)).cos();
+                    let cos_x =
+                        ((2 * x + 1) as f64 * u as f64 * std::f64::consts::PI / (2.0 * n)).cos();
+                    let cos_y =
+                        ((2 * y + 1) as f64 * v as f64 * std::f64::consts::PI / (2.0 * n)).cos();
                     sum += block[(x, y)] * cos_x * cos_y;
                 }
             }
-            let cu = if u == 0 { 1.0 / n.sqrt() } else { (2.0 / n).sqrt() };
-            let cv = if v == 0 { 1.0 / n.sqrt() } else { (2.0 / n).sqrt() };
+            let cu = if u == 0 {
+                1.0 / n.sqrt()
+            } else {
+                (2.0 / n).sqrt()
+            };
+            let cv = if v == 0 {
+                1.0 / n.sqrt()
+            } else {
+                (2.0 / n).sqrt()
+            };
             result[(u, v)] = cu * cv * sum;
         }
     }
@@ -417,10 +425,20 @@ fn idct4x4(block: &Matrix4<f64>) -> Matrix4<f64> {
             let mut sum = 0.0;
             for u in 0..BLOCK_SIZE {
                 for v in 0..BLOCK_SIZE {
-                    let cu = if u == 0 { 1.0 / n.sqrt() } else { (2.0 / n).sqrt() };
-                    let cv = if v == 0 { 1.0 / n.sqrt() } else { (2.0 / n).sqrt() };
-                    let cos_x = ((2 * x + 1) as f64 * u as f64 * std::f64::consts::PI / (2.0 * n)).cos();
-                    let cos_y = ((2 * y + 1) as f64 * v as f64 * std::f64::consts::PI / (2.0 * n)).cos();
+                    let cu = if u == 0 {
+                        1.0 / n.sqrt()
+                    } else {
+                        (2.0 / n).sqrt()
+                    };
+                    let cv = if v == 0 {
+                        1.0 / n.sqrt()
+                    } else {
+                        (2.0 / n).sqrt()
+                    };
+                    let cos_x =
+                        ((2 * x + 1) as f64 * u as f64 * std::f64::consts::PI / (2.0 * n)).cos();
+                    let cos_y =
+                        ((2 * y + 1) as f64 * v as f64 * std::f64::consts::PI / (2.0 * n)).cos();
                     sum += cu * cv * block[(u, v)] * cos_x * cos_y;
                 }
             }
@@ -598,10 +616,8 @@ mod tests {
     #[test]
     fn test_dct_idct_roundtrip() {
         let block = Matrix4::new(
-            52.0, 55.0, 61.0, 66.0,
-            70.0, 61.0, 64.0, 73.0,
-            63.0, 59.0, 55.0, 90.0,
-            67.0, 61.0, 68.0, 104.0,
+            52.0, 55.0, 61.0, 66.0, 70.0, 61.0, 64.0, 73.0, 63.0, 59.0, 55.0, 90.0, 67.0, 61.0,
+            68.0, 104.0,
         );
         let dct = dct4x4(&block);
         let recovered = idct4x4(&dct);

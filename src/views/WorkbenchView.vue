@@ -74,9 +74,9 @@ const isVideo = computed(() => fileType.value === "video");
 const isImage = computed(() => fileType.value === "image");
 const isAudio = computed(() => fileType.value === "audio");
 const fileTypeLabel = computed(() => {
-  if (isImage.value) return "🖼️ 图片";
-  if (isAudio.value) return "🎵 音频";
-  return "🎬 视频";
+  if (isImage.value) return "图片";
+  if (isAudio.value) return "音频";
+  return "视频";
 });
 
 const showProMultiPlatform = computed(() => selectedPlatforms.value.length > 1);
@@ -88,16 +88,17 @@ async function refreshHardwareInfo() {
 async function handleSourceSelect(path: string) {
   selectedPath.value = path;
   sourceMeta.value = await probeSource(path);
+  systemStatus.value = await systemCheck(path);
 
   const type = sourceMeta.value.fileType;
   if (type === "image") {
-    statusMessage.value = "图片素材，将执行 DWT-DCT-SVD 盲水印嵌入";
+    statusMessage.value = "图片已就绪";
   } else if (type === "audio") {
-    statusMessage.value = "音频素材，将执行频域盲水印嵌入";
+    statusMessage.value = "音频已就绪";
   } else if (sourceMeta.value.isHdr) {
-    statusMessage.value = "HDR 视频，自动色彩映射 + 多平台压制";
+    statusMessage.value = "HDR 已识别";
   } else {
-    statusMessage.value = "SDR 视频，标准压制链路";
+    statusMessage.value = "视频已就绪";
   }
 
   // Auto-recommend platforms and strategy
@@ -143,7 +144,15 @@ async function handleStart() {
     statusMessage.value = "请至少勾选一个目标平台"; return;
   }
   if (isVideo.value && selectedPlatforms.value.length > 1) {
-    statusMessage.value = "免费版每次仅支持一个平台，升级 Pro 解锁多平台并行"; return;
+    statusMessage.value = "多平台需 Pro"; return;
+  }
+  if (!isImage.value && systemStatus.value && !systemStatus.value.ffmpegAvailable) {
+    statusMessage.value = "未找到 FFmpeg，请先安装";
+    return;
+  }
+  if (systemStatus.value && !systemStatus.value.outputDirWritable) {
+    statusMessage.value = `目标输出目录不可写：${systemStatus.value.outputDir}`;
+    return;
   }
 
   busy.value = true;
@@ -193,6 +202,7 @@ function handleBackFromResult() {
   userOverridden.value = false;
   warnings.value = [];
   statusMessage.value = "就绪";
+  void systemCheck().then((result) => { systemStatus.value = result; });
 }
 
 let unlistenProgress: (() => void) | null = null;
@@ -297,18 +307,15 @@ onUnmounted(() => {
       <section class="hero-card">
         <div>
           <p class="eyebrow">Workbench</p>
-          <h2>发布前的最后一站</h2>
-          <p class="hero-card__copy">
-            极致画质 + 无感版权保护
-          </p>
+          <h2>开始处理</h2>
         </div>
         <div class="hero-card__stats">
           <div>
-            <span>硬件编码</span>
+            <span>编码</span>
             <strong>{{ hardwareInfo?.preferredEncoder ?? "检测中" }}</strong>
           </div>
           <div>
-            <span>FFmpeg 状态</span>
+            <span>状态</span>
             <strong>{{ hardwareInfo?.ffmpegStatus ?? "检测中" }}</strong>
           </div>
         </div>
@@ -321,8 +328,7 @@ onUnmounted(() => {
         <div class="panel">
           <div class="panel__header">
             <div>
-              <h3>导入与平台</h3>
-              <p>{{ isVideo ? '选择目标平台' : isImage ? '图片隐写水印' : '音频频域水印' }}</p>
+              <h3>导入</h3>
             </div>
             <span class="pill">{{ fileTypeLabel }}</span>
           </div>
@@ -343,24 +349,24 @@ onUnmounted(() => {
 
           <!-- Pro multi-platform hint -->
           <div v-if="showProMultiPlatform" class="pro-hint">
-            <ProBadge label="多平台并行输出是 Pro 能力（免费版每次仅支持一个平台）" />
+            <ProBadge label="多平台需 Pro" />
           </div>
 
           <!-- Recommend hint -->
           <div v-if="showRecommendHint" class="recommend-hint">
-            ✨ 已为您智能推荐平台和策略
+            已推荐
           </div>
 
           <div v-if="isVideo" class="options-grid">
             <label class="select-field">
-              <span>横转竖策略</span>
+              <span>画面</span>
               <select v-model="options.aspectStrategy" :disabled="busy" @change="userOverridden = true">
                 <option value="letterbox">加黑边保画面</option>
                 <option value="smart_crop">智能裁剪填满</option>
               </select>
             </label>
             <label class="select-field">
-              <span>编码模式</span>
+              <span>模式</span>
               <select v-model="options.encodingMode" :disabled="busy" @change="userOverridden = true">
                 <option value="fast_gpu">极速 GPU</option>
                 <option value="high_quality_cpu">高质量 CPU</option>
@@ -370,7 +376,7 @@ onUnmounted(() => {
 
           <div class="action-row">
             <button class="primary-button" type="button" :disabled="busy || !sourceMeta" @click="handleStart">
-              {{ isVideo ? '开始压制' : isImage ? '嵌入图片水印' : '嵌入音频水印' }}
+              {{ isVideo ? '开始' : '写入水印' }}
             </button>
             <button class="ghost-button" type="button" :disabled="!busy" @click="handleCancel">
               取消任务
@@ -381,7 +387,7 @@ onUnmounted(() => {
         <div class="panel">
           <div class="panel__header">
             <div>
-              <h3>源文件画像</h3>
+              <h3>素材</h3>
               <p>{{ outputSummary }}</p>
             </div>
             <span class="pill">{{ sourceMeta ? (sourceMeta.isHdr ? "HDR" : "SDR") : "待探测" }}</span>
@@ -412,7 +418,7 @@ onUnmounted(() => {
               <strong>{{ sourceMeta ? `${sourceMeta.fileSizeMb} MB` : "--" }}</strong>
             </div>
             <div class="meta-card">
-              <span>SHA-256</span>
+              <span>哈希</span>
               <strong class="hash-text">{{ sourceMeta?.sha256 ?? "待计算" }}</strong>
             </div>
           </div>

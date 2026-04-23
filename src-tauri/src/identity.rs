@@ -38,10 +38,9 @@ pub fn load_identity(app_data_dir: &Path) -> Option<Identity> {
 /// Save identity to disk.
 pub fn save_identity(app_data_dir: &Path, identity: &Identity) -> Result<(), String> {
     let path = app_data_dir.join("identity.json");
-    let json = serde_json::to_string_pretty(identity)
-        .map_err(|e| format!("serialize identity: {e}"))?;
-    std::fs::write(&path, json)
-        .map_err(|e| format!("write identity: {e}"))?;
+    let json =
+        serde_json::to_string_pretty(identity).map_err(|e| format!("serialize identity: {e}"))?;
+    std::fs::write(&path, json).map_err(|e| format!("write identity: {e}"))?;
     Ok(())
 }
 
@@ -85,7 +84,10 @@ pub fn compute_device_id() -> [u8; 4] {
 }
 
 /// Initialize identity on first launch with user-provided creator string.
-pub fn initialize_identity(app_data_dir: &Path, creator_input: &str) -> Result<IdentityBytes, String> {
+pub fn initialize_identity(
+    app_data_dir: &Path,
+    creator_input: &str,
+) -> Result<IdentityBytes, String> {
     let user_seed = compute_user_seed(creator_input);
     let device_id = compute_device_id();
 
@@ -95,7 +97,10 @@ pub fn initialize_identity(app_data_dir: &Path, creator_input: &str) -> Result<I
     };
     save_identity(app_data_dir, &identity)?;
 
-    Ok(IdentityBytes { user_seed, device_id })
+    Ok(IdentityBytes {
+        user_seed,
+        device_id,
+    })
 }
 
 /// Get identity bytes (load from disk or return None if not initialized).
@@ -103,12 +108,17 @@ pub fn get_identity_bytes(app_data_dir: &Path) -> Option<IdentityBytes> {
     let identity = load_identity(app_data_dir)?;
     let user_seed = hex_to_8bytes(&identity.user_seed_hex)?;
     let device_id = hex_to_4bytes(&identity.device_id_hex)?;
-    Some(IdentityBytes { user_seed, device_id })
+    Some(IdentityBytes {
+        user_seed,
+        device_id,
+    })
 }
 
 fn hex_to_8bytes(hex_str: &str) -> Option<[u8; 8]> {
     let bytes = hex::decode(hex_str).ok()?;
-    if bytes.len() < 8 { return None; }
+    if bytes.len() < 8 {
+        return None;
+    }
     let mut arr = [0u8; 8];
     arr.copy_from_slice(&bytes[..8]);
     Some(arr)
@@ -116,7 +126,9 @@ fn hex_to_8bytes(hex_str: &str) -> Option<[u8; 8]> {
 
 fn hex_to_4bytes(hex_str: &str) -> Option<[u8; 4]> {
     let bytes = hex::decode(hex_str).ok()?;
-    if bytes.len() < 4 { return None; }
+    if bytes.len() < 4 {
+        return None;
+    }
     let mut arr = [0u8; 4];
     arr.copy_from_slice(&bytes[..4]);
     Some(arr)

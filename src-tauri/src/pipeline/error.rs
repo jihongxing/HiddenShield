@@ -1,11 +1,8 @@
 #[derive(Debug, thiserror::Error)]
 #[allow(dead_code)]
 pub enum PipelineError {
-    #[error("FFmpeg not found in AppData or PATH")]
+    #[error("FFmpeg not found in system PATH")]
     FfmpegNotFound,
-
-    #[error("FFmpeg download failed: {0}")]
-    FfmpegDownloadFailed(String),
 
     #[error("ffprobe failed: {0}")]
     ProbeFailed(String),

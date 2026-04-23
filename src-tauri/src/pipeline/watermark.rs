@@ -84,8 +84,7 @@ type HmacSha256 = Hmac<Sha256>;
 /// Compute HMAC-SHA256 over the first 28 bytes and return truncated 4-byte tag.
 fn compute_auth_tag(data: &[u8; 28]) -> [u8; 4] {
     let secret = hmac_secret();
-    let mut mac = HmacSha256::new_from_slice(&secret)
-        .expect("HMAC can take key of any size");
+    let mut mac = HmacSha256::new_from_slice(&secret).expect("HMAC can take key of any size");
     mac.update(data);
     let result = mac.finalize().into_bytes();
     let mut tag = [0u8; 4];
@@ -118,9 +117,12 @@ impl WatermarkPayload {
     pub fn watermark_uid(&self) -> String {
         format!(
             "HS-{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}",
-            self.user_seed[0], self.user_seed[1],
-            self.user_seed[2], self.user_seed[3],
-            self.device_id[0], self.device_id[1],
+            self.user_seed[0],
+            self.user_seed[1],
+            self.user_seed[2],
+            self.user_seed[3],
+            self.device_id[0],
+            self.device_id[1],
         )
     }
 }
@@ -199,7 +201,6 @@ fn encode_payload_raw(payload: &WatermarkPayload) -> [u8; PAYLOAD_BYTES] {
     buf[28..32].copy_from_slice(&payload.auth_tag);
     buf
 }
-
 
 // ---------------------------------------------------------------------------
 // Embedding (QIM — Quantization Index Modulation)

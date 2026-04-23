@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-  hidden_shield_lib::run();
+    hidden_shield_lib::run();
 }

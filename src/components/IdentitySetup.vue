@@ -43,19 +43,15 @@ async function handleSubmit() {
         </svg>
       </div>
 
-      <h1 class="id-setup__title">激活版权保护</h1>
-      <p class="id-setup__subtitle">设定您的专属创作者身份</p>
-
-      <div class="id-setup__info">
-        <p>输入一个您能记住的标识（笔名、手机号后四位、工作室名等），系统将不可逆加密后作为版权基因打入每一个作品。</p>
-      </div>
+      <h1 class="id-setup__title">创作者标识</h1>
+      <p class="id-setup__subtitle">仅用于生成本地版权标识</p>
 
       <div class="id-setup__input-wrap">
         <input
           v-model="creatorInput"
           type="text"
           class="id-setup__input"
-          placeholder="输入创作者标识..."
+          placeholder="输入名称"
           :disabled="loading"
           @keydown.enter="handleSubmit"
         />
@@ -70,12 +66,12 @@ async function handleSubmit() {
         @click="handleSubmit"
       >
         <span v-if="loading" class="id-setup__spinner" />
-        {{ loading ? "生成中..." : "确认激活" }}
+        {{ loading ? "生成中..." : "继续" }}
       </button>
 
       <div class="id-setup__footer">
         <span>🔒</span>
-        <span>全本地加密存储 · 不上传云端 · 请妥善记忆</span>
+        <span>仅本地保存</span>
       </div>
     </div>
   </div>
@@ -139,22 +135,6 @@ async function handleSubmit() {
   margin: 0 0 24px;
   font-size: 14px;
   color: rgba(255, 255, 255, 0.6);
-}
-
-.id-setup__info {
-  margin-bottom: 24px;
-  padding: 12px 16px;
-  background: rgba(198, 91, 32, 0.1);
-  border: 1px solid rgba(198, 91, 32, 0.2);
-  border-radius: 10px;
-  text-align: left;
-}
-
-.id-setup__info p {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.8);
 }
 
 .id-setup__input-wrap {

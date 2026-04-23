@@ -1,38 +1,51 @@
 <script setup lang="ts">
-import { acknowledgeTelemetry, setTelemetryEnabled } from "../lib/tauri-api";
+import { computed, ref } from "vue";
+import { consentHighlights, legalDocuments, type LegalDocKey } from "../content/legal";
+import { acknowledgeTelemetry, setNetworkEnabled, setTelemetryEnabled } from "../lib/tauri-api";
 
 const emit = defineEmits<{
   dismiss: [];
 }>();
 
+const activeDoc = ref<LegalDocKey | null>(null);
+const activeDocument = computed(() => (activeDoc.value ? legalDocuments[activeDoc.value] : null));
+
 async function handleAccept() {
+  await setNetworkEnabled(true);
   await setTelemetryEnabled(true);
   await acknowledgeTelemetry();
   emit("dismiss");
 }
 
 async function handleDecline() {
+  await setNetworkEnabled(false);
   await setTelemetryEnabled(false);
   await acknowledgeTelemetry();
   emit("dismiss");
+}
+
+function openDoc(doc: LegalDocKey) {
+  activeDoc.value = doc;
+}
+
+function closeDoc() {
+  activeDoc.value = null;
 }
 </script>
 
 <template>
   <div class="privacy-overlay" role="dialog" aria-modal="true" aria-labelledby="privacy-title">
     <div class="privacy-dialog">
-      <h2 id="privacy-title">用户协议与隐私政策</h2>
+      <h2 id="privacy-title">使用前确认</h2>
       <div class="privacy-dialog__body">
-        <p>欢迎使用隐盾（HiddenShield）。在您开始使用前，请阅读以下内容：</p>
         <ul>
-          <li>隐盾的所有文件处理均在本地完成，不会上传您的任何文件内容。</li>
-          <li>为改善产品稳定性，隐盾会收集匿名崩溃信息（不含个人文件信息）。</li>
-          <li>您可以随时在"设置"中关闭遥测数据上报。</li>
-          <li>在您点击"同意"之前，隐盾不会向任何服务器发送网络请求。</li>
+          <li v-for="item in consentHighlights" :key="item">{{ item }}</li>
         </ul>
         <p class="privacy-dialog__legal">
-          点击"同意并继续"即表示您已阅读并同意
-          <a href="#" @click.prevent>《用户协议》</a>和<a href="#" @click.prevent>《隐私政策》</a>。
+          点击“同意并继续”即表示您已阅读并同意
+          <button class="legal-link" type="button" @click="openDoc('terms')">《用户协议》</button>
+          和
+          <button class="legal-link" type="button" @click="openDoc('privacy')">《隐私政策》</button>。
         </p>
       </div>
       <div class="privacy-dialog__actions">
@@ -40,8 +53,28 @@ async function handleDecline() {
           同意并继续
         </button>
         <button class="ghost-button" type="button" @click="handleDecline">
-          仅使用离线功能（拒绝遥测）
+          仅离线使用
         </button>
+      </div>
+
+      <div v-if="activeDoc" class="legal-sheet" role="document" aria-live="polite">
+        <div class="legal-sheet__header">
+          <h3>{{ activeDocument?.title }}</h3>
+          <button class="legal-close" type="button" @click="closeDoc">关闭</button>
+        </div>
+
+        <div v-if="activeDocument" class="legal-sheet__content">
+          <p>生效日期：{{ activeDocument.effectiveDate }}</p>
+          <p>{{ activeDocument.intro }}</p>
+          <section
+            v-for="section in activeDocument.sections"
+            :key="section.heading"
+            class="legal-section"
+          >
+            <h4>{{ section.heading }}</h4>
+            <p v-for="paragraph in section.paragraphs" :key="paragraph">{{ paragraph }}</p>
+          </section>
+        </div>
       </div>
     </div>
   </div>
@@ -89,9 +122,13 @@ async function handleDecline() {
   font-size: 0.8rem;
   color: #8090a0;
 }
-.privacy-dialog__legal a {
+.legal-link {
+  padding: 0;
+  border: none;
+  background: transparent;
   color: #6aafff;
   text-decoration: underline;
+  cursor: pointer;
 }
 .privacy-dialog__actions {
   display: flex;
@@ -118,5 +155,48 @@ async function handleDecline() {
   color: #8ab4e0;
   font-size: 0.85rem;
   cursor: pointer;
+}
+.legal-sheet {
+  margin-top: 1rem;
+  border-top: 1px solid #2a3a4a;
+  padding-top: 1rem;
+}
+.legal-sheet__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.legal-sheet__header h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #fff;
+}
+.legal-close {
+  border: 1px solid #3a5a7c;
+  background: transparent;
+  color: #8ab4e0;
+  border-radius: 6px;
+  padding: 0.3rem 0.75rem;
+  cursor: pointer;
+}
+.legal-sheet__content {
+  margin-top: 0.75rem;
+  max-height: 220px;
+  overflow: auto;
+  font-size: 0.82rem;
+  line-height: 1.65;
+  color: #b0c0d0;
+}
+.legal-sheet__content p {
+  margin: 0 0 0.75rem;
+}
+.legal-section + .legal-section {
+  margin-top: 1rem;
+}
+.legal-section h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.88rem;
+  color: #e7eef7;
 }
 </style>

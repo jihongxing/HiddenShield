@@ -2,7 +2,7 @@
 
 ## 概述
 
-将当前项目中所有 stub/占位实现替换为真实功能。按依赖关系排序：基础设施（依赖补全、FFmpeg 检测与下载、数据库初始化）→ 核心功能（编码器参数引擎、水印模块、图片水印、压制流水线）→ 系统防护（磁盘空间、休眠抑制）→ 前端集成（DropZone 真实路径、进度面板对接）→ 法律合规（取证置信度、免责声明）。后端使用 Rust，前端使用 TypeScript + Vue 3。
+将当前项目中所有 stub/占位实现替换为真实功能。按依赖关系排序：基础设施（依赖补全、FFmpeg 环境探测、数据库初始化）→ 核心功能（编码器参数引擎、水印模块、图片水印、压制流水线）→ 系统防护（磁盘空间、休眠抑制）→ 前端集成（DropZone 真实路径、进度面板对接）→ 法律合规（取证置信度、免责声明）。后端使用 Rust，前端使用 TypeScript + Vue 3。
 
 ## Tasks
 
@@ -14,7 +14,7 @@
     - 添加 `crc32fast = "1.4"` 用于 CRC32 校验
     - 添加 `thiserror = "1"` 用于错误类型定义
     - 添加 `image = "0.25"` 用于图片读写和 LSB 隐写水印
-    - 添加 `reqwest = { version = "0.12", features = ["stream"] }` 用于 FFmpeg 动态下载
+    - 添加 `reqwest = { version = "0.12", features = ["stream"] }` 用于联网取证、网络授时等受控网络请求
     - 将 tokio 特性改为 `full`
     - 添加 `[dev-dependencies]` 中的 `proptest = "1.4"` 和 `tempfile = "3"`
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5, 12.3, 13.3_
@@ -33,8 +33,8 @@
 
 - [x] 2. FFmpeg/ffprobe 进程管理模块
   - [x] 2.1 创建 `src-tauri/src/pipeline/ffmpeg.rs`
-    - 实现 `detect_ffmpeg(app_data_dir)` 函数：先查 AppData 目录，再查系统 PATH，缓存路径到 `FfmpegPaths` 结构体
-    - 实现 `download_ffmpeg(app_data_dir)` 函数：从预配置 CDN/GitHub Releases 下载 FFmpeg 二进制到 AppData，校验 SHA-256 哈希
+    - 实现 `detect_ffmpeg()` 函数：仅检查系统 PATH 中的 `ffmpeg` / `ffprobe`，并缓存路径到 `FfmpegPaths` 结构体
+    - 对 PATH 命中的二进制执行健康检查，拒绝损坏、不可执行或异常包装脚本
     - 实现 `ffprobe_source()` 函数：调用 ffprobe -print_format json 获取视频元数据，解析 JSON 输出为 `FfprobeOutput` 结构体
     - 实现 `spawn_ffmpeg()` 函数：启动 FFmpeg 子进程并返回句柄
     - 实现 `parse_progress_line()` 函数：从 FFmpeg stderr 解析 `time=HH:MM:SS.ms` 字段计算进度百分比
@@ -244,6 +244,6 @@
 - 属性测试验证设计文档中定义的 10 个正确性属性
 - 检查点任务确保增量验证，避免错误累积
 - 后端使用 Rust，前端使用 TypeScript + Vue 3，与现有代码栈一致
-- **GPL 合规**：FFmpeg 绝不打包进安装包，通过动态下载实现"用户主动获取"
+- **发布收口**：FFmpeg 不打包进安装包，生产版仅接受系统 PATH 中预装的受控版本
 - **杀软白名单**：需求 17（EV 代码签名）为发布流程任务，不涉及代码实现
 - **法律免责**：取证结果强制附带免责声明，置信度阈值 0.95 防止误判

@@ -10,7 +10,6 @@
     "core:window:allow-destroy",
     "dialog:default",
     "dialog:allow-open",
-    "dialog:allow-confirm",
-    "updater:default"
+    "dialog:allow-confirm"
   ]
 }

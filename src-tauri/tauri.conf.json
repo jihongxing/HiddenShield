@@ -22,7 +22,7 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self' asset: data: blob:; img-src 'self' asset: data: blob:; media-src 'self' asset: data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:; connect-src 'self' https://freetsa.org https://timestamp.digicert.com https://www.aliyun.com https://cloud.tencent.com https://www.baidu.com"
     }
   },
   "bundle": {
@@ -39,14 +39,6 @@
       "nsis": {
         "installerHooks": "nsis-hooks.nsi"
       }
-    }
-  },
-  "plugins": {
-    "updater": {
-      "endpoints": [
-        "https://github.com/YOUR_ORG/hidden-shield/releases/latest/download/latest.json"
-      ],
-      "pubkey": "UPDATER_PUBKEY_PLACEHOLDER"
     }
   }
 }

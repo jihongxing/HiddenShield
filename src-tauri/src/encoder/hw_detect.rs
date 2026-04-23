@@ -83,12 +83,18 @@ async fn test_encoder(ffmpeg: &Path, encoder: &str) -> bool {
     let result = Command::new(ffmpeg)
         .args([
             "-hide_banner",
-            "-loglevel", "error",
-            "-f", "lavfi",
-            "-i", "nullsrc=s=256x256:d=1",
-            "-frames:v", "1",
-            "-c:v", encoder,
-            "-f", "null",
+            "-loglevel",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "nullsrc=s=256x256:d=1",
+            "-frames:v",
+            "1",
+            "-c:v",
+            encoder,
+            "-f",
+            "null",
             "-",
         ])
         .stdin(Stdio::null())

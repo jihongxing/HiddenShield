@@ -22,9 +22,12 @@ pub async fn get_identity_status(app_handle: AppHandle) -> Result<IdentityStatus
         Some(id) => {
             let uid_preview = format!(
                 "HS-{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}",
-                id.user_seed[0], id.user_seed[1],
-                id.user_seed[2], id.user_seed[3],
-                id.device_id[0], id.device_id[1],
+                id.user_seed[0],
+                id.user_seed[1],
+                id.user_seed[2],
+                id.user_seed[3],
+                id.device_id[0],
+                id.device_id[1],
             );
             Ok(IdentityStatus {
                 initialized: true,
@@ -55,16 +58,18 @@ pub async fn setup_identity(
         .app_data_dir()
         .map_err(|e| format!("failed to resolve app data dir: {e}"))?;
 
-    std::fs::create_dir_all(&app_data_dir)
-        .map_err(|e| format!("create app data dir: {e}"))?;
+    std::fs::create_dir_all(&app_data_dir).map_err(|e| format!("create app data dir: {e}"))?;
 
     let id = identity::initialize_identity(&app_data_dir, creator_input.trim())?;
 
     let uid_preview = format!(
         "HS-{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}",
-        id.user_seed[0], id.user_seed[1],
-        id.user_seed[2], id.user_seed[3],
-        id.device_id[0], id.device_id[1],
+        id.user_seed[0],
+        id.user_seed[1],
+        id.user_seed[2],
+        id.user_seed[3],
+        id.device_id[0],
+        id.device_id[1],
     );
 
     Ok(IdentityStatus {

@@ -1,4 +1,3 @@
-use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
 
@@ -58,154 +57,20 @@ pub struct FfprobeFormat {
 // Detection
 // ---------------------------------------------------------------------------
 
-/// Detect ffmpeg/ffprobe: first check `app_data_dir`, then fall back to PATH.
-/// Validates that detected binaries are actually executable (not truncated).
+/// Detect ffmpeg/ffprobe from the system PATH only.
 ///
-/// NOTE (AV Heuristic Mitigation): The bundled FFmpeg binary is stored with its
-/// original name. If antivirus software (360, McAfee, etc.) flags it due to
-/// heuristic behavior analysis (process spawning + large file I/O + binary rewrite),
-/// users should add the app data directory to their AV whitelist. Future versions
-/// may rename the binary (e.g., `hs_engine`) to reduce false-positive triggers.
-pub async fn detect_ffmpeg(app_data_dir: &Path) -> Result<FfmpegPaths, PipelineError> {
-    // 1. Check AppData directory
-    let (ffmpeg_name, ffprobe_name) = binary_names();
-    let local_ffmpeg = app_data_dir.join(ffmpeg_name);
-    let local_ffprobe = app_data_dir.join(ffprobe_name);
-
-    if local_ffmpeg.exists() && local_ffprobe.exists() {
-        // Validate: try running `ffmpeg -version` to ensure it's not truncated
-        if validate_ffmpeg_binary(&local_ffmpeg).await {
-            return Ok(FfmpegPaths {
-                ffmpeg: local_ffmpeg,
-                ffprobe: local_ffprobe,
-            });
-        }
-        // Binary is corrupt/truncated — remove and fall through
-        log::warn!("Local FFmpeg binary appears corrupt, removing");
-        let _ = std::fs::remove_file(&local_ffmpeg);
-        let _ = std::fs::remove_file(&local_ffprobe);
-    }
-
-    // 2. Fall back to system PATH via `which` (unix) / `where` (windows)
-    if let (Some(ffmpeg), Some(ffprobe)) = (which_binary("ffmpeg").await, which_binary("ffprobe").await) {
-        return Ok(FfmpegPaths {
-            ffmpeg,
-            ffprobe,
-        });
+/// Production builds must not trust executables stored in user-writable app
+/// data directories, because those binaries can be stale or tampered with.
+pub async fn detect_ffmpeg() -> Result<FfmpegPaths, PipelineError> {
+    if let (Some(ffmpeg), Some(ffprobe)) =
+        (which_binary("ffmpeg").await, which_binary("ffprobe").await)
+    {
+        validate_binary(&ffmpeg, "ffmpeg").await?;
+        validate_binary(&ffprobe, "ffprobe").await?;
+        return Ok(FfmpegPaths { ffmpeg, ffprobe });
     }
 
     Err(PipelineError::FfmpegNotFound)
-}
-
-/// Quick validation: run `ffmpeg -version` and check it exits successfully.
-async fn validate_ffmpeg_binary(ffmpeg: &Path) -> bool {
-    let result = Command::new(ffmpeg)
-        .args(["-version"])
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .output()
-        .await;
-    matches!(result, Ok(output) if output.status.success())
-}
-
-// ---------------------------------------------------------------------------
-// Download
-// ---------------------------------------------------------------------------
-
-/// Download FFmpeg binaries from a pre-configured CDN/GitHub Releases URL.
-///
-/// Steps: download archive → verify SHA-256 → extract ffmpeg + ffprobe.
-/// `on_progress` is called with (bytes_downloaded, total_bytes).
-pub async fn download_ffmpeg(
-    app_data_dir: &Path,
-    on_progress: impl Fn(u64, u64),
-) -> Result<FfmpegPaths, PipelineError> {
-    use sha2::{Digest, Sha256};
-    use tokio::io::AsyncWriteExt;
-
-    let (url, expected_sha256) = download_url_and_hash();
-    let (ffmpeg_name, ffprobe_name) = binary_names();
-
-    std::fs::create_dir_all(app_data_dir)
-        .map_err(|e| PipelineError::FfmpegDownloadFailed(format!("create dir: {e}")))?;
-
-    let archive_ext = if url.ends_with(".tar.xz") { "tar.xz" } else { "zip" };
-    let archive_path = app_data_dir.join(format!("ffmpeg-download.{archive_ext}"));
-    // Download to .tmp first — only rename after SHA verification to prevent
-    // incomplete/corrupt files from being mistaken as valid on next startup.
-    let tmp_path = app_data_dir.join(format!("ffmpeg-download.{archive_ext}.tmp"));
-
-    // Stream download
-    let response = reqwest::get(url)
-        .await
-        .map_err(|e| PipelineError::FfmpegDownloadFailed(format!("request: {e}")))?;
-
-    let total = response.content_length().unwrap_or(0);
-    let mut downloaded: u64 = 0;
-    let mut hasher = Sha256::new();
-
-    let mut file = tokio::fs::File::create(&tmp_path)
-        .await
-        .map_err(|e| PipelineError::FfmpegDownloadFailed(format!("create file: {e}")))?;
-
-    let mut stream = response.bytes_stream();
-    use futures_util::StreamExt;
-    while let Some(chunk) = stream.next().await {
-        let chunk = chunk.map_err(|e| PipelineError::FfmpegDownloadFailed(format!("stream: {e}")))?;
-        hasher.update(&chunk);
-        file.write_all(&chunk)
-            .await
-            .map_err(|e| PipelineError::FfmpegDownloadFailed(format!("write: {e}")))?;
-        downloaded += chunk.len() as u64;
-        on_progress(downloaded, total);
-    }
-    file.flush().await.ok();
-    drop(file);
-
-    // Verify SHA-256 (skip if expected hash is empty — dev mode)
-    let hash = format!("{:x}", hasher.finalize());
-    if !expected_sha256.is_empty() && hash != expected_sha256 {
-        let _ = tokio::fs::remove_file(&tmp_path).await;
-        return Err(PipelineError::FfmpegDownloadFailed(format!(
-            "SHA-256 mismatch: expected {expected_sha256}, got {hash}"
-        )));
-    }
-
-    // Atomic rename: .tmp → final archive path (only after verification)
-    tokio::fs::rename(&tmp_path, &archive_path)
-        .await
-        .map_err(|e| PipelineError::FfmpegDownloadFailed(format!("rename tmp: {e}")))?;
-
-    // Extract binaries (placeholder: in production this would unzip/untar)
-    // For now we assume the archive is a zip containing ffmpeg and ffprobe at the root.
-    extract_archive(&archive_path, app_data_dir)
-        .map_err(|e| PipelineError::FfmpegDownloadFailed(format!("extract: {e}")))?;
-
-    let _ = std::fs::remove_file(&archive_path);
-
-    let ffmpeg_path = app_data_dir.join(ffmpeg_name);
-    let ffprobe_path = app_data_dir.join(ffprobe_name);
-
-    if !ffmpeg_path.exists() || !ffprobe_path.exists() {
-        return Err(PipelineError::FfmpegDownloadFailed(
-            "extracted archive does not contain ffmpeg/ffprobe".into(),
-        ));
-    }
-
-    // Make executable on unix
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let perms = std::fs::Permissions::from_mode(0o755);
-        let _ = std::fs::set_permissions(&ffmpeg_path, perms.clone());
-        let _ = std::fs::set_permissions(&ffprobe_path, perms);
-    }
-
-    Ok(FfmpegPaths {
-        ffmpeg: ffmpeg_path,
-        ffprobe: ffprobe_path,
-    })
 }
 
 // ---------------------------------------------------------------------------
@@ -213,14 +78,13 @@ pub async fn download_ffmpeg(
 // ---------------------------------------------------------------------------
 
 /// Run ffprobe on `input` and parse the JSON output.
-pub async fn ffprobe_source(
-    ffprobe: &Path,
-    input: &str,
-) -> Result<FfprobeOutput, PipelineError> {
+pub async fn ffprobe_source(ffprobe: &Path, input: &str) -> Result<FfprobeOutput, PipelineError> {
     let output = Command::new(ffprobe)
         .args([
-            "-v", "quiet",
-            "-print_format", "json",
+            "-v",
+            "quiet",
+            "-print_format",
+            "json",
             "-show_streams",
             "-show_format",
             input,
@@ -251,14 +115,11 @@ pub async fn ffprobe_source(
 /// Spawn an FFmpeg child process with the given arguments.
 /// Uses `kill_on_drop(true)` to ensure child processes are terminated
 /// if the parent Tauri process crashes or is force-closed.
-pub async fn spawn_ffmpeg(
-    ffmpeg: &Path,
-    args: &[String],
-) -> Result<FfmpegChild, PipelineError> {
+pub async fn spawn_ffmpeg(ffmpeg: &Path, args: &[String]) -> Result<FfmpegChild, PipelineError> {
     let child = Command::new(ffmpeg)
         .args(args)
         .stdin(Stdio::null())
-        .stdout(Stdio::null())   // 关键：防止 stdout 管道填满导致子进程死锁
+        .stdout(Stdio::null()) // 关键：防止 stdout 管道填满导致子进程死锁
         .stderr(Stdio::piped())
         .kill_on_drop(true)
         .spawn()
@@ -301,7 +162,11 @@ fn binary_names() -> (&'static str, &'static str) {
 }
 
 async fn which_binary(name: &str) -> Option<PathBuf> {
-    let cmd = if cfg!(target_os = "windows") { "where" } else { "which" };
+    let cmd = if cfg!(target_os = "windows") {
+        "where"
+    } else {
+        "which"
+    };
     let output = Command::new(cmd)
         .arg(name)
         .stdout(Stdio::piped())
@@ -321,7 +186,69 @@ async fn which_binary(name: &str) -> Option<PathBuf> {
     }
 
     let path = PathBuf::from(first_line);
-    if path.exists() { Some(path) } else { None }
+    if path.is_file() {
+        std::fs::canonicalize(&path).ok().or(Some(path))
+    } else {
+        None
+    }
+}
+
+async fn validate_binary(path: &Path, binary_name: &str) -> Result<(), PipelineError> {
+    let output = Command::new(path)
+        .arg("-version")
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .await
+        .map_err(|e| {
+            PipelineError::FfmpegFailed(format!(
+                "spawn {binary_name} health check at {}: {e}",
+                path.display()
+            ))
+        })?;
+
+    if output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let banner = first_non_empty_line(&stdout)
+            .or_else(|| first_non_empty_line(&stderr))
+            .unwrap_or("");
+        if is_expected_version_banner(binary_name, banner) {
+            return Ok(());
+        }
+
+        return Err(PipelineError::FfmpegFailed(format!(
+            "{binary_name} health check returned success at {} but banner was unexpected: {}",
+            path.display(),
+            if banner.is_empty() {
+                "no diagnostic output"
+            } else {
+                banner
+            }
+        )));
+    }
+
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let detail = first_non_empty_line(&stderr)
+        .or_else(|| first_non_empty_line(&stdout))
+        .unwrap_or("no diagnostic output");
+
+    Err(PipelineError::FfmpegFailed(format!(
+        "{binary_name} health check failed at {} with {}: {}",
+        path.display(),
+        output.status,
+        detail
+    )))
+}
+
+fn first_non_empty_line(text: &str) -> Option<&str> {
+    text.lines().map(str::trim).find(|line| !line.is_empty())
+}
+
+fn is_expected_version_banner(binary_name: &str, banner: &str) -> bool {
+    let banner_lower = banner.to_ascii_lowercase();
+    banner_lower.contains(binary_name) && banner_lower.contains("version")
 }
 
 fn extract_time_value(line: &str) -> Option<&str> {
@@ -330,7 +257,11 @@ fn extract_time_value(line: &str) -> Option<&str> {
     // Take until the next space or end of string
     let end = rest.find([' ', '\r', '\n']).unwrap_or(rest.len());
     let val = &rest[..end];
-    if val.is_empty() { None } else { Some(val) }
+    if val.is_empty() {
+        None
+    } else {
+        Some(val)
+    }
 }
 
 fn parse_time_to_seconds(time_str: &str) -> Option<f64> {
@@ -343,138 +274,6 @@ fn parse_time_to_seconds(time_str: &str) -> Option<f64> {
     let minutes: f64 = parts[1].parse().ok()?;
     let seconds: f64 = parts[2].parse().ok()?;
     Some(hours * 3600.0 + minutes * 60.0 + seconds)
-}
-
-/// Platform-specific download URL and expected SHA-256 hash.
-/// Uses both OS and ARCH to select the correct binary.
-/// SHA-256 set to empty string means "skip verification" (used during development).
-/// Before release, pin to a specific version with known hash.
-fn download_url_and_hash() -> (&'static str, &'static str) {
-    let os = std::env::consts::OS;
-    let arch = std::env::consts::ARCH;
-
-    match (os, arch) {
-        ("windows", "x86_64") => (
-            "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip",
-            "",
-        ),
-        ("windows", "aarch64") => (
-            "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-winarm64-gpl.zip",
-            "",
-        ),
-        ("macos", "aarch64") => (
-            "https://evermeet.cx/ffmpeg/getrelease/zip",
-            "",
-        ),
-        ("macos", "x86_64") => (
-            "https://evermeet.cx/ffmpeg/getrelease/zip",
-            "",
-        ),
-        ("linux", "x86_64") => (
-            "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz",
-            "",
-        ),
-        ("linux", "aarch64") => (
-            "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linuxarm64-gpl.tar.xz",
-            "",
-        ),
-        _ => (
-            "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz",
-            "",
-        ),
-    }
-}
-
-/// Extract ffmpeg/ffprobe from a downloaded archive into `dest_dir`.
-/// Supports .zip (Windows/macOS) and .tar.xz (Linux) archives.
-fn extract_archive(archive_path: &Path, dest_dir: &Path) -> Result<(), String> {
-    if !archive_path.exists() {
-        return Err("archive file not found".into());
-    }
-
-    let (ffmpeg_name, ffprobe_name) = binary_names();
-    let archive_str = archive_path.to_string_lossy();
-
-    if archive_str.ends_with(".tar.xz") || archive_str.ends_with(".txz") {
-        extract_tar_xz(archive_path, dest_dir, ffmpeg_name, ffprobe_name)
-    } else {
-        extract_zip(archive_path, dest_dir, ffmpeg_name, ffprobe_name)
-    }
-}
-
-fn extract_zip(
-    archive_path: &Path,
-    dest_dir: &Path,
-    ffmpeg_name: &str,
-    ffprobe_name: &str,
-) -> Result<(), String> {
-    let file = std::fs::File::open(archive_path)
-        .map_err(|e| format!("open archive: {e}"))?;
-    let mut archive = zip::ZipArchive::new(file)
-        .map_err(|e| format!("read zip: {e}"))?;
-
-    for i in 0..archive.len() {
-        let mut entry = archive.by_index(i)
-            .map_err(|e| format!("zip entry {i}: {e}"))?;
-
-        let entry_name = entry.name().to_string();
-        let file_name = Path::new(&entry_name)
-            .file_name()
-            .unwrap_or_default()
-            .to_string_lossy()
-            .to_string();
-
-        if file_name == ffmpeg_name || file_name == ffprobe_name {
-            let out_path = dest_dir.join(&file_name);
-            let mut out_file = std::fs::File::create(&out_path)
-                .map_err(|e| format!("create {file_name}: {e}"))?;
-            let mut buf = Vec::new();
-            entry.read_to_end(&mut buf)
-                .map_err(|e| format!("read {file_name}: {e}"))?;
-            std::io::Write::write_all(&mut out_file, &buf)
-                .map_err(|e| format!("write {file_name}: {e}"))?;
-        }
-    }
-
-    Ok(())
-}
-
-fn extract_tar_xz(
-    archive_path: &Path,
-    dest_dir: &Path,
-    ffmpeg_name: &str,
-    ffprobe_name: &str,
-) -> Result<(), String> {
-    let file = std::fs::File::open(archive_path)
-        .map_err(|e| format!("open archive: {e}"))?;
-    let decompressor = xz2::read::XzDecoder::new(file);
-    let mut archive = tar::Archive::new(decompressor);
-
-    let entries = archive.entries()
-        .map_err(|e| format!("read tar entries: {e}"))?;
-
-    for entry in entries {
-        let mut entry = entry.map_err(|e| format!("tar entry: {e}"))?;
-        let path = entry.path().map_err(|e| format!("tar path: {e}"))?.into_owned();
-        let file_name = path
-            .file_name()
-            .unwrap_or_default()
-            .to_string_lossy()
-            .to_string();
-
-        if file_name == ffmpeg_name || file_name == ffprobe_name {
-            let out_path = dest_dir.join(&file_name);
-            let mut out_file = std::fs::File::create(&out_path)
-                .map_err(|e| format!("create {file_name}: {e}"))?;
-            let mut buf = Vec::new();
-            entry.read_to_end(&mut buf)
-                .map_err(|e| format!("read {file_name}: {e}"))?;
-            std::io::Write::write_all(&mut out_file, &buf)
-                .map_err(|e| format!("write {file_name}: {e}"))?;
-        }
-    }
-
-    Ok(())
 }
 
 // ---------------------------------------------------------------------------
@@ -519,7 +318,11 @@ fn parse_rational_or_float(s: &str) -> Option<f64> {
     if let Some((num, den)) = s.split_once('/') {
         let n: f64 = num.parse().ok()?;
         let d: f64 = den.parse().ok()?;
-        if d == 0.0 { None } else { Some(n / d) }
+        if d == 0.0 {
+            None
+        } else {
+            Some(n / d)
+        }
     } else {
         s.parse::<f64>().ok()
     }
@@ -579,7 +382,10 @@ mod tests {
     #[test]
     fn test_parse_rational_or_float() {
         assert_eq!(parse_rational_or_float("30/1"), Some(30.0));
-        assert_eq!(parse_rational_or_float("60000/1001"), Some(60000.0 / 1001.0));
+        assert_eq!(
+            parse_rational_or_float("60000/1001"),
+            Some(60000.0 / 1001.0)
+        );
         assert_eq!(parse_rational_or_float("29.97"), Some(29.97));
         assert_eq!(parse_rational_or_float("0/0"), None);
     }
@@ -599,5 +405,28 @@ mod tests {
         let (ff, fp) = binary_names();
         assert!(!ff.is_empty());
         assert!(!fp.is_empty());
+    }
+
+    #[test]
+    fn test_first_non_empty_line() {
+        assert_eq!(
+            first_non_empty_line("\n  \nffmpeg version 7.0"),
+            Some("ffmpeg version 7.0")
+        );
+        assert_eq!(first_non_empty_line("   \n\t"), None);
+    }
+
+    #[test]
+    fn version_banner_requires_binary_name_and_version() {
+        assert!(is_expected_version_banner("ffmpeg", "ffmpeg version 7.1"));
+        assert!(is_expected_version_banner(
+            "ffprobe",
+            "ffprobe version N-12345"
+        ));
+        assert!(!is_expected_version_banner(
+            "ffmpeg",
+            "custom wrapper ready"
+        ));
+        assert!(!is_expected_version_banner("ffprobe", "ffmpeg version 7.1"));
     }
 }

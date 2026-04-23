@@ -136,15 +136,15 @@ onUnmounted(() => {
       @change="onBrowserFileChange"
     />
 
-    <div class="drop-zone__title">拖入文件到这里</div>
-    <div class="drop-zone__subtitle">或点击选择文件，支持视频 / 图片 / 音频</div>
+    <div class="drop-zone__title">拖入或选择文件</div>
+    <div class="drop-zone__subtitle">视频 / 图片 / 音频</div>
     <div class="drop-zone__hint">
       <template v-if="sourceName">
         <span class="drop-zone__type-icon">{{ getFileTypeIcon(sourceName) }}</span>
-        已选择：{{ sourceName }}（{{ getFileTypeLabel(sourceName) }}）
+        {{ sourceName }}（{{ getFileTypeLabel(sourceName) }}）
       </template>
       <template v-else>
-        推荐先导入一条 iPhone HDR 视频做效果验证
+        未选择文件
       </template>
     </div>
     <div v-if="selectedPath" class="drop-zone__path">

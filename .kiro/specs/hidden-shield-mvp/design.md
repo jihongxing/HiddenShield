@@ -18,7 +18,7 @@
 4. 建立 SQLite 版权金库的真实 CRUD
 5. 前端 DropZone 对接 Tauri 原生拖拽/文件对话框获取真实磁盘路径
 6. 前端进度面板完全由后端真实事件驱动，移除模拟进度
-7. FFmpeg 动态下载机制（GPL 合规）
+7. FFmpeg 运行环境约束与供应链收口
 8. 磁盘空间预检与系统休眠抑制
 9. 维权取证置信度阈值与法律免责声明
 
@@ -26,7 +26,7 @@
 
 | 决策 | 选择 | 理由 |
 |------|------|------|
-| FFmpeg 集成方式 | AppData 动态下载 + PATH 回退 | 规避 GPL 传染性：不打包进安装包，用户主动获取 |
+| FFmpeg 集成方式 | 仅使用系统 PATH 中的受控安装 | 禁止运行时下载未知二进制，降低供应链与执行链风险 |
 | 水印算法库 | realfft 3.x | 专为实数信号优化，比 rustfft 更适合音频处理 |
 | 图片水印 | LSB 隐写（image crate） | 轻量级，不依赖 FFmpeg，纯 Rust 实现 |
 | 数据库 | rusqlite (bundled) | 零配置嵌入式 SQLite，bundled 特性自带编译 |
@@ -150,7 +150,7 @@ sequenceDiagram
 |------|------|
 | `mod.rs` | 模块导出 |
 | `progress.rs` | 进度帧定义与 FFmpeg stderr 解析 |
-| `ffmpeg.rs` (新增) | FFmpeg/ffprobe 子进程管理、AppData 检测 + PATH 回退、动态下载、二进制路径缓存 |
+| `ffmpeg.rs` (新增) | FFmpeg/ffprobe 子进程管理、PATH 探测、健康检查、二进制路径缓存 |
 | `watermark.rs` (新增) | 音频盲水印嵌入与提取（realfft） |
 | `image_watermark.rs` (新增) | 图片 LSB 隐写水印嵌入与提取 |
 | `scheduler.rs` (新增) | 流水线调度：文件类型分发 → 视频/图片/音频各自处理链路 |
@@ -198,11 +198,8 @@ pub struct FfmpegPaths {
     pub ffprobe: PathBuf,
 }
 
-/// 检测 FFmpeg 可用性：先查 AppData，再查系统 PATH（应用启动时调用一次）
-pub async fn detect_ffmpeg(app_data_dir: &Path) -> Result<FfmpegPaths, String>;
-
-/// 从 CDN/GitHub 下载 FFmpeg 到 AppData 目录，校验 SHA-256
-pub async fn download_ffmpeg(app_data_dir: &Path, on_progress: impl Fn(u64, u64)) -> Result<FfmpegPaths, String>;
+/// 检测 FFmpeg 可用性：仅检查系统 PATH 中的受控安装（应用启动时调用一次）
+pub async fn detect_ffmpeg() -> Result<FfmpegPaths, String>;
 
 /// 调用 ffprobe 获取视频元数据
 pub async fn ffprobe_source(ffprobe: &Path, input: &str) -> Result<FfprobeOutput, String>;
@@ -523,8 +520,8 @@ export interface VaultRecord {
 
 | 错误类型 | 触发场景 | 处理策略 | 用户提示 |
 |---------|---------|---------|---------|
-| FFmpeg 不可用 | AppData 和系统 PATH 中均找不到 ffmpeg/ffprobe | 触发动态下载流程 | "正在为您下载必要的开源组件..." |
-| FFmpeg 下载失败 | 网络不可用或 SHA-256 校验失败 | 提示手动安装 | "下载失败，请手动安装 FFmpeg 或检查网络连接" |
+| FFmpeg 不可用 | 系统 PATH 中找不到 ffmpeg/ffprobe，或探测命令执行失败 | 阻断任务并提示按发布说明修复环境 | "未检测到可用的 FFmpeg / ffprobe，请先完成预装并加入 PATH" |
+| FFmpeg 环境不合规 | PATH 中命中到损坏、不可执行或异常包装脚本 | 阻断任务并提示重新安装受控版本 | "检测到的 FFmpeg 不可用，请重新安装受控版本后重试" |
 | ffprobe 解析失败 | 文件损坏或非音视频格式 | 返回 Err，前端显示错误 | "无法解析该文件，请确认是有效的媒体文件" |
 | 文件读取失败 | 路径不存在或权限不足 | 返回 Err | "文件读取失败，请检查文件路径和权限" |
 | 磁盘空间不足 | 可用空间小于预估需求 | 阻止压制启动 | "磁盘空间不足，预计需要 {X}GB，当前可用 {Y}GB" |

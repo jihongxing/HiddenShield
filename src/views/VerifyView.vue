@@ -71,18 +71,14 @@ function getUnmatchedReason(confidence: number): string {
     <section class="hero-card hero-card--compact">
       <div>
         <p class="eyebrow">Verify</p>
-        <h2>维权取证</h2>
-        <p class="hero-card__copy">
-          拖入疑似侵权文件，自动提取音频指纹并匹配本地金库。
-        </p>
+        <h2>取证</h2>
       </div>
     </section>
 
     <section class="panel verify-panel">
       <div class="panel__header">
         <div>
-          <h3>疑似侵权文件</h3>
-          <p>拖入或点击选择需要取证的文件</p>
+          <h3>导入文件</h3>
         </div>
         <button
           v-if="result || errorMsg"
@@ -104,30 +100,36 @@ function getUnmatchedReason(confidence: number): string {
       <!-- Loading state -->
       <div v-if="loading" class="verify-loading">
         <span class="verify-loading__spinner" aria-hidden="true"></span>
-        <span>正在提取水印指纹并匹配金库...</span>
+        <span>识别中...</span>
       </div>
 
       <div v-if="errorMsg" class="verify-result verify-result--error">
-        <strong>取证失败</strong>
+        <strong>识别失败</strong>
         <p>{{ errorMsg }}</p>
       </div>
 
       <!-- Result display with confidence-based styling -->
       <div v-if="result" class="verify-result" :class="getConfidenceClass(result.confidence)">
         <!-- Hit (>= 0.95) -->
-        <template v-if="result.confidence >= 0.95">
-          <strong>✅ 已命中水印记录</strong>
+        <template v-if="result.matched">
+          <strong>✅ 已命中</strong>
           <p>{{ result.summary }}</p>
+        </template>
+        <!-- Valid watermark but asset binding mismatch -->
+        <template v-else-if="result.confidence >= 0.95">
+          <strong>⚠️ 已识别，但未完成绑定</strong>
+          <p>{{ result.summary }}</p>
+          <p class="verify-result__confidence">置信度 {{ Math.round(result.confidence * 100) }}%</p>
         </template>
         <!-- Suspect (0.5 ~ 0.95) -->
         <template v-else-if="result.confidence >= 0.5">
-          <strong>⚠️ 疑似匹配</strong>
+          <strong>⚠️ 疑似命中</strong>
           <p>{{ result.summary }}</p>
           <p class="verify-result__confidence">置信度 {{ Math.round(result.confidence * 100) }}%</p>
         </template>
         <!-- Miss (< 0.5) -->
         <template v-else>
-          <strong>❌ 未检测到有效水印</strong>
+          <strong>❌ 未命中</strong>
           <p>{{ result.summary }}</p>
           <p class="verify-result__reason">{{ getUnmatchedReason(result.confidence) }}</p>
         </template>
@@ -139,32 +141,40 @@ function getUnmatchedReason(confidence: number): string {
       </div>
 
       <!-- Matched record card -->
-      <div v-if="result && result.matchedRecord && result.confidence >= 0.95" class="verify-matched">
-        <CopyrightCard :record="result.matchedRecord" />
+        <div v-if="result && result.matchedRecord && result.confidence >= 0.95" class="verify-matched">
+          <CopyrightCard :record="result.matchedRecord" />
 
-        <!-- TSA attestation badge -->
-        <div v-if="result.tsaVerified || result.networkTime" class="verify-tsa">
-          <strong>🔐 可信时间证明</strong>
-          <p v-if="result.tsaVerified">RFC 3161 时间戳已获取（{{ result.tsaSource }}）</p>
-          <p v-if="result.networkTime">网络授时: {{ new Date(result.networkTime).toLocaleString() }}</p>
-          <p v-if="result.createdAt">入库时间: {{ new Date(result.createdAt).toLocaleString() }}</p>
+          <!-- TSA attestation badge -->
+        <div v-if="result.tsaTokenPresent || result.networkTime" class="verify-tsa">
+          <strong>时间信息</strong>
+          <p v-if="result.tsaTokenPresent && result.tsaTokenVerified">
+            时间回执已复验
+          </p>
+          <p v-else-if="result.tsaTokenPresent">
+            时间回执已获取
+          </p>
+          <p v-if="result.networkTime">网络时间: {{ new Date(result.networkTime).toLocaleString() }}</p>
+          <p v-if="result.createdAt">存证时间: {{ new Date(result.createdAt).toLocaleString() }}</p>
         </div>
 
         <button class="ghost-button" type="button" @click="emit('switchTab', 'vault')">
-          跳转到版权库
+          查看版权库
         </button>
       </div>
 
       <!-- Actions -->
       <div v-if="result" class="verify-actions">
         <button class="primary-button" type="button" @click="handleCopySummary">
-          📋 复制存证报告
+          复制报告
         </button>
-        <ProBadge label="导出 PDF 报告" :disabled="true" />
+        <ProBadge label="PDF 报告" :disabled="true" />
       </div>
 
       <div v-if="result" class="verify-disclaimer">
-        <p>{{ result.disclaimer }}</p>
+        <details>
+          <summary>免责声明</summary>
+          <p>{{ result.disclaimer }}</p>
+        </details>
       </div>
     </section>
   </div>

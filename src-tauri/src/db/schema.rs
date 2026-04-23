@@ -1,6 +1,6 @@
 /// Current schema version. Increment when adding migrations.
 #[allow(dead_code)]
-pub const CURRENT_VERSION: u32 = 2;
+pub const CURRENT_VERSION: u32 = 3;
 
 /// Base schema (version 0 → 1): initial vault_records table.
 pub const VAULT_RECORDS_SCHEMA: &str = r#"
@@ -43,12 +43,15 @@ pub fn run_migrations(conn: &rusqlite::Connection) -> Result<(), rusqlite::Error
         conn.execute_batch(
             "ALTER TABLE vault_records ADD COLUMN tsa_token_path TEXT;
              ALTER TABLE vault_records ADD COLUMN network_time TEXT;
-             ALTER TABLE vault_records ADD COLUMN tsa_source TEXT;"
+             ALTER TABLE vault_records ADD COLUMN tsa_source TEXT;",
         )?;
         set_user_version(conn, 2)?;
     }
 
-    // Future migrations go here:
+    if current < 3 {
+        conn.execute_batch("ALTER TABLE vault_records ADD COLUMN tsa_request_nonce TEXT;")?;
+        set_user_version(conn, 3)?;
+    }
 
     Ok(())
 }

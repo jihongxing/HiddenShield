@@ -81,8 +81,8 @@ pub struct PipelineParams {
     pub input_path: PathBuf,
     pub platforms: Vec<Platform>,
     pub options: TranscodeOptions,
-    pub ffmpeg_paths: FfmpegPaths,
-    pub hw_info: DetectedHardware,
+    pub ffmpeg_paths: Option<FfmpegPaths>,
+    pub hw_info: Option<DetectedHardware>,
     pub pipeline_id: String,
 }
 
@@ -120,22 +120,25 @@ pub async fn run_pipeline(
 async fn insert_record_async(
     app_handle: &AppHandle,
     record: VaultRecord,
-) {
+) -> Result<(), PipelineError> {
     let handle = app_handle.clone();
-    let _ = tokio::task::spawn_blocking(move || {
+    tokio::task::spawn_blocking(move || -> Result<(), PipelineError> {
         let state = handle.state::<AppState>();
         let conn = match state.db.lock() {
             Ok(c) => c,
             Err(e) => {
-                log::error!("DB lock failed: {e}");
-                return;
+                return Err(PipelineError::DatabaseError(format!("DB lock failed: {e}")));
             }
         };
         if let Err(e) = queries::insert_record(&conn, &record) {
-            log::error!("Failed to insert vault record: {e}");
+            return Err(PipelineError::DatabaseError(format!(
+                "Failed to insert vault record: {e}"
+            )));
         }
+        Ok(())
     })
-    .await;
+    .await
+    .map_err(|e| PipelineError::DatabaseError(format!("join blocking DB write task: {e}")))?
 }
 
 // ---------------------------------------------------------------------------
@@ -146,6 +149,14 @@ async fn run_video_pipeline(
     params: PipelineParams,
     app_handle: AppHandle,
 ) -> Result<(), PipelineError> {
+    let ffmpeg_paths = params
+        .ffmpeg_paths
+        .as_ref()
+        .ok_or_else(|| PipelineError::FfmpegNotFound)?;
+    let hw_info = params
+        .hw_info
+        .as_ref()
+        .ok_or_else(|| PipelineError::FfmpegFailed("missing hardware info".into()))?;
     let start = Instant::now();
     let input_str = params.input_path.to_string_lossy().to_string();
     let output_dir = ufs::safe_output_dir(&input_str);
@@ -160,10 +171,11 @@ async fn run_video_pipeline(
     check_cancelled(&app_handle, &params.pipeline_id)?;
 
     // 3. Probe source via ffprobe
-    let probe = ffmpeg::ffprobe_source(&params.ffmpeg_paths.ffprobe, &input_str).await?;
-    let video_stream = probe.streams.iter().find(|s| {
-        s.codec_type.as_deref() == Some("video")
-    });
+    let probe = ffmpeg::ffprobe_source(&ffmpeg_paths.ffprobe, &input_str).await?;
+    let video_stream = probe
+        .streams
+        .iter()
+        .find(|s| s.codec_type.as_deref() == Some("video"));
     let duration_secs = probe
         .format
         .as_ref()
@@ -174,9 +186,7 @@ async fn run_video_pipeline(
         .unwrap_or((0, 0));
     let fps = video_stream.and_then(|s| s.r_frame_rate).unwrap_or(30.0);
     let is_hdr = video_stream
-        .map(|s| {
-            tonemap::is_hdr(s.color_transfer.as_deref(), s.color_primaries.as_deref())
-        })
+        .map(|s| tonemap::is_hdr(s.color_transfer.as_deref(), s.color_primaries.as_deref()))
         .unwrap_or(false);
 
     if is_hdr {
@@ -197,13 +207,15 @@ async fn run_video_pipeline(
     let temp_wav = temp_dir.join("audio.wav");
     let watermarked_wav = temp_dir.join("watermarked.wav");
 
-    extract_audio(&params.ffmpeg_paths.ffmpeg, &params.input_path, &temp_wav).await?;
+    extract_audio(&ffmpeg_paths.ffmpeg, &params.input_path, &temp_wav).await?;
 
     // 5. Read WAV, embed watermark, write back
-    let app_data_dir = app_handle.path().app_data_dir()
+    let app_data_dir = app_handle
+        .path()
+        .app_data_dir()
         .map_err(|e| PipelineError::FfmpegFailed(format!("resolve app data dir: {e}")))?;
-    let id_bytes = identity::get_identity_bytes(&app_data_dir)
-        .unwrap_or_else(|| identity::IdentityBytes {
+    let id_bytes =
+        identity::get_identity_bytes(&app_data_dir).unwrap_or_else(|| identity::IdentityBytes {
             user_seed: [0; 8],
             device_id: identity::compute_device_id(),
         });
@@ -212,7 +224,8 @@ async fn run_video_pipeline(
         .unwrap_or_default()
         .as_nanos() as u64;
     let file_hash = compute_file_hash_prefix(&input_str);
-    let payload = WatermarkPayload::new(id_bytes.user_seed, timestamp, id_bytes.device_id, file_hash);
+    let payload =
+        WatermarkPayload::new(id_bytes.user_seed, timestamp, id_bytes.device_id, file_hash);
 
     embed_watermark_wav(&temp_wav, &watermarked_wav, &payload)?;
 
@@ -264,7 +277,7 @@ async fn run_video_pipeline(
         let config = presets::build_transcode_config(
             *platform,
             &source_meta,
-            &params.hw_info,
+            hw_info,
             &params.options,
             tonemap_filter.as_deref(),
         );
@@ -283,7 +296,7 @@ async fn run_video_pipeline(
 
         // Try hardware encoding first, fall back to CPU on failure
         let result = transcode_one(
-            &params.ffmpeg_paths.ffmpeg,
+            &ffmpeg_paths.ffmpeg,
             &params.input_path,
             &watermarked_wav,
             &out_path,
@@ -311,7 +324,7 @@ async fn run_video_pipeline(
                     let cpu_config = presets::build_transcode_config(
                         *platform,
                         &source_meta,
-                        &params.hw_info,
+                        hw_info,
                         &cpu_options,
                         tonemap_filter.as_deref(),
                     );
@@ -325,11 +338,14 @@ async fn run_video_pipeline(
                     emit_progress(
                         &app_handle,
                         &params.pipeline_id,
-                        &format!("硬件编码失败，已自动切换 CPU 编码重试 {}", platform_label(*platform)),
+                        &format!(
+                            "硬件编码失败，已自动切换 CPU 编码重试 {}",
+                            platform_label(*platform)
+                        ),
                         base_percent,
                     );
                     transcode_one(
-                        &params.ffmpeg_paths.ffmpeg,
+                        &ffmpeg_paths.ffmpeg,
                         &params.input_path,
                         &watermarked_wav,
                         &out_path,
@@ -374,24 +390,34 @@ async fn run_video_pipeline(
         output_bilibili,
         output_xhs,
         is_hdr_source: is_hdr,
-        hw_encoder_used: Some(params.hw_info.preferred_encoder.clone()),
+        hw_encoder_used: Some(hw_info.preferred_encoder.clone()),
         process_time_ms: Some(process_time_ms),
         tsa_token_path: None,
         network_time: None,
         tsa_source: None,
+        tsa_request_nonce: None,
     };
 
     // Request trusted timestamp (non-blocking, best-effort)
-    let tsa_dir = app_handle.path().app_data_dir()
+    let tsa_dir = app_handle
+        .path()
+        .app_data_dir()
         .map(|d| d.join("tsa_tokens"))
         .unwrap_or_default();
-    let attestation = tsa::request_attestation(&sha256, &record.watermark_uid, &tsa_dir).await;
+    let attestation = if crate::telemetry::is_network_enabled(&app_data_dir)
+        && crate::telemetry::is_acknowledged(&app_data_dir)
+    {
+        tsa::request_attestation(&sha256, &record.watermark_uid, &tsa_dir).await
+    } else {
+        tsa::TimestampAttestation::offline()
+    };
     let mut record = record;
     record.tsa_token_path = attestation.tsa_token_path;
     record.network_time = attestation.network_time;
     record.tsa_source = attestation.tsa_source;
+    record.tsa_request_nonce = attestation.tsa_request_nonce;
 
-    insert_record_async(&app_handle, record.clone()).await;
+    insert_record_async(&app_handle, record.clone()).await?;
 
     // 9. Cleanup temp files
     let _ = ufs::cleanup_temp_dir(&params.pipeline_id);
@@ -416,8 +442,14 @@ async fn run_video_pipeline(
             .unwrap_or(0.0);
         // Use the target resolution from presets for this platform
         let (out_w, out_h, out_fps) = get_output_specs(
-            params.platforms.iter().find(|p| platform_key(**p) == *platform_name).copied(),
-            width, height, fps,
+            params
+                .platforms
+                .iter()
+                .find(|p| platform_key(**p) == *platform_name)
+                .copied(),
+            width,
+            height,
+            fps,
         );
         outputs.push(OutputFileInfo {
             platform: platform_name.to_string(),
@@ -432,7 +464,7 @@ async fn run_video_pipeline(
         pipeline_id: params.pipeline_id.clone(),
         watermark_uid: record.watermark_uid.clone(),
         process_time_ms,
-        encoder_used: params.hw_info.preferred_encoder.clone(),
+        encoder_used: hw_info.preferred_encoder.clone(),
         outputs,
         vault_record: record,
     };
@@ -456,10 +488,12 @@ async fn run_image_pipeline(
     check_cancelled(&app_handle, &params.pipeline_id)?;
     emit_progress(&app_handle, &params.pipeline_id, "图片水印嵌入中", 10);
 
-    let app_data_dir = app_handle.path().app_data_dir()
+    let app_data_dir = app_handle
+        .path()
+        .app_data_dir()
         .map_err(|e| PipelineError::FfmpegFailed(format!("resolve app data dir: {e}")))?;
-    let id_bytes = identity::get_identity_bytes(&app_data_dir)
-        .unwrap_or_else(|| identity::IdentityBytes {
+    let id_bytes =
+        identity::get_identity_bytes(&app_data_dir).unwrap_or_else(|| identity::IdentityBytes {
             user_seed: [0; 8],
             device_id: identity::compute_device_id(),
         });
@@ -468,7 +502,8 @@ async fn run_image_pipeline(
         .unwrap_or_default()
         .as_nanos() as u64;
     let file_hash = compute_file_hash_prefix(&input_str);
-    let payload = WatermarkPayload::new(id_bytes.user_seed, timestamp, id_bytes.device_id, file_hash);
+    let payload =
+        WatermarkPayload::new(id_bytes.user_seed, timestamp, id_bytes.device_id, file_hash);
 
     // Output path: same directory, with _watermarked suffix
     let stem = params
@@ -485,7 +520,11 @@ async fn run_image_pipeline(
         .to_ascii_lowercase();
     // DWT-DCT-SVD watermark can survive JPEG, but PNG preserves full fidelity.
     // Always output as PNG for maximum watermark extraction reliability.
-    let out_ext = if ext == "jpg" || ext == "jpeg" { "png" } else { &ext };
+    let out_ext = if ext == "jpg" || ext == "jpeg" {
+        "png"
+    } else {
+        &ext
+    };
     let output_path = params
         .input_path
         .parent()
@@ -526,20 +565,30 @@ async fn run_image_pipeline(
         tsa_token_path: None,
         network_time: None,
         tsa_source: None,
+        tsa_request_nonce: None,
     };
 
     // Request trusted timestamp (non-blocking, best-effort)
-    let tsa_dir = app_handle.path().app_data_dir()
+    let tsa_dir = app_handle
+        .path()
+        .app_data_dir()
         .map(|d| d.join("tsa_tokens"))
         .unwrap_or_default();
-    let attestation = tsa::request_attestation(&record.original_hash, &record.watermark_uid, &tsa_dir).await;
+    let attestation = if crate::telemetry::is_network_enabled(&app_data_dir)
+        && crate::telemetry::is_acknowledged(&app_data_dir)
+    {
+        tsa::request_attestation(&record.original_hash, &record.watermark_uid, &tsa_dir).await
+    } else {
+        tsa::TimestampAttestation::offline()
+    };
     let mut record = record;
     record.tsa_token_path = attestation.tsa_token_path;
     record.network_time = attestation.network_time;
     record.tsa_source = attestation.tsa_source;
+    record.tsa_request_nonce = attestation.tsa_request_nonce;
 
     check_cancelled(&app_handle, &params.pipeline_id)?;
-    insert_record_async(&app_handle, record.clone()).await;
+    insert_record_async(&app_handle, record.clone()).await?;
 
     check_cancelled(&app_handle, &params.pipeline_id)?;
 
@@ -574,16 +623,22 @@ async fn run_audio_pipeline(
     params: PipelineParams,
     app_handle: AppHandle,
 ) -> Result<(), PipelineError> {
+    let ffmpeg_paths = params
+        .ffmpeg_paths
+        .as_ref()
+        .ok_or_else(|| PipelineError::FfmpegNotFound)?;
     let start = Instant::now();
     let input_str = params.input_path.to_string_lossy().to_string();
 
     check_cancelled(&app_handle, &params.pipeline_id)?;
     emit_progress(&app_handle, &params.pipeline_id, "音频水印嵌入中", 10);
 
-    let app_data_dir = app_handle.path().app_data_dir()
+    let app_data_dir = app_handle
+        .path()
+        .app_data_dir()
         .map_err(|e| PipelineError::FfmpegFailed(format!("resolve app data dir: {e}")))?;
-    let id_bytes = identity::get_identity_bytes(&app_data_dir)
-        .unwrap_or_else(|| identity::IdentityBytes {
+    let id_bytes =
+        identity::get_identity_bytes(&app_data_dir).unwrap_or_else(|| identity::IdentityBytes {
             user_seed: [0; 8],
             device_id: identity::compute_device_id(),
         });
@@ -592,7 +647,8 @@ async fn run_audio_pipeline(
         .unwrap_or_default()
         .as_nanos() as u64;
     let file_hash = compute_file_hash_prefix(&input_str);
-    let payload = WatermarkPayload::new(id_bytes.user_seed, timestamp, id_bytes.device_id, file_hash);
+    let payload =
+        WatermarkPayload::new(id_bytes.user_seed, timestamp, id_bytes.device_id, file_hash);
 
     // Convert input to PCM WAV if needed, then embed watermark
     let temp_dir = ufs::create_temp_dir(&params.pipeline_id)
@@ -601,7 +657,7 @@ async fn run_audio_pipeline(
 
     check_cancelled(&app_handle, &params.pipeline_id)?;
     // Use FFmpeg to convert any audio format to standard WAV
-    extract_audio(&params.ffmpeg_paths.ffmpeg, &params.input_path, &temp_wav).await?;
+    extract_audio(&ffmpeg_paths.ffmpeg, &params.input_path, &temp_wav).await?;
 
     check_cancelled(&app_handle, &params.pipeline_id)?;
     emit_progress(&app_handle, &params.pipeline_id, "频域水印写入中", 40);
@@ -650,21 +706,30 @@ async fn run_audio_pipeline(
         tsa_token_path: None,
         network_time: None,
         tsa_source: None,
+        tsa_request_nonce: None,
     };
 
     // Request trusted timestamp (non-blocking, best-effort)
-    let tsa_dir = app_handle.path().app_data_dir()
+    let tsa_dir = app_handle
+        .path()
+        .app_data_dir()
         .map(|d| d.join("tsa_tokens"))
         .unwrap_or_default();
-    let attestation = tsa::request_attestation(&record.original_hash, &record.watermark_uid, &tsa_dir).await;
+    let attestation = if crate::telemetry::is_network_enabled(&app_data_dir)
+        && crate::telemetry::is_acknowledged(&app_data_dir)
+    {
+        tsa::request_attestation(&record.original_hash, &record.watermark_uid, &tsa_dir).await
+    } else {
+        tsa::TimestampAttestation::offline()
+    };
     let mut record = record;
     record.tsa_token_path = attestation.tsa_token_path;
     record.network_time = attestation.network_time;
     record.tsa_source = attestation.tsa_source;
+    record.tsa_request_nonce = attestation.tsa_request_nonce;
 
     check_cancelled(&app_handle, &params.pipeline_id)?;
-    insert_record_async(&app_handle, record.clone()).await;
-
+    insert_record_async(&app_handle, record.clone()).await?;
 
     check_cancelled(&app_handle, &params.pipeline_id)?;
 
@@ -748,10 +813,7 @@ fn embed_watermark_wav(
 
     // Read all samples as f32
     let mut samples: Vec<f32> = if spec.sample_format == hound::SampleFormat::Float {
-        reader
-            .samples::<f32>()
-            .filter_map(|s| s.ok())
-            .collect()
+        reader.samples::<f32>().filter_map(|s| s.ok()).collect()
     } else {
         let bits = spec.bits_per_sample;
         let max_val = (1i32 << (bits - 1)) as f32;
@@ -817,10 +879,16 @@ async fn transcode_one(
     let state = app_handle.state::<AppState>();
     let is_hw = is_hw_encoder(&config.video_codec);
     let _permit = if is_hw {
-        state.hw_encode_semaphore.acquire().await
+        state
+            .hw_encode_semaphore
+            .acquire()
+            .await
             .map_err(|_| PipelineError::FfmpegFailed("hw semaphore closed".into()))?
     } else {
-        state.ffmpeg_semaphore.acquire().await
+        state
+            .ffmpeg_semaphore
+            .acquire()
+            .await
             .map_err(|_| PipelineError::FfmpegFailed("semaphore closed".into()))?
     };
 
@@ -863,12 +931,14 @@ async fn transcode_one(
         let throttle_interval = std::time::Duration::from_millis(100);
 
         loop {
-            let timeout_duration = if is_initialized { stall_timeout } else { init_timeout };
+            let timeout_duration = if is_initialized {
+                stall_timeout
+            } else {
+                init_timeout
+            };
 
-            let line_result = tokio::time::timeout(
-                std::time::Duration::from_secs(5),
-                lines.next_line(),
-            ).await;
+            let line_result =
+                tokio::time::timeout(std::time::Duration::from_secs(5), lines.next_line()).await;
 
             match line_result {
                 Ok(Ok(Some(line))) => {
@@ -899,17 +969,23 @@ async fn transcode_one(
                 Err(_) => {
                     // Timeout reading — check dual-stage watchdog
                     if last_progress_time.elapsed() > timeout_duration {
-                        let stage_label = if is_initialized { "压制中失速" } else { "冷启动" };
+                        let stage_label = if is_initialized {
+                            "压制中失速"
+                        } else {
+                            "冷启动"
+                        };
                         let timeout_secs = timeout_duration.as_secs();
                         log::error!(
                             "FFmpeg watchdog triggered ({}): no progress for {}s, killing process",
-                            stage_label, timeout_secs
+                            stage_label,
+                            timeout_secs
                         );
                         let _ = child.child.kill().await;
                         let _ = std::fs::remove_file(output);
-                        return Err(PipelineError::FfmpegFailed(
-                            format!("FFmpeg {}阶段无响应超过 {} 秒，已强制终止", stage_label, timeout_secs),
-                        ));
+                        return Err(PipelineError::FfmpegFailed(format!(
+                            "FFmpeg {}阶段无响应超过 {} 秒，已强制终止",
+                            stage_label, timeout_secs
+                        )));
                     }
                 }
             }
@@ -924,14 +1000,10 @@ async fn transcode_one(
         }
     }
 
-    let status = child
-        .child
-        .wait()
-        .await
-        .map_err(|e| {
-            let _ = std::fs::remove_file(output); // Clean up partial output
-            PipelineError::FfmpegFailed(format!("wait transcode: {e}"))
-        })?;
+    let status = child.child.wait().await.map_err(|e| {
+        let _ = std::fs::remove_file(output); // Clean up partial output
+        PipelineError::FfmpegFailed(format!("wait transcode: {e}"))
+    })?;
 
     if !status.success() {
         let _ = std::fs::remove_file(output); // Clean up failed output
@@ -978,13 +1050,11 @@ fn is_cancelled(app_handle: &AppHandle, pipeline_id: &str) -> bool {
     app_handle
         .try_state::<AppState>()
         .and_then(|state| {
-            state
-                .active_pipelines
-                .lock()
-                .ok()
-                .map(|active: std::sync::MutexGuard<'_, std::collections::HashSet<String>>| {
+            state.active_pipelines.lock().ok().map(
+                |active: std::sync::MutexGuard<'_, std::collections::HashSet<String>>| {
                     !active.contains(pipeline_id)
-                })
+                },
+            )
         })
         .unwrap_or(false)
 }
@@ -1021,7 +1091,12 @@ fn platform_label(platform: Platform) -> &'static str {
 }
 
 /// Get approximate output specs for a platform based on source dimensions.
-fn get_output_specs(platform: Option<Platform>, src_w: u32, src_h: u32, src_fps: f64) -> (u32, u32, f64) {
+fn get_output_specs(
+    platform: Option<Platform>,
+    src_w: u32,
+    src_h: u32,
+    src_fps: f64,
+) -> (u32, u32, f64) {
     match platform {
         Some(Platform::Douyin) => (1080, 1920, 30.0),
         Some(Platform::Xiaohongshu) => (1080, 1440, 30.0),

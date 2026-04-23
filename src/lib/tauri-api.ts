@@ -45,7 +45,8 @@ export interface VerificationResult {
   matchedRecord: VaultRecord | null;
   summary: string;
   disclaimer: string;
-  tsaVerified: boolean;
+  tsaTokenPresent: boolean;
+  tsaTokenVerified: boolean;
   tsaSource: string | null;
   networkTime: string | null;
   createdAt: string | null;
@@ -169,7 +170,7 @@ const mockVault: VaultRecord[] = [
 // IPC Functions
 // ---------------------------------------------------------------------------
 
-export async function systemCheck(): Promise<SystemCheckResult> {
+export async function systemCheck(inputPath?: string): Promise<SystemCheckResult> {
   if (!isTauriRuntime()) {
     return {
       ffmpegAvailable: true,
@@ -183,7 +184,7 @@ export async function systemCheck(): Promise<SystemCheckResult> {
     };
   }
   const { invoke } = await import("@tauri-apps/api/core");
-  return invoke<SystemCheckResult>("system_check");
+  return invoke<SystemCheckResult>("system_check", { inputPath });
 }
 
 export async function openOutputDir(path: string): Promise<void> {
@@ -238,7 +239,8 @@ export async function verifySuspect(path: string): Promise<VerificationResult> {
       matchedRecord,
       summary: "检测到有效水印样本，已命中本地版权金库中的作品记录。",
       disclaimer: "本报告仅基于既定算法进行特征码技术提取，仅供参考，不代表任何司法鉴定意见。平台不对因本报告引发的连带法律责任负责。",
-      tsaVerified: true,
+      tsaTokenPresent: true,
+      tsaTokenVerified: true,
       tsaSource: "https://freetsa.org/tsr",
       networkTime: "Sat, 19 Apr 2026 10:30:00 GMT",
       createdAt: "2026-04-19T10:30:00Z",
@@ -408,11 +410,13 @@ export function buildCopyrightSummary(record: VaultRecord): string {
 
 /** Build a verification summary text for clipboard copy. */
 export function buildVerificationSummary(result: VerificationResult, filePath: string): string {
-  const status = result.confidence >= 0.95
+  const status = result.matched
     ? "✅ 已命中"
-    : result.confidence >= 0.5
-      ? "⚠️ 疑似命中"
-      : "❌ 未命中";
+    : result.confidence >= 0.95
+      ? "⚠️ 检测到有效水印但未通过作品绑定"
+      : result.confidence >= 0.5
+        ? "⚠️ 疑似命中"
+        : "❌ 未命中";
 
   const lines = [
     `═══════════════════════════════════════════`,
@@ -443,11 +447,12 @@ export function buildVerificationSummary(result: VerificationResult, filePath: s
     lines.push(``);
   }
 
-  if (result.tsaVerified || result.networkTime) {
-    lines.push(`───────────── 可信时间证明 ─────────────`);
-    if (result.tsaVerified && result.tsaSource) {
-      lines.push(`RFC 3161 时间戳: ✅ 已获取`);
-      lines.push(`签发机构: ${result.tsaSource}`);
+  if (result.tsaTokenPresent || result.networkTime) {
+    lines.push(`───────────── 时间取证材料 ─────────────`);
+    if (result.tsaTokenPresent && result.tsaSource) {
+      lines.push(`RFC 3161 时间戳回执: 已获取`);
+      lines.push(`回执来源: ${result.tsaSource}`);
+      lines.push(`状态: ${result.tsaTokenVerified ? "已完成 CMS/证书链验签" : "已获取但未完成独立验签"}`);
     }
     if (result.networkTime) {
       lines.push(`网络授时 (GMT): ${result.networkTime}`);
@@ -459,12 +464,16 @@ export function buildVerificationSummary(result: VerificationResult, filePath: s
       const localCreated = new Date(result.createdAt).toLocaleString();
       lines.push(`本地记录时间: ${localCreated}`);
     }
-    lines.push(
-      ``,
-      `⚠️ 上述时间戳由第三方权威机构签发，非本地生成，`,
-      `   可作为时间先后的独立证明。`,
-      ``,
-    );
+    if (!result.tsaTokenVerified) {
+      lines.push(
+        ``,
+        `⚠️ 上述回执与网络授时仅作为补充取证材料，`,
+        `   RFC 3161 回执仍需完成独立验签后方可作为正式证明使用。`,
+        ``,
+      );
+    } else {
+      lines.push(``, `RFC 3161 回执已通过本地 CMS/证书链复验，可作为补充取证材料引用。`, ``);
+    }
   }
 
   lines.push(
@@ -521,6 +530,18 @@ export async function acknowledgeTelemetry(): Promise<void> {
   await invoke("acknowledge_telemetry");
 }
 
+export async function getNetworkEnabled(): Promise<boolean> {
+  if (!isTauriRuntime()) return true;
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<boolean>("get_network_enabled");
+}
+
+export async function setNetworkEnabled(enabled: boolean): Promise<void> {
+  if (!isTauriRuntime()) return;
+  const { invoke } = await import("@tauri-apps/api/core");
+  await invoke("set_network_enabled", { enabled });
+}
+
 export async function exportCrashLog(): Promise<string> {
   if (!isTauriRuntime()) return "(mock) no crash logs";
   const { invoke } = await import("@tauri-apps/api/core");
@@ -552,44 +573,14 @@ export async function clearCacheOnly(): Promise<string> {
 // ---------------------------------------------------------------------------
 
 export async function checkForUpdate(): Promise<UpdateInfo | null> {
-  if (!isTauriRuntime()) return null;
-  try {
-    const { check } = await import("@tauri-apps/plugin-updater");
-    // Air-gapped safety: race against a 3-second timeout to prevent
-    // blocking on machines with no network connectivity.
-    const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
-    const updatePromise = check().then((update) => {
-      if (update) {
-        return { available: true, version: update.version, body: update.body ?? "" } as UpdateInfo;
-      }
-      return null;
-    });
-    return await Promise.race([updatePromise, timeoutPromise]);
-  } catch (e) {
-    console.warn("Update check failed:", e);
-    return null;
-  }
+  return null;
 }
 
 export async function installUpdate(
   onProgress?: (downloaded: number, total: number | null) => void,
 ): Promise<void> {
-  if (!isTauriRuntime()) return;
-  const { check } = await import("@tauri-apps/plugin-updater");
-  const update = await check();
-  if (!update) return;
-
-  let downloaded = 0;
-  let contentLength: number | null = null;
-
-  await update.downloadAndInstall((event) => {
-    if (event.event === "Started") {
-      contentLength = (event as unknown as { data: { contentLength?: number } }).data?.contentLength ?? null;
-    } else if (event.event === "Progress") {
-      downloaded += (event as unknown as { data: { chunkLength: number } }).data.chunkLength;
-      onProgress?.(downloaded, contentLength);
-    }
-  });
+  const _ = onProgress;
+  throw new Error("当前版本已禁用应用内自动更新，请使用受控发布包升级。");
 }
 
 // ---------------------------------------------------------------------------

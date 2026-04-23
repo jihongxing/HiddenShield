@@ -35,13 +35,13 @@
 
 ### 需求 1：FFmpeg 与 ffprobe 可用性保障
 
-**用户故事：** 作为创作者，我希望应用能自动获取 FFmpeg/ffprobe 二进制，以便所有音视频处理功能正常工作。
+**用户故事：** 作为创作者，我希望应用能准确识别当前机器是否已具备可用的 FFmpeg/ffprobe 运行环境，以便所有音视频处理功能正常工作。
 
 #### 验收标准
 
-1. WHEN 应用启动时, THE Pipeline SHALL 首先检查 AppData 目录中是否存在已下载的 FFmpeg，其次检查系统 PATH
-2. WHEN AppData 或系统 PATH 中存在 ffmpeg 和 ffprobe 时, THE Pipeline SHALL 缓存二进制路径并标记 FFmpeg 状态为"可用"
-3. IF ffmpeg 或 ffprobe 均不存在, THEN THE Pipeline SHALL 触发 FFmpeg 动态下载流程（参见需求 13）
+1. WHEN 应用启动时, THE Pipeline SHALL 检查系统 PATH 中是否存在 `ffmpeg` 与 `ffprobe`
+2. WHEN 系统 PATH 中存在 ffmpeg 和 ffprobe 且探测命令执行成功时, THE Pipeline SHALL 缓存二进制路径并标记 FFmpeg 状态为"可用"
+3. IF ffmpeg 或 ffprobe 不存在或探测命令执行失败, THEN THE Pipeline SHALL 阻止依赖 FFmpeg 的任务启动并提示用户按发布说明完成预装
 4. THE Pipeline SHALL 在应用生命周期内仅执行一次 FFmpeg 可用性检测，并将结果缓存供后续使用
 
 ### 需求 2：源视频元数据真实探测
@@ -179,18 +179,18 @@
 5. THE DropZone 组件 SHALL 根据文件扩展名在 UI 上区分显示文件类型（视频/图片/音频），并相应调整可用的处理选项
 6. WHEN 图片或音频处理完成时, THE Database SHALL 向版权金库插入记录，file_type 字段标记为 "image" 或 "audio"
 
-### 需求 13：FFmpeg GPL 合规性——动态下载而非打包分发
+### 需求 13：FFmpeg 发布合规与供应链控制
 
 **用户故事：** 作为产品方，我需要确保 FFmpeg 的 GPL 传染性协议不会污染隐盾的闭源商业代码。
 
 #### 验收标准
 
 1. THE Installer SHALL 不包含任何 FFmpeg/ffprobe 二进制文件，安装包体积保持在 ~15MB
-2. WHEN 应用首次启动且本地 AppData 目录中不存在 FFmpeg 时, THE Pipeline SHALL 显示引导页提示"正在为您下载必要的开源组件..."
-3. THE Pipeline SHALL 从预配置的 CDN 或 GitHub Releases 地址下载预编译的 FFmpeg 二进制（Windows ~80MB, macOS ~60MB），存放到用户的 AppData（Windows）或 Application Support（macOS）目录
-4. WHEN 下载完成后, THE Pipeline SHALL 校验下载文件的 SHA-256 哈希值，确保二进制完整性
-5. WHEN 本地 AppData 目录中已存在 FFmpeg 时, THE Pipeline SHALL 跳过下载步骤，直接使用缓存的二进制
-6. IF 下载失败（网络不可用等）, THEN THE Pipeline SHALL 提示用户手动安装 FFmpeg 并提供官方下载链接
+2. THE Production_Runtime SHALL 禁用运行时下载 FFmpeg/ffprobe 的能力
+3. THE Pipeline SHALL 仅信任系统 PATH 中由运维或用户预装的 FFmpeg/ffprobe 可执行文件
+4. WHEN FFmpeg 运行环境不可用时, THE Pipeline SHALL 给出明确的修复提示，而不是尝试后台补齐未知二进制
+5. 发布文档和运维脚本 SHALL 明确要求目标机器预装受控版本的 FFmpeg/ffprobe
+6. IF 企业环境需要进一步收口, THEN 运维流程 SHOULD 通过软件分发、镜像基线或白名单机制统一 FFmpeg 版本
 
 ### 需求 14：磁盘空间预检与系统休眠抑制
 

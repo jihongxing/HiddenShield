@@ -35,24 +35,14 @@ function isRecordOffline(record: VaultRecord): boolean {
     <section class="hero-card hero-card--compact">
       <div>
         <p class="eyebrow">Vault</p>
-        <h2>本地版权金库</h2>
-        <p class="hero-card__copy">
-          📁 数据仅存储在本机，不上传至任何服务器。
-        </p>
-      </div>
-      <div class="hero-card__stats">
-        <div>
-          <span>保留策略</span>
-          <strong>Free 30 天 / Pro 永久</strong>
-        </div>
+        <h2>版权库</h2>
       </div>
     </section>
 
     <section class="panel">
       <div class="panel__header">
         <div>
-          <h3>版权存证记录</h3>
-          <p>每次处理自动生成存证卡片</p>
+          <h3>存证记录</h3>
         </div>
         <span class="pill">{{ records.length }} 条</span>
       </div>
@@ -66,7 +56,7 @@ function isRecordOffline(record: VaultRecord): boolean {
       <div class="vault-cards">
         <div v-for="(record, idx) in records" :key="record.id" class="vault-card-wrapper">
           <div v-if="isRecordOffline(record)" class="vault-offline-badge">
-            📂 文件已归档/离线
+            已离线
           </div>
           <CopyrightCard
             :record="record"
