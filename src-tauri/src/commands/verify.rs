@@ -70,21 +70,35 @@ pub async fn verify_suspect(
 
         let (matched_record, uid_exists) = {
             let conn = state.db.lock().map_err(|e| format!("db lock error: {e}"))?;
+            let file_hash_2bytes = [payload.file_hash[0], payload.file_hash[1]];
             (
-                queries::find_by_uid_and_hash(&conn, &uid, &payload.file_hash),
+                queries::find_by_uid_and_hash(&conn, &uid, &file_hash_2bytes),
                 queries::has_watermark_uid(&conn, &uid),
             )
         };
 
         if confidence >= 0.95 {
-            let summary = if matched_record.is_some() {
-                format!("水印匹配成功，水印 UID: {uid}，已在版权金库中找到对应记录。")
+            let summary = if let Some(ref record) = matched_record {
+                // Determine which hash matched
+                let file_hash_2bytes = [payload.file_hash[0], payload.file_hash[1]];
+                let prefix_hex = hex::encode(file_hash_2bytes);
+
+                if record.original_hash.starts_with(&prefix_hex) {
+                    format!("✅ 原始文件验证通过，水印 UID: {uid}")
+                } else if record.output_douyin_hash.as_ref().map(|h| h.starts_with(&prefix_hex)).unwrap_or(false) {
+                    format!("✅ 输出文件验证通过（抖音），水印 UID: {uid}")
+                } else if record.output_bilibili_hash.as_ref().map(|h| h.starts_with(&prefix_hex)).unwrap_or(false) {
+                    format!("✅ 输出文件验证通过（B站），水印 UID: {uid}")
+                } else if record.output_xhs_hash.as_ref().map(|h| h.starts_with(&prefix_hex)).unwrap_or(false) {
+                    format!("✅ 输出文件验证通过（小红书），水印 UID: {uid}")
+                } else {
+                    // Should not happen, but fallback
+                    format!("✅ 文件验证通过，水印 UID: {uid}")
+                }
             } else if uid_exists {
-                format!(
-          "提取到有效水印 (UID: {uid})，但仅命中同一创作者标识，未通过素材哈希绑定校验，不能判定为同一作品。"
-        )
+                format!("⚠️ 检测到有效水印但文件已被修改，水印 UID: {uid}")
             } else {
-                format!("提取到有效水印 (UID: {uid})，但未在本地版权金库中找到匹配记录。")
+                format!("⚠️ 检测到有效水印但未在本地金库找到记录，水印 UID: {uid}")
             };
             let tsa_token_path = matched_record
                 .as_ref()

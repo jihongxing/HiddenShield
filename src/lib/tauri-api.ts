@@ -36,6 +36,15 @@ export interface VaultRecord {
   outputXhs: string | null;
   hwEncoderUsed: string | null;
   processTimeMs: number | null;
+  isAiGenerated: boolean;
+  aiTrainingPermission: string | null;
+  aiGenerationMethod: string | null;
+  humanModificationLevel: string | null;
+  authenticityClaim: string | null;
+  customMetadata: string | null;
+  outputDouyinHash: string | null;
+  outputBilibiliHash: string | null;
+  outputXhsHash: string | null;
 }
 
 export interface VerificationResult {
@@ -56,9 +65,19 @@ export interface VerificationResult {
 
 export type TsaVerificationPath = "systemRoots" | "embeddedRoots";
 
+export interface AIContentOptions {
+  isAiGenerated: boolean;
+  trainingPermission: string;
+  generationMethod: string;
+  modificationLevel: string;
+  authenticityClaim: string;
+  customMetadata?: string;
+}
+
 export interface TranscodeOptions {
   aspectStrategy: "letterbox" | "smart_crop";
   encodingMode: "fast_gpu" | "high_quality_cpu";
+  aiContent?: AIContentOptions;
 }
 
 export interface PipelineStartResult {

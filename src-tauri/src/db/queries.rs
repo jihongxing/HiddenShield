@@ -15,8 +15,11 @@ pub fn insert_record(conn: &Connection, record: &VaultRecord) -> Result<(), rusq
       original_hash, file_name, created_at, duration_secs, resolution,
       watermark_uid, thumbnail_path, output_douyin, output_bilibili,
       output_xhs, is_hdr_source, hw_encoder_used, process_time_ms,
-      tsa_token_path, network_time, tsa_source, tsa_request_nonce
-    ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17)",
+      tsa_token_path, network_time, tsa_source, tsa_request_nonce,
+      is_ai_generated, ai_training_permission, ai_generation_method,
+      human_modification_level, authenticity_claim, custom_metadata,
+      output_douyin_hash, output_bilibili_hash, output_xhs_hash
+    ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26)",
         params![
             record.original_hash,
             record.file_name,
@@ -35,6 +38,15 @@ pub fn insert_record(conn: &Connection, record: &VaultRecord) -> Result<(), rusq
             record.network_time,
             record.tsa_source,
             record.tsa_request_nonce,
+            record.is_ai_generated as i32,
+            record.ai_training_permission,
+            record.ai_generation_method,
+            record.human_modification_level,
+            record.authenticity_claim,
+            record.custom_metadata,
+            record.output_douyin_hash,
+            record.output_bilibili_hash,
+            record.output_xhs_hash,
         ],
     )?;
     Ok(())
@@ -46,7 +58,10 @@ pub fn list_records(conn: &Connection) -> Vec<VaultRecord> {
         "SELECT id, original_hash, file_name, created_at, duration_secs,
             resolution, watermark_uid, thumbnail_path, output_douyin,
             output_bilibili, output_xhs, is_hdr_source, hw_encoder_used,
-            process_time_ms, tsa_token_path, network_time, tsa_source, tsa_request_nonce
+            process_time_ms, tsa_token_path, network_time, tsa_source, tsa_request_nonce,
+            is_ai_generated, ai_training_permission, ai_generation_method,
+            human_modification_level, authenticity_claim, custom_metadata,
+            output_douyin_hash, output_bilibili_hash, output_xhs_hash
      FROM vault_records ORDER BY created_at DESC",
     ) {
         Ok(s) => s,
@@ -73,6 +88,15 @@ pub fn list_records(conn: &Connection) -> Vec<VaultRecord> {
             network_time: row.get(15)?,
             tsa_source: row.get(16)?,
             tsa_request_nonce: row.get(17)?,
+            is_ai_generated: row.get::<_, i32>(18)? != 0,
+            ai_training_permission: row.get(19)?,
+            ai_generation_method: row.get(20)?,
+            human_modification_level: row.get(21)?,
+            authenticity_claim: row.get(22)?,
+            custom_metadata: row.get(23)?,
+            output_douyin_hash: row.get(24)?,
+            output_bilibili_hash: row.get(25)?,
+            output_xhs_hash: row.get(26)?,
         })
     });
 
@@ -89,7 +113,10 @@ pub fn find_by_watermark_uid(conn: &Connection, uid: &str) -> Option<VaultRecord
         "SELECT id, original_hash, file_name, created_at, duration_secs,
               resolution, watermark_uid, thumbnail_path, output_douyin,
               output_bilibili, output_xhs, is_hdr_source, hw_encoder_used,
-              process_time_ms, tsa_token_path, network_time, tsa_source, tsa_request_nonce
+              process_time_ms, tsa_token_path, network_time, tsa_source, tsa_request_nonce,
+              is_ai_generated, ai_training_permission, ai_generation_method,
+              human_modification_level, authenticity_claim, custom_metadata,
+              output_douyin_hash, output_bilibili_hash, output_xhs_hash
        FROM vault_records WHERE watermark_uid = ?1",
         params![uid],
         |row| {
@@ -112,6 +139,15 @@ pub fn find_by_watermark_uid(conn: &Connection, uid: &str) -> Option<VaultRecord
                 network_time: row.get(15)?,
                 tsa_source: row.get(16)?,
                 tsa_request_nonce: row.get(17)?,
+                is_ai_generated: row.get::<_, i32>(18)? != 0,
+                ai_training_permission: row.get(19)?,
+                ai_generation_method: row.get(20)?,
+                human_modification_level: row.get(21)?,
+                authenticity_claim: row.get(22)?,
+                custom_metadata: row.get(23)?,
+                output_douyin_hash: row.get(24)?,
+                output_bilibili_hash: row.get(25)?,
+                output_xhs_hash: row.get(26)?,
             })
         },
     )
@@ -123,14 +159,17 @@ pub fn find_by_watermark_uid(conn: &Connection, uid: &str) -> Option<VaultRecord
 pub fn find_by_uid_and_hash(
     conn: &Connection,
     uid: &str,
-    file_hash_prefix: &[u8; 4],
+    file_hash_prefix: &[u8; 2],
 ) -> Option<VaultRecord> {
     let mut stmt = conn
         .prepare(
             "SELECT id, original_hash, file_name, created_at, duration_secs,
             resolution, watermark_uid, thumbnail_path, output_douyin,
             output_bilibili, output_xhs, is_hdr_source, hw_encoder_used,
-            process_time_ms, tsa_token_path, network_time, tsa_source, tsa_request_nonce
+            process_time_ms, tsa_token_path, network_time, tsa_source, tsa_request_nonce,
+            is_ai_generated, ai_training_permission, ai_generation_method,
+            human_modification_level, authenticity_claim, custom_metadata,
+            output_douyin_hash, output_bilibili_hash, output_xhs_hash
      FROM vault_records WHERE watermark_uid = ?1 ORDER BY created_at DESC",
         )
         .ok()?;
@@ -156,6 +195,15 @@ pub fn find_by_uid_and_hash(
                 network_time: row.get(15)?,
                 tsa_source: row.get(16)?,
                 tsa_request_nonce: row.get(17)?,
+                is_ai_generated: row.get::<_, i32>(18)? != 0,
+                ai_training_permission: row.get(19)?,
+                ai_generation_method: row.get(20)?,
+                human_modification_level: row.get(21)?,
+                authenticity_claim: row.get(22)?,
+                custom_metadata: row.get(23)?,
+                output_douyin_hash: row.get(24)?,
+                output_bilibili_hash: row.get(25)?,
+                output_xhs_hash: row.get(26)?,
             })
         })
         .ok()?
@@ -166,11 +214,28 @@ pub fn find_by_uid_and_hash(
         return None;
     }
 
-    // Try to match by file hash prefix (first 4 bytes of SHA-256)
+    // Try to match by file hash prefix (first 2 bytes of SHA-256)
     let prefix_hex = hex::encode(file_hash_prefix);
     for record in &records {
+        // Check original file hash
         if record.original_hash.starts_with(&prefix_hex) {
             return Some(record.clone());
+        }
+        // Check output file hashes
+        if let Some(ref hash) = record.output_douyin_hash {
+            if hash.starts_with(&prefix_hex) {
+                return Some(record.clone());
+            }
+        }
+        if let Some(ref hash) = record.output_bilibili_hash {
+            if hash.starts_with(&prefix_hex) {
+                return Some(record.clone());
+            }
+        }
+        if let Some(ref hash) = record.output_xhs_hash {
+            if hash.starts_with(&prefix_hex) {
+                return Some(record.clone());
+            }
         }
     }
 
@@ -212,6 +277,12 @@ mod tests {
             network_time: None,
             tsa_source: None,
             tsa_request_nonce: None,
+            is_ai_generated: false,
+            ai_training_permission: None,
+            ai_generation_method: None,
+            human_modification_level: None,
+            authenticity_claim: None,
+            custom_metadata: None,
         }
     }
 
@@ -233,7 +304,7 @@ mod tests {
         .unwrap();
 
         assert!(has_watermark_uid(&conn, uid));
-        assert!(find_by_uid_and_hash(&conn, uid, &[0x11, 0x22, 0x33, 0x44]).is_some());
-        assert!(find_by_uid_and_hash(&conn, uid, &[0xaa, 0xbb, 0xcc, 0xdd]).is_none());
+        assert!(find_by_uid_and_hash(&conn, uid, &[0x11, 0x22]).is_some());
+        assert!(find_by_uid_and_hash(&conn, uid, &[0xaa, 0xbb]).is_none());
     }
 }

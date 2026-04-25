@@ -27,6 +27,17 @@ pub struct VaultRecord {
     pub network_time: Option<String>,
     pub tsa_source: Option<String>,
     pub tsa_request_nonce: Option<String>,
+    // AI content identification fields
+    pub is_ai_generated: bool,
+    pub ai_training_permission: Option<String>,
+    pub ai_generation_method: Option<String>,
+    pub human_modification_level: Option<String>,
+    pub authenticity_claim: Option<String>,
+    pub custom_metadata: Option<String>,
+    // Output file hashes for asset binding verification
+    pub output_douyin_hash: Option<String>,
+    pub output_bilibili_hash: Option<String>,
+    pub output_xhs_hash: Option<String>,
 }
 
 #[tauri::command]

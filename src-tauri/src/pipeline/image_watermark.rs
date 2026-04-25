@@ -554,7 +554,7 @@ mod tests {
         });
         img.save(&input_path).unwrap();
 
-        let payload = WatermarkPayload::new([0xAB; 8], 1700000000, [0xCD; 4], [0xEF; 4]);
+        let payload = WatermarkPayload::new([0xAB; 8], 1700000000, [0xCD; 4], [0xEF; 2], AIContentFlags::default());
         embed_image_watermark(&input_path, &payload, &output_path).unwrap();
 
         let extracted = extract_image_watermark(&output_path).unwrap();
@@ -584,7 +584,7 @@ mod tests {
         });
         img.save(&input_path).unwrap();
 
-        let payload = WatermarkPayload::new([0x42; 8], 1700000000, [0xAB; 4], [0xCD; 4]);
+        let payload = WatermarkPayload::new([0x42; 8], 1700000000, [0xAB; 4], [0xCD; 2], AIContentFlags::default());
         embed_image_watermark(&input_path, &payload, &embedded_path).unwrap();
 
         // Simulate JPEG compression attack (quality 85)
@@ -609,7 +609,7 @@ mod tests {
         let img = image::RgbaImage::from_fn(8, 8, |_, _| image::Rgba([0u8, 0, 0, 255]));
         img.save(&input_path).unwrap();
 
-        let payload = WatermarkPayload::new([0; 8], 0, [0; 4], [0; 4]);
+        let payload = WatermarkPayload::new([0; 8], 0, [0; 4], [0; 2], AIContentFlags::default());
         assert!(embed_image_watermark(&input_path, &payload, &output_path).is_err());
     }
 

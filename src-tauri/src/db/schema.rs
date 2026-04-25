@@ -1,6 +1,6 @@
 /// Current schema version. Increment when adding migrations.
 #[allow(dead_code)]
-pub const CURRENT_VERSION: u32 = 3;
+pub const CURRENT_VERSION: u32 = 5;
 
 /// Base schema (version 0 → 1): initial vault_records table.
 pub const VAULT_RECORDS_SCHEMA: &str = r#"
@@ -51,6 +51,35 @@ pub fn run_migrations(conn: &rusqlite::Connection) -> Result<(), rusqlite::Error
     if current < 3 {
         conn.execute_batch("ALTER TABLE vault_records ADD COLUMN tsa_request_nonce TEXT;")?;
         set_user_version(conn, 3)?;
+    }
+
+    if current < 4 {
+        // Add AI content identification fields (vendor-agnostic)
+        conn.execute_batch(
+            "ALTER TABLE vault_records ADD COLUMN is_ai_generated INTEGER NOT NULL DEFAULT 0;
+             ALTER TABLE vault_records ADD COLUMN ai_training_permission TEXT;
+             ALTER TABLE vault_records ADD COLUMN ai_generation_method TEXT;
+             ALTER TABLE vault_records ADD COLUMN human_modification_level TEXT;
+             ALTER TABLE vault_records ADD COLUMN authenticity_claim TEXT;
+             ALTER TABLE vault_records ADD COLUMN custom_metadata TEXT;",
+        )?;
+        // Add indexes for AI content queries
+        conn.execute_batch(
+            "CREATE INDEX IF NOT EXISTS idx_ai_generated ON vault_records(is_ai_generated);
+             CREATE INDEX IF NOT EXISTS idx_ai_generation_method ON vault_records(ai_generation_method);
+             CREATE INDEX IF NOT EXISTS idx_ai_training_permission ON vault_records(ai_training_permission);",
+        )?;
+        set_user_version(conn, 4)?;
+    }
+
+    if current < 5 {
+        // Add output file hash fields for asset binding verification
+        conn.execute_batch(
+            "ALTER TABLE vault_records ADD COLUMN output_douyin_hash TEXT;
+             ALTER TABLE vault_records ADD COLUMN output_bilibili_hash TEXT;
+             ALTER TABLE vault_records ADD COLUMN output_xhs_hash TEXT;",
+        )?;
+        set_user_version(conn, 5)?;
     }
 
     Ok(())

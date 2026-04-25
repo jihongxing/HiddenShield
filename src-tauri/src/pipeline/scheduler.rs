@@ -224,8 +224,12 @@ async fn run_video_pipeline(
         .unwrap_or_default()
         .as_nanos() as u64;
     let file_hash = compute_file_hash_prefix(&input_str);
+
+    // Parse AI content flags from options
+    let ai_flags = parse_ai_flags(&params.options.ai_content);
+
     let payload =
-        WatermarkPayload::new(id_bytes.user_seed, timestamp, id_bytes.device_id, file_hash);
+        WatermarkPayload::new(id_bytes.user_seed, timestamp, id_bytes.device_id, file_hash, ai_flags);
 
     embed_watermark_wav(&temp_wav, &watermarked_wav, &payload)?;
 
@@ -320,6 +324,7 @@ async fn run_video_pipeline(
                     let cpu_options = TranscodeOptions {
                         aspect_strategy: params.options.aspect_strategy.clone(),
                         encoding_mode: EncodingMode::HighQualityCpu,
+                        ai_content: params.options.ai_content.clone(),
                     };
                     let cpu_config = presets::build_transcode_config(
                         *platform,
@@ -377,6 +382,11 @@ async fn run_video_pipeline(
     let sha256 = hash::sha256_of_file(&input_str).unwrap_or_default();
     let process_time_ms = start.elapsed().as_millis() as u64;
 
+    // Compute output file hashes
+    let output_douyin_hash = output_douyin.as_ref().map(|p| hash::sha256_of_file(p).unwrap_or_default());
+    let output_bilibili_hash = output_bilibili.as_ref().map(|p| hash::sha256_of_file(p).unwrap_or_default());
+    let output_xhs_hash = output_xhs.as_ref().map(|p| hash::sha256_of_file(p).unwrap_or_default());
+
     let record = VaultRecord {
         id: 0,
         original_hash: sha256.clone(),
@@ -396,6 +406,15 @@ async fn run_video_pipeline(
         network_time: None,
         tsa_source: None,
         tsa_request_nonce: None,
+        is_ai_generated: ai_flags.is_ai_generated,
+        ai_training_permission: Some(format!("{:?}", ai_flags.training_permission).to_lowercase()),
+        ai_generation_method: Some(format!("{:?}", ai_flags.generation_method).to_lowercase()),
+        human_modification_level: Some(format!("{:?}", ai_flags.human_modification_level).to_lowercase()),
+        authenticity_claim: Some(format!("{:?}", ai_flags.authenticity_claim).to_lowercase()),
+        custom_metadata: params.options.ai_content.as_ref().and_then(|ai| ai.custom_metadata.clone()),
+        output_douyin_hash,
+        output_bilibili_hash,
+        output_xhs_hash,
     };
 
     // Request trusted timestamp (non-blocking, best-effort)
@@ -502,8 +521,12 @@ async fn run_image_pipeline(
         .unwrap_or_default()
         .as_nanos() as u64;
     let file_hash = compute_file_hash_prefix(&input_str);
+
+    // Parse AI content flags from options
+    let ai_flags = parse_ai_flags(&params.options.ai_content);
+
     let payload =
-        WatermarkPayload::new(id_bytes.user_seed, timestamp, id_bytes.device_id, file_hash);
+        WatermarkPayload::new(id_bytes.user_seed, timestamp, id_bytes.device_id, file_hash, ai_flags);
 
     // Output path: same directory, with _watermarked suffix
     let stem = params
@@ -542,6 +565,9 @@ async fn run_image_pipeline(
     let sha256 = hash::sha256_of_file(&input_str).unwrap_or_default();
     let process_time_ms = start.elapsed().as_millis() as u64;
 
+    // Compute output file hash
+    let output_hash = hash::sha256_of_file(&output_path.to_string_lossy().to_string()).unwrap_or_default();
+
     let record = VaultRecord {
         id: 0,
         original_hash: sha256,
@@ -556,7 +582,7 @@ async fn run_image_pipeline(
         resolution: format!("{}x{}", width, height),
         watermark_uid: payload.watermark_uid(),
         thumbnail_path: None,
-        output_douyin: None,
+        output_douyin: Some(output_path.to_string_lossy().to_string()),
         output_bilibili: None,
         output_xhs: None,
         is_hdr_source: false,
@@ -566,6 +592,15 @@ async fn run_image_pipeline(
         network_time: None,
         tsa_source: None,
         tsa_request_nonce: None,
+        is_ai_generated: ai_flags.is_ai_generated,
+        ai_training_permission: Some(format!("{:?}", ai_flags.training_permission).to_lowercase()),
+        ai_generation_method: Some(format!("{:?}", ai_flags.generation_method).to_lowercase()),
+        human_modification_level: Some(format!("{:?}", ai_flags.human_modification_level).to_lowercase()),
+        authenticity_claim: Some(format!("{:?}", ai_flags.authenticity_claim).to_lowercase()),
+        custom_metadata: params.options.ai_content.as_ref().and_then(|ai| ai.custom_metadata.clone()),
+        output_douyin_hash: Some(output_hash),
+        output_bilibili_hash: None,
+        output_xhs_hash: None,
     };
 
     // Request trusted timestamp (non-blocking, best-effort)
@@ -647,8 +682,12 @@ async fn run_audio_pipeline(
         .unwrap_or_default()
         .as_nanos() as u64;
     let file_hash = compute_file_hash_prefix(&input_str);
+
+    // Parse AI content flags from options
+    let ai_flags = parse_ai_flags(&params.options.ai_content);
+
     let payload =
-        WatermarkPayload::new(id_bytes.user_seed, timestamp, id_bytes.device_id, file_hash);
+        WatermarkPayload::new(id_bytes.user_seed, timestamp, id_bytes.device_id, file_hash, ai_flags);
 
     // Convert input to PCM WAV if needed, then embed watermark
     let temp_dir = ufs::create_temp_dir(&params.pipeline_id)
@@ -683,6 +722,9 @@ async fn run_audio_pipeline(
     let sha256 = hash::sha256_of_file(&input_str).unwrap_or_default();
     let process_time_ms = start.elapsed().as_millis() as u64;
 
+    // Compute output file hash
+    let output_hash = hash::sha256_of_file(&output_path.to_string_lossy().to_string()).unwrap_or_default();
+
     let record = VaultRecord {
         id: 0,
         original_hash: sha256,
@@ -697,7 +739,7 @@ async fn run_audio_pipeline(
         resolution: String::new(),
         watermark_uid: payload.watermark_uid(),
         thumbnail_path: None,
-        output_douyin: None,
+        output_douyin: Some(output_path.to_string_lossy().to_string()),
         output_bilibili: None,
         output_xhs: None,
         is_hdr_source: false,
@@ -707,6 +749,15 @@ async fn run_audio_pipeline(
         network_time: None,
         tsa_source: None,
         tsa_request_nonce: None,
+        is_ai_generated: ai_flags.is_ai_generated,
+        ai_training_permission: Some(format!("{:?}", ai_flags.training_permission).to_lowercase()),
+        ai_generation_method: Some(format!("{:?}", ai_flags.generation_method).to_lowercase()),
+        human_modification_level: Some(format!("{:?}", ai_flags.human_modification_level).to_lowercase()),
+        authenticity_claim: Some(format!("{:?}", ai_flags.authenticity_claim).to_lowercase()),
+        custom_metadata: params.options.ai_content.as_ref().and_then(|ai| ai.custom_metadata.clone()),
+        output_douyin_hash: Some(output_hash),
+        output_bilibili_hash: None,
+        output_xhs_hash: None,
     };
 
     // Request trusted timestamp (non-blocking, best-effort)
@@ -1108,16 +1159,66 @@ fn get_output_specs(
     }
 }
 
-/// Compute the first 4 bytes of a file's SHA-256 hash for asset binding.
-fn compute_file_hash_prefix(file_path: &str) -> [u8; 4] {
+/// Compute the first 2 bytes of a file's SHA-256 hash for asset binding.
+fn compute_file_hash_prefix(file_path: &str) -> [u8; 2] {
     let hex_str = hash::sha256_of_file(file_path).unwrap_or_default();
-    let mut prefix = [0u8; 4];
+    let mut prefix = [0u8; 2];
     if let Ok(bytes) = hex::decode(&hex_str) {
-        if bytes.len() >= 4 {
-            prefix.copy_from_slice(&bytes[..4]);
+        if bytes.len() >= 2 {
+            prefix.copy_from_slice(&bytes[..2]);
         }
     }
     prefix
+}
+
+/// Parse AI content flags from frontend options.
+fn parse_ai_flags(ai_content: &Option<crate::commands::transcode::AIContentOptions>) -> watermark::AIContentFlags {
+    use watermark::{AIContentFlags, TrainingPermission, GenerationMethod, ModificationLevel, AuthenticityClaim};
+
+    let Some(ai) = ai_content else {
+        return AIContentFlags::default();
+    };
+
+    let training_permission = match ai.training_permission.as_str() {
+        "non_commercial" => TrainingPermission::NonCommercial,
+        "commercial" => TrainingPermission::Commercial,
+        "public_domain" => TrainingPermission::PublicDomain,
+        _ => TrainingPermission::Prohibited,
+    };
+
+    let generation_method = match ai.generation_method.as_str() {
+        "text_to_image" => GenerationMethod::TextToImage,
+        "image_to_image" => GenerationMethod::ImageToImage,
+        "text_to_video" => GenerationMethod::TextToVideo,
+        "video_to_video" => GenerationMethod::VideoToVideo,
+        "audio_generation" => GenerationMethod::AudioGeneration,
+        "multimodal" => GenerationMethod::Multimodal,
+        "other_ai" => GenerationMethod::OtherAI,
+        _ => GenerationMethod::HumanCreated,
+    };
+
+    let modification_level = match ai.modification_level.as_str() {
+        "light" => ModificationLevel::LightEdit,
+        "moderate" => ModificationLevel::ModerateEdit,
+        "heavy" => ModificationLevel::HeavyEdit,
+        _ => ModificationLevel::PureAI,
+    };
+
+    let authenticity_claim = match ai.authenticity_claim.as_str() {
+        "synthetic" => AuthenticityClaim::Synthetic,
+        "based_on_reality" => AuthenticityClaim::BasedOnReality,
+        "authentic" => AuthenticityClaim::AuthenticRecord,
+        _ => AuthenticityClaim::Unspecified,
+    };
+
+    AIContentFlags {
+        is_ai_generated: ai.is_ai_generated,
+        training_permission,
+        generation_method,
+        human_modification_level: modification_level,
+        authenticity_claim,
+        reserved: 0,
+    }
 }
 
 // ---------------------------------------------------------------------------
