@@ -1,6 +1,6 @@
 /// Current schema version. Increment when adding migrations.
 #[allow(dead_code)]
-pub const CURRENT_VERSION: u32 = 5;
+pub const CURRENT_VERSION: u32 = 6;
 
 /// Base schema (version 0 → 1): initial vault_records table.
 pub const VAULT_RECORDS_SCHEMA: &str = r#"
@@ -80,6 +80,57 @@ pub fn run_migrations(conn: &rusqlite::Connection) -> Result<(), rusqlite::Error
              ALTER TABLE vault_records ADD COLUMN output_xhs_hash TEXT;",
         )?;
         set_user_version(conn, 5)?;
+    }
+
+    if current < 6 {
+        conn.execute_batch(
+            "CREATE TABLE IF NOT EXISTS entitlement_state (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                status TEXT NOT NULL,
+                plan_name TEXT,
+                billing_source TEXT,
+                subscription_id TEXT,
+                trial_started_at TEXT,
+                trial_ends_at TEXT,
+                current_period_started_at TEXT,
+                current_period_ends_at TEXT,
+                grace_ends_at TEXT,
+                last_checked_at TEXT,
+                updated_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS usage_ledger (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                occurred_at TEXT NOT NULL,
+                feature_name TEXT NOT NULL,
+                media_type TEXT NOT NULL,
+                file_size_bucket TEXT NOT NULL,
+                quantity INTEGER NOT NULL DEFAULT 1,
+                event_type TEXT NOT NULL DEFAULT 'success',
+                entitlement_status TEXT NOT NULL,
+                billing_source TEXT,
+                plan_name TEXT,
+                subscription_id TEXT,
+                pipeline_id TEXT,
+                vault_record_id INTEGER,
+                app_version TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_usage_ledger_occurred_at ON usage_ledger(occurred_at);
+            CREATE INDEX IF NOT EXISTS idx_usage_ledger_feature ON usage_ledger(feature_name);
+            CREATE INDEX IF NOT EXISTS idx_usage_ledger_media_type ON usage_ledger(media_type);
+
+            INSERT OR IGNORE INTO entitlement_state (
+                id, status, plan_name, billing_source, subscription_id,
+                trial_started_at, trial_ends_at, current_period_started_at,
+                current_period_ends_at, grace_ends_at, last_checked_at, updated_at
+            ) VALUES (
+                1, 'free', NULL, NULL, NULL,
+                NULL, NULL, NULL,
+                NULL, NULL, NULL, CURRENT_TIMESTAMP
+            );",
+        )?;
+        set_user_version(conn, 6)?;
     }
 
     Ok(())

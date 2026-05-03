@@ -4,6 +4,7 @@ use rusqlite::Connection;
 
 use crate::db::queries;
 use crate::telemetry::{self, DataUsageInfo};
+use crate::telemetry::anonymous::{AnonymousFeedbackStatus, AnonymousFlushResult};
 
 fn remove_file_if_exists(path: &std::path::Path) -> Result<(), String> {
     match std::fs::remove_file(path) {
@@ -115,6 +116,9 @@ pub fn set_telemetry_enabled(app_handle: AppHandle, enabled: bool) {
         .app_data_dir()
         .expect("failed to resolve app data directory");
     telemetry::set_enabled(&app_data_dir, enabled);
+    if enabled && telemetry::is_network_enabled(&app_data_dir) && telemetry::is_acknowledged(&app_data_dir) {
+        let _ = telemetry::anonymous::flush_queue(&app_data_dir);
+    }
 }
 
 /// Check if the user has acknowledged the telemetry notice.
@@ -155,6 +159,9 @@ pub fn set_network_enabled(app_handle: AppHandle, enabled: bool) {
         .app_data_dir()
         .expect("failed to resolve app data directory");
     telemetry::set_network_enabled(&app_data_dir, enabled);
+    if enabled && telemetry::is_enabled() && telemetry::is_acknowledged(&app_data_dir) {
+        let _ = telemetry::anonymous::flush_queue(&app_data_dir);
+    }
 }
 
 /// Export crash log contents.
@@ -175,6 +182,29 @@ pub fn get_data_usage(app_handle: AppHandle) -> DataUsageInfo {
         .app_data_dir()
         .expect("failed to resolve app data directory");
     telemetry::calculate_data_usage(&app_data_dir)
+}
+
+/// Get anonymous feedback queue status.
+#[tauri::command]
+pub fn get_anonymous_feedback_status(app_handle: AppHandle) -> AnonymousFeedbackStatus {
+    let app_data_dir = app_handle
+        .path()
+        .app_data_dir()
+        .expect("failed to resolve app data directory");
+    telemetry::anonymous::get_status(&app_data_dir)
+}
+
+/// Flush queued anonymous feedback to the configured endpoint if available.
+#[tauri::command]
+pub async fn flush_anonymous_feedback_queue(app_handle: AppHandle) -> Result<AnonymousFlushResult, String> {
+    let app_data_dir = app_handle
+        .path()
+        .app_data_dir()
+        .expect("failed to resolve app data directory");
+    let result = tauri::async_runtime::spawn_blocking(move || telemetry::anonymous::flush_queue(&app_data_dir))
+        .await
+        .map_err(|e| format!("等待匿名反馈发送任务失败: {e}"))?;
+    Ok(result)
 }
 
 /// Clear all application data (FFmpeg cache, database, logs).

@@ -3,9 +3,11 @@ import { ref } from "vue";
 import DropZone from "../components/DropZone.vue";
 import CopyrightCard from "../components/CopyrightCard.vue";
 import ProBadge from "../components/ProBadge.vue";
+import { trackClick, trackFeatureEvent } from "../lib/analytics";
 import {
   buildVerificationSummary,
   getTsaVerificationLabel,
+  flushAnonymousFeedbackQueue,
   verifySuspect,
   type VerificationResult,
 } from "../lib/tauri-api";
@@ -17,6 +19,7 @@ const suspectName = ref("");
 const result = ref<VerificationResult | null>(null);
 const loading = ref(false);
 const errorMsg = ref("");
+const diagnosticMsg = ref("");
 
 async function handleFileSelect(path: string) {
   suspectPath.value = path;
@@ -30,15 +33,33 @@ async function handleVerify() {
   if (!suspectPath.value) return;
   loading.value = true;
   errorMsg.value = "";
+  diagnosticMsg.value = "";
   result.value = null;
+  trackFeatureEvent("verify_suspect", "start", { mediaType: "unknown", source: "dropzone" });
 
   try {
     result.value = await verifySuspect(suspectPath.value);
+    trackFeatureEvent("verify_suspect", "success", {
+      mediaType: "unknown",
+      source: result.value.matched ? "matched" : "unmatched",
+    });
   } catch (err: any) {
     errorMsg.value = err?.message ?? String(err);
+    trackFeatureEvent("verify_suspect", "failure", {
+      mediaType: "unknown",
+      errorCode: "verify_failed",
+      source: "command_error",
+    });
   } finally {
     loading.value = false;
   }
+}
+
+async function handleSendDiagnostic() {
+  trackClick("verify_send_diagnostic_click");
+  diagnosticMsg.value = "";
+  const response = await flushAnonymousFeedbackQueue();
+  diagnosticMsg.value = response.message;
 }
 
 async function handleCopySummary() {
@@ -52,6 +73,7 @@ function handleReset() {
   suspectName.value = "";
   result.value = null;
   errorMsg.value = "";
+  diagnosticMsg.value = "";
 }
 
 function getConfidenceClass(confidence: number) {
@@ -107,6 +129,10 @@ function getUnmatchedReason(confidence: number): string {
       <div v-if="errorMsg" class="verify-result verify-result--error">
         <strong>识别失败</strong>
         <p>{{ errorMsg }}</p>
+        <button class="ghost-button" type="button" @click="handleSendDiagnostic">
+          发送诊断
+        </button>
+        <p v-if="diagnosticMsg" class="verify-result__confidence">{{ diagnosticMsg }}</p>
       </div>
 
       <!-- Result display with confidence-based styling -->
@@ -168,8 +194,18 @@ function getUnmatchedReason(confidence: number): string {
         <button class="primary-button" type="button" @click="handleCopySummary">
           复制报告
         </button>
+        <button
+          v-if="!result.matched"
+          class="ghost-button"
+          type="button"
+          @click="handleSendDiagnostic"
+        >
+          发送诊断
+        </button>
         <ProBadge label="PDF 报告" :disabled="true" />
       </div>
+
+      <p v-if="diagnosticMsg && !errorMsg" class="verify-diagnostic">{{ diagnosticMsg }}</p>
 
       <div v-if="result" class="verify-disclaimer">
         <details>
@@ -180,3 +216,11 @@ function getUnmatchedReason(confidence: number): string {
     </section>
   </div>
 </template>
+
+<style scoped>
+.verify-diagnostic {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-muted, #8fb8ff);
+}
+</style>

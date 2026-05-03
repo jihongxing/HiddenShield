@@ -8,6 +8,7 @@ use crate::pipeline::ffmpeg;
 use crate::pipeline::progress;
 use crate::pipeline::scheduler::{self, PipelineParams};
 use crate::AppState;
+use crate::telemetry;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Hash)]
 #[serde(rename_all = "snake_case")]
@@ -33,9 +34,21 @@ pub enum EncodingMode {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct AIContentOptions {
+    pub is_ai_generated: bool,
+    pub training_permission: String,
+    pub generation_method: String,
+    pub modification_level: String,
+    pub authenticity_claim: String,
+    pub custom_metadata: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TranscodeOptions {
     pub aspect_strategy: AspectStrategy,
     pub encoding_mode: EncodingMode,
+    pub ai_content: Option<AIContentOptions>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -159,6 +172,10 @@ pub async fn start_pipeline(
         return Err("at least one platform must be selected".to_string());
     }
 
+    let input_size_bytes = std::fs::metadata(&input_path)
+        .map(|meta| meta.len())
+        .unwrap_or(0);
+
     let pipeline_id = format!(
         "pipe-{}",
         SystemTime::now()
@@ -229,6 +246,31 @@ pub async fn start_pipeline(
             // Don't emit failure for user-initiated cancellation
             if !matches!(e, crate::pipeline::error::PipelineError::Cancelled) {
                 log::error!("Pipeline {pipeline_id_clone} failed: {e}");
+                if let Ok(app_data_dir) = app_handle_clone.path().app_data_dir() {
+                    telemetry::anonymous::record_failure_event(
+                        &app_data_dir,
+                        if is_media_only {
+                            if file_type == scheduler::FileType::Image {
+                                "watermark_image"
+                            } else {
+                                "watermark_audio"
+                            }
+                        } else {
+                            "watermark_video"
+                        },
+                        if file_type == scheduler::FileType::Image {
+                            "image"
+                        } else if file_type == scheduler::FileType::Audio {
+                            "audio"
+                        } else {
+                            "video"
+                        },
+                        input_size_bytes,
+                        None,
+                        e.to_string(),
+                        Some(pipeline_id_clone.clone()),
+                    );
+                }
                 let _ = app_handle_clone.emit(
                     "pipeline-progress",
                     PipelineProgressPayload {

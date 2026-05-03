@@ -8,21 +8,22 @@ use crate::commands::transcode::{
     EncodingMode, PipelineProgressPayload, Platform, TranscodeOptions,
 };
 use crate::commands::vault::VaultRecord;
-use crate::db::queries;
+use crate::db::billing::{self, UsageLedgerEntry};
 use crate::encoder::hw_detect::DetectedHardware;
 use crate::encoder::presets;
 use crate::encoder::tonemap;
 use crate::identity;
 use crate::pipeline::error::PipelineError;
 use crate::pipeline::ffmpeg::{self, FfmpegPaths};
-use crate::pipeline::image_watermark;
 use crate::pipeline::progress::PlatformPercents;
 use crate::pipeline::system_guard;
 use crate::pipeline::watermark::{self, WatermarkPayload};
+use crate::telemetry;
 use crate::tsa;
 use crate::utils::fs as ufs;
 use crate::utils::hash;
 use crate::AppState;
+use watermark_core::{EmbedOptions, ImageOutputFormat, MediaInput, MediaOutput, WatermarkService};
 
 // ---------------------------------------------------------------------------
 // Pipeline Complete Payload
@@ -115,30 +116,63 @@ pub async fn run_pipeline(
     result
 }
 
-/// Insert a vault record on a blocking thread to avoid stalling the Tokio runtime.
+/// Persist a successful pipeline result and its usage ledger entry on a blocking thread.
 /// Uses `spawn_blocking` to isolate potential I/O latency from async tasks.
-async fn insert_record_async(
+async fn persist_record_and_usage_async(
     app_handle: &AppHandle,
     record: VaultRecord,
-) -> Result<(), PipelineError> {
+    usage_entry: UsageLedgerEntry,
+) -> Result<VaultRecord, PipelineError> {
     let handle = app_handle.clone();
-    tokio::task::spawn_blocking(move || -> Result<(), PipelineError> {
+    tokio::task::spawn_blocking(move || -> Result<VaultRecord, PipelineError> {
         let state = handle.state::<AppState>();
-        let conn = match state.db.lock() {
+        let mut conn = match state.db.lock() {
             Ok(c) => c,
             Err(e) => {
                 return Err(PipelineError::DatabaseError(format!("DB lock failed: {e}")));
             }
         };
-        if let Err(e) = queries::insert_record(&conn, &record) {
-            return Err(PipelineError::DatabaseError(format!(
-                "Failed to insert vault record: {e}"
-            )));
-        }
-        Ok(())
+        let record_id = billing::insert_record_and_usage(&mut conn, &record, usage_entry)
+            .map_err(|e| PipelineError::DatabaseError(format!(
+                "Failed to persist record and usage ledger: {e}"
+            )))?;
+        let mut record = record;
+        record.id = record_id as u32;
+        Ok(record)
     })
     .await
     .map_err(|e| PipelineError::DatabaseError(format!("join blocking DB write task: {e}")))?
+}
+
+fn build_usage_entry(
+    feature_name: &str,
+    media_type: &str,
+    file_size_bytes: u64,
+    entitlement_state: &billing::EntitlementState,
+    pipeline_id: &str,
+) -> UsageLedgerEntry {
+    UsageLedgerEntry::success(
+        feature_name,
+        media_type,
+        file_size_bytes,
+        entitlement_state,
+        Some(pipeline_id.to_string()),
+    )
+}
+
+async fn load_entitlement_state(app_handle: &AppHandle) -> Result<billing::EntitlementState, PipelineError> {
+    let handle = app_handle.clone();
+    tokio::task::spawn_blocking(move || -> Result<billing::EntitlementState, PipelineError> {
+        let state = handle.state::<AppState>();
+        let conn = state
+            .db
+            .lock()
+            .map_err(|e| PipelineError::DatabaseError(format!("db lock failed: {e}")))?;
+        billing::get_entitlement_state(&conn)
+            .map_err(|e| PipelineError::DatabaseError(format!("Failed to load entitlement: {e}")))
+    })
+    .await
+    .map_err(|e| PipelineError::DatabaseError(format!("join blocking DB read task: {e}")))?
 }
 
 // ---------------------------------------------------------------------------
@@ -231,7 +265,22 @@ async fn run_video_pipeline(
     let payload =
         WatermarkPayload::new(id_bytes.user_seed, timestamp, id_bytes.device_id, file_hash, ai_flags);
 
-    embed_watermark_wav(&temp_wav, &watermarked_wav, &payload)?;
+    let wav_bytes = std::fs::read(&temp_wav)
+        .map_err(|e| PipelineError::WatermarkEmbedFailed(format!("read wav bytes: {e}")))?;
+    let embedded = WatermarkService::embed(
+        MediaInput::AudioWavBytes { bytes: wav_bytes },
+        &payload,
+        EmbedOptions::default(),
+    )
+    .map_err(|e| PipelineError::WatermarkEmbedFailed(e.to_string()))?;
+
+    let MediaOutput::AudioWavBytes { bytes } = embedded else {
+        return Err(PipelineError::WatermarkEmbedFailed(
+            "unexpected non-audio output from watermark service".into(),
+        ));
+    };
+    std::fs::write(&watermarked_wav, bytes)
+        .map_err(|e| PipelineError::WatermarkEmbedFailed(format!("write wav bytes: {e}")))?;
 
     emit_progress(&app_handle, &params.pipeline_id, "版权保护已激活", 20);
     check_cancelled(&app_handle, &params.pipeline_id)?;
@@ -436,7 +485,26 @@ async fn run_video_pipeline(
     record.tsa_source = attestation.tsa_source;
     record.tsa_request_nonce = attestation.tsa_request_nonce;
 
-    insert_record_async(&app_handle, record.clone()).await?;
+    let entitlement_state = load_entitlement_state(&app_handle).await?;
+    let usage_entry = build_usage_entry(
+        "watermark_video",
+        "video",
+        file_size,
+        &entitlement_state,
+        &params.pipeline_id,
+    );
+    record = persist_record_and_usage_async(&app_handle, record, usage_entry).await?;
+
+    if let Ok(app_data_dir) = app_handle.path().app_data_dir() {
+        telemetry::anonymous::record_success_event(
+            &app_data_dir,
+            "watermark_video",
+            "video",
+            file_size,
+            Some(process_time_ms),
+            Some(params.pipeline_id.clone()),
+        );
+    }
 
     // 9. Cleanup temp files
     let _ = ufs::cleanup_temp_dir(&params.pipeline_id);
@@ -503,6 +571,9 @@ async fn run_image_pipeline(
 ) -> Result<(), PipelineError> {
     let start = Instant::now();
     let input_str = params.input_path.to_string_lossy().to_string();
+    let input_size_bytes = std::fs::metadata(&params.input_path)
+        .map(|m| m.len())
+        .unwrap_or(0);
 
     check_cancelled(&app_handle, &params.pipeline_id)?;
     emit_progress(&app_handle, &params.pipeline_id, "图片水印嵌入中", 10);
@@ -555,7 +626,26 @@ async fn run_image_pipeline(
         .join(format!("{stem}_watermarked.{out_ext}"));
 
     check_cancelled(&app_handle, &params.pipeline_id)?;
-    image_watermark::embed_image_watermark(&params.input_path, &payload, &output_path)?;
+
+    let input_bytes = std::fs::read(&params.input_path)
+        .map_err(|e| PipelineError::WatermarkEmbedFailed(format!("read image bytes: {e}")))?;
+    let image_format = image_output_format_for_ext(out_ext);
+    let embedded = WatermarkService::embed(
+        MediaInput::ImageBytes { bytes: input_bytes },
+        &payload,
+        EmbedOptions {
+            image_output_format: image_format,
+        },
+    )
+    .map_err(|e| PipelineError::WatermarkEmbedFailed(e.to_string()))?;
+
+    let MediaOutput::ImageBytes { bytes, .. } = embedded else {
+        return Err(PipelineError::WatermarkEmbedFailed(
+            "unexpected non-image output from watermark service".into(),
+        ));
+    };
+    std::fs::write(&output_path, bytes)
+        .map_err(|e| PipelineError::WatermarkEmbedFailed(format!("write image bytes: {e}")))?;
 
     check_cancelled(&app_handle, &params.pipeline_id)?;
     emit_progress(&app_handle, &params.pipeline_id, "水印嵌入完成", 80);
@@ -623,7 +713,26 @@ async fn run_image_pipeline(
     record.tsa_request_nonce = attestation.tsa_request_nonce;
 
     check_cancelled(&app_handle, &params.pipeline_id)?;
-    insert_record_async(&app_handle, record.clone()).await?;
+    let entitlement_state = load_entitlement_state(&app_handle).await?;
+    let usage_entry = build_usage_entry(
+        "watermark_image",
+        "image",
+        input_size_bytes,
+        &entitlement_state,
+        &params.pipeline_id,
+    );
+    record = persist_record_and_usage_async(&app_handle, record, usage_entry).await?;
+
+    if let Ok(app_data_dir) = app_handle.path().app_data_dir() {
+        telemetry::anonymous::record_success_event(
+            &app_data_dir,
+            "watermark_image",
+            "image",
+            input_size_bytes,
+            Some(process_time_ms),
+            Some(params.pipeline_id.clone()),
+        );
+    }
 
     check_cancelled(&app_handle, &params.pipeline_id)?;
 
@@ -664,6 +773,9 @@ async fn run_audio_pipeline(
         .ok_or(PipelineError::FfmpegNotFound)?;
     let start = Instant::now();
     let input_str = params.input_path.to_string_lossy().to_string();
+    let input_size_bytes = std::fs::metadata(&params.input_path)
+        .map(|m| m.len())
+        .unwrap_or(0);
 
     check_cancelled(&app_handle, &params.pipeline_id)?;
     emit_progress(&app_handle, &params.pipeline_id, "音频水印嵌入中", 10);
@@ -714,7 +826,23 @@ async fn run_audio_pipeline(
         .join(format!("{stem}_watermarked.wav"));
 
     check_cancelled(&app_handle, &params.pipeline_id)?;
-    embed_watermark_wav(&temp_wav, &output_path, &payload)?;
+
+    let wav_bytes = std::fs::read(&temp_wav)
+        .map_err(|e| PipelineError::WatermarkEmbedFailed(format!("read wav bytes: {e}")))?;
+    let embedded = WatermarkService::embed(
+        MediaInput::AudioWavBytes { bytes: wav_bytes },
+        &payload,
+        EmbedOptions::default(),
+    )
+    .map_err(|e| PipelineError::WatermarkEmbedFailed(e.to_string()))?;
+
+    let MediaOutput::AudioWavBytes { bytes } = embedded else {
+        return Err(PipelineError::WatermarkEmbedFailed(
+            "unexpected non-audio output from watermark service".into(),
+        ));
+    };
+    std::fs::write(&output_path, bytes)
+        .map_err(|e| PipelineError::WatermarkEmbedFailed(format!("write wav bytes: {e}")))?;
 
     check_cancelled(&app_handle, &params.pipeline_id)?;
     emit_progress(&app_handle, &params.pipeline_id, "水印嵌入完成", 80);
@@ -780,7 +908,26 @@ async fn run_audio_pipeline(
     record.tsa_request_nonce = attestation.tsa_request_nonce;
 
     check_cancelled(&app_handle, &params.pipeline_id)?;
-    insert_record_async(&app_handle, record.clone()).await?;
+    let entitlement_state = load_entitlement_state(&app_handle).await?;
+    let usage_entry = build_usage_entry(
+        "watermark_audio",
+        "audio",
+        input_size_bytes,
+        &entitlement_state,
+        &params.pipeline_id,
+    );
+    record = persist_record_and_usage_async(&app_handle, record, usage_entry).await?;
+
+    if let Ok(app_data_dir) = app_handle.path().app_data_dir() {
+        telemetry::anonymous::record_success_event(
+            &app_data_dir,
+            "watermark_audio",
+            "audio",
+            input_size_bytes,
+            Some(process_time_ms),
+            Some(params.pipeline_id.clone()),
+        );
+    }
 
     check_cancelled(&app_handle, &params.pipeline_id)?;
 
@@ -850,63 +997,15 @@ async fn extract_audio(
     Ok(())
 }
 
-/// Read a WAV file, embed watermark into PCM samples, write output WAV.
-/// If audio is too short for watermark embedding (< 4096 samples), the file
-/// is copied as-is without watermark to avoid a panic/crash.
-fn embed_watermark_wav(
-    input_wav: &Path,
-    output_wav: &Path,
-    payload: &WatermarkPayload,
-) -> Result<(), PipelineError> {
-    let mut reader = hound::WavReader::open(input_wav)
-        .map_err(|e| PipelineError::WatermarkEmbedFailed(format!("open WAV: {e}")))?;
-    let spec = reader.spec();
-
-    // Read all samples as f32
-    let mut samples: Vec<f32> = if spec.sample_format == hound::SampleFormat::Float {
-        reader.samples::<f32>().filter_map(|s| s.ok()).collect()
-    } else {
-        let bits = spec.bits_per_sample;
-        let max_val = (1i32 << (bits - 1)) as f32;
-        reader
-            .samples::<i32>()
-            .filter_map(|s| s.ok())
-            .map(|s| s as f32 / max_val)
-            .collect()
-    };
-
-    // Guard: skip watermark if audio is too short (< FFT window size)
-    if samples.len() >= 4096 {
-        watermark::embed_watermark(&mut samples, payload)?;
-    } else {
-        log::warn!(
-            "Audio too short ({} samples < 4096), skipping watermark embedding",
-            samples.len()
-        );
+fn image_output_format_for_ext(ext: &str) -> ImageOutputFormat {
+    match ext {
+        "jpg" | "jpeg" => ImageOutputFormat::Png,
+        "png" => ImageOutputFormat::Png,
+        "webp" => ImageOutputFormat::WebP,
+        "bmp" => ImageOutputFormat::Bmp,
+        "tif" | "tiff" => ImageOutputFormat::Tiff,
+        _ => ImageOutputFormat::Png,
     }
-
-    // Write output WAV as 16-bit PCM
-    let out_spec = hound::WavSpec {
-        channels: spec.channels,
-        sample_rate: spec.sample_rate,
-        bits_per_sample: 16,
-        sample_format: hound::SampleFormat::Int,
-    };
-    let mut writer = hound::WavWriter::create(output_wav, out_spec)
-        .map_err(|e| PipelineError::WatermarkEmbedFailed(format!("create WAV: {e}")))?;
-
-    for &sample in &samples {
-        let clamped = sample.clamp(-1.0, 1.0);
-        let int_val = (clamped * 32767.0) as i16;
-        writer
-            .write_sample(int_val)
-            .map_err(|e| PipelineError::WatermarkEmbedFailed(format!("write sample: {e}")))?;
-    }
-    writer
-        .finalize()
-        .map_err(|e| PipelineError::WatermarkEmbedFailed(format!("finalize WAV: {e}")))?;
-
-    Ok(())
 }
 
 /// Run a single-platform FFmpeg transcode with progress parsing.

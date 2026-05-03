@@ -7,8 +7,8 @@ defineProps<{
 }>();
 
 function handleClick() {
-  trackClick("upgrade_pro_click");
-  alert("Pro 版即将上线，敬请期待！🙌");
+  trackClick("upgrade_subscription_click");
+  alert("订阅权益即将上线，敬请期待！🙌");
 }
 </script>
 
@@ -22,6 +22,6 @@ function handleClick() {
   >
     <span class="pro-badge__icon">⚡</span>
     <span class="pro-badge__label">{{ label }}</span>
-    <span class="pro-badge__tag">Pro</span>
+    <span class="pro-badge__tag">订阅</span>
   </button>
 </template>

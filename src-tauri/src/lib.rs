@@ -113,6 +113,19 @@ impl AppState {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .on_window_event(|window, event| {
+            if matches!(event, tauri::WindowEvent::CloseRequested { .. }) {
+                let app_handle = window.app_handle();
+                if let Ok(app_data_dir) = app_handle.path().app_data_dir() {
+                    if telemetry::is_enabled()
+                        && telemetry::is_acknowledged(&app_data_dir)
+                        && telemetry::is_network_enabled(&app_data_dir)
+                    {
+                        let _ = telemetry::anonymous::flush_queue(&app_data_dir);
+                    }
+                }
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             commands::identity::get_identity_status,
             commands::identity::setup_identity,
@@ -126,6 +139,10 @@ pub fn run() {
             commands::vault::list_vault_records,
             commands::vault::check_files_exist,
             commands::verify::verify_suspect,
+            commands::billing::get_entitlement_state,
+            commands::billing::set_entitlement_state,
+            commands::billing::get_usage_ledger_summary,
+            commands::billing::record_usage_event,
             commands::telemetry::get_telemetry_enabled,
             commands::telemetry::set_telemetry_enabled,
             commands::telemetry::get_telemetry_acknowledged,
@@ -134,6 +151,8 @@ pub fn run() {
             commands::telemetry::set_network_enabled,
             commands::telemetry::export_crash_log,
             commands::telemetry::get_data_usage,
+            commands::telemetry::get_anonymous_feedback_status,
+            commands::telemetry::flush_anonymous_feedback_queue,
             commands::telemetry::clear_all_data,
             commands::telemetry::clear_cache_only
         ])

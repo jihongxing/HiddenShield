@@ -1,4 +1,4 @@
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, Transaction};
 
 use crate::commands::vault::VaultRecord;
 use crate::db::schema;
@@ -9,6 +9,7 @@ pub fn init_db(conn: &Connection) -> Result<(), rusqlite::Error> {
 }
 
 /// Insert a single VaultRecord into the database.
+#[allow(dead_code)]
 pub fn insert_record(conn: &Connection, record: &VaultRecord) -> Result<(), rusqlite::Error> {
     conn.execute(
         "INSERT INTO vault_records (
@@ -50,6 +51,53 @@ pub fn insert_record(conn: &Connection, record: &VaultRecord) -> Result<(), rusq
         ],
     )?;
     Ok(())
+}
+
+/// Insert a VaultRecord inside an existing transaction and return the new row id.
+pub fn insert_record_tx(
+    tx: &Transaction<'_>,
+    record: &VaultRecord,
+) -> Result<i64, rusqlite::Error> {
+    tx.execute(
+        "INSERT INTO vault_records (
+      original_hash, file_name, created_at, duration_secs, resolution,
+      watermark_uid, thumbnail_path, output_douyin, output_bilibili,
+      output_xhs, is_hdr_source, hw_encoder_used, process_time_ms,
+      tsa_token_path, network_time, tsa_source, tsa_request_nonce,
+      is_ai_generated, ai_training_permission, ai_generation_method,
+      human_modification_level, authenticity_claim, custom_metadata,
+      output_douyin_hash, output_bilibili_hash, output_xhs_hash
+    ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26)",
+        params![
+            record.original_hash,
+            record.file_name,
+            record.created_at,
+            record.duration_secs,
+            record.resolution,
+            record.watermark_uid,
+            record.thumbnail_path,
+            record.output_douyin,
+            record.output_bilibili,
+            record.output_xhs,
+            record.is_hdr_source as i32,
+            record.hw_encoder_used,
+            record.process_time_ms.map(|v| v as i64),
+            record.tsa_token_path,
+            record.network_time,
+            record.tsa_source,
+            record.tsa_request_nonce,
+            record.is_ai_generated as i32,
+            record.ai_training_permission,
+            record.ai_generation_method,
+            record.human_modification_level,
+            record.authenticity_claim,
+            record.custom_metadata,
+            record.output_douyin_hash,
+            record.output_bilibili_hash,
+            record.output_xhs_hash,
+        ],
+    )?;
+    Ok(tx.last_insert_rowid())
 }
 
 /// Query all vault records ordered by created_at descending.
@@ -270,6 +318,9 @@ mod tests {
             output_douyin: None,
             output_bilibili: None,
             output_xhs: None,
+            output_douyin_hash: None,
+            output_bilibili_hash: None,
+            output_xhs_hash: None,
             is_hdr_source: false,
             hw_encoder_used: None,
             process_time_ms: None,

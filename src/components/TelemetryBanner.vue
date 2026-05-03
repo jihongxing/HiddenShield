@@ -36,7 +36,7 @@ function closeDoc() {
 <template>
   <div class="privacy-overlay" role="dialog" aria-modal="true" aria-labelledby="privacy-title">
     <div class="privacy-dialog">
-      <h2 id="privacy-title">使用前确认</h2>
+      <h2 id="privacy-title">使用前说明</h2>
       <div class="privacy-dialog__body">
         <ul>
           <li v-for="item in consentHighlights" :key="item">{{ item }}</li>

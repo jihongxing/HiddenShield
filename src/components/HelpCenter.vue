@@ -35,8 +35,16 @@ const faqs = [
     a: "水印 UID 由「创作者标识 + 设备指纹」生成。换电脑后设备指纹变化，UID 会不同，但只要输入相同的创作者标识，仍可关联到同一创作者。",
   },
   {
-    q: "免费版和 Pro 版有什么区别？",
-    a: "免费版每次仅支持输出 1 个平台。Pro 版支持多平台并行、PDF 报告导出、批量处理、区块链存证等高级功能（即将上线）。",
+    q: "免费版和订阅版有什么区别？",
+    a: "当前免费版先覆盖核心处理能力。后续订阅版会以无限次使用、多平台并行、PDF 报告导出和批量处理为主，正式上线时会在产品内单独说明。",
+  },
+  {
+    q: "遇到问题怎么发送诊断？",
+    a: "打开“设置”，点击“发送诊断”即可上传当前匿名队列。它只包含功能名、错误码、耗时、文件大小桶和脱敏摘要，不会带上原始素材。",
+  },
+  {
+    q: "订阅入口在哪里？",
+    a: "右上角“订阅方案”或设置页里的“查看订阅方案”都能打开同一入口。目前先展示计划和权益说明，正式支付会后续开放。",
   },
 ];
 
@@ -59,7 +67,7 @@ function toggleFaq(index: number) {
         <span>🎵 QIM 频域音频盲水印</span>
         <span>🔐 RFC 3161 可信时间戳</span>
         <span>📋 一键生成存证报告</span>
-        <span>🔒 全本地处理，零上传</span>
+        <span>🔒 本地优先，按需联网</span>
       </div>
     </section>
 
@@ -123,7 +131,7 @@ function toggleFaq(index: number) {
         </div>
         <div class="help__contact-item">
           <span>📧 邮箱：jhx800@163.com</span>
-          <a class="help__contact-btn" href="mailto:jhx800@163.com?subject=隐盾用户反馈">发邮件</a>
+          <a class="help__contact-btn" href="mailto:jhx800@163.com?subject=隐盾问题反馈">发邮件</a>
         </div>
       </div>
       <p v-if="copyMsg" class="help__toast">{{ copyMsg }}</p>

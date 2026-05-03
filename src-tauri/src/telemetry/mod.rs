@@ -3,6 +3,8 @@ use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
 use serde::{Deserialize, Serialize};
 
+pub mod anonymous;
+
 static TELEMETRY_ENABLED: AtomicBool = AtomicBool::new(true);
 
 /// Daily report counter — resets each calendar day. Max 5 reports per device per day.
@@ -45,10 +47,21 @@ pub struct DataUsageInfo {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct TelemetryConfig {
+#[serde(default)]
+pub(crate) struct TelemetryConfig {
     enabled: bool,
     acknowledged: bool,
     network_enabled: bool,
+    install_id: Option<String>,
+    session_id: Option<String>,
+    session_started_at: Option<String>,
+    last_feedback_flush_at: Option<String>,
+    last_feedback_flush_error: Option<String>,
+    feedback_failure_count: u32,
+    feedback_next_retry_at: Option<String>,
+    feedback_last_attempt_at: Option<String>,
+    feedback_last_success_at: Option<String>,
+    recent_event_signatures: Vec<RecentEventSignature>,
 }
 
 impl Default for TelemetryConfig {
@@ -57,8 +70,24 @@ impl Default for TelemetryConfig {
             enabled: true,
             acknowledged: false,
             network_enabled: true,
+            install_id: None,
+            session_id: None,
+            session_started_at: None,
+            last_feedback_flush_at: None,
+            last_feedback_flush_error: None,
+            feedback_failure_count: 0,
+            feedback_next_retry_at: None,
+            feedback_last_attempt_at: None,
+            feedback_last_success_at: None,
+            recent_event_signatures: Vec::new(),
         }
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct RecentEventSignature {
+    signature: String,
+    recorded_at: String,
 }
 
 // ---------------------------------------------------------------------------
@@ -85,11 +114,11 @@ pub fn anonymous_device_id() -> String {
 // Config persistence
 // ---------------------------------------------------------------------------
 
-fn config_path(app_data_dir: &Path) -> PathBuf {
+pub(crate) fn config_path(app_data_dir: &Path) -> PathBuf {
     app_data_dir.join("telemetry_config.json")
 }
 
-fn load_config(app_data_dir: &Path) -> TelemetryConfig {
+pub(crate) fn load_config(app_data_dir: &Path) -> TelemetryConfig {
     let path = config_path(app_data_dir);
     std::fs::read_to_string(&path)
         .ok()
@@ -97,21 +126,193 @@ fn load_config(app_data_dir: &Path) -> TelemetryConfig {
         .unwrap_or_default()
 }
 
-fn save_config(app_data_dir: &Path, config: &TelemetryConfig) {
+pub(crate) fn save_config(app_data_dir: &Path, config: &TelemetryConfig) {
     let path = config_path(app_data_dir);
     if let Ok(json) = serde_json::to_string_pretty(config) {
         let _ = std::fs::write(path, json);
     }
 }
 
+fn generate_anonymous_id(prefix: &str, salt: &str) -> String {
+    use sha2::{Digest, Sha256};
+
+    let now = chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default();
+    let pid = std::process::id();
+    let seed = format!("{prefix}:{salt}:{now}:{pid}");
+    let hash = Sha256::digest(seed.as_bytes());
+    format!("{prefix}-{}", &format!("{:x}", hash)[..16])
+}
+
+pub(crate) fn ensure_install_id(app_data_dir: &Path) -> String {
+    let mut config = load_config(app_data_dir);
+    if let Some(id) = config.install_id.clone() {
+        return id;
+    }
+    let id = generate_anonymous_id("inst", &anonymous_device_id());
+    config.install_id = Some(id.clone());
+    save_config(app_data_dir, &config);
+    id
+}
+
+pub(crate) fn rotate_session_id(app_data_dir: &Path) -> String {
+    let mut config = load_config(app_data_dir);
+    let install_id = config
+        .install_id
+        .clone()
+        .unwrap_or_else(|| ensure_install_id(app_data_dir));
+    let session_id = generate_anonymous_id("sess", &install_id);
+    config.session_id = Some(session_id.clone());
+    config.session_started_at = Some(chrono::Utc::now().to_rfc3339());
+    save_config(app_data_dir, &config);
+    session_id
+}
+
+pub fn anonymous_install_id(app_data_dir: &Path) -> String {
+    ensure_install_id(app_data_dir)
+}
+
+pub fn anonymous_session_id(app_data_dir: &Path) -> String {
+    let config = load_config(app_data_dir);
+    if let Some(id) = config.session_id {
+        id
+    } else {
+        rotate_session_id(app_data_dir)
+    }
+}
+
+pub(crate) fn record_feedback_flush(
+    app_data_dir: &Path,
+    last_flush_at: Option<String>,
+    last_flush_error: Option<String>,
+) {
+    let mut config = load_config(app_data_dir);
+    if let Some(last_flush_at) = last_flush_at {
+        config.last_feedback_flush_at = Some(last_flush_at);
+        config.last_feedback_flush_error = None;
+    }
+    if let Some(last_flush_error) = last_flush_error {
+        config.last_feedback_flush_error = Some(last_flush_error);
+    }
+    save_config(app_data_dir, &config);
+}
+
+pub(crate) fn record_feedback_attempt(app_data_dir: &Path, attempt_at: String) {
+    let mut config = load_config(app_data_dir);
+    config.feedback_last_attempt_at = Some(attempt_at);
+    save_config(app_data_dir, &config);
+}
+
+pub(crate) fn record_feedback_success(app_data_dir: &Path, success_at: String) {
+    let mut config = load_config(app_data_dir);
+    config.feedback_failure_count = 0;
+    config.feedback_next_retry_at = None;
+    config.feedback_last_success_at = Some(success_at.clone());
+    config.feedback_last_attempt_at = Some(success_at);
+    config.last_feedback_flush_error = None;
+    save_config(app_data_dir, &config);
+}
+
+pub(crate) fn record_feedback_failure(app_data_dir: &Path, failure_at: String, error: String) {
+    let mut config = load_config(app_data_dir);
+    config.feedback_failure_count = config.feedback_failure_count.saturating_add(1);
+    config.feedback_last_attempt_at = Some(failure_at);
+    config.last_feedback_flush_error = Some(error);
+    config.feedback_next_retry_at = Some(
+        (chrono::Utc::now() + feedback_backoff_delay(config.feedback_failure_count)).to_rfc3339(),
+    );
+    save_config(app_data_dir, &config);
+}
+
+pub(crate) fn feedback_backoff_due(app_data_dir: &Path) -> bool {
+    let config = load_config(app_data_dir);
+    let Some(next_retry_at) = config.feedback_next_retry_at else {
+        return true;
+    };
+    match chrono::DateTime::parse_from_rfc3339(&next_retry_at) {
+        Ok(ts) => chrono::Utc::now() >= ts.with_timezone(&chrono::Utc),
+        Err(_) => true,
+    }
+}
+
+pub(crate) fn feedback_failure_count(app_data_dir: &Path) -> u32 {
+    load_config(app_data_dir).feedback_failure_count
+}
+
+pub(crate) fn feedback_last_success_at(app_data_dir: &Path) -> Option<String> {
+    load_config(app_data_dir).feedback_last_success_at
+}
+
+pub(crate) fn feedback_next_retry_at(app_data_dir: &Path) -> Option<String> {
+    load_config(app_data_dir).feedback_next_retry_at
+}
+
+pub(crate) fn feedback_last_attempt_at(app_data_dir: &Path) -> Option<String> {
+    load_config(app_data_dir).feedback_last_attempt_at
+}
+
+fn feedback_backoff_delay(failure_count: u32) -> chrono::Duration {
+    let steps = failure_count.saturating_sub(1).min(5);
+    let minutes = 1u64 << steps;
+    chrono::Duration::seconds((minutes.min(30)) as i64 * 60)
+}
+
+pub(crate) fn dedupe_recent_event_signature(
+    app_data_dir: &Path,
+    signature: impl Into<String>,
+    dedupe_window: chrono::Duration,
+) -> bool {
+    let signature = signature.into();
+    let mut config = load_config(app_data_dir);
+    let now = chrono::Utc::now();
+    let window_start = now - chrono::Duration::hours(24);
+
+    config.recent_event_signatures.retain(|entry| {
+        chrono::DateTime::parse_from_rfc3339(&entry.recorded_at)
+            .map(|ts| ts.with_timezone(&chrono::Utc) >= window_start)
+            .unwrap_or(false)
+    });
+
+    if config.recent_event_signatures.iter().any(|entry| {
+        entry.signature == signature
+            && chrono::DateTime::parse_from_rfc3339(&entry.recorded_at)
+                .map(|ts| now - ts.with_timezone(&chrono::Utc) < dedupe_window)
+                .unwrap_or(false)
+    }) {
+        save_config(app_data_dir, &config);
+        return false;
+    }
+
+    config.recent_event_signatures.push(RecentEventSignature {
+        signature,
+        recorded_at: now.to_rfc3339(),
+    });
+    if config.recent_event_signatures.len() > 64 {
+        let drain = config.recent_event_signatures.len() - 64;
+        config.recent_event_signatures.drain(0..drain);
+    }
+    save_config(app_data_dir, &config);
+    true
+}
+
 /// Initialize telemetry state from persisted config.
 pub fn init(app_data_dir: &Path) {
-    let config = load_config(app_data_dir);
+    let mut config = load_config(app_data_dir);
+    if config.install_id.is_none() {
+        config.install_id = Some(generate_anonymous_id("inst", &anonymous_device_id()));
+    }
+    config.session_id = Some(generate_anonymous_id(
+        "sess",
+        config.install_id.as_deref().unwrap_or("unknown"),
+    ));
+    config.session_started_at = Some(chrono::Utc::now().to_rfc3339());
+    save_config(app_data_dir, &config);
     TELEMETRY_ENABLED.store(config.enabled, Ordering::SeqCst);
 
     // Ensure logs directory exists
     let logs_dir = app_data_dir.join("logs");
     let _ = std::fs::create_dir_all(logs_dir);
+
+    anonymous::start_background_flusher(app_data_dir.to_path_buf());
 }
 
 pub fn is_enabled() -> bool {
@@ -216,7 +417,9 @@ pub fn report_crash(app_data_dir: &Path, report: &CrashReport) {
     // Write to local log
     let entry = format!(
         "PANIC: {} | device={} | version={}",
-        report.panic_message, report.anonymous_device_id, report.app_version
+        sanitize_paths(&report.panic_message),
+        report.anonymous_device_id,
+        report.app_version
     );
     write_crash_log(app_data_dir, &entry);
 
@@ -224,6 +427,17 @@ pub fn report_crash(app_data_dir: &Path, report: &CrashReport) {
     // For MVP, local logging is sufficient. The endpoint URL will be
     // configured via environment variable HIDDENSHIELD_TELEMETRY_URL.
     log::info!("Crash report recorded locally (remote endpoint not yet configured)");
+
+    anonymous::record_crash_event(
+        app_data_dir,
+        "panic",
+        "system",
+        0,
+        None,
+        report.panic_message.clone(),
+        report.backtrace.clone(),
+        None,
+    );
 }
 
 /// Report an FFmpeg crash. Non-blocking. Rate-limited.
@@ -240,6 +454,20 @@ pub fn report_ffmpeg_crash(app_data_dir: &Path, report: &FfmpegCrashReport) {
     write_crash_log(app_data_dir, &entry);
 
     log::info!("FFmpeg crash report recorded locally");
+
+    anonymous::record_crash_event(
+        app_data_dir,
+        "ffmpeg_crash",
+        "video",
+        0,
+        None,
+        format!(
+            "exit_code={} encoder={} format={}",
+            report.exit_code, report.encoder, report.input_format
+        ),
+        report.stderr_tail.clone(),
+        None,
+    );
 }
 
 /// Check and increment the daily rate limit. Returns true if under limit.
@@ -353,7 +581,9 @@ pub fn install_panic_hook(app_data_dir: PathBuf) {
         // Always write to local log
         let entry = format!(
             "PANIC: {} at {}\nBacktrace:\n{}",
-            message, location, report.backtrace
+            sanitize_paths(&message),
+            sanitize_paths(&location),
+            report.backtrace
         );
         write_crash_log(&app_data_dir, &entry);
 
@@ -372,4 +602,41 @@ fn os_version() -> String {
         std::env::consts::ARCH,
         std::env::consts::FAMILY
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::TempDir;
+
+    #[test]
+    fn sanitize_paths_masks_windows_and_unix_paths() {
+        let input = "panic at C:\\Users\\jihx\\Desktop\\secret.mp4 and /home/jihx/video.mov";
+        let output = sanitize_paths(input);
+        assert!(!output.contains("C:\\Users\\jihx\\Desktop\\secret.mp4"));
+        assert!(!output.contains("/home/jihx/video.mov"));
+        assert!(output.contains("[path]"));
+    }
+
+    #[test]
+    fn crash_report_writes_sanitized_log() {
+        let temp = TempDir::new().unwrap();
+        let app_data_dir = temp.path().to_path_buf();
+        set_enabled(&app_data_dir, true);
+        set_acknowledged(&app_data_dir);
+
+        let report = CrashReport {
+            panic_message: "panic at C:\\Users\\jihx\\Desktop\\secret.mp4".to_string(),
+            backtrace: "frame /home/jihx/project/src/main.rs".to_string(),
+            os_version: "windows".to_string(),
+            app_version: "0.1.0".to_string(),
+            anonymous_device_id: "device-1".to_string(),
+        };
+
+        report_crash(&app_data_dir, &report);
+        let log = read_crash_log(&app_data_dir);
+        assert!(log.contains("PANIC:"));
+        assert!(!log.contains("C:\\Users\\jihx\\Desktop\\secret.mp4"));
+        assert!(!log.contains("/home/jihx/project/src/main.rs"));
+    }
 }

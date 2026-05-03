@@ -7,6 +7,8 @@ import SystemStatus from "../components/SystemStatus.vue";
 import SourceWarnings from "../components/SourceWarnings.vue";
 import ResultPage from "../components/ResultPage.vue";
 import ProBadge from "../components/ProBadge.vue";
+import AIContentMarker from "../components/AIContentMarker.vue";
+import { trackFeatureEvent } from "../lib/analytics";
 import {
   cancelPipeline,
   checkActivePipelines,
@@ -45,6 +47,9 @@ const completePayload = ref<PipelineCompletePayload | null>(null);
 const showResult = ref(false);
 const degradationWarning = ref("");
 
+// AI Content Marker ref
+const aiMarkerRef = ref<InstanceType<typeof AIContentMarker> | null>(null);
+
 // For retry
 const lastInputPath = ref("");
 const lastPlatforms = ref<Platform[]>([]);
@@ -81,6 +86,18 @@ const fileTypeLabel = computed(() => {
 
 const showProMultiPlatform = computed(() => selectedPlatforms.value.length > 1);
 
+function currentFeatureName() {
+  if (isImage.value) return "watermark_image";
+  if (isAudio.value) return "watermark_audio";
+  return "watermark_video";
+}
+
+function currentMediaType() {
+  if (isImage.value) return "image";
+  if (isAudio.value) return "audio";
+  return "video";
+}
+
 async function refreshHardwareInfo() {
   hardwareInfo.value = await getHardwareInfo();
 }
@@ -89,6 +106,7 @@ async function handleSourceSelect(path: string) {
   selectedPath.value = path;
   sourceMeta.value = await probeSource(path);
   systemStatus.value = await systemCheck(path);
+  trackFeatureEvent("source_probe", "success", { mediaType: currentMediaType(), source: "dropzone" });
 
   const type = sourceMeta.value.fileType;
   if (type === "image") {
@@ -144,7 +162,7 @@ async function handleStart() {
     statusMessage.value = "请至少勾选一个目标平台"; return;
   }
   if (isVideo.value && selectedPlatforms.value.length > 1) {
-    statusMessage.value = "多平台需 Pro"; return;
+    statusMessage.value = "多平台需订阅"; return;
   }
   if (!isImage.value && systemStatus.value && !systemStatus.value.ffmpegAvailable) {
     statusMessage.value = "未找到 FFmpeg，请先安装";
@@ -159,6 +177,11 @@ async function handleStart() {
   showResult.value = false;
   completePayload.value = null;
   const platforms = isVideo.value ? selectedPlatforms.value : [];
+  const featureName = currentFeatureName();
+  trackFeatureEvent(featureName, "start", {
+    mediaType: currentMediaType(),
+    source: isVideo.value ? `platforms:${platforms.join(",") || "none"}` : "single_media",
+  });
 
   // Save for retry
   lastInputPath.value = selectedPath.value;
@@ -166,14 +189,30 @@ async function handleStart() {
   lastOptions.aspectStrategy = options.aspectStrategy;
   lastOptions.encodingMode = options.encodingMode;
 
+  // Collect AI content options from AIContentMarker
+  const aiContent = aiMarkerRef.value ? {
+    isAiGenerated: aiMarkerRef.value.isAIGenerated,
+    trainingPermission: aiMarkerRef.value.trainingPermission,
+    generationMethod: aiMarkerRef.value.generationMethod,
+    modificationLevel: aiMarkerRef.value.modificationLevel,
+    authenticityClaim: aiMarkerRef.value.authenticityClaim,
+    customMetadata: aiMarkerRef.value.customMetadata.trim() || undefined,
+  } : undefined;
+
+  const optionsWithAI = { ...options, aiContent };
+
   try {
-    const result = await startPipeline(selectedPath.value, platforms, options);
+    const result = await startPipeline(selectedPath.value, platforms, optionsWithAI);
     pipelineId.value = result.pipelineId;
     statusMessage.value = result.summary;
     setProgress({ pipelineId: result.pipelineId, stage: "任务已排队", percent: 1, platformPercents: createEmptyPlatformPercents() });
   } catch (err: any) {
     busy.value = false;
     statusMessage.value = `启动失败：${err?.message ?? err}`;
+    trackFeatureEvent(featureName, "failure", {
+      mediaType: currentMediaType(),
+      errorCode: "pipeline_start_failed",
+    });
   }
 }
 
@@ -189,6 +228,7 @@ async function handleRetry() {
 async function handleCancel() {
   if (!pipelineId.value) return;
   await cancelPipeline(pipelineId.value);
+  trackFeatureEvent(currentFeatureName(), "cancel", { mediaType: currentMediaType(), source: "cancel_button" });
   busy.value = false;
   statusMessage.value = "已取消";
   setProgress({ stage: "已取消", percent: 0, platformPercents: createEmptyPlatformPercents() });
@@ -244,6 +284,11 @@ onMounted(async () => {
     } else if (payload.stage.startsWith("失败")) {
       busy.value = false;
       statusMessage.value = payload.stage;
+      trackFeatureEvent(currentFeatureName(), "failure", {
+        mediaType: currentMediaType(),
+        errorCode: "pipeline_runtime_failed",
+        source: payload.stage,
+      });
     }
   });
 
@@ -251,6 +296,11 @@ onMounted(async () => {
     completePayload.value = payload;
     showResult.value = true;
     busy.value = false;
+    trackFeatureEvent(currentFeatureName(), "success", {
+      mediaType: currentMediaType(),
+      durationMs: payload.processTimeMs,
+      source: "pipeline_complete",
+    });
   });
 
   unlistenDegradation = await listenHwDegradation((payload) => {
@@ -349,7 +399,7 @@ onUnmounted(() => {
 
           <!-- Pro multi-platform hint -->
           <div v-if="showProMultiPlatform" class="pro-hint">
-            <ProBadge label="多平台需 Pro" />
+            <ProBadge label="多平台需订阅" />
           </div>
 
           <!-- Recommend hint -->
@@ -373,6 +423,9 @@ onUnmounted(() => {
               </select>
             </label>
           </div>
+
+          <!-- AI Content Marker -->
+          <AIContentMarker ref="aiMarkerRef" />
 
           <div class="action-row">
             <button class="primary-button" type="button" :disabled="busy || !sourceMeta" @click="handleStart">

@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::time::Instant;
 
 use serde::Serialize;
 use tauri::{AppHandle, Manager};
@@ -6,12 +7,13 @@ use tauri::{AppHandle, Manager};
 use crate::commands::vault::VaultRecord;
 use crate::db::queries;
 use crate::pipeline::ffmpeg;
-use crate::pipeline::image_watermark;
 use crate::pipeline::scheduler::{classify_file, FileType};
 use crate::pipeline::watermark;
+use crate::telemetry::anonymous;
 use crate::tsa;
 use crate::utils::fs as ufs;
 use crate::AppState;
+use watermark_core::{MediaInput, WatermarkService};
 
 const DISCLAIMER: &str = "本报告仅基于既定算法进行特征码技术提取，仅供参考，不代表任何司法鉴定意见。平台不对因本报告引发的连带法律责任负责。";
 
@@ -42,32 +44,43 @@ pub async fn verify_suspect(
     path: String,
     app_handle: AppHandle,
 ) -> Result<VerificationResult, String> {
+    let started_at = Instant::now();
     let file_path = Path::new(&path);
+    let file_type = classify_file(file_path);
+    let media_type = media_type_label(file_type);
+    let file_size_bytes = std::fs::metadata(file_path).map(|meta| meta.len()).unwrap_or(0);
+
     if !file_path.exists() {
+        if let Ok(app_data_dir) = app_handle.path().app_data_dir() {
+            anonymous::record_failure_event(
+                &app_data_dir,
+                "verify_suspect",
+                media_type,
+                file_size_bytes,
+                Some(started_at.elapsed().as_millis() as u64),
+                "file_not_found",
+                None,
+            );
+        }
         return Err(format!("文件不存在: {path}"));
     }
 
-    let file_type = classify_file(file_path);
-
-    // Extract watermark based on file type
+    let mut extraction_error: Option<String> = None;
     let extraction = match file_type {
         FileType::Image => extract_from_image(file_path),
-        FileType::Video | FileType::Audio => {
-            extract_from_audio_bearing(file_path, &app_handle).await
+        FileType::Video | FileType::Audio => extract_from_audio_bearing(file_path, &app_handle).await,
+    };
+    let (payload, confidence) = match extraction {
+        Ok((payload, confidence)) => (Some(payload), confidence),
+        Err(err) => {
+            extraction_error = Some(err);
+            (None, 0.0)
         }
     };
 
-    let (payload, confidence) = match extraction {
-        Ok((p, c)) => (Some(p), c),
-        Err(_) => (None, 0.0),
-    };
-
-    // Build result based on confidence thresholds
     let state = app_handle.state::<AppState>();
-
-    if let Some(ref payload) = payload {
+    let result = if let Some(ref payload) = payload {
         let uid = payload.watermark_uid();
-
         let (matched_record, uid_exists) = {
             let conn = state.db.lock().map_err(|e| format!("db lock error: {e}"))?;
             let file_hash_2bytes = [payload.file_hash[0], payload.file_hash[1]];
@@ -79,20 +92,33 @@ pub async fn verify_suspect(
 
         if confidence >= 0.95 {
             let summary = if let Some(ref record) = matched_record {
-                // Determine which hash matched
                 let file_hash_2bytes = [payload.file_hash[0], payload.file_hash[1]];
                 let prefix_hex = hex::encode(file_hash_2bytes);
 
                 if record.original_hash.starts_with(&prefix_hex) {
                     format!("✅ 原始文件验证通过，水印 UID: {uid}")
-                } else if record.output_douyin_hash.as_ref().map(|h| h.starts_with(&prefix_hex)).unwrap_or(false) {
+                } else if record
+                    .output_douyin_hash
+                    .as_ref()
+                    .map(|h| h.starts_with(&prefix_hex))
+                    .unwrap_or(false)
+                {
                     format!("✅ 输出文件验证通过（抖音），水印 UID: {uid}")
-                } else if record.output_bilibili_hash.as_ref().map(|h| h.starts_with(&prefix_hex)).unwrap_or(false) {
+                } else if record
+                    .output_bilibili_hash
+                    .as_ref()
+                    .map(|h| h.starts_with(&prefix_hex))
+                    .unwrap_or(false)
+                {
                     format!("✅ 输出文件验证通过（B站），水印 UID: {uid}")
-                } else if record.output_xhs_hash.as_ref().map(|h| h.starts_with(&prefix_hex)).unwrap_or(false) {
+                } else if record
+                    .output_xhs_hash
+                    .as_ref()
+                    .map(|h| h.starts_with(&prefix_hex))
+                    .unwrap_or(false)
+                {
                     format!("✅ 输出文件验证通过（小红书），水印 UID: {uid}")
                 } else {
-                    // Should not happen, but fallback
                     format!("✅ 文件验证通过，水印 UID: {uid}")
                 }
             } else if uid_exists {
@@ -133,7 +159,8 @@ pub async fn verify_suspect(
             let network_time = matched_record.as_ref().and_then(|r| r.network_time.clone());
             let created_at = matched_record.as_ref().map(|r| r.created_at.clone());
             let original_hash = matched_record.as_ref().map(|r| r.original_hash.clone());
-            return Ok(VerificationResult {
+
+            VerificationResult {
                 matched: matched_record.is_some(),
                 watermark_uid: Some(uid),
                 confidence,
@@ -147,11 +174,9 @@ pub async fn verify_suspect(
                 network_time,
                 created_at,
                 original_hash,
-            });
-        }
-
-        if confidence >= 0.5 {
-            return Ok(VerificationResult {
+            }
+        } else if confidence >= 0.5 {
+            VerificationResult {
                 matched: false,
                 watermark_uid: Some(uid),
                 confidence,
@@ -165,36 +190,104 @@ pub async fn verify_suspect(
                 network_time: None,
                 created_at: None,
                 original_hash: None,
-            });
+            }
+        } else {
+            VerificationResult {
+                matched: false,
+                watermark_uid: None,
+                confidence,
+                matched_record: None,
+                summary: "未检测到有效水印".to_string(),
+                disclaimer: DISCLAIMER.to_string(),
+                tsa_token_present: false,
+                tsa_token_verified: false,
+                tsa_verification_path: None,
+                tsa_source: None,
+                network_time: None,
+                created_at: None,
+                original_hash: None,
+            }
+        }
+    } else {
+        VerificationResult {
+            matched: false,
+            watermark_uid: None,
+            confidence,
+            matched_record: None,
+            summary: "未检测到有效水印".to_string(),
+            disclaimer: DISCLAIMER.to_string(),
+            tsa_token_present: false,
+            tsa_token_verified: false,
+            tsa_verification_path: None,
+            tsa_source: None,
+            network_time: None,
+            created_at: None,
+            original_hash: None,
+        }
+    };
+
+    if let Ok(app_data_dir) = app_handle.path().app_data_dir() {
+        let duration_ms = Some(started_at.elapsed().as_millis() as u64);
+        if let Some(err) = extraction_error {
+            anonymous::record_failure_event(
+                &app_data_dir,
+                "verify_suspect",
+                media_type,
+                file_size_bytes,
+                duration_ms,
+                err,
+                None,
+            );
+        } else if result.matched {
+            anonymous::record_success_event(
+                &app_data_dir,
+                "verify_suspect",
+                media_type,
+                file_size_bytes,
+                duration_ms,
+                None,
+            );
+        } else {
+            let note = if result.watermark_uid.is_some() {
+                format!(
+                    "result=watermark_detected_but_unbound | confidence_bucket={}",
+                    confidence_bucket(result.confidence)
+                )
+            } else if result.confidence >= 0.5 {
+                format!(
+                    "result=low_confidence | confidence_bucket={}",
+                    confidence_bucket(result.confidence)
+                )
+            } else {
+                format!(
+                    "result=no_match | confidence_bucket={}",
+                    confidence_bucket(result.confidence)
+                )
+            };
+            anonymous::record_diagnostic_event(
+                &app_data_dir,
+                "verify_suspect",
+                media_type,
+                file_size_bytes,
+                duration_ms,
+                note,
+                None,
+            );
         }
     }
 
-    // confidence < 0.5 or extraction failed entirely
-    Ok(VerificationResult {
-        matched: false,
-        watermark_uid: None,
-        confidence,
-        matched_record: None,
-        summary: "未检测到有效水印".to_string(),
-        disclaimer: DISCLAIMER.to_string(),
-        tsa_token_present: false,
-        tsa_token_verified: false,
-        tsa_verification_path: None,
-        tsa_source: None,
-        network_time: None,
-        created_at: None,
-        original_hash: None,
-    })
+    Ok(result)
 }
 
 // ---------------------------------------------------------------------------
 // Extraction helpers
 // ---------------------------------------------------------------------------
 
-/// Extract watermark from an image file via DWT-DCT-SVD blind watermark.
+/// Extract watermark from an image file via the unified watermark service.
 fn extract_from_image(file_path: &Path) -> Result<(watermark::WatermarkPayload, f64), String> {
-    let payload = image_watermark::extract_image_watermark(file_path)
-        .map_err(|e| format!("图片水印提取失败: {e}"))?;
+    let bytes = std::fs::read(file_path).map_err(|e| format!("image_read_failed: {e}"))?;
+    let payload = WatermarkService::extract(MediaInput::ImageBytes { bytes })
+        .map_err(|e| format!("image_watermark_extract_failed: {e}"))?;
 
     let confidence = compute_confidence(&payload);
     Ok((payload, confidence))
@@ -202,7 +295,7 @@ fn extract_from_image(file_path: &Path) -> Result<(watermark::WatermarkPayload, 
 
 /// Extract watermark from a video or audio file:
 /// 1. Use FFmpeg to extract audio to a temp WAV
-/// 2. Read WAV samples and run watermark::extract_watermark
+/// 2. Read WAV bytes and run the unified watermark service
 async fn extract_from_audio_bearing(
     file_path: &Path,
     app_handle: &AppHandle,
@@ -217,10 +310,10 @@ async fn extract_from_audio_bearing(
             let _ = app_handle
                 .path()
                 .app_data_dir()
-                .map_err(|e| format!("failed to resolve app data dir: {e}"))?;
+                .map_err(|e| format!("app_data_dir_resolve_failed: {e}"))?;
             ffmpeg::detect_ffmpeg()
                 .await
-                .map_err(|e| format!("FFmpeg 不可用: {e}"))?
+                .map_err(|e| format!("ffmpeg_unavailable: {e}"))?
         }
     };
 
@@ -232,7 +325,8 @@ async fn extract_from_audio_bearing(
             .unwrap_or_default()
             .as_millis()
     );
-    let temp_dir = ufs::create_temp_dir(&temp_id).map_err(|e| format!("创建临时目录失败: {e}"))?;
+    let temp_dir = ufs::create_temp_dir(&temp_id)
+        .map_err(|e| format!("verify_temp_dir_create_failed: {e}"))?;
     let temp_wav = temp_dir.join("audio.wav");
 
     // Extract audio to WAV using FFmpeg
@@ -252,48 +346,28 @@ async fn extract_from_audio_bearing(
 
     let mut child = ffmpeg::spawn_ffmpeg(&ffmpeg_paths.ffmpeg, &args)
         .await
-        .map_err(|e| format!("FFmpeg 启动失败: {e}"))?;
+        .map_err(|e| format!("ffmpeg_start_failed: {e}"))?;
 
     let status = child
         .child
         .wait()
         .await
-        .map_err(|e| format!("FFmpeg 等待失败: {e}"))?;
+        .map_err(|e| format!("ffmpeg_wait_failed: {e}"))?;
 
     if !status.success() {
         let _ = ufs::cleanup_temp_dir(&temp_id);
-        return Err("音频抽取失败".to_string());
+        return Err("audio_extract_failed".to_string());
     }
 
-    // Read WAV samples
-    let samples = read_wav_samples(&temp_wav)?;
+    // Read WAV bytes and extract via the service layer
+    let wav_bytes = std::fs::read(&temp_wav).map_err(|e| format!("wav_read_failed: {e}"))?;
     let _ = ufs::cleanup_temp_dir(&temp_id);
 
-    // Extract watermark from PCM samples
-    let payload =
-        watermark::extract_watermark(&samples).map_err(|e| format!("水印提取失败: {e}"))?;
+    let payload = WatermarkService::extract(MediaInput::AudioWavBytes { bytes: wav_bytes })
+        .map_err(|e| format!("audio_watermark_extract_failed: {e}"))?;
 
     let confidence = compute_confidence(&payload);
     Ok((payload, confidence))
-}
-
-/// Read a WAV file into f32 samples.
-fn read_wav_samples(wav_path: &Path) -> Result<Vec<f32>, String> {
-    let mut reader = hound::WavReader::open(wav_path).map_err(|e| format!("打开 WAV 失败: {e}"))?;
-    let spec = reader.spec();
-
-    let samples: Vec<f32> = if spec.sample_format == hound::SampleFormat::Float {
-        reader.samples::<f32>().filter_map(|s| s.ok()).collect()
-    } else {
-        let max_val = (1i32 << (spec.bits_per_sample - 1)) as f32;
-        reader
-            .samples::<i32>()
-            .filter_map(|s| s.ok())
-            .map(|s| s as f32 / max_val)
-            .collect()
-    };
-
-    Ok(samples)
 }
 
 /// Compute confidence based on magic number and HMAC auth tag validity.
@@ -317,5 +391,23 @@ fn compute_confidence(payload: &watermark::WatermarkPayload) -> f64 {
         1.0
     } else {
         0.7
+    }
+}
+
+fn media_type_label(file_type: FileType) -> &'static str {
+    match file_type {
+        FileType::Image => "image",
+        FileType::Video => "video",
+        FileType::Audio => "audio",
+    }
+}
+
+fn confidence_bucket(confidence: f64) -> &'static str {
+    if confidence >= 0.95 {
+        "0.95-1.00"
+    } else if confidence >= 0.5 {
+        "0.50-0.94"
+    } else {
+        "0.00-0.49"
     }
 }

@@ -1,3 +1,4 @@
+pub mod billing;
 pub mod identity;
 pub mod probe;
 pub mod telemetry;

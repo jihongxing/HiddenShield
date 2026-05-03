@@ -4,6 +4,8 @@ dist/
 
 # Rust build artifacts
 src-tauri/target/
+feedback-backend/target/
+watermark-core/target/
 src-tauri/gen/schemas/
 
 # IDE
@@ -28,6 +30,7 @@ cargo-check.log
 # User identity (contains device fingerprint)
 # Note: identity.json is in AppData, not in repo, but just in case
 identity.json
+src-tauri/vault.db
 
 # TSA tokens (stored in AppData)
 tsa_tokens/

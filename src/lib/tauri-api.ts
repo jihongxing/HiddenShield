@@ -47,6 +47,62 @@ export interface VaultRecord {
   outputXhsHash: string | null;
 }
 
+export type EntitlementStatus = "free" | "trial" | "active" | "grace" | "expired";
+
+export interface EntitlementState {
+  status: EntitlementStatus;
+  planName: string | null;
+  billingSource: string | null;
+  subscriptionId: string | null;
+  trialStartedAt: string | null;
+  trialEndsAt: string | null;
+  currentPeriodStartedAt: string | null;
+  currentPeriodEndsAt: string | null;
+  graceEndsAt: string | null;
+  lastCheckedAt: string | null;
+  updatedAt: string;
+}
+
+export interface UsageLedgerSummary {
+  totalUnits: number;
+  totalEvents: number;
+  imageUnits: number;
+  videoUnits: number;
+  audioUnits: number;
+  lastUsedAt: string | null;
+  lastFeatureName: string | null;
+  entitlement: EntitlementState;
+}
+
+export type AnonymousEventOutcome = "success" | "failure" | "crash" | "diagnostic";
+
+export interface AnonymousFeedbackStatus {
+  installId: string;
+  sessionId: string;
+  queuedEvents: number;
+  queuedBytes: number;
+  lastEventAt: string | null;
+  lastFlushAt: string | null;
+  lastFlushError: string | null;
+  consecutiveFailures: number;
+  nextRetryAt: string | null;
+  lastAttemptAt: string | null;
+  lastSuccessAt: string | null;
+  telemetryEnabled: boolean;
+  acknowledged: boolean;
+  networkEnabled: boolean;
+  endpointConfigured: boolean;
+}
+
+export interface AnonymousFlushResult {
+  attemptedEvents: number;
+  sentEvents: number;
+  remainingEvents: number;
+  endpointConfigured: boolean;
+  flushedAt: string | null;
+  message: string;
+}
+
 export interface VerificationResult {
   matched: boolean;
   watermarkUid: string | null;
@@ -170,6 +226,15 @@ const mockVault: VaultRecord[] = [
     outputXhs: "/output/春日咖啡馆_VLOG_小红书优化版.mp4",
     hwEncoderUsed: "h264_videotoolbox",
     processTimeMs: 48200,
+    isAiGenerated: false,
+    aiTrainingPermission: null,
+    aiGenerationMethod: null,
+    humanModificationLevel: null,
+    authenticityClaim: null,
+    customMetadata: null,
+    outputDouyinHash: "f8a8e4f22d7d5f0cdd7b8d7b5e8f8d7a4e0f5b3a2c1d0e9f1234567890abcdef",
+    outputBilibiliHash: null,
+    outputXhsHash: "9e8d7c6b5a49382716f0e1d2c3b4a5968776655443322110fedcba9876543210",
   },
   {
     id: 2,
@@ -185,8 +250,42 @@ const mockVault: VaultRecord[] = [
     outputXhs: null,
     hwEncoderUsed: null,
     processTimeMs: 126800,
+    isAiGenerated: true,
+    aiTrainingPermission: "commercial",
+    aiGenerationMethod: "text_to_video",
+    humanModificationLevel: "moderate",
+    authenticityClaim: "based_on_reality",
+    customMetadata: "示例内容",
+    outputDouyinHash: null,
+    outputBilibiliHash: "2f3e4d5c6b7a8990a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0",
+    outputXhsHash: null,
   },
 ];
+
+const mockEntitlement: EntitlementState = {
+  status: "free",
+  planName: null,
+  billingSource: null,
+  subscriptionId: null,
+  trialStartedAt: null,
+  trialEndsAt: null,
+  currentPeriodStartedAt: null,
+  currentPeriodEndsAt: null,
+  graceEndsAt: null,
+  lastCheckedAt: null,
+  updatedAt: "2026-05-03T00:00:00Z",
+};
+
+const mockUsageSummary: UsageLedgerSummary = {
+  totalUnits: 2,
+  totalEvents: 2,
+  imageUnits: 0,
+  videoUnits: 2,
+  audioUnits: 0,
+  lastUsedAt: "2026-05-03T00:00:00Z",
+  lastFeatureName: "watermark_video",
+  entitlement: mockEntitlement,
+};
 
 // ---------------------------------------------------------------------------
 // IPC Functions
@@ -249,6 +348,69 @@ export async function listVaultRecords(): Promise<VaultRecord[]> {
   }
   const { invoke } = await import("@tauri-apps/api/core");
   return invoke<VaultRecord[]>("list_vault_records");
+}
+
+export async function getEntitlementState(): Promise<EntitlementState> {
+  if (!isTauriRuntime()) {
+    return mockEntitlement;
+  }
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<EntitlementState>("get_entitlement_state");
+}
+
+export async function setEntitlementState(state: EntitlementState): Promise<EntitlementState> {
+  if (!isTauriRuntime()) {
+    return state;
+  }
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<EntitlementState>("set_entitlement_state", { entitlementState: state });
+}
+
+export async function getUsageLedgerSummary(): Promise<UsageLedgerSummary> {
+  if (!isTauriRuntime()) {
+    return mockUsageSummary;
+  }
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<UsageLedgerSummary>("get_usage_ledger_summary");
+}
+
+export async function getAnonymousFeedbackStatus(): Promise<AnonymousFeedbackStatus> {
+  if (!isTauriRuntime()) {
+    return {
+      installId: "inst-mock",
+      sessionId: "sess-mock",
+      queuedEvents: 0,
+      queuedBytes: 0,
+      lastEventAt: null,
+      lastFlushAt: null,
+      lastFlushError: null,
+      consecutiveFailures: 0,
+      nextRetryAt: null,
+      lastAttemptAt: null,
+      lastSuccessAt: null,
+      telemetryEnabled: true,
+      acknowledged: true,
+      networkEnabled: true,
+      endpointConfigured: false,
+    };
+  }
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<AnonymousFeedbackStatus>("get_anonymous_feedback_status");
+}
+
+export async function flushAnonymousFeedbackQueue(): Promise<AnonymousFlushResult> {
+  if (!isTauriRuntime()) {
+    return {
+      attemptedEvents: 0,
+      sentEvents: 0,
+      remainingEvents: 0,
+      endpointConfigured: false,
+      flushedAt: null,
+      message: "mock flush",
+    };
+  }
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<AnonymousFlushResult>("flush_anonymous_feedback_queue");
 }
 
 export async function verifySuspect(path: string): Promise<VerificationResult> {

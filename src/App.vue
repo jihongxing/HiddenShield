@@ -8,30 +8,44 @@ import TelemetryBanner from "./components/TelemetryBanner.vue";
 import SettingsPanel from "./components/SettingsPanel.vue";
 import HelpCenter from "./components/HelpCenter.vue";
 import IdentitySetup from "./components/IdentitySetup.vue";
+import SubscriptionPanel from "./components/SubscriptionPanel.vue";
+import { trackClick, trackEntitlementSnapshot, trackFeatureEvent } from "./lib/analytics";
 import {
   getIdentityStatus,
+  getEntitlementState,
   getTelemetryAcknowledged,
+  type EntitlementState,
   type AppTab,
 } from "./lib/tauri-api";
 
 const activeTab = ref<AppTab>("workbench");
 const showSettings = ref(false);
 const showHelp = ref(false);
+const showSubscription = ref(false);
 const needsIdentitySetup = ref(false);
+const entitlementState = ref<EntitlementState | null>(null);
 
 // Telemetry banner state
 const showTelemetryBanner = ref(false);
 
 function handleUpgradeClick() {
-  alert("Pro 版即将上线，敬请期待！感谢你的支持");
+  trackClick("subscription_sidebar_open");
+  showSubscription.value = true;
+  showSettings.value = false;
+  showHelp.value = false;
 }
 
 function switchTab(tab: AppTab) {
+  trackClick(`tab_switch_${tab}`);
   activeTab.value = tab;
 }
 
 function dismissTelemetry() {
   showTelemetryBanner.value = false;
+}
+
+function closeSubscription() {
+  showSubscription.value = false;
 }
 
 const tabs: Array<{ key: AppTab; label: string }> = [
@@ -46,6 +60,10 @@ onMounted(async () => {
   if (!identityStatus.initialized) {
     needsIdentitySetup.value = true;
   }
+
+  entitlementState.value = await getEntitlementState();
+  trackEntitlementSnapshot(entitlementState.value.status, "app_mount");
+  trackFeatureEvent("app_open", "success", { source: "main_window" });
 
   // Check telemetry/privacy acknowledgement
   const acknowledged = await getTelemetryAcknowledged();
@@ -86,7 +104,7 @@ onMounted(async () => {
             class="tab-list__item"
             :class="{ 'tab-list__item--active': activeTab === tab.key }"
             type="button"
-            @click="activeTab = tab.key"
+            @click="switchTab(tab.key)"
           >
             <strong>{{ tab.label }}</strong>
           </button>
@@ -97,7 +115,7 @@ onMounted(async () => {
           <ProBadge label="批量处理" :disabled="true" />
         </div>
 
-        <button class="upgrade-button" type="button" @click="handleUpgradeClick">Pro 版</button>
+        <button class="upgrade-button" type="button" @click="handleUpgradeClick">订阅方案</button>
 
         <!-- Settings toggle -->
         <button class="settings-button" type="button" @click="showSettings = !showSettings; showHelp = false">
@@ -121,7 +139,7 @@ onMounted(async () => {
         </header>
 
         <!-- Settings panel (overlay) -->
-        <SettingsPanel v-if="showSettings" />
+        <SettingsPanel v-if="showSettings" @open-subscription="handleUpgradeClick" />
 
         <!-- Help center -->
         <HelpCenter v-else-if="showHelp" />
@@ -131,6 +149,12 @@ onMounted(async () => {
         <VerifyView v-else @switch-tab="switchTab" />
       </main>
     </div>
+
+    <SubscriptionPanel
+      v-if="showSubscription"
+      :entitlement-state="entitlementState"
+      @close="closeSubscription"
+    />
     </template>
   </div>
 </template>
