@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
 
+import 'bridge/local_preview_watermark_bridge.dart';
+import 'bridge/watermark_bridge.dart';
+import 'bridge/watermark_models.dart';
+
 void main() {
   runApp(const HiddenShieldApp());
 }
 
 class HiddenShieldApp extends StatelessWidget {
-  const HiddenShieldApp({super.key});
+  const HiddenShieldApp({
+    super.key,
+    this.bridge = const PreviewWatermarkBridge(),
+  });
+
+  final WatermarkBridge bridge;
 
   @override
   Widget build(BuildContext context) {
@@ -20,13 +29,15 @@ class HiddenShieldApp extends StatelessWidget {
         ),
         scaffoldBackgroundColor: const Color(0xFF0C1116),
       ),
-      home: const MobileShell(),
+      home: MobileShell(bridge: bridge),
     );
   }
 }
 
 class MobileShell extends StatefulWidget {
-  const MobileShell({super.key});
+  const MobileShell({super.key, required this.bridge});
+
+  final WatermarkBridge bridge;
 
   @override
   State<MobileShell> createState() => _MobileShellState();
@@ -40,30 +51,23 @@ class _MobileShellState extends State<MobileShell> {
       label: '工作台',
       icon: Icons.dashboard_outlined,
       activeIcon: Icons.dashboard,
-      page: _WorkspacePage(),
     ),
-    _NavTab(
-      label: '取证',
-      icon: Icons.search_outlined,
-      activeIcon: Icons.search,
-      page: _VerifyPage(),
-    ),
+    _NavTab(label: '取证', icon: Icons.search_outlined, activeIcon: Icons.search),
     _NavTab(
       label: '版权库',
       icon: Icons.folder_outlined,
       activeIcon: Icons.folder,
-      page: _VaultPage(),
     ),
     _NavTab(
       label: '设置',
       icon: Icons.settings_outlined,
       activeIcon: Icons.settings,
-      page: _SettingsPage(),
     ),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final bridge = widget.bridge;
     return Scaffold(
       appBar: AppBar(
         title: const Text('HiddenShield'),
@@ -73,7 +77,12 @@ class _MobileShellState extends State<MobileShell> {
       body: SafeArea(
         child: IndexedStack(
           index: _currentIndex,
-          children: _tabs.map((tab) => tab.page).toList(),
+          children: [
+            _WorkspacePage(bridge: bridge),
+            _VerifyPage(bridge: bridge),
+            _VaultPage(bridge: bridge),
+            _SettingsPage(bridge: bridge),
+          ],
         ),
       ),
       bottomNavigationBar: NavigationBar(
@@ -99,23 +108,24 @@ class _NavTab {
     required this.label,
     required this.icon,
     required this.activeIcon,
-    required this.page,
   });
 
   final String label;
   final IconData icon;
   final IconData activeIcon;
-  final Widget page;
 }
 
 class _WorkspacePage extends StatelessWidget {
-  const _WorkspacePage();
+  const _WorkspacePage({required this.bridge});
+
+  final WatermarkBridge bridge;
 
   @override
   Widget build(BuildContext context) {
     return _PageScaffold(
       title: '工作台',
-      subtitle: '图片和音频的本地确权入口',
+      subtitle: '图片和 WAV 音频的本地确权入口',
+      bridge: bridge,
       children: const [
         _ActionCard(
           title: '图片嵌入',
@@ -138,13 +148,16 @@ class _WorkspacePage extends StatelessWidget {
 }
 
 class _VerifyPage extends StatelessWidget {
-  const _VerifyPage();
+  const _VerifyPage({required this.bridge});
+
+  final WatermarkBridge bridge;
 
   @override
   Widget build(BuildContext context) {
     return _PageScaffold(
       title: '取证',
       subtitle: '检测疑似侵权图片或音频，展示命中和链路',
+      bridge: bridge,
       children: const [
         _ActionCard(
           title: '文件提取',
@@ -162,13 +175,16 @@ class _VerifyPage extends StatelessWidget {
 }
 
 class _VaultPage extends StatelessWidget {
-  const _VaultPage();
+  const _VaultPage({required this.bridge});
+
+  final WatermarkBridge bridge;
 
   @override
   Widget build(BuildContext context) {
     return _PageScaffold(
       title: '版权库',
       subtitle: '时间线、详情和派生链',
+      bridge: bridge,
       children: const [
         _ActionCard(
           title: '时间线',
@@ -186,13 +202,16 @@ class _VaultPage extends StatelessWidget {
 }
 
 class _SettingsPage extends StatelessWidget {
-  const _SettingsPage();
+  const _SettingsPage({required this.bridge});
+
+  final WatermarkBridge bridge;
 
   @override
   Widget build(BuildContext context) {
     return _PageScaffold(
       title: '设置',
       subtitle: '身份、同步、隐私与帮助',
+      bridge: bridge,
       children: const [
         _ActionCard(
           title: '创作者身份',
@@ -218,11 +237,13 @@ class _PageScaffold extends StatelessWidget {
   const _PageScaffold({
     required this.title,
     required this.subtitle,
+    required this.bridge,
     required this.children,
   });
 
   final String title;
   final String subtitle;
+  final WatermarkBridge bridge;
   final List<Widget> children;
 
   @override
@@ -232,19 +253,19 @@ class _PageScaffold extends StatelessWidget {
       children: [
         Text(
           title,
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 8),
         Text(
           subtitle,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.white70,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
         ),
         const SizedBox(height: 16),
-        const _StatusCard(),
+        _StatusCard(bridge: bridge),
         const SizedBox(height: 16),
         ...children,
       ],
@@ -252,8 +273,17 @@ class _PageScaffold extends StatelessWidget {
   }
 }
 
-class _StatusCard extends StatelessWidget {
-  const _StatusCard();
+class _StatusCard extends StatefulWidget {
+  const _StatusCard({required this.bridge});
+
+  final WatermarkBridge bridge;
+
+  @override
+  State<_StatusCard> createState() => _StatusCardState();
+}
+
+class _StatusCardState extends State<_StatusCard> {
+  late final Future<BridgeStatus> _statusFuture = widget.bridge.status();
 
   @override
   Widget build(BuildContext context) {
@@ -263,19 +293,25 @@ class _StatusCard extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '本地优先 · 未配对桌面',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              '先完成图片和音频的本地确权，再接入桌面同步。',
-              style: TextStyle(color: Colors.white70),
-            ),
-          ],
+        child: FutureBuilder<BridgeStatus>(
+          future: _statusFuture,
+          builder: (context, snapshot) {
+            final status = snapshot.data;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  status?.label ?? '本地优先 · 未配对桌面',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  status?.detail ?? '先完成图片和音频的本地确权，再接入桌面同步。',
+                  style: const TextStyle(color: Colors.white70),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

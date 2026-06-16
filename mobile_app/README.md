@@ -1,16 +1,23 @@
-# hidden_shield_mobile
+# HiddenShield Mobile
 
-A new Flutter project.
+Flutter 双端 App 的移动端壳。
 
-## Getting Started
+当前状态：
 
-This project is a starting point for a Flutter application.
+- 只做图片和 WAV 音频的本地确权入口。
+- 本地不做视频盲水印。
+- 预留 Rust / FRB 桥接层，后续接入真正的底层能力。
+- UI 与桌面端保持同一套工作台、取证、版权库、设置结构。
 
-A few resources to get you started if this is your first Flutter project:
+当前代码入口：
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+- `lib/main.dart`
+- `lib/bridge/watermark_bridge.dart`
+- `lib/bridge/local_preview_watermark_bridge.dart`
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+验证：
+
+```bash
+flutter analyze
+flutter test
+```
