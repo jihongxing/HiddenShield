@@ -52,6 +52,7 @@ src-tauri/src/          # Rust 后端
   identity.rs           # 创作者身份管理
   tsa.rs                # RFC 3161 可信时间戳
 docs/                   # 技术文档
+AGENTS.md               # 项目级 Agent 工作约束
 ```
 
 ## 构建发布
