@@ -3,13 +3,19 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
+import '../../app/mobile_app_state.dart';
 import '../../bridge/watermark_bridge.dart';
 import '../../bridge/watermark_models.dart';
 
 class ImageEmbedPage extends StatefulWidget {
-  const ImageEmbedPage({super.key, required this.bridge});
+  const ImageEmbedPage({
+    super.key,
+    required this.bridge,
+    required this.appState,
+  });
 
   final WatermarkBridge bridge;
+  final MobileAppState appState;
 
   @override
   State<ImageEmbedPage> createState() => _ImageEmbedPageState();
@@ -141,6 +147,12 @@ class _ImageEmbedPageState extends State<ImageEmbedPage> {
         ),
       );
       if (!mounted) return;
+      widget.appState.addWriteResult(
+        result: result,
+        fileName: _fileName,
+        allowRewrite: _allowRewrite,
+        rewriteReason: _allowRewrite ? 'mobile explicit rewrite' : null,
+      );
       setState(() => _result = result);
     } catch (error) {
       if (!mounted) return;

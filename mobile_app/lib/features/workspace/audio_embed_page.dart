@@ -3,13 +3,19 @@ import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
+import '../../app/mobile_app_state.dart';
 import '../../bridge/watermark_bridge.dart';
 import '../../bridge/watermark_models.dart';
 
 class AudioEmbedPage extends StatefulWidget {
-  const AudioEmbedPage({super.key, required this.bridge});
+  const AudioEmbedPage({
+    super.key,
+    required this.bridge,
+    required this.appState,
+  });
 
   final WatermarkBridge bridge;
+  final MobileAppState appState;
 
   @override
   State<AudioEmbedPage> createState() => _AudioEmbedPageState();
@@ -139,6 +145,12 @@ class _AudioEmbedPageState extends State<AudioEmbedPage> {
         ),
       );
       if (!mounted) return;
+      widget.appState.addWriteResult(
+        result: result,
+        fileName: _fileName,
+        allowRewrite: _allowRewrite,
+        rewriteReason: _allowRewrite ? 'mobile explicit rewrite' : null,
+      );
       setState(() => _result = result);
     } catch (error) {
       if (!mounted) return;

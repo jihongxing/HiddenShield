@@ -5,11 +5,13 @@ import '../features/settings/settings_page.dart';
 import '../features/verify/verify_page.dart';
 import '../features/vault/vault_page.dart';
 import '../features/workspace/workspace_page.dart';
+import 'mobile_app_state.dart';
 
 class MobileShell extends StatefulWidget {
-  const MobileShell({super.key, required this.bridge});
+  const MobileShell({super.key, required this.bridge, required this.appState});
 
   final WatermarkBridge bridge;
+  final MobileAppState appState;
 
   @override
   State<MobileShell> createState() => _MobileShellState();
@@ -40,6 +42,7 @@ class _MobileShellState extends State<MobileShell> {
   @override
   Widget build(BuildContext context) {
     final bridge = widget.bridge;
+    final appState = widget.appState;
     return Scaffold(
       appBar: AppBar(
         title: const Text('HiddenShield'),
@@ -50,10 +53,10 @@ class _MobileShellState extends State<MobileShell> {
         child: IndexedStack(
           index: _currentIndex,
           children: [
-            WorkspacePage(bridge: bridge),
-            VerifyPage(bridge: bridge),
-            VaultPage(bridge: bridge),
-            SettingsPage(bridge: bridge),
+            WorkspacePage(bridge: bridge, appState: appState),
+            VerifyPage(bridge: bridge, appState: appState),
+            VaultPage(bridge: bridge, appState: appState),
+            SettingsPage(bridge: bridge, appState: appState),
           ],
         ),
       ),

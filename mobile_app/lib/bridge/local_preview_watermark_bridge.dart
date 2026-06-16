@@ -20,9 +20,21 @@ class PreviewWatermarkBridge extends WatermarkBridge {
   }
 
   @override
-  Future<WatermarkReadResult?> read(WatermarkReadRequest request) {
-    return Future.error(
-      UnsupportedError('Preview bridge does not read watermarks yet.'),
+  Future<WatermarkReadResult?> read(WatermarkReadRequest request) async {
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+    if (request.kind == WatermarkAssetKind.video) {
+      throw UnsupportedError('Mobile local video watermarking is disabled.');
+    }
+
+    final uidPrefix = request.kind == WatermarkAssetKind.image ? 'img' : 'aud';
+    final hash = _previewHash(request.bytes);
+    return WatermarkReadResult(
+      kind: request.kind,
+      watermarkUid: 'preview-$uidPrefix-${hash.substring(0, 12)}',
+      revision: 1,
+      timestamp: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      deviceIdHex: '090a0b0c',
+      fileHashHex: hash.substring(0, 4),
     );
   }
 

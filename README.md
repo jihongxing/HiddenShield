@@ -10,6 +10,7 @@
 - **视频音轨盲水印**：无感嵌入版权基因
 - **RFC 3161 可信时间戳**：第三方权威机构签发，防伪造时间
 - **本地版权金库**：SQLite 存证，零上传
+- **移动端同步 stub**：桌面端本地 HTTP 服务接收移动端版权元数据事件
 - **维权取证报告**：一键生成结构化存证报告
 
 ## 技术栈
@@ -49,6 +50,7 @@ src-tauri/src/          # Rust 后端
   pipeline/             # 水印嵌入/提取/FFmpeg 调度
   encoder/              # 硬件编码检测/预设
   db/                   # SQLite schema/queries
+  sync/                 # 移动端桌面同步 HTTP stub
   identity.rs           # 创作者身份管理
   tsa.rs                # RFC 3161 可信时间戳
 docs/                   # 技术文档

@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build",
+    "sync:verify": "node scripts/verify-mobile-sync-stub.mjs",
+    "mobile:doctor": "node scripts/mobile-doctor.mjs"
   },
   "keywords": [
     "tauri",

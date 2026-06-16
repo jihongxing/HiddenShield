@@ -106,6 +106,28 @@ export interface AnonymousFlushResult {
   message: string;
 }
 
+export interface MobileSyncStatus {
+  enabled: boolean;
+  listenPort: number;
+  listenAddress: string;
+  pairingCode: string;
+  receivedEvents: number;
+  latestEventAt: string | null;
+  resolutionCount: number;
+  latestResolution: SyncResolutionSummary | null;
+}
+
+export interface SyncResolutionSummary {
+  resolvedAt: string;
+  resolutionType: string;
+  reason: string;
+  watermarkUid: string;
+  desktopHash: string | null;
+  mobileHash: string | null;
+  desktopRevision: number | null;
+  mobileRevision: number | null;
+}
+
 export interface VerificationResult {
   matched: boolean;
   watermarkUid: string | null;
@@ -422,6 +444,29 @@ export async function flushAnonymousFeedbackQueue(): Promise<AnonymousFlushResul
   }
   const { invoke } = await import("@tauri-apps/api/core");
   return invoke<AnonymousFlushResult>("flush_anonymous_feedback_queue");
+}
+
+export async function getMobileSyncStatus(): Promise<MobileSyncStatus> {
+  if (!isTauriRuntime()) {
+    return {
+      enabled: true,
+      listenPort: 47219,
+      listenAddress: "http://0.0.0.0:47219",
+      pairingCode: "123456",
+      receivedEvents: 0,
+      latestEventAt: null,
+      resolutionCount: 0,
+      latestResolution: null,
+    };
+  }
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<MobileSyncStatus>("get_mobile_sync_status");
+}
+
+export async function regenerateMobilePairingCode(): Promise<string> {
+  if (!isTauriRuntime()) return "654321";
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<string>("regenerate_mobile_pairing_code");
 }
 
 export async function verifySuspect(path: string): Promise<VerificationResult> {

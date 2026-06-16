@@ -3,6 +3,7 @@ mod db;
 mod encoder;
 pub mod identity;
 mod pipeline;
+mod sync;
 mod telemetry;
 pub mod tsa;
 mod utils;
@@ -154,7 +155,9 @@ pub fn run() {
             commands::telemetry::get_anonymous_feedback_status,
             commands::telemetry::flush_anonymous_feedback_queue,
             commands::telemetry::clear_all_data,
-            commands::telemetry::clear_cache_only
+            commands::telemetry::clear_cache_only,
+            commands::sync::get_mobile_sync_status,
+            commands::sync::regenerate_mobile_pairing_code
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {
@@ -183,6 +186,9 @@ pub fn run() {
             db::queries::init_db(&conn)
                 .map_err(|e| format!("failed to initialize database: {e}"))?;
 
+            sync::storage::init_sync_storage(&conn)
+                .map_err(|e| format!("failed to initialize sync database: {e}"))?;
+
             app.manage(AppState {
                 active_pipelines: Mutex::new(HashSet::new()),
                 db: Mutex::new(conn),
@@ -193,6 +199,8 @@ pub fn run() {
                 sleep_lock: Mutex::new(None),
                 active_task_count: AtomicUsize::new(0),
             });
+
+            sync::start_sync_server(app.handle().clone());
 
             Ok(())
         })

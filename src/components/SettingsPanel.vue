@@ -18,6 +18,9 @@ import {
   type DataUsageInfo,
   type AnonymousFeedbackStatus,
   type UsageLedgerSummary,
+  type MobileSyncStatus,
+  getMobileSyncStatus,
+  regenerateMobilePairingCode,
 } from "../lib/tauri-api";
 
 const emit = defineEmits<{
@@ -30,10 +33,12 @@ const dataUsage = ref<DataUsageInfo | null>(null);
 const entitlementState = ref<EntitlementState | null>(null);
 const usageSummary = ref<UsageLedgerSummary | null>(null);
 const feedbackStatus = ref<AnonymousFeedbackStatus | null>(null);
+const mobileSyncStatus = ref<MobileSyncStatus | null>(null);
 const analyticsOverview = ref<ReturnType<typeof getAnalyticsOverview> | null>(null);
 const riskSnapshot = ref<ReturnType<typeof getRiskSnapshot> | null>(null);
 const clearing = ref(false);
 const flushingFeedback = ref(false);
+const regeneratingPairingCode = ref(false);
 const feedbackNudgeVisible = ref(false);
 const message = ref("");
 const copyMsg = ref("");
@@ -89,9 +94,35 @@ async function loadState() {
   entitlementState.value = await getEntitlementState();
   usageSummary.value = await getUsageLedgerSummary();
   feedbackStatus.value = await getAnonymousFeedbackStatus();
+  mobileSyncStatus.value = await getMobileSyncStatus();
   analyticsOverview.value = getAnalyticsOverview();
   riskSnapshot.value = getRiskSnapshot();
   refreshFeedbackNudge();
+}
+
+async function refreshMobileSyncStatus() {
+  mobileSyncStatus.value = await getMobileSyncStatus();
+}
+
+function syncResolutionLabel(type: string) {
+  if (type === "variant_accepted") return "已接收为同 UID 素材变体";
+  if (type === "revision_upgraded") return "已升级为更高写入版本";
+  if (type === "stale_revision_ignored") return "已忽略过期写入版本";
+  if (type === "record_inserted") return "已写入新版权记录";
+  return type;
+}
+
+async function handleRegeneratePairingCode() {
+  regeneratingPairingCode.value = true;
+  try {
+    await regenerateMobilePairingCode();
+    mobileSyncStatus.value = await getMobileSyncStatus();
+    message.value = "移动端配对码已更新";
+  } catch (e: unknown) {
+    message.value = String(e);
+  } finally {
+    regeneratingPairingCode.value = false;
+  }
 }
 
 async function toggleTelemetry() {
@@ -309,6 +340,50 @@ onMounted(loadState);
         <span>最近成功</span><span>{{ feedbackStatus.lastSuccessAt ? formatDateTime(feedbackStatus.lastSuccessAt) : "—" }}</span>
         <span>最后错误</span><span>{{ feedbackStatus.lastFlushError ?? "—" }}</span>
       </div>
+    </div>
+
+    <div class="settings-section" v-if="mobileSyncStatus">
+      <div class="settings-row">
+        <strong>移动端同步服务</strong>
+        <button class="btn btn--secondary" type="button" @click="refreshMobileSyncStatus">
+          刷新
+        </button>
+      </div>
+      <div class="usage-grid">
+        <span>状态</span><span>{{ mobileSyncStatus.enabled ? "监听中" : "未启用" }}</span>
+        <span>监听地址</span><span class="mono">{{ mobileSyncStatus.listenAddress }}</span>
+        <span>端口</span><span>{{ mobileSyncStatus.listenPort }}</span>
+        <span>配对码</span><span class="mono">{{ mobileSyncStatus.pairingCode }}</span>
+        <span>已收事件</span><span>{{ mobileSyncStatus.receivedEvents }} 条</span>
+        <span>最近事件</span><span>{{ mobileSyncStatus.latestEventAt ? formatDateTime(mobileSyncStatus.latestEventAt) : "—" }}</span>
+        <span>自动解决</span><span>{{ mobileSyncStatus.resolutionCount }} 次</span>
+      </div>
+      <div v-if="mobileSyncStatus.latestResolution" class="feedback-log">
+        <p class="settings-hint">
+          最近处理：{{ syncResolutionLabel(mobileSyncStatus.latestResolution.resolutionType) }}
+        </p>
+        <div class="usage-grid">
+          <span>水印 UID</span><span class="mono">{{ mobileSyncStatus.latestResolution.watermarkUid }}</span>
+          <span>处理时间</span><span>{{ formatDateTime(mobileSyncStatus.latestResolution.resolvedAt) }}</span>
+          <span>桌面 hash</span><span class="mono">{{ mobileSyncStatus.latestResolution.desktopHash ?? "—" }}</span>
+          <span>移动 hash</span><span class="mono">{{ mobileSyncStatus.latestResolution.mobileHash ?? "—" }}</span>
+          <span>桌面版本</span><span>{{ mobileSyncStatus.latestResolution.desktopRevision ?? "—" }}</span>
+          <span>移动版本</span><span>{{ mobileSyncStatus.latestResolution.mobileRevision ?? "—" }}</span>
+        </div>
+      </div>
+      <div class="feedback-log">
+        <button
+          class="btn btn--primary"
+          type="button"
+          :disabled="regeneratingPairingCode"
+          @click="handleRegeneratePairingCode"
+        >
+          生成新配对码
+        </button>
+      </div>
+      <p class="settings-hint">
+        手机端填写本机局域网地址和配对码后，可切换到桌面 HTTP 同步模式。
+      </p>
     </div>
 
     <div class="settings-section" v-if="analyticsOverview && riskSnapshot">
