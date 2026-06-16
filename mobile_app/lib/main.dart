@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 import 'app/app.dart';
+import 'app/bootstrap.dart';
 
-void main() {
-  runApp(const HiddenShieldApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final bridge = await createDefaultWatermarkBridge();
+  runApp(HiddenShieldApp(bridge: bridge));
 }

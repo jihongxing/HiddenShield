@@ -25,13 +25,22 @@ Flutter 双端 App 的移动端壳。
 
 - `PreviewWatermarkBridge` 是 Flutter 侧占位实现，用于保持页面和测试稳定。
 - `RustWatermarkBridge` 已包住 FRB 生成的图片写入 / 提取 API。
-- 默认 App 暂时仍使用 preview bridge，等 Android/iOS 动态库打包接入后再切换默认实现。
+- 默认 App 启动时会尝试初始化 Rust bridge，失败时回落到 preview bridge。
+- `rust_builder/` 是 FRB `integrate` 生成的 Cargokit FFI plugin，用于 Android/iOS 构建 Rust 库。
 
 重新生成 FRB 绑定：
 
 ```bash
 flutter_rust_bridge_codegen generate --rust-root rust --rust-input crate::api --dart-output lib/src/rust --c-output rust/include/hidden_shield_mobile_bridge.h --no-web
 ```
+
+Android 构建前需要安装 Rust Android targets：
+
+```bash
+rustup target add aarch64-linux-android x86_64-linux-android armv7-linux-androideabi i686-linux-android
+```
+
+当前 Windows 环境已完成 Cargokit 工程接线，但 `flutter build apk --debug` 仍依赖上述 targets 可用。
 
 验证：
 
