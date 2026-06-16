@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:hidden_shield_mobile/main.dart';
+import 'package:hidden_shield_mobile/app/app.dart';
 
 void main() {
   testWidgets('renders the four main tabs', (WidgetTester tester) async {

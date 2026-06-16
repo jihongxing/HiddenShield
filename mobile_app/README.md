@@ -12,8 +12,16 @@ Flutter 双端 App 的移动端壳。
 当前代码入口：
 
 - `lib/main.dart`
+- `lib/app/app.dart`
+- `lib/app/mobile_shell.dart`
+- `lib/features/workspace/workspace_page.dart`
 - `lib/bridge/watermark_bridge.dart`
 - `lib/bridge/local_preview_watermark_bridge.dart`
+
+桥接说明：
+
+- `PreviewWatermarkBridge` 是 Flutter 侧占位实现，用于保持页面和测试稳定。
+- `flutter_rust_bridge_codegen` 可用后，用真实 Rust 绑定替换 bridge 实现即可。
 
 验证：
 
