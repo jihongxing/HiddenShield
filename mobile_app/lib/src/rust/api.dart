@@ -9,7 +9,7 @@ import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'api.freezed.dart';
 
 // These functions are ignored because they are not marked as `pub`: `default_ai_flags`, `fixed_array`, `into_core_format`, `into_core_payload`, `sha256_hex`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
 // These functions are ignored (category: IgnoreBecauseNotAllowedOwner): `into_mobile_extract_result`
 
 Future<MobileImageResult> embedImageForMobile({
@@ -29,8 +29,48 @@ Future<MobileExtractResult> extractImageForMobile({
 }) =>
     RustLib.instance.api.crateApiExtractImageForMobile(imageBytes: imageBytes);
 
+Future<MobileAudioResult> embedAudioWavForMobile({
+  required List<int> audioBytes,
+  required MobileMediaPayload payload,
+  required bool allowRewrite,
+}) => RustLib.instance.api.crateApiEmbedAudioWavForMobile(
+  audioBytes: audioBytes,
+  payload: payload,
+  allowRewrite: allowRewrite,
+);
+
+Future<MobileExtractResult> extractAudioWavForMobile({
+  required List<int> audioBytes,
+}) => RustLib.instance.api.crateApiExtractAudioWavForMobile(
+  audioBytes: audioBytes,
+);
+
 abstract class IntoMobileExtractResult {
   Future<MobileExtractResult> intoMobileExtractResult();
+}
+
+class MobileAudioResult {
+  final Uint8List bytes;
+  final String watermarkUid;
+  final String sha256;
+
+  const MobileAudioResult({
+    required this.bytes,
+    required this.watermarkUid,
+    required this.sha256,
+  });
+
+  @override
+  int get hashCode => bytes.hashCode ^ watermarkUid.hashCode ^ sha256.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MobileAudioResult &&
+          runtimeType == other.runtimeType &&
+          bytes == other.bytes &&
+          watermarkUid == other.watermarkUid &&
+          sha256 == other.sha256;
 }
 
 class MobileExtractResult {

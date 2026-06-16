@@ -9,6 +9,7 @@ Flutter 双端 App 的移动端壳。
 - 预留 Rust / FRB 桥接层，后续接入真正的底层能力。
 - UI 与桌面端保持同一套工作台、取证、版权库、设置结构。
 - 图片嵌入测试页已接入文件选择、预览、重写开关和 preview 结果摘要。
+- 音频嵌入页已接入 WAV 文件选择、重写开关和结果摘要。
 
 当前代码入口：
 
@@ -24,7 +25,7 @@ Flutter 双端 App 的移动端壳。
 桥接说明：
 
 - `PreviewWatermarkBridge` 是 Flutter 侧占位实现，用于保持页面和测试稳定。
-- `RustWatermarkBridge` 已包住 FRB 生成的图片写入 / 提取 API。
+- `RustWatermarkBridge` 已包住 FRB 生成的图片与 WAV 音频写入 / 提取 API。
 - 默认 App 启动时会尝试初始化 Rust bridge，失败时回落到 preview bridge。
 - `rust_builder/` 是 FRB `integrate` 生成的 Cargokit FFI plugin，用于 Android/iOS 构建 Rust 库。
 

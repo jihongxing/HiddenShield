@@ -15,9 +15,9 @@ class RustWatermarkBridge extends WatermarkBridge {
     return Future.value(
       const BridgeStatus(
         label: 'Rust 桥接层已就绪',
-        detail: '图片写入将调用 watermark-core 的移动端 Rust API；音频和平台打包仍在接入中。',
+        detail: '图片和 WAV 音频将调用 watermark-core 的移动端 Rust API；视频仍由桌面端处理。',
         capabilities: BridgeCapabilities(
-          supportedKinds: [WatermarkAssetKind.image],
+          supportedKinds: [WatermarkAssetKind.image, WatermarkAssetKind.audio],
           supportsDesktopSync: false,
           supportsLocalVideo: false,
         ),
@@ -27,16 +27,19 @@ class RustWatermarkBridge extends WatermarkBridge {
 
   @override
   Future<WatermarkReadResult?> read(WatermarkReadRequest request) async {
-    if (request.kind != WatermarkAssetKind.image) {
-      throw UnsupportedError(
-        'Rust bridge currently supports image reads only.',
-      );
-    }
-    final result = await rust_api.extractImageForMobile(
-      imageBytes: request.bytes,
-    );
+    final result = switch (request.kind) {
+      WatermarkAssetKind.image => await rust_api.extractImageForMobile(
+        imageBytes: request.bytes,
+      ),
+      WatermarkAssetKind.audio => await rust_api.extractAudioWavForMobile(
+        audioBytes: request.bytes,
+      ),
+      WatermarkAssetKind.video => throw UnsupportedError(
+        'Mobile local video watermarking is disabled.',
+      ),
+    };
     return WatermarkReadResult(
-      kind: WatermarkAssetKind.image,
+      kind: request.kind,
       watermarkUid: result.watermarkUid,
       revision: 1,
       timestamp: result.timestamp.toInt(),
@@ -47,24 +50,51 @@ class RustWatermarkBridge extends WatermarkBridge {
 
   @override
   Future<WatermarkWriteResult> write(WatermarkWriteRequest request) async {
-    if (request.kind != WatermarkAssetKind.image) {
-      throw UnsupportedError(
-        'Rust bridge currently supports image writes only.',
-      );
-    }
+    final payload = rust_api.MobileMediaPayload(
+      userSeed: Uint8List.fromList(request.seed.userSeed),
+      timestamp: BigInt.from(request.seed.timestamp),
+      deviceId: Uint8List.fromList(request.seed.deviceId),
+      fileHash: Uint8List.fromList(request.seed.fileHash),
+    );
+    return switch (request.kind) {
+      WatermarkAssetKind.image => _writeImage(request, payload),
+      WatermarkAssetKind.audio => _writeAudio(request, payload),
+      WatermarkAssetKind.video => throw UnsupportedError(
+        'Mobile local video watermarking is disabled.',
+      ),
+    };
+  }
+
+  Future<WatermarkWriteResult> _writeImage(
+    WatermarkWriteRequest request,
+    rust_api.MobileMediaPayload payload,
+  ) async {
     final result = await rust_api.embedImageForMobile(
       imageBytes: request.bytes,
-      payload: rust_api.MobileMediaPayload(
-        userSeed: Uint8List.fromList(request.seed.userSeed),
-        timestamp: BigInt.from(request.seed.timestamp),
-        deviceId: Uint8List.fromList(request.seed.deviceId),
-        fileHash: Uint8List.fromList(request.seed.fileHash),
-      ),
+      payload: payload,
       outputFormat: rust_api.MobileImageOutputFormat.png,
       allowRewrite: request.allowRewrite,
     );
     return WatermarkWriteResult(
       kind: WatermarkAssetKind.image,
+      bytes: result.bytes,
+      watermarkUid: result.watermarkUid,
+      revision: request.allowRewrite ? 2 : 1,
+      sha256: result.sha256,
+    );
+  }
+
+  Future<WatermarkWriteResult> _writeAudio(
+    WatermarkWriteRequest request,
+    rust_api.MobileMediaPayload payload,
+  ) async {
+    final result = await rust_api.embedAudioWavForMobile(
+      audioBytes: request.bytes,
+      payload: payload,
+      allowRewrite: request.allowRewrite,
+    );
+    return WatermarkWriteResult(
+      kind: WatermarkAssetKind.audio,
       bytes: result.bytes,
       watermarkUid: result.watermarkUid,
       revision: request.allowRewrite ? 2 : 1,

@@ -25,4 +25,16 @@ void main() {
     expect(find.text('允许重写已有隐盾水印'), findsOneWidget);
     expect(find.text('写入盲水印'), findsOneWidget);
   });
+
+  testWidgets('opens the audio embed flow', (WidgetTester tester) async {
+    await tester.pumpWidget(const HiddenShieldApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('音频嵌入'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('选择 WAV'), findsOneWidget);
+    expect(find.text('允许重写已有隐盾水印'), findsOneWidget);
+    expect(find.text('写入盲水印'), findsOneWidget);
+  });
 }

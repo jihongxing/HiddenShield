@@ -677,6 +677,7 @@ version = "0.1.0"
 dependencies = [
  "flutter_rust_bridge",
  "hex",
+ "hound",
  "image",
  "serde",
  "sha2",

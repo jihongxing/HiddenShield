@@ -23,6 +23,13 @@ pub struct MobileImageResult {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MobileAudioResult {
+    pub bytes: Vec<u8>,
+    pub watermark_uid: String,
+    pub sha256: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MobileExtractResult {
     pub watermark_uid: String,
     pub timestamp: u64,
@@ -82,6 +89,42 @@ pub fn extract_image_for_mobile(
     image_bytes: Vec<u8>,
 ) -> Result<MobileExtractResult, MobileWatermarkError> {
     let payload = WatermarkService::extract(MediaInput::ImageBytes { bytes: image_bytes })
+        .map_err(|error| MobileWatermarkError::OperationFailed(error.to_string()))?;
+    Ok(payload.into_mobile_extract_result())
+}
+
+pub fn embed_audio_wav_for_mobile(
+    audio_bytes: Vec<u8>,
+    payload: MobileMediaPayload,
+    allow_rewrite: bool,
+) -> Result<MobileAudioResult, MobileWatermarkError> {
+    let payload = payload.into_core_payload()?;
+    let output = WatermarkService::embed(
+        MediaInput::AudioWavBytes { bytes: audio_bytes },
+        &payload,
+        watermark_core::EmbedOptions {
+            image_output_format: ImageOutputFormat::Png,
+            allow_rewrite,
+        },
+    )
+    .map_err(|error| MobileWatermarkError::OperationFailed(error.to_string()))?;
+
+    match output {
+        MediaOutput::AudioWavBytes { bytes } => Ok(MobileAudioResult {
+            sha256: sha256_hex(&bytes),
+            watermark_uid: payload.watermark_uid(),
+            bytes,
+        }),
+        _ => Err(MobileWatermarkError::OperationFailed(
+            "unexpected non-audio output".to_string(),
+        )),
+    }
+}
+
+pub fn extract_audio_wav_for_mobile(
+    audio_bytes: Vec<u8>,
+) -> Result<MobileExtractResult, MobileWatermarkError> {
+    let payload = WatermarkService::extract(MediaInput::AudioWavBytes { bytes: audio_bytes })
         .map_err(|error| MobileWatermarkError::OperationFailed(error.to_string()))?;
     Ok(payload.into_mobile_extract_result())
 }
@@ -186,6 +229,27 @@ mod tests {
         cursor.into_inner()
     }
 
+    fn make_wav_bytes() -> Vec<u8> {
+        let spec = hound::WavSpec {
+            channels: 1,
+            sample_rate: 44_100,
+            bits_per_sample: 16,
+            sample_format: hound::SampleFormat::Int,
+        };
+        let mut cursor = std::io::Cursor::new(Vec::new());
+        {
+            let mut writer = hound::WavWriter::new(&mut cursor, spec).unwrap();
+            for i in 0..44_100 {
+                let sample = ((i as f32 * 440.0 * std::f32::consts::TAU / 44_100.0).sin()
+                    * 0.4
+                    * i16::MAX as f32) as i16;
+                writer.write_sample(sample).unwrap();
+            }
+            writer.finalize().unwrap();
+        }
+        cursor.into_inner()
+    }
+
     #[test]
     fn mobile_image_roundtrip() {
         let result = embed_image_for_mobile(
@@ -215,5 +279,16 @@ mod tests {
         .unwrap_err();
 
         assert!(matches!(err, MobileWatermarkError::InvalidPayload(_)));
+    }
+
+    #[test]
+    fn mobile_audio_roundtrip() {
+        let result =
+            embed_audio_wav_for_mobile(make_wav_bytes(), sample_payload(), false).unwrap();
+        let extracted = extract_audio_wav_for_mobile(result.bytes).unwrap();
+
+        assert_eq!(extracted.watermark_uid, result.watermark_uid);
+        assert_eq!(extracted.device_id_hex, "abababab");
+        assert_eq!(extracted.file_hash_hex, "cdcd");
     }
 }

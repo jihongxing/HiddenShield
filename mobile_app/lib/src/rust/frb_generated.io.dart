@@ -42,6 +42,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
 
   @protected
+  MobileAudioResult dco_decode_mobile_audio_result(dynamic raw);
+
+  @protected
   MobileExtractResult dco_decode_mobile_extract_result(dynamic raw);
 
   @protected
@@ -84,6 +87,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
+
+  @protected
+  MobileAudioResult sse_decode_mobile_audio_result(
+    SseDeserializer deserializer,
+  );
 
   @protected
   MobileExtractResult sse_decode_mobile_extract_result(
@@ -140,6 +148,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_list_prim_u_8_strict(
     Uint8List self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_mobile_audio_result(
+    MobileAudioResult self,
     SseSerializer serializer,
   );
 

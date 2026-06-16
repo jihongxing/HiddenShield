@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../bridge/watermark_bridge.dart';
 import '../../shared/widgets/action_card.dart';
 import '../../shared/widgets/feature_page_scaffold.dart';
+import 'audio_embed_page.dart';
 import 'image_embed_page.dart';
 
 class WorkspacePage extends StatelessWidget {
@@ -31,7 +32,11 @@ class WorkspacePage extends StatelessWidget {
           title: '音频嵌入',
           icon: Icons.graphic_eq_outlined,
           description: '导入 WAV 音频，完成本地盲水印写入。',
-          onTap: () => _showComingSoon(context, '音频嵌入'),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => AudioEmbedPage(bridge: bridge),
+            ),
+          ),
         ),
         ActionCard(
           title: '最近任务',
@@ -40,11 +45,5 @@ class WorkspacePage extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  void _showComingSoon(BuildContext context, String title) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('$title 将接入 Rust 处理链')));
   }
 }

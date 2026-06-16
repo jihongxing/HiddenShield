@@ -64,7 +64,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => 193433128;
+  int get rustContentHash => 1485132065;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -76,11 +76,21 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
 }
 
 abstract class RustLibApi extends BaseApi {
+  Future<MobileAudioResult> crateApiEmbedAudioWavForMobile({
+    required List<int> audioBytes,
+    required MobileMediaPayload payload,
+    required bool allowRewrite,
+  });
+
   Future<MobileImageResult> crateApiEmbedImageForMobile({
     required List<int> imageBytes,
     required MobileMediaPayload payload,
     required MobileImageOutputFormat outputFormat,
     required bool allowRewrite,
+  });
+
+  Future<MobileExtractResult> crateApiExtractAudioWavForMobile({
+    required List<int> audioBytes,
   });
 
   Future<MobileExtractResult> crateApiExtractImageForMobile({
@@ -95,6 +105,43 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required super.generalizedFrbRustBinding,
     required super.portManager,
   });
+
+  @override
+  Future<MobileAudioResult> crateApiEmbedAudioWavForMobile({
+    required List<int> audioBytes,
+    required MobileMediaPayload payload,
+    required bool allowRewrite,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_list_prim_u_8_loose(audioBytes, serializer);
+          sse_encode_box_autoadd_mobile_media_payload(payload, serializer);
+          sse_encode_bool(allowRewrite, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 2,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_mobile_audio_result,
+          decodeErrorData: sse_decode_mobile_watermark_error,
+        ),
+        constMeta: kCrateApiEmbedAudioWavForMobileConstMeta,
+        argValues: [audioBytes, payload, allowRewrite],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiEmbedAudioWavForMobileConstMeta =>
+      const TaskConstMeta(
+        debugName: "embed_audio_wav_for_mobile",
+        argNames: ["audioBytes", "payload", "allowRewrite"],
+      );
 
   @override
   Future<MobileImageResult> crateApiEmbedImageForMobile({
@@ -114,7 +161,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 2,
+            funcId: 3,
             port: port_,
           );
         },
@@ -136,6 +183,39 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<MobileExtractResult> crateApiExtractAudioWavForMobile({
+    required List<int> audioBytes,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_list_prim_u_8_loose(audioBytes, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 4,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_mobile_extract_result,
+          decodeErrorData: sse_decode_mobile_watermark_error,
+        ),
+        constMeta: kCrateApiExtractAudioWavForMobileConstMeta,
+        argValues: [audioBytes],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiExtractAudioWavForMobileConstMeta =>
+      const TaskConstMeta(
+        debugName: "extract_audio_wav_for_mobile",
+        argNames: ["audioBytes"],
+      );
+
+  @override
   Future<MobileExtractResult> crateApiExtractImageForMobile({
     required List<int> imageBytes,
   }) {
@@ -147,7 +227,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 3,
+            funcId: 5,
             port: port_,
           );
         },
@@ -210,6 +290,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Uint8List dco_decode_list_prim_u_8_strict(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as Uint8List;
+  }
+
+  @protected
+  MobileAudioResult dco_decode_mobile_audio_result(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return MobileAudioResult(
+      bytes: dco_decode_list_prim_u_8_strict(arr[0]),
+      watermarkUid: dco_decode_String(arr[1]),
+      sha256: dco_decode_String(arr[2]),
+    );
   }
 
   @protected
@@ -330,6 +423,21 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var len_ = sse_decode_i_32(deserializer);
     return deserializer.buffer.getUint8List(len_);
+  }
+
+  @protected
+  MobileAudioResult sse_decode_mobile_audio_result(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_bytes = sse_decode_list_prim_u_8_strict(deserializer);
+    var var_watermarkUid = sse_decode_String(deserializer);
+    var var_sha256 = sse_decode_String(deserializer);
+    return MobileAudioResult(
+      bytes: var_bytes,
+      watermarkUid: var_watermarkUid,
+      sha256: var_sha256,
+    );
   }
 
   @protected
@@ -475,6 +583,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.length, serializer);
     serializer.buffer.putUint8List(self);
+  }
+
+  @protected
+  void sse_encode_mobile_audio_result(
+    MobileAudioResult self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_list_prim_u_8_strict(self.bytes, serializer);
+    sse_encode_String(self.watermarkUid, serializer);
+    sse_encode_String(self.sha256, serializer);
   }
 
   @protected
