@@ -40,7 +40,7 @@ Android 构建前需要安装 Rust Android targets：
 rustup target add aarch64-linux-android x86_64-linux-android armv7-linux-androideabi i686-linux-android
 ```
 
-当前 Windows 环境已完成 Cargokit 工程接线，但 `flutter build apk --debug` 仍依赖上述 targets 可用。
+当前 Windows 环境已完成 Cargokit 工程接线；安装上述 targets 后，`flutter build apk --debug` 已可生成 Android debug APK。
 
 验证：
 
