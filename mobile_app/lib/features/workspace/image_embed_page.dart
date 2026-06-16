@@ -244,11 +244,14 @@ class _ResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final shaPreview = result.sha256.length > 16
+        ? '${result.sha256.substring(0, 16)}...'
+        : result.sha256;
     return _MessageCard(
       icon: Icons.verified_outlined,
       title: '写入完成',
       detail:
-          'UID: ${result.watermarkUid}\nrevision: ${result.revision}\nsha256: ${result.sha256.substring(0, 16)}...',
+          'UID: ${result.watermarkUid}\nrevision: ${result.revision}\nsha256: $shaPreview',
     );
   }
 }

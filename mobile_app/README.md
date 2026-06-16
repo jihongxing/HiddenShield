@@ -18,11 +18,20 @@ Flutter 双端 App 的移动端壳。
 - `lib/features/workspace/workspace_page.dart`
 - `lib/bridge/watermark_bridge.dart`
 - `lib/bridge/local_preview_watermark_bridge.dart`
+- `lib/bridge/rust_watermark_bridge.dart`
+- `lib/src/rust/`（FRB 生成文件）
 
 桥接说明：
 
 - `PreviewWatermarkBridge` 是 Flutter 侧占位实现，用于保持页面和测试稳定。
-- `flutter_rust_bridge_codegen` 可用后，用真实 Rust 绑定替换 bridge 实现即可。
+- `RustWatermarkBridge` 已包住 FRB 生成的图片写入 / 提取 API。
+- 默认 App 暂时仍使用 preview bridge，等 Android/iOS 动态库打包接入后再切换默认实现。
+
+重新生成 FRB 绑定：
+
+```bash
+flutter_rust_bridge_codegen generate --rust-root rust --rust-input crate::api --dart-output lib/src/rust --c-output rust/include/hidden_shield_mobile_bridge.h --no-web
+```
 
 验证：
 
