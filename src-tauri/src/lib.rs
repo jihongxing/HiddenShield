@@ -1,4 +1,5 @@
 mod commands;
+mod config;
 mod db;
 mod encoder;
 pub mod identity;
@@ -157,7 +158,16 @@ pub fn run() {
             commands::telemetry::clear_all_data,
             commands::telemetry::clear_cache_only,
             commands::sync::get_mobile_sync_status,
-            commands::sync::regenerate_mobile_pairing_code
+            commands::sync::regenerate_mobile_pairing_code,
+            commands::sync::get_desktop_cloud_sync_profile,
+            commands::sync::get_desktop_cloud_queue_status,
+            commands::sync::sign_out_desktop_cloud,
+            commands::sync::continue_cloud_account,
+            commands::sync::push_desktop_vault_record_to_cloud,
+            commands::sync::push_saved_desktop_vault_record_to_cloud,
+            commands::sync::flush_desktop_cloud_sync_queue,
+            commands::sync::fetch_cloud_changes,
+            commands::sync::pull_saved_cloud_changes_into_desktop
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {

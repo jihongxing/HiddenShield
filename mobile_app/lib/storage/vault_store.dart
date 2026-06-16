@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:path/path.dart' as path;
 import 'package:sqflite/sqflite.dart';
 
@@ -11,7 +13,7 @@ abstract class VaultStore {
 
   Future<List<MobileSyncResolution>> loadSyncResolutions();
 
-  Future<DesktopPairingProfile> loadPairingProfile();
+  Future<SyncProfile> loadSyncProfile();
 
   Future<void> upsertRecord(VaultRecord record);
 
@@ -21,7 +23,7 @@ abstract class VaultStore {
 
   Future<void> recordSyncResolution(MobileSyncResolution resolution);
 
-  Future<void> savePairingProfile(DesktopPairingProfile profile);
+  Future<void> saveSyncProfile(SyncProfile profile);
 
   Future<void> close();
 }
@@ -30,7 +32,7 @@ class MemoryVaultStore implements VaultStore {
   final List<VaultRecord> _records = [];
   final List<SyncQueueItem> _syncQueue = [];
   final List<MobileSyncResolution> _syncResolutions = [];
-  DesktopPairingProfile _pairingProfile = DesktopPairingProfile.unpaired();
+  SyncProfile _syncProfile = SyncProfile.localOnly();
 
   @override
   Future<List<VaultRecord>> loadRecords() async => List.unmodifiable(_records);
@@ -44,7 +46,7 @@ class MemoryVaultStore implements VaultStore {
       List.unmodifiable(_syncResolutions);
 
   @override
-  Future<DesktopPairingProfile> loadPairingProfile() async => _pairingProfile;
+  Future<SyncProfile> loadSyncProfile() async => _syncProfile;
 
   @override
   Future<void> upsertRecord(VaultRecord record) async {
@@ -84,8 +86,8 @@ class MemoryVaultStore implements VaultStore {
   }
 
   @override
-  Future<void> savePairingProfile(DesktopPairingProfile profile) async {
-    _pairingProfile = profile;
+  Future<void> saveSyncProfile(SyncProfile profile) async {
+    _syncProfile = profile;
   }
 
   @override
@@ -247,23 +249,63 @@ CREATE TABLE $_syncResolutionsTable (
   }
 
   @override
-  Future<DesktopPairingProfile> loadPairingProfile() async {
+  Future<SyncProfile> loadSyncProfile() async {
     final rows = await _db.query(_syncProfileTable);
     if (rows.isEmpty) {
-      return DesktopPairingProfile.unpaired();
+      return SyncProfile.localOnly();
     }
     final values = {
       for (final row in rows) row['key']! as String: row['value']! as String,
     };
-    return DesktopPairingProfile(
-      desktopAddress: values['desktop_address'] ?? '',
-      pairingCode: values['pairing_code'] ?? '',
-      status: _desktopPairingStatusFromName(values['status'] ?? 'unpaired'),
+    final legacyLanAddress = values['desktop_address'];
+    final legacyPairingCode = values['pairing_code'];
+    final mode = _syncTransportModeFromName(
+      values['mode'] ??
+          ((legacyLanAddress?.isNotEmpty == true &&
+                  legacyPairingCode?.isNotEmpty == true)
+              ? 'lanDebug'
+              : 'localOnly'),
+    );
+    return SyncProfile(
+      mode: mode,
+      status: _syncConnectionStatusFromName(values['status'] ?? 'unconfigured'),
       updatedAt: DateTime.fromMillisecondsSinceEpoch(
         int.tryParse(values['updated_at'] ?? '') ?? 0,
       ),
+      accountId: values['account_id'],
+      accountLabel: values['account_label'],
+      authToken: values['auth_token'],
+      refreshToken: values['refresh_token'],
+      workspaceId: values['workspace_id'],
+      workspaceName: values['workspace_name'],
+      deviceId: values['device_id'],
+      deviceName: values['device_name'],
+      devicePlatform: values['device_platform'],
+      deviceRegistered: values['device_registered'] == 'true',
+      creatorProfileId: values['creator_profile_id'],
+      creatorDisplayName: values['creator_display_name'],
+      creatorSeedRef: values['creator_seed_ref'],
+      creatorSeedEnvelopeVersion:
+          int.tryParse(values['creator_seed_envelope_version'] ?? '') ?? 0,
+      creatorProfileSynced: values['creator_profile_synced'] == 'true',
+      entitlementId: values['entitlement_id'],
+      entitlementLabel: values['entitlement_label'] ?? '免费版',
+      entitlementStatus: _entitlementStatusFromName(
+        values['entitlement_status'] ?? 'free',
+      ),
+      entitlementPlanCode: values['entitlement_plan_code'] ?? 'free',
+      entitlementFeatures: _decodeBoolMap(values['entitlement_features_json']),
+      entitlementLastCheckedAt: _parseDateTime(
+        values['entitlement_last_checked_at'],
+      ),
+      cloudBaseUrl: values['cloud_base_url'] ?? '',
+      lanDebugAddress: values['lan_debug_address'] ?? legacyLanAddress ?? '',
+      lanDebugPairingCode:
+          values['lan_debug_pairing_code'] ?? legacyPairingCode ?? '',
       lastError: values['last_error'],
-      lastDesktopPullSince: values['last_desktop_pull_since'],
+      lastRemotePullCursor:
+          values['last_remote_pull_cursor'] ??
+          values['last_desktop_pull_since'],
     );
   }
 
@@ -298,49 +340,61 @@ CREATE TABLE $_syncResolutionsTable (
   }
 
   @override
-  Future<void> savePairingProfile(DesktopPairingProfile profile) async {
+  Future<void> saveSyncProfile(SyncProfile profile) async {
     await _db.transaction((txn) async {
-      await txn.insert(_syncProfileTable, {
-        'key': 'desktop_address',
-        'value': profile.desktopAddress,
-      }, conflictAlgorithm: ConflictAlgorithm.replace);
-      await txn.insert(_syncProfileTable, {
-        'key': 'pairing_code',
-        'value': profile.pairingCode,
-      }, conflictAlgorithm: ConflictAlgorithm.replace);
-      await txn.insert(_syncProfileTable, {
-        'key': 'status',
-        'value': profile.status.name,
-      }, conflictAlgorithm: ConflictAlgorithm.replace);
-      final pullSince = profile.lastDesktopPullSince;
-      if (pullSince == null || pullSince.isEmpty) {
-        await txn.delete(
-          _syncProfileTable,
-          where: 'key = ?',
-          whereArgs: ['last_desktop_pull_since'],
-        );
-      } else {
+      Future<void> put(String key, String? value) async {
+        if (value == null || value.isEmpty) {
+          await txn.delete(
+            _syncProfileTable,
+            where: 'key = ?',
+            whereArgs: [key],
+          );
+          return;
+        }
         await txn.insert(_syncProfileTable, {
-          'key': 'last_desktop_pull_since',
-          'value': pullSince,
+          'key': key,
+          'value': value,
         }, conflictAlgorithm: ConflictAlgorithm.replace);
       }
-      await txn.insert(_syncProfileTable, {
-        'key': 'updated_at',
-        'value': '${profile.updatedAt.millisecondsSinceEpoch}',
-      }, conflictAlgorithm: ConflictAlgorithm.replace);
-      if (profile.lastError == null) {
-        await txn.delete(
-          _syncProfileTable,
-          where: 'key = ?',
-          whereArgs: ['last_error'],
-        );
-      } else {
-        await txn.insert(_syncProfileTable, {
-          'key': 'last_error',
-          'value': profile.lastError!,
-        }, conflictAlgorithm: ConflictAlgorithm.replace);
-      }
+
+      await put('mode', profile.mode.name);
+      await put('status', profile.status.name);
+      await put('updated_at', '${profile.updatedAt.millisecondsSinceEpoch}');
+      await put('account_id', profile.accountId);
+      await put('account_label', profile.accountLabel);
+      await put('auth_token', profile.authToken);
+      await put('refresh_token', profile.refreshToken);
+      await put('workspace_id', profile.workspaceId);
+      await put('workspace_name', profile.workspaceName);
+      await put('device_id', profile.deviceId);
+      await put('device_name', profile.deviceName);
+      await put('device_platform', profile.devicePlatform);
+      await put('device_registered', '${profile.deviceRegistered}');
+      await put('creator_profile_id', profile.creatorProfileId);
+      await put('creator_display_name', profile.creatorDisplayName);
+      await put('creator_seed_ref', profile.creatorSeedRef);
+      await put(
+        'creator_seed_envelope_version',
+        '${profile.creatorSeedEnvelopeVersion}',
+      );
+      await put('creator_profile_synced', '${profile.creatorProfileSynced}');
+      await put('entitlement_id', profile.entitlementId);
+      await put('entitlement_label', profile.entitlementLabel);
+      await put('entitlement_status', profile.entitlementStatus.name);
+      await put('entitlement_plan_code', profile.entitlementPlanCode);
+      await put(
+        'entitlement_features_json',
+        jsonEncode(profile.entitlementFeatures),
+      );
+      await put(
+        'entitlement_last_checked_at',
+        profile.entitlementLastCheckedAt?.toIso8601String(),
+      );
+      await put('cloud_base_url', profile.cloudBaseUrl);
+      await put('lan_debug_address', profile.lanDebugAddress);
+      await put('lan_debug_pairing_code', profile.lanDebugPairingCode);
+      await put('last_remote_pull_cursor', profile.lastRemotePullCursor);
+      await put('last_error', profile.lastError);
     });
   }
 
@@ -485,11 +539,46 @@ SyncQueueItemStatus _syncQueueItemStatusFromName(String name) {
   );
 }
 
-DesktopPairingStatus _desktopPairingStatusFromName(String name) {
-  return DesktopPairingStatus.values.firstWhere(
+SyncConnectionStatus _syncConnectionStatusFromName(String name) {
+  return SyncConnectionStatus.values.firstWhere(
     (status) => status.name == name,
-    orElse: () => DesktopPairingStatus.unpaired,
+    orElse: () => SyncConnectionStatus.unconfigured,
   );
+}
+
+SyncTransportMode _syncTransportModeFromName(String name) {
+  return SyncTransportMode.values.firstWhere(
+    (mode) => mode.name == name,
+    orElse: () => SyncTransportMode.localOnly,
+  );
+}
+
+EntitlementStatus _entitlementStatusFromName(String name) {
+  return EntitlementStatus.values.firstWhere(
+    (status) => status.name == name,
+    orElse: () => EntitlementStatus.free,
+  );
+}
+
+Map<String, bool> _decodeBoolMap(String? raw) {
+  if (raw == null || raw.isEmpty) {
+    return const {};
+  }
+  try {
+    final decoded = jsonDecode(raw) as Map<String, Object?>;
+    return {
+      for (final entry in decoded.entries) entry.key: entry.value == true,
+    };
+  } catch (_) {
+    return const {};
+  }
+}
+
+DateTime? _parseDateTime(String? raw) {
+  if (raw == null || raw.isEmpty) {
+    return null;
+  }
+  return DateTime.tryParse(raw);
 }
 
 MobileSyncResolutionType _mobileSyncResolutionTypeFromName(String name) {

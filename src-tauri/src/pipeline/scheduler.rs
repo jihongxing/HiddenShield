@@ -19,6 +19,7 @@ use crate::pipeline::ffmpeg::{self, FfmpegPaths};
 use crate::pipeline::progress::PlatformPercents;
 use crate::pipeline::system_guard;
 use crate::pipeline::watermark::{self, WatermarkPayload};
+use crate::sync::{cloud, storage as sync_storage};
 use crate::telemetry;
 use crate::tsa;
 use crate::utils::fs as ufs;
@@ -141,6 +142,19 @@ async fn persist_record_and_usage_async(
             })?;
         let mut record = record;
         record.id = record_id as u32;
+        let event = cloud::vault_record_to_cloud_event(&record);
+        let event_json = serde_json::to_string(&event).map_err(|e| {
+            PipelineError::DatabaseError(format!("Failed to serialize cloud sync event: {e}"))
+        })?;
+        sync_storage::enqueue_cloud_sync_event(
+            &conn,
+            &event.client_event_id,
+            record.id,
+            &event_json,
+        )
+        .map_err(|e| {
+            PipelineError::DatabaseError(format!("Failed to enqueue cloud sync event: {e}"))
+        })?;
         Ok(record)
     })
     .await

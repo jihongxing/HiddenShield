@@ -8,6 +8,7 @@ use std::time::Duration;
 use rusqlite::Connection;
 use tauri::{AppHandle, Manager};
 
+use crate::config;
 use crate::db::queries;
 
 use super::storage::{
@@ -15,9 +16,8 @@ use super::storage::{
     build_queue_batch_response, build_queue_item_response, init_sync_storage, pairing_code_matches,
     record_sync_event, MobileSyncBatchRequest, MobileSyncQueueItem,
 };
-const SYNC_PORT: u16 = 47219;
-
 pub fn start_sync_server(app_handle: AppHandle) {
+    let listen_port = config::load_system_config().lan_debug_port;
     let app_data_dir = match app_handle.path().app_data_dir() {
         Ok(path) => path,
         Err(err) => {
@@ -28,7 +28,7 @@ pub fn start_sync_server(app_handle: AppHandle) {
 
     thread::spawn(move || {
         let db_path = app_data_dir.join("vault.db");
-        if let Err(err) = run_sync_server(db_path, app_data_dir, ("0.0.0.0", SYNC_PORT), None) {
+        if let Err(err) = run_sync_server(db_path, app_data_dir, ("0.0.0.0", listen_port), None) {
             log::warn!("sync server stopped: {err}");
         }
     });
@@ -92,7 +92,7 @@ fn run_sync_server_with_listener(
     let addr = listener
         .local_addr()
         .map(|addr| addr.to_string())
-        .unwrap_or_else(|_| format!("0.0.0.0:{SYNC_PORT}"));
+        .unwrap_or_else(|_| "0.0.0.0:unknown".to_string());
     log::info!("desktop sync stub listening on http://{addr}");
 
     loop {

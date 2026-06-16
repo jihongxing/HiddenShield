@@ -119,14 +119,15 @@ void main() {
         lastError: 'network failed',
       ),
     );
-    await store.savePairingProfile(
-      DesktopPairingProfile(
-        desktopAddress: 'http://127.0.0.1:47219',
-        pairingCode: 'abcdef',
-        status: DesktopPairingStatus.failed,
+    await store.saveSyncProfile(
+      SyncProfile(
+        mode: SyncTransportMode.lanDebug,
+        lanDebugAddress: 'http://127.0.0.1:47219',
+        lanDebugPairingCode: 'abcdef',
+        status: SyncConnectionStatus.failed,
         updatedAt: DateTime.fromMillisecondsSinceEpoch(2000),
         lastError: 'pairing rejected',
-        lastDesktopPullSince: '2026-06-16T12:00:00.000Z',
+        lastRemotePullCursor: '2026-06-16T12:00:00.000Z',
       ),
     );
     final state = MobileAppState(vaultStore: store);
@@ -141,41 +142,68 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('同步诊断'), findsOneWidget);
-    expect(find.text('http://127.0.0.1:47219'), findsWidgets);
     expect(find.text('连接失败'), findsWidgets);
     expect(find.text('待同步 0 · 失败 1'), findsOneWidget);
     expect(find.textContaining('pairing rejected'), findsWidgets);
     expect(find.text('重试失败'), findsOneWidget);
   });
 
-  testWidgets('renders mobile pairing checklist in settings', (
+  testWidgets('renders account identity contract in settings', (
     WidgetTester tester,
   ) async {
-    final store = MemoryVaultStore();
-    await store.savePairingProfile(
-      DesktopPairingProfile(
-        desktopAddress: 'http://192.168.1.8:47219',
-        pairingCode: '123456',
-        status: DesktopPairingStatus.paired,
-        updatedAt: DateTime.fromMillisecondsSinceEpoch(1000),
-      ),
-    );
-    final state = MobileAppState(vaultStore: store);
+    final state = MobileAppState(vaultStore: MemoryVaultStore());
     await state.load();
-    state.setSyncTransportMode(SyncTransportMode.http);
+    state.updateCreatorLabel('Alice Creator');
+    await state.continueWithAccountPlaceholder(accountLabel: 'alice@example.com');
 
     await tester.pumpWidget(HiddenShieldApp(appState: state));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('设置').last);
     await tester.pumpAndSettle();
-    await tester.drag(find.byType(ListView).last, const Offset(0, -360));
+
+    expect(find.text('alice@example.com'), findsWidgets);
+    expect(find.text('个人空间'), findsWidgets);
+    expect(find.textContaining('当前移动设备'), findsWidgets);
+    expect(find.text('云同步'), findsWidgets);
+    expect(find.textContaining('creator_'), findsWidgets);
+  });
+
+  testWidgets('renders mobile pairing checklist in settings', (
+    WidgetTester tester,
+  ) async {
+    final store = MemoryVaultStore();
+    await store.saveSyncProfile(
+      SyncProfile(
+        mode: SyncTransportMode.lanDebug,
+        lanDebugAddress: 'http://192.168.1.8:47219',
+        lanDebugPairingCode: '123456',
+        status: SyncConnectionStatus.connected,
+        updatedAt: DateTime.fromMillisecondsSinceEpoch(1000),
+      ),
+    );
+    final state = MobileAppState(vaultStore: store);
+    await state.load();
+    state.setSyncTransportMode(SyncTransportMode.lanDebug);
+
+    await tester.pumpWidget(HiddenShieldApp(appState: state));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('设置').last);
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('局域网调试同步').first,
+      120,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(ExpansionTile).first);
     await tester.pumpAndSettle();
 
     expect(find.text('联调检查'), findsOneWidget);
     expect(find.text('http://192.168.1.8:47219'), findsWidgets);
     expect(find.text('已保存'), findsOneWidget);
-    expect(find.text('桌面 HTTP'), findsWidgets);
+    expect(find.text('局域网调试'), findsWidgets);
   });
 
   testWidgets('opens vault record details sheet', (WidgetTester tester) async {

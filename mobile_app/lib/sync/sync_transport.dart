@@ -20,6 +20,28 @@ abstract class SyncTransport {
   }
 }
 
+class LocalOnlySyncTransport implements SyncTransport {
+  const LocalOnlySyncTransport();
+
+  @override
+  Future<SyncSendResult> send(SyncQueueItem item) async {
+    return const SyncSendResult.failure('local-only sync is disabled');
+  }
+
+  @override
+  Future<SyncChangesResult> fetchChanges({String? since}) async {
+    return const SyncChangesResult.success(changes: [], nextSince: '');
+  }
+
+  @override
+  Future<SyncBatchSendResult> sendBatch(List<SyncQueueItem> items) async {
+    return SyncBatchSendResult({
+      for (final item in items)
+        item.id: const SyncSendResult.failure('local-only sync is disabled'),
+    });
+  }
+}
+
 class LocalMockSyncTransport implements SyncTransport {
   const LocalMockSyncTransport({this.shouldFail = false});
 
@@ -51,14 +73,171 @@ class LocalMockSyncTransport implements SyncTransport {
   }
 }
 
-class DesktopHttpSyncTransport implements SyncTransport {
-  DesktopHttpSyncTransport({
-    required this.desktopAddress,
+class CloudSyncTransport implements SyncTransport {
+  CloudSyncTransport({
+    required this.baseUrl,
+    required this.authToken,
+    required this.deviceId,
+    http.Client? client,
+    Duration timeout = const Duration(seconds: 10),
+  }) : _client = client ?? http.Client(),
+       _timeout = timeout;
+
+  final String? baseUrl;
+  final String? authToken;
+  final String? deviceId;
+  final http.Client _client;
+  final Duration _timeout;
+
+  @override
+  Future<SyncSendResult> send(SyncQueueItem item) async {
+    final batchResult = await sendBatch([item]);
+    return batchResult.resultFor(item.id);
+  }
+
+  @override
+  Future<SyncBatchSendResult> sendBatch(List<SyncQueueItem> items) async {
+    if (items.isEmpty) {
+      return const SyncBatchSendResult({});
+    }
+    if (authToken?.isNotEmpty != true) {
+      return SyncBatchSendResult.failureForAll(
+        items,
+        'cloud sync requires HiddenShield account sign-in',
+      );
+    }
+    final baseUri = _baseUriOrNull();
+    if (baseUri == null) {
+      return SyncBatchSendResult.failureForAll(
+        items,
+        'cloud sync base URL is not configured',
+      );
+    }
+    if (deviceId?.isNotEmpty != true) {
+      return SyncBatchSendResult.failureForAll(
+        items,
+        'cloud sync device is not registered',
+      );
+    }
+
+    final endpoint = baseUri.resolve('/v1/sync/events:batch');
+    try {
+      final response = await _client
+          .post(
+            endpoint,
+            headers: {
+              'authorization': 'Bearer ${authToken!.trim()}',
+              'content-type': 'application/json',
+            },
+            body: jsonEncode({
+              'deviceId': deviceId,
+              'events': items.map(_cloudEventBody).toList(growable: false),
+            }),
+          )
+          .timeout(_timeout);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        return SyncBatchSendResult.failureForAll(
+          items,
+          'cloud sync failed: HTTP ${response.statusCode} ${_shortBody(response.body)}',
+        );
+      }
+      final body = jsonDecode(response.body) as Map<String, Object?>;
+      final acceptedIds =
+          (body['acceptedEventIds'] as List<dynamic>? ?? const [])
+              .whereType<String>()
+              .toSet();
+      return SyncBatchSendResult({
+        for (final item in items)
+          item.id: acceptedIds.isEmpty || acceptedIds.contains(item.id)
+              ? const SyncSendResult.success()
+              : const SyncSendResult.failure(
+                  'cloud sync event was not accepted',
+                ),
+      });
+    } catch (error) {
+      return SyncBatchSendResult.failureForAll(
+        items,
+        'cloud sync failed: $error',
+      );
+    }
+  }
+
+  @override
+  Future<SyncChangesResult> fetchChanges({String? since}) async {
+    if (authToken?.isNotEmpty != true) {
+      return const SyncChangesResult.failure(
+        'cloud sync requires HiddenShield account sign-in',
+      );
+    }
+    final baseUri = _baseUriOrNull();
+    if (baseUri == null) {
+      return const SyncChangesResult.failure(
+        'cloud sync base URL is not configured',
+      );
+    }
+    final endpoint = baseUri.replace(
+      path: '/v1/sync/changes',
+      queryParameters: since == null || since.isEmpty
+          ? null
+          : {'cursor': since},
+    );
+    try {
+      final response = await _client
+          .get(
+            endpoint,
+            headers: {'authorization': 'Bearer ${authToken!.trim()}'},
+          )
+          .timeout(_timeout);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        return SyncChangesResult.failure(
+          'cloud changes failed: HTTP ${response.statusCode} ${_shortBody(response.body)}',
+        );
+      }
+      final body = jsonDecode(response.body) as Map<String, Object?>;
+      final rawChanges = body['changes'] as List<dynamic>? ?? const [];
+      return SyncChangesResult.success(
+        nextSince: body['nextCursor'] as String? ?? '',
+        changes: rawChanges
+            .whereType<Map<String, Object?>>()
+            .map(RemoteSyncChange.fromCloudJson)
+            .toList(growable: false),
+      );
+    } catch (error) {
+      return SyncChangesResult.failure('cloud changes failed: $error');
+    }
+  }
+
+  Uri? _baseUriOrNull() {
+    final raw = baseUrl?.trim();
+    if (raw == null || raw.isEmpty) {
+      return null;
+    }
+    final uri = Uri.tryParse(raw);
+    if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
+      return null;
+    }
+    return uri;
+  }
+
+  Map<String, Object?> _cloudEventBody(SyncQueueItem item) {
+    return {
+      'clientEventId': item.id,
+      'operation': item.operation.name,
+      'entityType': _cloudEntityType(item.payloadType),
+      'entityId': item.recordId,
+      'payload': jsonDecode(item.payloadJson),
+    };
+  }
+}
+
+class LanDebugSyncTransport implements SyncTransport {
+  LanDebugSyncTransport({
+    required this.lanDebugAddress,
     required this.pairingCode,
     http.Client? client,
   }) : _client = client ?? http.Client();
 
-  final String desktopAddress;
+  final String lanDebugAddress;
   final String pairingCode;
   final http.Client _client;
 
@@ -73,11 +252,11 @@ class DesktopHttpSyncTransport implements SyncTransport {
     if (items.isEmpty) {
       return const SyncBatchSendResult({});
     }
-    final baseUri = Uri.tryParse(desktopAddress.trim());
+    final baseUri = Uri.tryParse(lanDebugAddress.trim());
     if (baseUri == null || !baseUri.hasScheme || baseUri.host.isEmpty) {
       return SyncBatchSendResult.failureForAll(
         items,
-        'desktop address is invalid',
+        'LAN debug address is invalid',
       );
     }
     if (pairingCode.trim().isEmpty) {
@@ -106,12 +285,12 @@ class DesktopHttpSyncTransport implements SyncTransport {
       }
       return SyncBatchSendResult.failureForAll(
         items,
-        'desktop sync failed: HTTP ${response.statusCode} ${_shortBody(response.body)}',
+        'LAN debug sync failed: HTTP ${response.statusCode} ${_shortBody(response.body)}',
       );
     } catch (error) {
       return SyncBatchSendResult.failureForAll(
         items,
-        'desktop sync failed: $error',
+        'LAN debug sync failed: $error',
       );
     }
   }
@@ -128,9 +307,9 @@ class DesktopHttpSyncTransport implements SyncTransport {
 
   @override
   Future<SyncChangesResult> fetchChanges({String? since}) async {
-    final baseUri = Uri.tryParse(desktopAddress.trim());
+    final baseUri = Uri.tryParse(lanDebugAddress.trim());
     if (baseUri == null || !baseUri.hasScheme || baseUri.host.isEmpty) {
-      return const SyncChangesResult.failure('desktop address is invalid');
+      return const SyncChangesResult.failure('LAN debug address is invalid');
     }
     if (pairingCode.trim().isEmpty) {
       return const SyncChangesResult.failure('pairing code is empty');
@@ -149,7 +328,7 @@ class DesktopHttpSyncTransport implements SyncTransport {
           .timeout(const Duration(seconds: 8));
       if (response.statusCode < 200 || response.statusCode >= 300) {
         return SyncChangesResult.failure(
-          'desktop changes failed: HTTP ${response.statusCode} ${_shortBody(response.body)}',
+          'LAN debug changes failed: HTTP ${response.statusCode} ${_shortBody(response.body)}',
         );
       }
       final body = jsonDecode(response.body) as Map<String, Object?>;
@@ -158,17 +337,17 @@ class DesktopHttpSyncTransport implements SyncTransport {
         nextSince: body['nextSince'] as String? ?? '',
         changes: rawChanges
             .whereType<Map<String, Object?>>()
-            .map(DesktopSyncChange.fromJson)
+            .map(RemoteSyncChange.fromJson)
             .toList(growable: false),
       );
     } catch (error) {
-      return SyncChangesResult.failure('desktop changes failed: $error');
+      return SyncChangesResult.failure('LAN debug changes failed: $error');
     }
   }
 }
 
-class DesktopSyncChange {
-  const DesktopSyncChange({
+class RemoteSyncChange {
+  const RemoteSyncChange({
     required this.id,
     required this.kind,
     required this.title,
@@ -182,10 +361,11 @@ class DesktopSyncChange {
     this.extractedDeviceIdHex,
     this.extractedFileHashHex,
     this.source,
+    this.sourceDevice,
   });
 
-  factory DesktopSyncChange.fromJson(Map<String, Object?> json) {
-    return DesktopSyncChange(
+  factory RemoteSyncChange.fromJson(Map<String, Object?> json) {
+    return RemoteSyncChange(
       id: json['id'] as String? ?? '',
       kind: json['kind'] as String? ?? 'image',
       title: json['title'] as String? ?? '桌面版权记录',
@@ -198,8 +378,17 @@ class DesktopSyncChange {
       extractedDeviceIdHex: json['extracted_device_id_hex'] as String?,
       extractedFileHashHex: json['extracted_file_hash_hex'] as String?,
       source: json['source'] as String?,
+      sourceDevice: json['source_device'] as String? ?? 'lanDebug',
       createdAt: json['created_at'] as String? ?? '',
     );
+  }
+
+  factory RemoteSyncChange.fromCloudJson(Map<String, Object?> json) {
+    final entity = json['entity'] as Map<String, Object?>? ?? const {};
+    return RemoteSyncChange.fromJson({
+      ...entity,
+      'source_device': json['sourceDevice'] as String? ?? 'cloud',
+    });
   }
 
   final String id;
@@ -214,6 +403,7 @@ class DesktopSyncChange {
   final String? extractedDeviceIdHex;
   final String? extractedFileHashHex;
   final String? source;
+  final String? sourceDevice;
   final String createdAt;
 }
 
@@ -226,7 +416,7 @@ class SyncChangesResult {
   });
 
   const SyncChangesResult.success({
-    required List<DesktopSyncChange> changes,
+    required List<RemoteSyncChange> changes,
     required String nextSince,
   }) : this._(isSuccess: true, changes: changes, nextSince: nextSince);
 
@@ -234,7 +424,7 @@ class SyncChangesResult {
     : this._(isSuccess: false, changes: const [], nextSince: '', error: error);
 
   final bool isSuccess;
-  final List<DesktopSyncChange> changes;
+  final List<RemoteSyncChange> changes;
   final String nextSince;
   final String? error;
 }
@@ -277,4 +467,12 @@ String _shortBody(String body) {
     return '';
   }
   return trimmed.length > 160 ? '${trimmed.substring(0, 160)}...' : trimmed;
+}
+
+String _cloudEntityType(String payloadType) {
+  return switch (payloadType) {
+    'vault_record' => 'vaultRecord',
+    'evidence_record' => 'evidenceRecord',
+    _ => payloadType,
+  };
 }

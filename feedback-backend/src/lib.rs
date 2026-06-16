@@ -6,8 +6,8 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use axum::{
-    extract::State,
-    http::StatusCode,
+    extract::{Query, State},
+    http::{HeaderMap, StatusCode},
     response::IntoResponse,
     routing::{get, post},
     Json, Router,
@@ -19,7 +19,8 @@ use tracing_subscriber::EnvFilter;
 
 use crate::schema::{
     AnonymousFeedbackBatch, AnonymousFeedbackBatchAck, AnonymousFeedbackStatsQuery,
-    AnonymousFeedbackStatsResponse,
+    AnonymousFeedbackStatsResponse, CloudSyncBatchRequest, CloudSyncChangesResult,
+    ContinueAccountRequest,
 };
 use crate::storage::{Storage, StorageError};
 
@@ -43,9 +44,12 @@ pub struct AppState {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct HealthResponse {
+    ok: bool,
+    service: &'static str,
     status: &'static str,
     version: &'static str,
     timestamp: chrono::DateTime<chrono::Utc>,
+    cloud_sync: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -59,15 +63,18 @@ pub struct ApiErrorResponse {
 pub enum ApiError {
     #[error("bad request")]
     BadRequest(String),
+    #[error("unauthorized")]
+    Unauthorized,
     #[error("storage error")]
-    Storage(#[from] StorageError),
+    Storage(String),
 }
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> axum::response::Response {
         let (status, error, message) = match self {
             ApiError::BadRequest(message) => (StatusCode::BAD_REQUEST, "bad_request".to_string(), message),
-            ApiError::Storage(err) => (StatusCode::INTERNAL_SERVER_ERROR, "storage_error".to_string(), err.to_string()),
+            ApiError::Unauthorized => (StatusCode::UNAUTHORIZED, "unauthorized".to_string(), "unauthorized".to_string()),
+            ApiError::Storage(message) => (StatusCode::INTERNAL_SERVER_ERROR, "storage_error".to_string(), message),
         };
         (status, Json(ApiErrorResponse { error, message })).into_response()
     }
@@ -76,6 +83,10 @@ impl IntoResponse for ApiError {
 pub fn build_app(storage: Arc<Storage>) -> Router {
     Router::new()
         .route("/healthz", get(healthz))
+        .route("/v1/health", get(healthz))
+        .route("/v1/auth/continue", post(continue_account))
+        .route("/v1/sync/events:batch", post(push_cloud_events_batch))
+        .route("/v1/sync/changes", get(get_cloud_changes))
         .route("/v1/anonymous-feedback/batches", post(ingest_batch))
         .route("/v1/anonymous-feedback/stats", get(get_stats))
         .with_state(AppState { storage })
@@ -98,10 +109,45 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
 
 async fn healthz() -> Json<HealthResponse> {
     Json(HealthResponse {
+        ok: true,
+        service: "hidden-shield-feedback-backend",
         status: "ok",
         version: env!("CARGO_PKG_VERSION"),
         timestamp: Utc::now(),
+        cloud_sync: true,
     })
+}
+
+async fn continue_account(
+    State(state): State<AppState>,
+    Json(request): Json<ContinueAccountRequest>,
+) -> Result<Json<crate::schema::CloudAccountSession>, ApiError> {
+    validate_continue_account(&request)?;
+    Ok(Json(state.storage.continue_account(&request).map_err(ApiError::from)?))
+}
+
+async fn push_cloud_events_batch(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(batch): Json<CloudSyncBatchRequest>,
+) -> Result<Json<crate::schema::CloudSyncBatchResult>, ApiError> {
+    validate_cloud_batch(&batch)?;
+    let token = bearer_token(&headers)?;
+    Ok(Json(
+        state
+            .storage
+            .push_cloud_events_batch(token, &batch)
+            .map_err(ApiError::from)?,
+    ))
+}
+
+async fn get_cloud_changes(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Query(query): Query<CloudChangesQuery>,
+) -> Result<Json<CloudSyncChangesResult>, ApiError> {
+    let token = bearer_token(&headers)?;
+    Ok(Json(state.storage.get_cloud_changes(token, query.cursor.as_deref()).map_err(ApiError::from)?))
 }
 
 async fn ingest_batch(
@@ -141,6 +187,57 @@ fn validate_batch(batch: &AnonymousFeedbackBatch) -> Result<(), ApiError> {
         }
     }
     Ok(())
+}
+
+#[derive(Debug, Clone, serde::Deserialize)]
+struct CloudChangesQuery {
+    cursor: Option<String>,
+}
+
+fn validate_continue_account(request: &ContinueAccountRequest) -> Result<(), ApiError> {
+    if request.identifier.trim().is_empty() {
+        return Err(ApiError::BadRequest("identifier is required".to_string()));
+    }
+    if request.device.client_device_id.trim().is_empty() {
+        return Err(ApiError::BadRequest("device.clientDeviceId is required".to_string()));
+    }
+    Ok(())
+}
+
+fn validate_cloud_batch(batch: &CloudSyncBatchRequest) -> Result<(), ApiError> {
+    if batch.device_id.trim().is_empty() {
+        return Err(ApiError::BadRequest("deviceId is required".to_string()));
+    }
+    if batch.events.is_empty() {
+        return Err(ApiError::BadRequest("events must not be empty".to_string()));
+    }
+    if batch.events.len() > 100 {
+        return Err(ApiError::BadRequest("events exceeds maximum batch size".to_string()));
+    }
+    Ok(())
+}
+
+fn bearer_token(headers: &HeaderMap) -> Result<&str, ApiError> {
+    let header = headers
+        .get(axum::http::header::AUTHORIZATION)
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or_default();
+    let token = header.strip_prefix("Bearer ").unwrap_or_default().trim();
+    if token.is_empty() {
+        Err(ApiError::Unauthorized)
+    } else {
+        Ok(token)
+    }
+}
+
+impl From<StorageError> for ApiError {
+    fn from(value: StorageError) -> Self {
+        match value {
+            StorageError::Unauthorized => ApiError::Unauthorized,
+            StorageError::BadRequest(message) => ApiError::BadRequest(message),
+            other => ApiError::Storage(other.to_string()),
+        }
+    }
 }
 
 #[cfg(test)]

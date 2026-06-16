@@ -6,12 +6,17 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:stack": "node scripts/dev-stack.mjs",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "sync:verify": "node scripts/verify-mobile-sync-stub.mjs",
+    "cloud:mock": "node scripts/cloud-sync-mock-server.mjs",
+    "cloud:backend": "cargo run --manifest-path feedback-backend/Cargo.toml -- --bind-addr 127.0.0.1:43188 --db-path feedback-backend/cloud.sqlite",
+    "cloud:contract": "node scripts/verify-cloud-sync-contract.mjs",
+    "cloud:e2e": "node scripts/verify-cloud-sync-e2e.mjs",
     "mobile:doctor": "node scripts/mobile-doctor.mjs"
   },
   "keywords": [

@@ -2,13 +2,209 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hidden_shield_mobile/app/mobile_app_state.dart';
+import 'package:hidden_shield_mobile/sync/cloud_account_client.dart';
 import 'package:hidden_shield_mobile/sync/sync_transport.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 void main() {
+  test('CloudAccountClient posts auth continue and maps session', () async {
+    late Uri capturedUri;
+    late Map<String, Object?> capturedBody;
+    final client = MockClient((request) async {
+      capturedUri = request.url;
+      capturedBody = jsonDecode(request.body) as Map<String, Object?>;
+      return _jsonResponse({
+        'accessToken': 'access-token',
+        'refreshToken': 'refresh-token',
+        'account': {'id': 'acct-1', 'displayName': 'alice@example.com'},
+        'workspace': {'id': 'ws-1', 'name': '个人空间'},
+        'device': {'id': 'device-1', 'registered': true},
+        'creatorProfile': {
+          'id': 'creator-1',
+          'displayName': 'Alice Creator',
+          'isDefault': true,
+        },
+        'entitlement': {
+          'id': 'ent-1',
+          'planName': '免费版',
+          'planCode': 'free',
+          'status': 'free',
+          'features': {'cloud_sync': true, 'batch_processing': false},
+        },
+      });
+    });
+    final accountClient = CloudAccountClient(
+      baseUrl: 'https://api.hiddenshield.test',
+      client: client,
+    );
+
+    final session = await accountClient.continueWithAccount(
+      const ContinueAccountRequest(
+        identifier: 'alice@example.com',
+        verificationCode: '123456',
+        device: ContinueAccountDevice(
+          clientDeviceId: 'local-device',
+          name: 'Alice Phone',
+          platform: 'android',
+          appVersion: '1.0.0',
+        ),
+        localCreatorProfile: ContinueAccountCreatorProfile(
+          displayName: 'Alice Creator',
+          creatorSeedRef: 'local-seed-ref',
+          seedEnvelopeVersion: 1,
+        ),
+      ),
+    );
+    final profile = session.applyTo(
+      SyncProfile.localOnly(),
+      now: DateTime.fromMillisecondsSinceEpoch(1000),
+    );
+
+    expect(
+      capturedUri.toString(),
+      'https://api.hiddenshield.test/v1/auth/continue',
+    );
+    expect(capturedBody['identifier'], 'alice@example.com');
+    expect(capturedBody['device'], isA<Map<String, Object?>>());
+    expect(capturedBody['localCreatorProfile'], isA<Map<String, Object?>>());
+    expect(profile.accountId, 'acct-1');
+    expect(profile.authToken, 'access-token');
+    expect(profile.refreshToken, 'refresh-token');
+    expect(profile.workspaceId, 'ws-1');
+    expect(profile.deviceId, 'device-1');
+    expect(profile.creatorProfileId, 'creator-1');
+    expect(profile.entitlementFeatures['cloud_sync'], isTrue);
+    expect(profile.entitlementLabel, '免费版');
+  });
+
+  test('CloudSyncTransport posts events batch to the cloud API', () async {
+    late Uri capturedUri;
+    late Map<String, String> capturedHeaders;
+    late Map<String, Object?> capturedBody;
+    final transport = CloudSyncTransport(
+      baseUrl: 'https://api.hiddenshield.test',
+      authToken: 'access-token',
+      deviceId: 'device-1',
+      client: MockClient((request) async {
+        capturedUri = request.url;
+        capturedHeaders = request.headers;
+        capturedBody = jsonDecode(request.body) as Map<String, Object?>;
+        return _jsonResponse({
+          'accepted': 1,
+          'acceptedEventIds': ['queue-1'],
+        });
+      }),
+    );
+
+    final result = await transport.sendBatch([_queueItem()]);
+
+    expect(result.resultFor('queue-1').isSuccess, isTrue);
+    expect(
+      capturedUri.toString(),
+      'https://api.hiddenshield.test/v1/sync/events:batch',
+    );
+    expect(capturedHeaders['authorization'], 'Bearer access-token');
+    expect(capturedHeaders['content-type'], 'application/json');
+    expect(capturedBody['deviceId'], 'device-1');
+    final events = capturedBody['events']! as List<dynamic>;
+    final event = events.single as Map<String, Object?>;
+    expect(event['clientEventId'], 'queue-1');
+    expect(event['operation'], 'upsertVaultRecord');
+    expect(event['entityType'], 'vaultRecord');
+    expect(event['entityId'], 'record-1');
+    expect(event['payload'], isA<Map<String, Object?>>());
+  });
+
+  test('CloudSyncTransport fetches cloud changes with a cursor', () async {
+    late Uri capturedUri;
+    late Map<String, String> capturedHeaders;
+    final transport = CloudSyncTransport(
+      baseUrl: 'https://api.hiddenshield.test',
+      authToken: 'access-token',
+      deviceId: 'device-1',
+      client: MockClient((request) async {
+        capturedUri = request.url;
+        capturedHeaders = request.headers;
+        return _jsonResponse({
+          'nextCursor': 'cursor-2',
+          'changes': [
+            {
+              'entityType': 'vaultRecord',
+              'operation': 'upsert',
+              'sourceDevice': 'cloud',
+              'entity': {
+                'id': 'cloud-record-1',
+                'kind': 'image',
+                'title': 'cloud.png',
+                'watermark_uid': 'uid-cloud',
+                'revision': 2,
+                'sha256': 'hash-cloud',
+                'created_at': '2026-06-16T12:00:00.000Z',
+              },
+            },
+          ],
+        });
+      }),
+    );
+
+    final result = await transport.fetchChanges(since: 'cursor-1');
+
+    expect(result.isSuccess, isTrue);
+    expect(
+      capturedUri.toString(),
+      'https://api.hiddenshield.test/v1/sync/changes?cursor=cursor-1',
+    );
+    expect(capturedHeaders['authorization'], 'Bearer access-token');
+    expect(result.nextSince, 'cursor-2');
+    expect(result.changes.single.id, 'cloud-record-1');
+    expect(result.changes.single.watermarkUid, 'uid-cloud');
+    expect(result.changes.single.revision, 2);
+    expect(result.changes.single.sourceDevice, 'cloud');
+  });
+
+  test('CloudSyncTransport validates account and endpoint config', () async {
+    final item = _queueItem();
+
+    final missingToken = await CloudSyncTransport(
+      baseUrl: 'https://api.hiddenshield.test',
+      authToken: '',
+      deviceId: 'device-1',
+      client: MockClient((_) async => http.Response('never', 200)),
+    ).send(item);
+    expect(missingToken.isSuccess, isFalse);
+    expect(
+      missingToken.error,
+      contains('cloud sync requires HiddenShield account sign-in'),
+    );
+
+    final missingBaseUrl = await CloudSyncTransport(
+      baseUrl: '',
+      authToken: 'access-token',
+      deviceId: 'device-1',
+      client: MockClient((_) async => http.Response('never', 200)),
+    ).send(item);
+    expect(missingBaseUrl.isSuccess, isFalse);
+    expect(
+      missingBaseUrl.error,
+      contains('cloud sync base URL is not configured'),
+    );
+
+    final missingDevice = await CloudSyncTransport(
+      baseUrl: 'https://api.hiddenshield.test',
+      authToken: 'access-token',
+      deviceId: '',
+      client: MockClient((_) async => http.Response('never', 200)),
+    ).send(item);
+    expect(missingDevice.isSuccess, isFalse);
+    expect(
+      missingDevice.error,
+      contains('cloud sync device is not registered'),
+    );
+  });
+
   test(
-    'DesktopHttpSyncTransport posts a queue item to the desktop endpoint',
+    'LanDebugSyncTransport posts a queue item to the desktop endpoint',
     () async {
       late Uri capturedUri;
       late Map<String, String> capturedHeaders;
@@ -21,8 +217,8 @@ void main() {
         return http.Response('{"ok":true}', 200);
       });
 
-      final transport = DesktopHttpSyncTransport(
-        desktopAddress: 'http://127.0.0.1:47219',
+      final transport = LanDebugSyncTransport(
+        lanDebugAddress: 'http://127.0.0.1:47219',
         pairingCode: '123456',
         client: client,
       );
@@ -45,7 +241,7 @@ void main() {
   );
 
   test(
-    'DesktopHttpSyncTransport posts multiple queue items as one batch',
+    'LanDebugSyncTransport posts multiple queue items as one batch',
     () async {
       late Uri capturedUri;
       late Map<String, Object?> capturedBody;
@@ -56,8 +252,8 @@ void main() {
         return http.Response('{"ok":true,"accepted":2}', 200);
       });
 
-      final transport = DesktopHttpSyncTransport(
-        desktopAddress: 'http://127.0.0.1:47219',
+      final transport = LanDebugSyncTransport(
+        lanDebugAddress: 'http://127.0.0.1:47219',
         pairingCode: '123456',
         client: client,
       );
@@ -78,11 +274,11 @@ void main() {
     },
   );
 
-  test('DesktopHttpSyncTransport fetches desktop changes', () async {
+  test('LanDebugSyncTransport fetches desktop changes', () async {
     late Uri capturedUri;
     late Map<String, String> capturedHeaders;
-    final transport = DesktopHttpSyncTransport(
-      desktopAddress: 'http://127.0.0.1:47219',
+    final transport = LanDebugSyncTransport(
+      lanDebugAddress: 'http://127.0.0.1:47219',
       pairingCode: '123456',
       client: MockClient((request) async {
         capturedUri = request.url;
@@ -139,9 +335,9 @@ void main() {
     expect(result.changes.last.extractedFileHashHex, 'hash');
   });
 
-  test('DesktopHttpSyncTransport reports non-success status codes', () async {
-    final transport = DesktopHttpSyncTransport(
-      desktopAddress: 'http://127.0.0.1:47219',
+  test('LanDebugSyncTransport reports non-success status codes', () async {
+    final transport = LanDebugSyncTransport(
+      lanDebugAddress: 'http://127.0.0.1:47219',
       pairingCode: '123456',
       client: MockClient(
         (_) async => http.Response('{"ok":false,"error":"denied"}', 403),
@@ -155,10 +351,10 @@ void main() {
   });
 
   test(
-    'DesktopHttpSyncTransport validates pairing config before sending',
+    'LanDebugSyncTransport validates pairing config before sending',
     () async {
-      final transport = DesktopHttpSyncTransport(
-        desktopAddress: 'not a url',
+      final transport = LanDebugSyncTransport(
+        lanDebugAddress: 'not a url',
         pairingCode: '',
         client: MockClient((_) async => http.Response('never', 200)),
       );
@@ -166,8 +362,16 @@ void main() {
       final result = await transport.send(_queueItem());
 
       expect(result.isSuccess, isFalse);
-      expect(result.error, contains('desktop address is invalid'));
+      expect(result.error, contains('LAN debug address is invalid'));
     },
+  );
+}
+
+http.Response _jsonResponse(Map<String, Object?> body, {int statusCode = 200}) {
+  return http.Response.bytes(
+    utf8.encode(jsonEncode(body)),
+    statusCode,
+    headers: const {'content-type': 'application/json; charset=utf-8'},
   );
 }
 

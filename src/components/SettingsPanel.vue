@@ -19,8 +19,12 @@ import {
   type AnonymousFeedbackStatus,
   type UsageLedgerSummary,
   type MobileSyncStatus,
+  type DesktopCloudSyncProfile,
+  continueCloudAccount,
+  getDesktopCloudSyncProfile,
   getMobileSyncStatus,
   regenerateMobilePairingCode,
+  signOutDesktopCloud,
 } from "../lib/tauri-api";
 
 const emit = defineEmits<{
@@ -34,12 +38,17 @@ const entitlementState = ref<EntitlementState | null>(null);
 const usageSummary = ref<UsageLedgerSummary | null>(null);
 const feedbackStatus = ref<AnonymousFeedbackStatus | null>(null);
 const mobileSyncStatus = ref<MobileSyncStatus | null>(null);
+const cloudSyncProfile = ref<DesktopCloudSyncProfile | null>(null);
 const analyticsOverview = ref<ReturnType<typeof getAnalyticsOverview> | null>(null);
 const riskSnapshot = ref<ReturnType<typeof getRiskSnapshot> | null>(null);
 const clearing = ref(false);
 const flushingFeedback = ref(false);
+const continuingCloud = ref(false);
+const signingOutCloud = ref(false);
 const regeneratingPairingCode = ref(false);
 const feedbackNudgeVisible = ref(false);
+const cloudIdentifier = ref("");
+const creatorDisplayName = ref("本机创作者");
 const message = ref("");
 const copyMsg = ref("");
 
@@ -94,6 +103,11 @@ async function loadState() {
   entitlementState.value = await getEntitlementState();
   usageSummary.value = await getUsageLedgerSummary();
   feedbackStatus.value = await getAnonymousFeedbackStatus();
+  cloudSyncProfile.value = await getDesktopCloudSyncProfile();
+  if (cloudSyncProfile.value) {
+    cloudIdentifier.value = cloudSyncProfile.value.accountLabel;
+    creatorDisplayName.value = cloudSyncProfile.value.creatorDisplayName;
+  }
   mobileSyncStatus.value = await getMobileSyncStatus();
   analyticsOverview.value = getAnalyticsOverview();
   riskSnapshot.value = getRiskSnapshot();
@@ -123,6 +137,53 @@ async function handleRegeneratePairingCode() {
   } finally {
     regeneratingPairingCode.value = false;
   }
+}
+
+async function handleContinueCloudAccount() {
+  if (!cloudIdentifier.value.trim()) {
+    message.value = "请输入邮箱或手机号";
+    return;
+  }
+  if (!creatorDisplayName.value.trim()) {
+    message.value = "请输入创作者身份";
+    return;
+  }
+  continuingCloud.value = true;
+  try {
+    cloudSyncProfile.value = await continueCloudAccount(
+      cloudIdentifier.value.trim(),
+      creatorDisplayName.value.trim(),
+    );
+    message.value = "已继续使用 HiddenShield 账户，云同步资料已保存";
+    trackFeatureEvent("desktop_cloud_continue", "success", { source: "settings" });
+  } catch (e: unknown) {
+    message.value = String(e);
+    trackFeatureEvent("desktop_cloud_continue", "failure", { errorCode: "cloud_continue_failed", source: "settings" });
+  } finally {
+    continuingCloud.value = false;
+  }
+}
+
+async function handleSignOutCloud() {
+  signingOutCloud.value = true;
+  try {
+    await signOutDesktopCloud();
+    cloudSyncProfile.value = null;
+    message.value = "已退出云同步账户，本地版权库仍保留";
+    trackFeatureEvent("desktop_cloud_sign_out", "success", { source: "settings" });
+  } catch (e: unknown) {
+    message.value = String(e);
+  } finally {
+    signingOutCloud.value = false;
+  }
+}
+
+function entitlementFeatureSummary(features: Record<string, boolean> | null | undefined): string {
+  if (!features) return "—";
+  const enabled = Object.entries(features)
+    .filter(([, value]) => value)
+    .map(([key]) => key);
+  return enabled.length ? enabled.join(" / ") : "未开放";
 }
 
 async function toggleTelemetry() {
@@ -314,6 +375,62 @@ onMounted(loadState);
       </div>
     </div>
 
+    <div class="settings-section">
+      <div class="settings-row">
+        <div>
+          <strong>账户与云同步</strong>
+          <p class="settings-hint">同一账户下同步版权库、取证记录、创作者身份和权益状态；不默认上传媒体文件。</p>
+        </div>
+        <span class="cloud-pill" :class="{ 'cloud-pill--on': cloudSyncProfile }">
+          {{ cloudSyncProfile ? "已连接" : "未连接" }}
+        </span>
+      </div>
+
+      <div v-if="cloudSyncProfile" class="usage-grid">
+        <span>账户</span><span>{{ cloudSyncProfile.accountLabel }}</span>
+        <span>工作区</span><span>{{ cloudSyncProfile.workspaceName }}</span>
+        <span>设备</span><span>{{ cloudSyncProfile.deviceName ?? cloudSyncProfile.deviceId }}</span>
+        <span>创作者</span><span>{{ cloudSyncProfile.creatorDisplayName }}</span>
+        <span>权益</span><span>{{ cloudSyncProfile.entitlementLabel }} · {{ cloudSyncProfile.entitlementStatus }}</span>
+        <span>权益模块</span><span>{{ entitlementFeatureSummary(cloudSyncProfile.entitlementFeatures) }}</span>
+        <span>云服务</span><span class="mono">{{ cloudSyncProfile.cloudBaseUrl }}</span>
+        <span>更新时间</span><span>{{ formatDateTime(cloudSyncProfile.updatedAt) }}</span>
+      </div>
+
+      <div v-else class="cloud-form">
+        <label>
+          <span>账户</span>
+          <input v-model="cloudIdentifier" type="text" placeholder="name@example.com" />
+        </label>
+        <label>
+          <span>创作者身份</span>
+          <input v-model="creatorDisplayName" type="text" placeholder="本机创作者" />
+        </label>
+        <p class="settings-hint">输入邮箱或手机号后继续；新用户自动创建账户，老用户直接登录。云服务地址由系统配置提供。</p>
+      </div>
+
+      <div class="feedback-log">
+        <button
+          v-if="cloudSyncProfile"
+          class="btn btn--secondary"
+          type="button"
+          :disabled="signingOutCloud"
+          @click="handleSignOutCloud"
+        >
+          退出账户
+        </button>
+        <button
+          v-else
+          class="btn btn--primary"
+          type="button"
+          :disabled="continuingCloud"
+          @click="handleContinueCloudAccount"
+        >
+          {{ continuingCloud ? "继续中" : "继续" }}
+        </button>
+      </div>
+    </div>
+
     <div class="settings-section" v-if="feedbackStatus">
       <strong>匿名反馈</strong>
       <div class="usage-grid">
@@ -342,9 +459,13 @@ onMounted(loadState);
       </div>
     </div>
 
-    <div class="settings-section" v-if="mobileSyncStatus">
-      <div class="settings-row">
-        <strong>移动端同步服务</strong>
+    <details class="settings-section advanced-sync" v-if="mobileSyncStatus">
+      <summary>
+        <strong>高级：局域网调试同步</strong>
+        <span>开发联调 / 临时迁移</span>
+      </summary>
+      <div class="settings-row advanced-sync__row">
+        <p class="settings-hint">该通道不是正式跨端同步方案；正式同步请使用账户与云同步。</p>
         <button class="btn btn--secondary" type="button" @click="refreshMobileSyncStatus">
           刷新
         </button>
@@ -384,7 +505,7 @@ onMounted(loadState);
       <p class="settings-hint">
         手机端填写本机局域网地址和配对码后，可切换到桌面 HTTP 同步模式。
       </p>
-    </div>
+    </details>
 
     <div class="settings-section" v-if="analyticsOverview && riskSnapshot">
       <div class="settings-row">
@@ -550,6 +671,63 @@ onMounted(loadState);
 .usage-total {
   font-weight: 600;
   color: var(--text-primary, #e0e0e0);
+}
+.cloud-pill {
+  padding: 0.26rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  color: #aab3bf;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  white-space: nowrap;
+}
+.cloud-pill--on {
+  color: #9ee7bf;
+  background: rgba(35, 96, 58, 0.18);
+  border-color: rgba(35, 96, 58, 0.32);
+}
+.cloud-form {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+.cloud-form label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--text-secondary, #aaa);
+  font-size: 0.82rem;
+}
+.cloud-form input {
+  width: 100%;
+  padding: 0.58rem 0.7rem;
+  color: var(--text-primary, #e0e0e0);
+  background: var(--surface-alt, #252545);
+  border: 1px solid var(--border, #2a2a4a);
+  border-radius: 6px;
+  outline: none;
+}
+.cloud-form input:focus {
+  border-color: rgba(198, 91, 32, 0.75);
+  box-shadow: 0 0 0 3px rgba(198, 91, 32, 0.14);
+}
+.advanced-sync {
+  padding-bottom: 1.25rem;
+}
+.advanced-sync summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  cursor: pointer;
+  color: var(--text-primary, #e0e0e0);
+}
+.advanced-sync summary span {
+  color: var(--text-muted, #888);
+  font-size: 0.78rem;
+}
+.advanced-sync__row {
+  margin-top: 0.8rem;
+  align-items: flex-start;
 }
 .risk-pill {
   padding: 0.24rem 0.6rem;

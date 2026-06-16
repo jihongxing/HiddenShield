@@ -1,3 +1,4 @@
+pub mod cloud;
 mod server;
 pub mod storage;
 

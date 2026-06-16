@@ -1,5 +1,5 @@
 use rusqlite::{params, Connection};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use crate::commands::vault::VaultRecord;
@@ -20,6 +20,19 @@ pub struct MobileSyncQueueItem {
 #[derive(Debug, Clone, Deserialize)]
 pub struct MobileSyncBatchRequest {
     pub items: Vec<MobileSyncQueueItem>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CloudSyncQueueItem {
+    pub id: String,
+    pub record_id: u32,
+    pub event_json: String,
+    pub status: String,
+    pub attempts: u32,
+    pub last_error: Option<String>,
+    pub created_at: String,
+    pub updated_at: String,
 }
 
 pub fn init_sync_storage(conn: &Connection) -> Result<(), rusqlite::Error> {
@@ -82,9 +95,150 @@ ON sync_resolutions(resolved_at DESC);
 
 CREATE INDEX IF NOT EXISTS idx_sync_resolutions_watermark
 ON sync_resolutions(watermark_uid);
+
+CREATE TABLE IF NOT EXISTS cloud_sync_queue (
+  id TEXT PRIMARY KEY,
+  record_id INTEGER NOT NULL,
+  event_json TEXT NOT NULL,
+  status TEXT NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  last_error TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_cloud_sync_queue_status_created
+ON cloud_sync_queue(status, created_at ASC);
 ",
     )?;
     Ok(())
+}
+
+pub fn enqueue_cloud_sync_event(
+    conn: &Connection,
+    queue_id: &str,
+    record_id: u32,
+    event_json: &str,
+) -> Result<(), rusqlite::Error> {
+    let now = chrono::Utc::now().to_rfc3339();
+    conn.execute(
+        "
+INSERT INTO cloud_sync_queue (
+  id, record_id, event_json, status, attempts, last_error, created_at, updated_at
+) VALUES (?1, ?2, ?3, 'pending', 0, NULL, ?4, ?4)
+ON CONFLICT(id) DO UPDATE SET
+  event_json = excluded.event_json,
+  status = CASE
+    WHEN cloud_sync_queue.status = 'synced' THEN 'synced'
+    ELSE 'pending'
+  END,
+  updated_at = excluded.updated_at
+",
+        params![queue_id, record_id as i64, event_json, now],
+    )?;
+    Ok(())
+}
+
+pub fn list_pending_cloud_sync_queue(
+    conn: &Connection,
+    limit: usize,
+) -> Result<Vec<CloudSyncQueueItem>, rusqlite::Error> {
+    let mut stmt = conn.prepare(
+        "
+SELECT id, record_id, event_json, status, attempts, last_error, created_at, updated_at
+FROM cloud_sync_queue
+WHERE status IN ('pending', 'failed')
+ORDER BY created_at ASC
+LIMIT ?1
+",
+    )?;
+    let rows = stmt.query_map(params![limit as i64], |row| {
+        Ok(CloudSyncQueueItem {
+            id: row.get(0)?,
+            record_id: row.get::<_, i64>(1)? as u32,
+            event_json: row.get(2)?,
+            status: row.get(3)?,
+            attempts: row.get::<_, i64>(4)? as u32,
+            last_error: row.get(5)?,
+            created_at: row.get(6)?,
+            updated_at: row.get(7)?,
+        })
+    })?;
+    rows.collect()
+}
+
+pub fn mark_cloud_sync_queue_syncing(
+    conn: &Connection,
+    queue_ids: &[String],
+) -> Result<(), rusqlite::Error> {
+    let now = chrono::Utc::now().to_rfc3339();
+    for queue_id in queue_ids {
+        conn.execute(
+            "
+UPDATE cloud_sync_queue
+SET status = 'syncing',
+    attempts = attempts + 1,
+    last_error = NULL,
+    updated_at = ?1
+WHERE id = ?2
+",
+            params![now, queue_id],
+        )?;
+    }
+    Ok(())
+}
+
+pub fn mark_cloud_sync_queue_synced(
+    conn: &Connection,
+    queue_ids: &[String],
+) -> Result<(), rusqlite::Error> {
+    let now = chrono::Utc::now().to_rfc3339();
+    for queue_id in queue_ids {
+        conn.execute(
+            "
+UPDATE cloud_sync_queue
+SET status = 'synced',
+    last_error = NULL,
+    updated_at = ?1
+WHERE id = ?2
+",
+            params![now, queue_id],
+        )?;
+    }
+    Ok(())
+}
+
+pub fn mark_cloud_sync_queue_failed(
+    conn: &Connection,
+    queue_ids: &[String],
+    error: &str,
+) -> Result<(), rusqlite::Error> {
+    let now = chrono::Utc::now().to_rfc3339();
+    for queue_id in queue_ids {
+        conn.execute(
+            "
+UPDATE cloud_sync_queue
+SET status = 'failed',
+    last_error = ?1,
+    updated_at = ?2
+WHERE id = ?3
+",
+            params![error, now, queue_id],
+        )?;
+    }
+    Ok(())
+}
+
+pub fn count_cloud_sync_queue_by_status(
+    conn: &Connection,
+    status: &str,
+) -> Result<u64, rusqlite::Error> {
+    let count: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM cloud_sync_queue WHERE status = ?1",
+        params![status],
+        |row| row.get(0),
+    )?;
+    Ok(count.max(0) as u64)
 }
 
 pub fn record_sync_event(

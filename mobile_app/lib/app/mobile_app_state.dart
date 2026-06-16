@@ -4,48 +4,52 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 import '../bridge/watermark_models.dart';
+import '../sync/cloud_account_client.dart';
 import '../storage/vault_store.dart';
 import '../sync/sync_transport.dart';
+import 'system_config.dart';
 
 class MobileAppState extends ChangeNotifier {
   MobileAppState({
     VaultStore? vaultStore,
     SyncTransport? syncTransport,
     SyncTransportFactory? syncTransportFactory,
+    CloudAccountClient? cloudAccountClient,
   }) : _vaultStore = vaultStore ?? MemoryVaultStore(),
        _syncTransportFactory =
            syncTransportFactory ?? _defaultSyncTransportFactory,
-       _transportOverride = syncTransport;
+       _transportOverride = syncTransport,
+       _cloudAccountClient = cloudAccountClient;
 
   final VaultStore _vaultStore;
   final SyncTransportFactory _syncTransportFactory;
   final SyncTransport? _transportOverride;
+  final CloudAccountClient? _cloudAccountClient;
   final List<VaultRecord> _records = [];
   final List<SyncQueueItem> _syncQueue = [];
   final List<MobileSyncResolution> _syncResolutions = [];
 
   String _creatorLabel = '本机创作者';
-  bool _desktopSyncEnabled = false;
   bool _anonymousFeedbackEnabled = false;
-  DesktopPairingProfile _pairingProfile = DesktopPairingProfile.unpaired();
-  SyncTransportMode _syncTransportMode = SyncTransportMode.mock;
+  SyncProfile _syncProfile = SyncProfile.localOnly();
+  SyncTransportMode _syncTransportMode = SyncTransportMode.localOnly;
   bool _isLoaded = false;
   bool _isSyncing = false;
-  bool _isPullingDesktopChanges = false;
+  bool _isPullingRemoteChanges = false;
 
   bool get isLoaded => _isLoaded;
 
   bool get isSyncing => _isSyncing;
 
-  bool get isPullingDesktopChanges => _isPullingDesktopChanges;
+  bool get isPullingRemoteChanges => _isPullingRemoteChanges;
 
   String get creatorLabel => _creatorLabel;
 
-  bool get desktopSyncEnabled => _desktopSyncEnabled;
+  bool get cloudSyncEnabled => _syncTransportMode == SyncTransportMode.cloud;
 
   bool get anonymousFeedbackEnabled => _anonymousFeedbackEnabled;
 
-  DesktopPairingProfile get pairingProfile => _pairingProfile;
+  SyncProfile get syncProfile => _syncProfile;
 
   SyncTransportMode get syncTransportMode => _syncTransportMode;
 
@@ -70,16 +74,23 @@ class MobileAppState extends ChangeNotifier {
       .where((item) => item.status == SyncQueueItemStatus.failed)
       .length;
 
-  bool get canUseHttpSync =>
-      _pairingProfile.desktopAddress.isNotEmpty &&
-      _pairingProfile.pairingCode.isNotEmpty &&
-      _pairingProfile.status != DesktopPairingStatus.unpaired;
+  bool get canUseLanDebugSync =>
+      _syncProfile.lanDebugAddress.isNotEmpty &&
+      _syncProfile.lanDebugPairingCode.isNotEmpty &&
+      _syncProfile.status != SyncConnectionStatus.unconfigured;
+
+  bool get hasCloudAccount =>
+      _syncProfile.accountId?.isNotEmpty == true &&
+      _syncProfile.authToken?.isNotEmpty == true;
+
+  bool get canUseCloudSync =>
+      hasCloudAccount && _syncProfile.cloudBaseUrl.isNotEmpty;
 
   Future<void> load() async {
     final records = await _vaultStore.loadRecords();
     final syncQueue = await _vaultStore.loadSyncQueue();
     final syncResolutions = await _vaultStore.loadSyncResolutions();
-    final pairingProfile = await _vaultStore.loadPairingProfile();
+    final syncProfile = await _vaultStore.loadSyncProfile();
     _records
       ..clear()
       ..addAll(records);
@@ -89,9 +100,8 @@ class MobileAppState extends ChangeNotifier {
     _syncResolutions
       ..clear()
       ..addAll(syncResolutions);
-    _pairingProfile = pairingProfile;
-    _desktopSyncEnabled =
-        pairingProfile.status != DesktopPairingStatus.unpaired;
+    _syncProfile = syncProfile;
+    _syncTransportMode = syncProfile.mode;
     _isLoaded = true;
     notifyListeners();
   }
@@ -165,17 +175,13 @@ class MobileAppState extends ChangeNotifier {
       return;
     }
     _creatorLabel = next;
-    notifyListeners();
-  }
-
-  void setDesktopSyncEnabled(bool value) {
-    if (value == _desktopSyncEnabled) {
-      return;
-    }
-    _desktopSyncEnabled = value;
-    if (!value) {
-      _pairingProfile = DesktopPairingProfile.unpaired();
-      unawaited(_vaultStore.savePairingProfile(_pairingProfile));
+    if (canUseCloudSync) {
+      _syncProfile = _syncProfile.copyWith(
+        creatorDisplayName: next,
+        creatorProfileSynced: false,
+        updatedAt: DateTime.now(),
+      );
+      unawaited(_vaultStore.saveSyncProfile(_syncProfile));
     }
     notifyListeners();
   }
@@ -189,58 +195,201 @@ class MobileAppState extends ChangeNotifier {
   }
 
   void setSyncTransportMode(SyncTransportMode mode) {
-    if (mode == SyncTransportMode.http && !canUseHttpSync) {
+    if (mode == SyncTransportMode.cloud && !canUseCloudSync) {
+      return;
+    }
+    if (mode == SyncTransportMode.lanDebug && !canUseLanDebugSync) {
       return;
     }
     if (mode == _syncTransportMode) {
       return;
     }
     _syncTransportMode = mode;
+    _syncProfile = _syncProfile.copyWith(mode: mode);
+    unawaited(_vaultStore.saveSyncProfile(_syncProfile));
     notifyListeners();
   }
 
-  Future<void> saveDesktopPairing({
-    required String desktopAddress,
-    required String pairingCode,
+  void setCloudSyncEnabled(bool value) {
+    setSyncTransportMode(
+      value ? SyncTransportMode.cloud : SyncTransportMode.localOnly,
+    );
+  }
+
+  Future<void> continueWithAccountPlaceholder({
+    required String accountLabel,
   }) async {
-    final address = desktopAddress.trim();
-    final code = pairingCode.trim();
-    if (address.isEmpty || code.isEmpty) {
-      _pairingProfile = DesktopPairingProfile.unpaired();
-      _desktopSyncEnabled = false;
-      _syncTransportMode = SyncTransportMode.mock;
-    } else {
-      _pairingProfile = DesktopPairingProfile(
-        desktopAddress: address,
-        pairingCode: code,
-        status: DesktopPairingStatus.paired,
-        updatedAt: DateTime.now(),
-      );
-      _desktopSyncEnabled = true;
+    if (_cloudAccountClient != null) {
+      try {
+        await continueWithCloudAccount(
+          identifier: accountLabel,
+          verificationCode: '',
+          localCreatorDisplayName: _creatorLabel,
+        );
+        return;
+      } catch (error) {
+        _syncProfile = _syncProfile.copyWith(
+          status: SyncConnectionStatus.failed,
+          lastError: '$error',
+          updatedAt: DateTime.now(),
+        );
+        await _vaultStore.saveSyncProfile(_syncProfile);
+        notifyListeners();
+        return;
+      }
     }
-    await _vaultStore.savePairingProfile(_pairingProfile);
+
+    final label = accountLabel.trim().isEmpty
+        ? 'HiddenShield 账户'
+        : accountLabel.trim();
+    final suffix = _stableIdSuffix(label);
+    final now = DateTime.now();
+    _syncProfile = _syncProfile.copyWith(
+      mode: SyncTransportMode.cloud,
+      status: SyncConnectionStatus.connected,
+      accountId: 'acct_$suffix',
+      accountLabel: label,
+      authToken: 'preview-token-$suffix',
+      refreshToken: 'preview-refresh-$suffix',
+      workspaceId: 'ws_$suffix',
+      workspaceName: '个人空间',
+      deviceId: _syncProfile.deviceId ?? 'dev_${now.microsecondsSinceEpoch}',
+      deviceName: _syncProfile.deviceName ?? '当前移动设备',
+      devicePlatform: _syncProfile.devicePlatform ?? _currentDevicePlatform(),
+      deviceRegistered: true,
+      creatorProfileId: _syncProfile.creatorProfileId ?? 'creator_$suffix',
+      creatorDisplayName: _creatorLabel,
+      creatorSeedRef: _syncProfile.creatorSeedRef ?? 'local-seed-ref',
+      creatorSeedEnvelopeVersion: 1,
+      creatorProfileSynced: true,
+      entitlementId: 'ent_$suffix',
+      entitlementLabel: '免费版',
+      entitlementStatus: EntitlementStatus.free,
+      entitlementPlanCode: 'free',
+      entitlementFeatures: const {
+        'batch_processing': false,
+        'cloud_video_processing': false,
+        'cloud_sync': true,
+      },
+      entitlementLastCheckedAt: now,
+      cloudBaseUrl: _cloudAccountClient?.baseUrl ??
+          HiddenShieldSystemConfig.fallback.cloudBaseUrl,
+      updatedAt: now,
+      clearLastError: true,
+    );
+    _syncTransportMode = SyncTransportMode.cloud;
+    await _vaultStore.saveSyncProfile(_syncProfile);
     notifyListeners();
   }
 
-  Future<void> testDesktopConnection() async {
-    if (!_pairingProfile.canConnect) {
+  Future<void> continueWithCloudAccount({
+    required String identifier,
+    required String verificationCode,
+    required String localCreatorDisplayName,
+  }) async {
+    if (_cloudAccountClient == null) {
+      await continueWithAccountPlaceholder(accountLabel: identifier);
       return;
     }
-    _pairingProfile = _pairingProfile.copyWith(
-      status: DesktopPairingStatus.connecting,
+
+    final session = await _cloudAccountClient.continueWithAccount(
+      ContinueAccountRequest(
+        identifier: identifier.trim(),
+        verificationCode: verificationCode.trim(),
+        device: ContinueAccountDevice(
+          clientDeviceId:
+              _syncProfile.deviceId ??
+              'dev_${DateTime.now().microsecondsSinceEpoch}',
+          name: _syncProfile.deviceName ?? '当前移动设备',
+          platform: _syncProfile.devicePlatform ?? _currentDevicePlatform(),
+          appVersion: 'mobile-preview',
+        ),
+        localCreatorProfile: ContinueAccountCreatorProfile(
+          displayName: localCreatorDisplayName.trim().isEmpty
+              ? _creatorLabel
+              : localCreatorDisplayName.trim(),
+          creatorSeedRef: _syncProfile.creatorSeedRef ?? 'local-seed-ref',
+          seedEnvelopeVersion: _syncProfile.creatorSeedEnvelopeVersion == 0
+              ? 1
+              : _syncProfile.creatorSeedEnvelopeVersion,
+        ),
+      ),
+    );
+
+    _syncProfile = session.applyTo(_syncProfile, now: DateTime.now());
+    _syncProfile = _syncProfile.copyWith(
+      cloudBaseUrl: _cloudAccountClient.baseUrl,
+    );
+    _syncTransportMode = SyncTransportMode.cloud;
+    await _vaultStore.saveSyncProfile(_syncProfile);
+    notifyListeners();
+  }
+
+  Future<void> signOutCloud() async {
+    _syncProfile = _syncProfile.copyWith(
+      mode: SyncTransportMode.localOnly,
+      status: SyncConnectionStatus.unconfigured,
+      clearAccount: true,
+      clearAuthToken: true,
+      clearWorkspace: true,
+      clearCreatorProfile: true,
+      clearEntitlement: true,
+      updatedAt: DateTime.now(),
+    );
+    _syncTransportMode = SyncTransportMode.localOnly;
+    await _vaultStore.saveSyncProfile(_syncProfile);
+    notifyListeners();
+  }
+
+  Future<void> saveLanDebugPairing({
+    required String lanDebugAddress,
+    required String pairingCode,
+  }) async {
+    final address = lanDebugAddress.trim();
+    final code = pairingCode.trim();
+    if (address.isEmpty || code.isEmpty) {
+      _syncProfile = _syncProfile.copyWith(
+        mode: SyncTransportMode.localOnly,
+        status: SyncConnectionStatus.unconfigured,
+        lanDebugAddress: '',
+        lanDebugPairingCode: '',
+        updatedAt: DateTime.now(),
+      );
+      _syncTransportMode = SyncTransportMode.localOnly;
+    } else {
+      _syncProfile = _syncProfile.copyWith(
+        mode: SyncTransportMode.lanDebug,
+        lanDebugAddress: address,
+        lanDebugPairingCode: code,
+        status: SyncConnectionStatus.connected,
+        updatedAt: DateTime.now(),
+        clearLastError: true,
+      );
+      _syncTransportMode = SyncTransportMode.lanDebug;
+    }
+    await _vaultStore.saveSyncProfile(_syncProfile);
+    notifyListeners();
+  }
+
+  Future<void> testLanDebugConnection() async {
+    if (!_syncProfile.canConnectLanDebug) {
+      return;
+    }
+    _syncProfile = _syncProfile.copyWith(
+      status: SyncConnectionStatus.connecting,
       updatedAt: DateTime.now(),
       clearLastError: true,
     );
     notifyListeners();
-    await _vaultStore.savePairingProfile(_pairingProfile);
+    await _vaultStore.saveSyncProfile(_syncProfile);
 
     await Future<void>.delayed(const Duration(milliseconds: 250));
-    _pairingProfile = _pairingProfile.copyWith(
-      status: DesktopPairingStatus.paired,
+    _syncProfile = _syncProfile.copyWith(
+      status: SyncConnectionStatus.connected,
       updatedAt: DateTime.now(),
       clearLastError: true,
     );
-    await _vaultStore.savePairingProfile(_pairingProfile);
+    await _vaultStore.saveSyncProfile(_syncProfile);
     notifyListeners();
   }
 
@@ -316,31 +465,32 @@ class MobileAppState extends ChangeNotifier {
     await syncPendingQueue();
   }
 
-  Future<void> pullDesktopChanges() async {
-    if (_isPullingDesktopChanges || !canUseHttpSync) {
+  Future<void> pullRemoteChanges() async {
+    if (_isPullingRemoteChanges ||
+        _syncTransportMode == SyncTransportMode.localOnly) {
       return;
     }
 
-    _isPullingDesktopChanges = true;
+    _isPullingRemoteChanges = true;
     notifyListeners();
 
     try {
       final result = await _activeSyncTransport().fetchChanges(
-        since: _pairingProfile.lastDesktopPullSince,
+        since: _syncProfile.lastRemotePullCursor,
       );
       if (!result.isSuccess) {
-        _pairingProfile = _pairingProfile.copyWith(
-          status: DesktopPairingStatus.failed,
+        _syncProfile = _syncProfile.copyWith(
+          status: SyncConnectionStatus.failed,
           lastError: result.error,
           updatedAt: DateTime.now(),
         );
-        await _vaultStore.savePairingProfile(_pairingProfile);
+        await _vaultStore.saveSyncProfile(_syncProfile);
         return;
       }
 
       for (final change in result.changes) {
         final record = change.toVaultRecord();
-        final mergeResult = _mergeDesktopRecord(record);
+        final mergeResult = _mergeRemoteRecord(record);
         if (mergeResult.record != null) {
           await _vaultStore.upsertRecord(mergeResult.record!);
         }
@@ -348,23 +498,39 @@ class MobileAppState extends ChangeNotifier {
         _syncResolutions.insert(0, mergeResult.resolution);
       }
       if (result.nextSince.isNotEmpty) {
-        _pairingProfile = _pairingProfile.copyWith(
-          lastDesktopPullSince: result.nextSince,
+        _syncProfile = _syncProfile.copyWith(
+          lastRemotePullCursor: result.nextSince,
         );
       }
-      _pairingProfile = _pairingProfile.copyWith(
-        status: DesktopPairingStatus.paired,
+      _syncProfile = _syncProfile.copyWith(
+        status: SyncConnectionStatus.connected,
         updatedAt: DateTime.now(),
         clearLastError: true,
       );
-      await _vaultStore.savePairingProfile(_pairingProfile);
+      await _vaultStore.saveSyncProfile(_syncProfile);
     } finally {
-      _isPullingDesktopChanges = false;
+      _isPullingRemoteChanges = false;
       notifyListeners();
     }
   }
 
   String _newRecordId() => DateTime.now().microsecondsSinceEpoch.toString();
+
+  String _stableIdSuffix(String value) {
+    final source = value.trim().toLowerCase();
+    final encoded = base64Url.encode(utf8.encode(source)).replaceAll('=', '');
+    if (encoded.isEmpty) {
+      return 'preview';
+    }
+    return encoded.length > 18 ? encoded.substring(0, 18) : encoded;
+  }
+
+  String _currentDevicePlatform() {
+    if (kIsWeb) {
+      return 'web';
+    }
+    return defaultTargetPlatform.name;
+  }
 
   SyncQueueItem _newSyncQueueItem(
     VaultRecord record,
@@ -418,23 +584,23 @@ class MobileAppState extends ChangeNotifier {
     if (_transportOverride != null) {
       return _transportOverride;
     }
-    return _syncTransportFactory(_syncTransportMode, _pairingProfile);
+    return _syncTransportFactory(_syncTransportMode, _syncProfile);
   }
 
-  _DesktopMergeResult _mergeDesktopRecord(VaultRecord incoming) {
+  _RemoteMergeResult _mergeRemoteRecord(VaultRecord incoming) {
     final exactMatchIndex = _records.indexWhere(
       (item) => item.id == incoming.id,
     );
     if (exactMatchIndex != -1) {
       final current = _records[exactMatchIndex];
       _records[exactMatchIndex] = incoming;
-      return _DesktopMergeResult(
+      return _RemoteMergeResult(
         record: incoming,
         resolution: MobileSyncResolution(
           id: _newResolutionId(incoming, 'record-replaced'),
           resolvedAt: DateTime.now(),
           resolutionType: MobileSyncResolutionType.recordReplaced,
-          reason: 'desktop record refreshed by stable id',
+          reason: 'remote record refreshed by stable id',
           incomingRecordId: incoming.id,
           existingRecordId: current.id,
           watermarkUid: incoming.watermarkUid,
@@ -481,7 +647,7 @@ class MobileAppState extends ChangeNotifier {
         if (index != -1) {
           _records[index] = updated;
         }
-        return _DesktopMergeResult(
+        return _RemoteMergeResult(
           record: updated,
           resolution: MobileSyncResolution(
             id: _newResolutionId(incoming, 'revision-upgraded'),
@@ -500,7 +666,7 @@ class MobileAppState extends ChangeNotifier {
         );
       }
       if (incoming.revision < current.revision) {
-        return _DesktopMergeResult(
+        return _RemoteMergeResult(
           record: null,
           resolution: MobileSyncResolution(
             id: _newResolutionId(incoming, 'stale-ignored'),
@@ -517,7 +683,7 @@ class MobileAppState extends ChangeNotifier {
           ),
         );
       }
-      return _DesktopMergeResult(
+      return _RemoteMergeResult(
         record: null,
         resolution: MobileSyncResolution(
           id: _newResolutionId(incoming, 'duplicate-ignored'),
@@ -540,7 +706,7 @@ class MobileAppState extends ChangeNotifier {
         (a, b) => a.revision >= b.revision ? a : b,
       );
       _records.insert(0, incoming);
-      return _DesktopMergeResult(
+      return _RemoteMergeResult(
         record: incoming,
         resolution: MobileSyncResolution(
           id: _newResolutionId(incoming, 'variant-accepted'),
@@ -560,13 +726,13 @@ class MobileAppState extends ChangeNotifier {
     }
 
     _records.insert(0, incoming);
-    return _DesktopMergeResult(
+    return _RemoteMergeResult(
       record: incoming,
       resolution: MobileSyncResolution(
         id: _newResolutionId(incoming, 'record-inserted'),
         resolvedAt: DateTime.now(),
         resolutionType: MobileSyncResolutionType.recordInserted,
-        reason: 'desktop record added to local vault',
+        reason: 'remote record added to local vault',
         incomingRecordId: incoming.id,
         watermarkUid: incoming.watermarkUid,
         incomingHash: incomingFingerprint,
@@ -591,10 +757,11 @@ class MobileAppState extends ChangeNotifier {
   }
 }
 
-extension on DesktopSyncChange {
+extension on RemoteSyncChange {
   VaultRecord toVaultRecord() {
+    final prefix = sourceDevice == 'lanDebug' ? 'lan:' : 'remote:';
     return VaultRecord(
-      id: id.startsWith('desktop:') ? id : 'desktop:$id',
+      id: id.contains(':') ? id : '$prefix$id',
       kind: switch (kind) {
         'audio' => WatermarkAssetKind.audio,
         'video' => WatermarkAssetKind.video,
@@ -748,8 +915,8 @@ enum MobileSyncResolutionType {
   staleRevisionIgnored,
 }
 
-class _DesktopMergeResult {
-  const _DesktopMergeResult({required this.record, required this.resolution});
+class _RemoteMergeResult {
+  const _RemoteMergeResult({required this.record, required this.resolution});
 
   final VaultRecord? record;
   final MobileSyncResolution resolution;
@@ -802,60 +969,191 @@ enum SyncQueueOperation { upsertVaultRecord, upsertEvidenceRecord }
 
 enum SyncQueueItemStatus { pending, syncing, synced, failed }
 
-class DesktopPairingProfile {
-  const DesktopPairingProfile({
-    required this.desktopAddress,
-    required this.pairingCode,
+class SyncProfile {
+  const SyncProfile({
+    required this.mode,
     required this.status,
     required this.updatedAt,
+    this.accountId,
+    this.accountLabel,
+    this.authToken,
+    this.refreshToken,
+    this.workspaceId,
+    this.workspaceName,
+    this.deviceId,
+    this.deviceName,
+    this.devicePlatform,
+    this.deviceRegistered = false,
+    this.creatorProfileId,
+    this.creatorDisplayName,
+    this.creatorSeedRef,
+    this.creatorSeedEnvelopeVersion = 0,
+    this.creatorProfileSynced = false,
+    this.entitlementId,
+    this.entitlementLabel = '免费版',
+    this.entitlementStatus = EntitlementStatus.free,
+    this.entitlementPlanCode = 'free',
+    this.entitlementFeatures = const {},
+    this.entitlementLastCheckedAt,
+    this.cloudBaseUrl = '',
+    this.lanDebugAddress = '',
+    this.lanDebugPairingCode = '',
     this.lastError,
-    this.lastDesktopPullSince,
+    this.lastRemotePullCursor,
   });
 
-  factory DesktopPairingProfile.unpaired() {
-    return DesktopPairingProfile(
-      desktopAddress: '',
-      pairingCode: '',
-      status: DesktopPairingStatus.unpaired,
+  factory SyncProfile.localOnly() {
+    return SyncProfile(
+      mode: SyncTransportMode.localOnly,
+      status: SyncConnectionStatus.unconfigured,
       updatedAt: DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
 
-  final String desktopAddress;
-  final String pairingCode;
-  final DesktopPairingStatus status;
+  final SyncTransportMode mode;
+  final SyncConnectionStatus status;
   final DateTime updatedAt;
+  final String? accountId;
+  final String? accountLabel;
+  final String? authToken;
+  final String? refreshToken;
+  final String? workspaceId;
+  final String? workspaceName;
+  final String? deviceId;
+  final String? deviceName;
+  final String? devicePlatform;
+  final bool deviceRegistered;
+  final String? creatorProfileId;
+  final String? creatorDisplayName;
+  final String? creatorSeedRef;
+  final int creatorSeedEnvelopeVersion;
+  final bool creatorProfileSynced;
+  final String? entitlementId;
+  final String entitlementLabel;
+  final EntitlementStatus entitlementStatus;
+  final String entitlementPlanCode;
+  final Map<String, bool> entitlementFeatures;
+  final DateTime? entitlementLastCheckedAt;
+  final String cloudBaseUrl;
+  final String lanDebugAddress;
+  final String lanDebugPairingCode;
   final String? lastError;
-  final String? lastDesktopPullSince;
+  final String? lastRemotePullCursor;
 
-  bool get canConnect =>
-      desktopAddress.isNotEmpty &&
-      pairingCode.isNotEmpty &&
-      status != DesktopPairingStatus.connecting;
+  @Deprecated('Use lanDebugAddress')
+  String get desktopAddress => lanDebugAddress;
 
-  DesktopPairingProfile copyWith({
-    String? desktopAddress,
-    String? pairingCode,
-    DesktopPairingStatus? status,
+  @Deprecated('Use lanDebugPairingCode')
+  String get pairingCode => lanDebugPairingCode;
+
+  @Deprecated('Use lastRemotePullCursor')
+  String? get lastDesktopPullSince => lastRemotePullCursor;
+
+  bool get canConnectLanDebug =>
+      lanDebugAddress.isNotEmpty &&
+      lanDebugPairingCode.isNotEmpty &&
+      status != SyncConnectionStatus.connecting;
+
+  SyncProfile copyWith({
+    SyncTransportMode? mode,
+    SyncConnectionStatus? status,
     DateTime? updatedAt,
+    String? accountId,
+    String? accountLabel,
+    String? authToken,
+    String? refreshToken,
+    String? workspaceId,
+    String? workspaceName,
+    String? deviceId,
+    String? deviceName,
+    String? devicePlatform,
+    bool? deviceRegistered,
+    String? creatorProfileId,
+    String? creatorDisplayName,
+    String? creatorSeedRef,
+    int? creatorSeedEnvelopeVersion,
+    bool? creatorProfileSynced,
+    String? entitlementId,
+    String? entitlementLabel,
+    EntitlementStatus? entitlementStatus,
+    String? entitlementPlanCode,
+    Map<String, bool>? entitlementFeatures,
+    DateTime? entitlementLastCheckedAt,
+    String? cloudBaseUrl,
+    String? lanDebugAddress,
+    String? lanDebugPairingCode,
     String? lastError,
-    String? lastDesktopPullSince,
+    String? lastRemotePullCursor,
     bool clearLastError = false,
+    bool clearAccount = false,
+    bool clearAuthToken = false,
+    bool clearWorkspace = false,
+    bool clearCreatorProfile = false,
+    bool clearEntitlement = false,
   }) {
-    return DesktopPairingProfile(
-      desktopAddress: desktopAddress ?? this.desktopAddress,
-      pairingCode: pairingCode ?? this.pairingCode,
+    return SyncProfile(
+      mode: mode ?? this.mode,
       status: status ?? this.status,
       updatedAt: updatedAt ?? this.updatedAt,
+      accountId: clearAccount ? null : accountId ?? this.accountId,
+      accountLabel: clearAccount ? null : accountLabel ?? this.accountLabel,
+      authToken: clearAuthToken ? null : authToken ?? this.authToken,
+      refreshToken: clearAuthToken ? null : refreshToken ?? this.refreshToken,
+      workspaceId: clearWorkspace ? null : workspaceId ?? this.workspaceId,
+      workspaceName: clearWorkspace
+          ? null
+          : workspaceName ?? this.workspaceName,
+      deviceId: deviceId ?? this.deviceId,
+      deviceName: deviceName ?? this.deviceName,
+      devicePlatform: devicePlatform ?? this.devicePlatform,
+      deviceRegistered: deviceRegistered ?? this.deviceRegistered,
+      creatorProfileId: clearCreatorProfile
+          ? null
+          : creatorProfileId ?? this.creatorProfileId,
+      creatorDisplayName: clearCreatorProfile
+          ? null
+          : creatorDisplayName ?? this.creatorDisplayName,
+      creatorSeedRef: clearCreatorProfile
+          ? null
+          : creatorSeedRef ?? this.creatorSeedRef,
+      creatorSeedEnvelopeVersion: clearCreatorProfile
+          ? 0
+          : creatorSeedEnvelopeVersion ?? this.creatorSeedEnvelopeVersion,
+      creatorProfileSynced: clearCreatorProfile
+          ? false
+          : creatorProfileSynced ?? this.creatorProfileSynced,
+      entitlementId: clearEntitlement
+          ? null
+          : entitlementId ?? this.entitlementId,
+      entitlementLabel: clearEntitlement
+          ? '免费版'
+          : entitlementLabel ?? this.entitlementLabel,
+      entitlementStatus: clearEntitlement
+          ? EntitlementStatus.free
+          : entitlementStatus ?? this.entitlementStatus,
+      entitlementPlanCode: clearEntitlement
+          ? 'free'
+          : entitlementPlanCode ?? this.entitlementPlanCode,
+      entitlementFeatures: clearEntitlement
+          ? const {}
+          : entitlementFeatures ?? this.entitlementFeatures,
+      entitlementLastCheckedAt: clearEntitlement
+          ? null
+          : entitlementLastCheckedAt ?? this.entitlementLastCheckedAt,
+      cloudBaseUrl: cloudBaseUrl ?? this.cloudBaseUrl,
+      lanDebugAddress: lanDebugAddress ?? this.lanDebugAddress,
+      lanDebugPairingCode: lanDebugPairingCode ?? this.lanDebugPairingCode,
       lastError: clearLastError ? null : lastError ?? this.lastError,
-      lastDesktopPullSince: lastDesktopPullSince ?? this.lastDesktopPullSince,
+      lastRemotePullCursor: lastRemotePullCursor ?? this.lastRemotePullCursor,
     );
   }
 }
 
-enum DesktopPairingStatus { unpaired, paired, connecting, failed }
+enum SyncConnectionStatus { unconfigured, connected, connecting, failed }
 
-enum SyncTransportMode { mock, http }
+enum SyncTransportMode { localOnly, cloud, lanDebug }
+
+enum EntitlementStatus { free, trial, active, grace, expired }
 
 String vaultRecordSourceLabel(VaultRecordSource source) {
   return switch (source) {
@@ -891,37 +1189,50 @@ String mobileSyncResolutionTypeLabel(MobileSyncResolutionType type) {
   };
 }
 
-String desktopPairingStatusLabel(DesktopPairingStatus status) {
+String syncConnectionStatusLabel(SyncConnectionStatus status) {
   return switch (status) {
-    DesktopPairingStatus.unpaired => '未配对',
-    DesktopPairingStatus.paired => '已配对',
-    DesktopPairingStatus.connecting => '连接中',
-    DesktopPairingStatus.failed => '连接失败',
+    SyncConnectionStatus.unconfigured => '未配置',
+    SyncConnectionStatus.connected => '已连接',
+    SyncConnectionStatus.connecting => '连接中',
+    SyncConnectionStatus.failed => '连接失败',
   };
 }
 
 String syncTransportModeLabel(SyncTransportMode mode) {
   return switch (mode) {
-    SyncTransportMode.mock => '本地模拟',
-    SyncTransportMode.http => '桌面 HTTP',
+    SyncTransportMode.localOnly => '仅本机',
+    SyncTransportMode.cloud => '云同步',
+    SyncTransportMode.lanDebug => '局域网调试',
+  };
+}
+
+String entitlementStatusLabel(EntitlementStatus status) {
+  return switch (status) {
+    EntitlementStatus.free => '免费版',
+    EntitlementStatus.trial => '试用中',
+    EntitlementStatus.active => '订阅有效',
+    EntitlementStatus.grace => '宽限期',
+    EntitlementStatus.expired => '已过期',
   };
 }
 
 typedef SyncTransportFactory =
-    SyncTransport Function(
-      SyncTransportMode mode,
-      DesktopPairingProfile pairingProfile,
-    );
+    SyncTransport Function(SyncTransportMode mode, SyncProfile pairingProfile);
 
 SyncTransport _defaultSyncTransportFactory(
   SyncTransportMode mode,
-  DesktopPairingProfile pairingProfile,
+  SyncProfile pairingProfile,
 ) {
   return switch (mode) {
-    SyncTransportMode.mock => const LocalMockSyncTransport(),
-    SyncTransportMode.http => DesktopHttpSyncTransport(
-      desktopAddress: pairingProfile.desktopAddress,
-      pairingCode: pairingProfile.pairingCode,
+    SyncTransportMode.localOnly => const LocalOnlySyncTransport(),
+    SyncTransportMode.cloud => CloudSyncTransport(
+      baseUrl: pairingProfile.cloudBaseUrl,
+      authToken: pairingProfile.authToken,
+      deviceId: pairingProfile.deviceId,
+    ),
+    SyncTransportMode.lanDebug => LanDebugSyncTransport(
+      lanDebugAddress: pairingProfile.lanDebugAddress,
+      pairingCode: pairingProfile.lanDebugPairingCode,
     ),
   };
 }

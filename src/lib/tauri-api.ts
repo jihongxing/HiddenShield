@@ -128,6 +128,69 @@ export interface SyncResolutionSummary {
   mobileRevision: number | null;
 }
 
+export interface DesktopCloudSyncProfile {
+  cloudBaseUrl: string;
+  accountId: string;
+  accountLabel: string;
+  accessToken: string;
+  refreshToken: string;
+  workspaceId: string;
+  workspaceName: string;
+  deviceId: string;
+  deviceName: string | null;
+  devicePlatform: string | null;
+  creatorProfileId: string;
+  creatorDisplayName: string;
+  entitlementId: string;
+  entitlementLabel: string;
+  entitlementStatus: string;
+  entitlementPlanCode: string;
+  entitlementFeatures: Record<string, boolean>;
+  lastRemoteCursor: string | null;
+  updatedAt: string;
+}
+
+export interface CloudSyncBatchResult {
+  accepted: number;
+  acceptedEventIds: string[];
+  nextCursor: string | null;
+  resolutions: unknown;
+}
+
+export interface CloudQueueStatus {
+  pending: number;
+  failed: number;
+  synced: number;
+}
+
+export interface CloudQueueFlushResult {
+  attempted: number;
+  synced: number;
+  failed: number;
+  message: string;
+}
+
+export interface CloudSyncChange {
+  cursor: string | null;
+  entityType: string;
+  operation: string;
+  sourceDevice: string | null;
+  entity: Record<string, unknown>;
+}
+
+export interface CloudSyncChangesResult {
+  nextCursor: string;
+  changes: CloudSyncChange[];
+}
+
+export interface CloudPullResult {
+  nextCursor: string;
+  totalChanges: number;
+  applied: number;
+  skipped: number;
+  importedQueueIds: string[];
+}
+
 export interface VerificationResult {
   matched: boolean;
   watermarkUid: string | null;
@@ -467,6 +530,138 @@ export async function regenerateMobilePairingCode(): Promise<string> {
   if (!isTauriRuntime()) return "654321";
   const { invoke } = await import("@tauri-apps/api/core");
   return invoke<string>("regenerate_mobile_pairing_code");
+}
+
+export async function getDesktopCloudSyncProfile(): Promise<DesktopCloudSyncProfile | null> {
+  if (!isTauriRuntime()) return null;
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<DesktopCloudSyncProfile | null>("get_desktop_cloud_sync_profile");
+}
+
+export async function getDesktopCloudQueueStatus(): Promise<CloudQueueStatus> {
+  if (!isTauriRuntime()) return { pending: 0, failed: 0, synced: 0 };
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<CloudQueueStatus>("get_desktop_cloud_queue_status");
+}
+
+export async function signOutDesktopCloud(): Promise<void> {
+  if (!isTauriRuntime()) return;
+  const { invoke } = await import("@tauri-apps/api/core");
+  await invoke("sign_out_desktop_cloud");
+}
+
+export async function continueCloudAccount(
+  identifier: string,
+  creatorDisplayName: string,
+  verificationCode = "",
+): Promise<DesktopCloudSyncProfile> {
+  if (!isTauriRuntime()) {
+    return {
+      cloudBaseUrl: "http://127.0.0.1:43188",
+      accountId: "acct_mock",
+      accountLabel: identifier,
+      accessToken: "mock-access-token",
+      refreshToken: "mock-refresh-token",
+      workspaceId: "ws_mock",
+      workspaceName: "个人空间",
+      deviceId: "desktop-mock",
+      deviceName: "Desktop Mock",
+      devicePlatform: "web",
+      creatorProfileId: "creator_mock",
+      creatorDisplayName,
+      entitlementId: "ent_mock",
+      entitlementLabel: "免费版",
+      entitlementStatus: "free",
+      entitlementPlanCode: "free",
+      entitlementFeatures: { cloud_sync: true, batch_processing: false, cloud_video_processing: false },
+      lastRemoteCursor: null,
+      updatedAt: new Date().toISOString(),
+    };
+  }
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<DesktopCloudSyncProfile>("continue_cloud_account", {
+    input: { identifier, verificationCode, creatorDisplayName },
+  });
+}
+
+export async function pushDesktopVaultRecordToCloud(
+  baseUrl: string,
+  accessToken: string,
+  deviceId: string,
+  recordId: number,
+): Promise<CloudSyncBatchResult> {
+  if (!isTauriRuntime()) {
+    return {
+      accepted: 1,
+      acceptedEventIds: [`desktop-vault-${recordId}`],
+      nextCursor: "cursor_mock",
+      resolutions: [],
+    };
+  }
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<CloudSyncBatchResult>("push_desktop_vault_record_to_cloud", {
+    input: { baseUrl, accessToken, deviceId, recordId },
+  });
+}
+
+export async function pushSavedDesktopVaultRecordToCloud(
+  recordId: number,
+): Promise<CloudSyncBatchResult> {
+  if (!isTauriRuntime()) {
+    return {
+      accepted: 1,
+      acceptedEventIds: [`desktop-vault-${recordId}`],
+      nextCursor: "cursor_mock",
+      resolutions: [],
+    };
+  }
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<CloudSyncBatchResult>("push_saved_desktop_vault_record_to_cloud", {
+    input: { recordId },
+  });
+}
+
+export async function flushDesktopCloudSyncQueue(limit = 50): Promise<CloudQueueFlushResult> {
+  if (!isTauriRuntime()) {
+    return {
+      attempted: 0,
+      synced: 0,
+      failed: 0,
+      message: "mock flush",
+    };
+  }
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<CloudQueueFlushResult>("flush_desktop_cloud_sync_queue", {
+    input: { limit },
+  });
+}
+
+export async function pullSavedCloudChangesIntoDesktop(): Promise<CloudPullResult> {
+  if (!isTauriRuntime()) {
+    return {
+      nextCursor: "cursor_mock",
+      totalChanges: 0,
+      applied: 0,
+      skipped: 0,
+      importedQueueIds: [],
+    };
+  }
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<CloudPullResult>("pull_saved_cloud_changes_into_desktop");
+}
+
+export async function fetchCloudChanges(
+  baseUrl: string,
+  accessToken: string,
+  cursor?: string,
+): Promise<CloudSyncChangesResult> {
+  if (!isTauriRuntime()) {
+    return { nextCursor: "cursor_mock", changes: [] };
+  }
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<CloudSyncChangesResult>("fetch_cloud_changes", {
+    input: { baseUrl, accessToken, cursor },
+  });
 }
 
 export async function verifySuspect(path: string): Promise<VerificationResult> {

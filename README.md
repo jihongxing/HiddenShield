@@ -10,7 +10,7 @@
 - **视频音轨盲水印**：无感嵌入版权基因
 - **RFC 3161 可信时间戳**：第三方权威机构签发，防伪造时间
 - **本地版权金库**：SQLite 存证，零上传
-- **移动端同步 stub**：桌面端本地 HTTP 服务接收移动端版权元数据事件
+- **账户云同步契约**：本地 mock 服务验证登录注册合一、版权元数据 push / pull
 - **维权取证报告**：一键生成结构化存证报告
 
 ## 技术栈
@@ -34,6 +34,38 @@ npm install
 # 启动开发模式 (Vite + Tauri)
 npx tauri dev
 ```
+
+### 云同步后端
+
+本地开发可先启动最小真实云后端，再让 Flutter / 桌面端对接同一套协议：
+
+```bash
+npm run cloud:backend
+npm run cloud:contract
+npm run cloud:e2e
+```
+
+默认地址来自系统配置 [config/hiddenshield.system.json](D:/codeSpace/HiddenShield/config/hiddenshield.system.json)，当前为 `http://127.0.0.1:43188`。Flutter 和桌面端都从各自的系统配置入口读取该地址，不在用户设置页暴露手动填写项。
+
+桌面端 Tauri 已接入同协议云同步 client；设置页已提供“账户与云同步”主入口，并把原 LAN 配对码服务降级到高级调试区。
+
+### 联调预览
+
+同时启动云后端、桌面端和 Flutter 预览：
+
+```bash
+npm run dev:stack
+```
+
+这会默认拉起：
+
+- 云后端 `http://127.0.0.1:43188`
+- 桌面端 `npm run tauri:dev`
+- Flutter Web 预览 `http://127.0.0.1:43189`
+
+桌面端正式预览请始终走 Tauri，不要用 `vite preview` 代替。
+
+详细流程见 [桌面 / 移动 / 云同步联调指南](docs/桌面移动云同步联调指南.md)。
 
 ### 前提条件
 

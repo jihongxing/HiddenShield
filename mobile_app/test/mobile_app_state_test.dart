@@ -1,8 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hidden_shield_mobile/app/mobile_app_state.dart';
 import 'package:hidden_shield_mobile/bridge/watermark_models.dart';
 import 'package:hidden_shield_mobile/storage/vault_store.dart';
+import 'package:hidden_shield_mobile/sync/cloud_account_client.dart';
 import 'package:hidden_shield_mobile/sync/sync_transport.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 
 void main() {
   test('loads existing vault records from the store', () async {
@@ -97,7 +102,10 @@ void main() {
 
   test('syncs pending queue items with the local mock transport', () async {
     final store = MemoryVaultStore();
-    final state = MobileAppState(vaultStore: store);
+    final state = MobileAppState(
+      vaultStore: store,
+      syncTransport: const LocalMockSyncTransport(),
+    );
     await state.load();
 
     state.addWriteResult(
@@ -173,72 +181,171 @@ void main() {
     expect(state.failedSyncQueueCount, 0);
   });
 
-  test('saves and loads desktop pairing profile', () async {
+  test('saves and loads LAN debug sync profile', () async {
     final store = MemoryVaultStore();
     final state = MobileAppState(vaultStore: store);
     await state.load();
 
-    await state.saveDesktopPairing(
-      desktopAddress: 'http://127.0.0.1:47219',
+    await state.saveLanDebugPairing(
+      lanDebugAddress: 'http://127.0.0.1:47219',
       pairingCode: '123456',
     );
 
-    expect(state.desktopSyncEnabled, isTrue);
-    expect(state.pairingProfile.status, DesktopPairingStatus.paired);
-    expect(state.pairingProfile.desktopAddress, 'http://127.0.0.1:47219');
+    expect(state.cloudSyncEnabled, isFalse);
+    expect(state.syncTransportMode, SyncTransportMode.lanDebug);
+    expect(state.syncProfile.status, SyncConnectionStatus.connected);
+    expect(state.syncProfile.lanDebugAddress, 'http://127.0.0.1:47219');
 
     final reloaded = MobileAppState(vaultStore: store);
     await reloaded.load();
 
-    expect(reloaded.desktopSyncEnabled, isTrue);
-    expect(reloaded.pairingProfile.pairingCode, '123456');
+    expect(reloaded.cloudSyncEnabled, isFalse);
+    expect(reloaded.syncProfile.lanDebugPairingCode, '123456');
+  });
+
+  test('continue with account creates or loads account identity contract', () async {
+    final store = MemoryVaultStore();
+    final state = MobileAppState(vaultStore: store);
+    await state.load();
+    state.updateCreatorLabel('Alice Creator');
+
+    await state.continueWithAccountPlaceholder(accountLabel: 'alice@example.com');
+
+    expect(state.cloudSyncEnabled, isTrue);
+    expect(state.syncProfile.accountId, startsWith('acct_'));
+    expect(state.syncProfile.workspaceId, startsWith('ws_'));
+    expect(state.syncProfile.workspaceName, '个人空间');
+    expect(state.syncProfile.deviceId, startsWith('dev_'));
+    expect(state.syncProfile.deviceRegistered, isTrue);
+    expect(state.syncProfile.creatorProfileId, startsWith('creator_'));
+    expect(state.syncProfile.creatorDisplayName, 'Alice Creator');
+    expect(state.syncProfile.creatorProfileSynced, isTrue);
+    expect(state.syncProfile.entitlementId, startsWith('ent_'));
+    expect(state.syncProfile.entitlementPlanCode, 'free');
+    expect(state.syncProfile.entitlementFeatures['cloud_sync'], isTrue);
+
+    final reloaded = MobileAppState(vaultStore: store);
+    await reloaded.load();
+
+    expect(reloaded.cloudSyncEnabled, isTrue);
+    expect(reloaded.syncProfile.accountLabel, 'alice@example.com');
+    expect(reloaded.syncProfile.workspaceName, '个人空间');
+    expect(reloaded.syncProfile.deviceRegistered, isTrue);
+    expect(reloaded.syncProfile.creatorDisplayName, 'Alice Creator');
+    expect(reloaded.syncProfile.entitlementFeatures['cloud_sync'], isTrue);
+  });
+
+  test('continue with the same account is idempotent', () async {
+    final store = MemoryVaultStore();
+    final state = MobileAppState(vaultStore: store);
+    await state.load();
+
+    await state.continueWithAccountPlaceholder(accountLabel: 'alice@example.com');
+    final firstAccountId = state.syncProfile.accountId;
+    final firstWorkspaceId = state.syncProfile.workspaceId;
+    final firstCreatorId = state.syncProfile.creatorProfileId;
+
+    await state.signOutCloud();
+    await state.continueWithAccountPlaceholder(accountLabel: 'alice@example.com');
+
+    expect(state.syncProfile.accountId, firstAccountId);
+    expect(state.syncProfile.workspaceId, firstWorkspaceId);
+    expect(state.syncProfile.creatorProfileId, firstCreatorId);
+  });
+
+  test('continue with account can apply cloud auth continue response', () async {
+    final store = MemoryVaultStore();
+    final cloudClient = CloudAccountClient(
+      baseUrl: 'https://api.hiddenshield.test',
+      client: MockClient((request) async {
+        return http.Response.bytes(
+          utf8.encode(jsonEncode({
+            'accessToken': 'access-token',
+            'refreshToken': 'refresh-token',
+            'account': {'id': 'acct-cloud', 'displayName': 'alice@example.com'},
+            'workspace': {'id': 'ws-cloud', 'name': '个人空间'},
+            'device': {'id': 'device-cloud', 'registered': true},
+            'creatorProfile': {
+              'id': 'creator-cloud',
+              'displayName': 'Alice Creator',
+              'isDefault': true,
+            },
+            'entitlement': {
+              'id': 'ent-cloud',
+              'planName': '免费版',
+              'planCode': 'free',
+              'status': 'free',
+              'features': {'cloud_sync': true},
+            },
+          })),
+          200,
+          headers: const {'content-type': 'application/json; charset=utf-8'},
+        );
+      }),
+    );
+    final state = MobileAppState(
+      vaultStore: store,
+      cloudAccountClient: cloudClient,
+    );
+    await state.load();
+    state.updateCreatorLabel('Alice Creator');
+
+    await state.continueWithAccountPlaceholder(accountLabel: 'alice@example.com');
+
+    expect(state.syncProfile.accountId, 'acct-cloud');
+    expect(state.syncProfile.authToken, 'access-token');
+    expect(state.syncProfile.refreshToken, 'refresh-token');
+    expect(state.syncProfile.workspaceId, 'ws-cloud');
+    expect(state.syncProfile.deviceId, 'device-cloud');
+    expect(state.syncProfile.creatorProfileId, 'creator-cloud');
+    expect(state.syncProfile.entitlementId, 'ent-cloud');
   });
 
   test('test desktop connection returns paired status', () async {
     final state = MobileAppState(vaultStore: MemoryVaultStore());
     await state.load();
-    await state.saveDesktopPairing(
-      desktopAddress: 'http://127.0.0.1:47219',
+    await state.saveLanDebugPairing(
+      lanDebugAddress: 'http://127.0.0.1:47219',
       pairingCode: 'abcdef',
     );
 
-    await state.testDesktopConnection();
+    await state.testLanDebugConnection();
 
-    expect(state.pairingProfile.status, DesktopPairingStatus.paired);
-    expect(state.pairingProfile.lastError, isNull);
+    expect(state.syncProfile.status, SyncConnectionStatus.connected);
+    expect(state.syncProfile.lastError, isNull);
   });
 
-  test('enables http sync mode only after desktop pairing', () async {
+  test('enables LAN debug sync mode only after debug pairing', () async {
     final state = MobileAppState(vaultStore: MemoryVaultStore());
     await state.load();
 
-    state.setSyncTransportMode(SyncTransportMode.http);
-    expect(state.syncTransportMode, SyncTransportMode.mock);
+    state.setSyncTransportMode(SyncTransportMode.lanDebug);
+    expect(state.syncTransportMode, SyncTransportMode.localOnly);
 
-    await state.saveDesktopPairing(
-      desktopAddress: 'http://127.0.0.1:47219',
+    await state.saveLanDebugPairing(
+      lanDebugAddress: 'http://127.0.0.1:47219',
       pairingCode: 'abcdef',
     );
-    state.setSyncTransportMode(SyncTransportMode.http);
+    state.setSyncTransportMode(SyncTransportMode.lanDebug);
 
-    expect(state.syncTransportMode, SyncTransportMode.http);
+    expect(state.syncTransportMode, SyncTransportMode.lanDebug);
   });
 
   test('uses selected transport mode when syncing', () async {
     final usedModes = <SyncTransportMode>[];
     final state = MobileAppState(
       vaultStore: MemoryVaultStore(),
-      syncTransportFactory: (mode, pairingProfile) {
+      syncTransportFactory: (mode, syncProfile) {
         usedModes.add(mode);
         return const LocalMockSyncTransport();
       },
     );
     await state.load();
-    await state.saveDesktopPairing(
-      desktopAddress: 'http://127.0.0.1:47219',
+    await state.saveLanDebugPairing(
+      lanDebugAddress: 'http://127.0.0.1:47219',
       pairingCode: 'abcdef',
     );
-    state.setSyncTransportMode(SyncTransportMode.http);
+    state.setSyncTransportMode(SyncTransportMode.lanDebug);
 
     state.addWriteResult(
       result: const WatermarkWriteResult(
@@ -254,7 +361,7 @@ void main() {
 
     await state.syncPendingQueue();
 
-    expect(usedModes, contains(SyncTransportMode.http));
+    expect(usedModes, contains(SyncTransportMode.lanDebug));
     expect(state.pendingSyncQueueCount, 0);
   });
 
@@ -279,12 +386,12 @@ void main() {
     final transport = _DesktopChangesTransport();
     final state = MobileAppState(vaultStore: store, syncTransport: transport);
     await state.load();
-    await state.saveDesktopPairing(
-      desktopAddress: 'http://127.0.0.1:47219',
+    await state.saveLanDebugPairing(
+      lanDebugAddress: 'http://127.0.0.1:47219',
       pairingCode: 'abcdef',
     );
 
-    await state.pullDesktopChanges();
+    await state.pullRemoteChanges();
 
     final records = await store.loadRecords();
     expect(transport.fetchCalls, 1);
@@ -295,15 +402,15 @@ void main() {
     final evidenceRecord = records.firstWhere(
       (record) => record.watermarkUid == 'uid-evidence',
     );
-    expect(desktopRecord.id, 'desktop:desktop-1');
+    expect(desktopRecord.id, 'lan:desktop-1');
     expect(desktopRecord.syncStatus, SyncStatus.synced);
     expect(evidenceRecord.source, VaultRecordSource.verify);
     expect(evidenceRecord.extractedTimestamp, 123);
     expect(evidenceRecord.extractedDeviceIdHex, 'device');
     expect(evidenceRecord.extractedFileHashHex, 'hash');
-    expect(state.pairingProfile.lastError, isNull);
+    expect(state.syncProfile.lastError, isNull);
     expect(
-      state.pairingProfile.lastDesktopPullSince,
+      state.syncProfile.lastRemotePullCursor,
       '2026-06-16T12:00:00.000Z',
     );
 
@@ -313,11 +420,11 @@ void main() {
     );
     await reloaded.load();
     expect(
-      reloaded.pairingProfile.lastDesktopPullSince,
+      reloaded.syncProfile.lastRemotePullCursor,
       '2026-06-16T12:00:00.000Z',
     );
 
-    await reloaded.pullDesktopChanges();
+    await reloaded.pullRemoteChanges();
     expect(transport.lastSince, '2026-06-16T12:00:00.000Z');
   });
 
@@ -347,12 +454,12 @@ void main() {
         ),
       );
       await state.load();
-      await state.saveDesktopPairing(
-        desktopAddress: 'http://127.0.0.1:47219',
+      await state.saveLanDebugPairing(
+        lanDebugAddress: 'http://127.0.0.1:47219',
         pairingCode: 'abcdef',
       );
 
-      await state.pullDesktopChanges();
+      await state.pullRemoteChanges();
 
       final records = await store.loadRecords();
       final resolutions = await store.loadSyncResolutions();
@@ -392,12 +499,12 @@ void main() {
       ),
     );
     await state.load();
-    await state.saveDesktopPairing(
-      desktopAddress: 'http://127.0.0.1:47219',
+    await state.saveLanDebugPairing(
+      lanDebugAddress: 'http://127.0.0.1:47219',
       pairingCode: 'abcdef',
     );
 
-    await state.pullDesktopChanges();
+    await state.pullRemoteChanges();
 
     final records = await store.loadRecords();
     final resolutions = await store.loadSyncResolutions();
@@ -435,12 +542,12 @@ void main() {
       ),
     );
     await state.load();
-    await state.saveDesktopPairing(
-      desktopAddress: 'http://127.0.0.1:47219',
+    await state.saveLanDebugPairing(
+      lanDebugAddress: 'http://127.0.0.1:47219',
       pairingCode: 'abcdef',
     );
 
-    await state.pullDesktopChanges();
+    await state.pullRemoteChanges();
 
     final records = await store.loadRecords();
     final resolutions = await store.loadSyncResolutions();
@@ -478,12 +585,12 @@ void main() {
         ),
       );
       await state.load();
-      await state.saveDesktopPairing(
-        desktopAddress: 'http://127.0.0.1:47219',
+      await state.saveLanDebugPairing(
+        lanDebugAddress: 'http://127.0.0.1:47219',
         pairingCode: 'abcdef',
       );
 
-      await state.pullDesktopChanges();
+      await state.pullRemoteChanges();
 
       final records = await store.loadRecords();
       final resolutions = await store.loadSyncResolutions();
@@ -496,7 +603,7 @@ void main() {
         resolutions.single.resolutionType,
         MobileSyncResolutionType.variantAccepted,
       );
-      expect(resolutions.single.insertedRecordId, 'desktop:desktop-variant');
+      expect(resolutions.single.insertedRecordId, 'lan:desktop-variant');
     },
   );
 }
@@ -521,20 +628,21 @@ VaultRecord _vaultRecord({
   );
 }
 
-DesktopSyncChange _desktopChange({
+RemoteSyncChange _desktopChange({
   required String id,
   required String watermarkUid,
   required int revision,
   required String sha256,
   String title = 'desktop.png',
 }) {
-  return DesktopSyncChange(
+  return RemoteSyncChange(
     id: id,
     kind: 'image',
     title: title,
     watermarkUid: watermarkUid,
     revision: revision,
     sha256: sha256,
+    sourceDevice: 'lanDebug',
     createdAt: '2026-06-16T12:00:00.000Z',
   );
 }
@@ -555,7 +663,7 @@ SyncQueueItem _syncQueueItem(String id) {
 class _StaticChangesTransport implements SyncTransport {
   const _StaticChangesTransport({required this.changes});
 
-  final List<DesktopSyncChange> changes;
+  final List<RemoteSyncChange> changes;
 
   @override
   Future<SyncSendResult> send(SyncQueueItem item) async {
@@ -625,16 +733,17 @@ class _DesktopChangesTransport implements SyncTransport {
     return const SyncChangesResult.success(
       nextSince: '2026-06-16T12:00:00.000Z',
       changes: [
-        DesktopSyncChange(
+        RemoteSyncChange(
           id: 'desktop-1',
           kind: 'image',
           title: 'desktop.png',
           watermarkUid: 'uid-desktop',
           revision: 2,
           sha256: 'hash-desktop',
+          sourceDevice: 'lanDebug',
           createdAt: '2026-06-16T12:00:00.000Z',
         ),
-        DesktopSyncChange(
+        RemoteSyncChange(
           id: 'desktop-evidence-1',
           kind: 'audio',
           title: 'suspect.wav',
@@ -644,6 +753,7 @@ class _DesktopChangesTransport implements SyncTransport {
           extractedTimestamp: 123,
           extractedDeviceIdHex: 'device',
           extractedFileHashHex: 'hash',
+          sourceDevice: 'lanDebug',
           createdAt: '2026-06-16T12:00:01.000Z',
         ),
       ],

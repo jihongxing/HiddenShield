@@ -18,17 +18,21 @@ class _SettingsPageState extends State<SettingsPage> {
   late final TextEditingController _creatorController = TextEditingController(
     text: widget.appState.creatorLabel,
   );
-  late final TextEditingController _desktopAddressController =
-      TextEditingController(
-        text: widget.appState.pairingProfile.desktopAddress,
-      );
+  late final TextEditingController _accountController = TextEditingController(
+    text: widget.appState.syncProfile.accountLabel ?? '',
+  );
+  late final TextEditingController _lanAddressController =
+      TextEditingController(text: widget.appState.syncProfile.lanDebugAddress);
   late final TextEditingController _pairingCodeController =
-      TextEditingController(text: widget.appState.pairingProfile.pairingCode);
+      TextEditingController(
+        text: widget.appState.syncProfile.lanDebugPairingCode,
+      );
 
   @override
   void dispose() {
     _creatorController.dispose();
-    _desktopAddressController.dispose();
+    _accountController.dispose();
+    _lanAddressController.dispose();
     _pairingCodeController.dispose();
     super.dispose();
   }
@@ -45,7 +49,8 @@ class _SettingsPageState extends State<SettingsPage> {
           builder: (context, _) => _SettingsContent(
             appState: widget.appState,
             creatorController: _creatorController,
-            desktopAddressController: _desktopAddressController,
+            accountController: _accountController,
+            lanAddressController: _lanAddressController,
             pairingCodeController: _pairingCodeController,
           ),
         ),
@@ -58,17 +63,22 @@ class _SettingsContent extends StatelessWidget {
   const _SettingsContent({
     required this.appState,
     required this.creatorController,
-    required this.desktopAddressController,
+    required this.accountController,
+    required this.lanAddressController,
     required this.pairingCodeController,
   });
 
   final MobileAppState appState;
   final TextEditingController creatorController;
-  final TextEditingController desktopAddressController;
+  final TextEditingController accountController;
+  final TextEditingController lanAddressController;
   final TextEditingController pairingCodeController;
 
   @override
   Widget build(BuildContext context) {
+    final profile = appState.syncProfile;
+    final signedIn = appState.hasCloudAccount;
+
     return Column(
       children: [
         _SectionCard(
@@ -80,9 +90,18 @@ class _SettingsContent extends StatelessWidget {
                 controller: creatorController,
                 decoration: const InputDecoration(
                   labelText: '创作者标识',
-                  helperText: '用于本机生成水印身份，不会默认上传。',
+                  helperText: '继续使用账户并开启云同步后，创作者档案会在移动端和桌面端保持一致。',
                 ),
                 onSubmitted: appState.updateCreatorLabel,
+              ),
+              const SizedBox(height: 12),
+              _DiagnosticRow(
+                label: '档案同步',
+                value: profile.creatorProfileSynced ? '随账户同步' : '仅保存在本机',
+              ),
+              _DiagnosticRow(
+                label: '档案 ID',
+                value: profile.creatorProfileId ?? '未加入账户',
               ),
               const SizedBox(height: 12),
               Align(
@@ -99,86 +118,31 @@ class _SettingsContent extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         _SectionCard(
-          title: '同步与备份',
-          icon: Icons.sync_outlined,
+          title: '账户与权益',
+          icon: Icons.account_circle_outlined,
           child: Column(
             children: [
-              SwitchListTile(
-                value: appState.desktopSyncEnabled,
-                onChanged: appState.setDesktopSyncEnabled,
-                title: const Text('桌面端同步'),
-                subtitle: Text(
-                  appState.desktopSyncEnabled
-                      ? '已允许后续连接桌面同步服务。'
-                      : '当前仅保存在本机，待接入桌面配对。',
-                ),
-                contentPadding: EdgeInsets.zero,
-              ),
-              const Divider(height: 1),
-              const SizedBox(height: 12),
               TextField(
-                controller: desktopAddressController,
+                controller: accountController,
                 decoration: const InputDecoration(
-                  labelText: '桌面端地址',
-                  hintText: 'http://192.168.1.8:47219',
+                  labelText: 'HiddenShield 账户',
+                  hintText: 'name@example.com',
+                  helperText: '输入邮箱或手机号后继续；新用户自动创建账户，老用户直接进入。',
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: pairingCodeController,
-                decoration: const InputDecoration(
-                  labelText: '配对码',
-                  hintText: '桌面端生成的一次性配对码',
-                ),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                alignment: WrapAlignment.end,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: () => appState.saveDesktopPairing(
-                      desktopAddress: desktopAddressController.text,
-                      pairingCode: pairingCodeController.text,
-                    ),
-                    icon: const Icon(Icons.link_outlined),
-                    label: const Text('保存配对'),
-                  ),
-                  FilledButton.icon(
-                    onPressed: appState.pairingProfile.canConnect
-                        ? appState.testDesktopConnection
-                        : null,
-                    icon:
-                        appState.pairingProfile.status ==
-                            DesktopPairingStatus.connecting
-                        ? const SizedBox.square(
-                            dimension: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.wifi_tethering_outlined),
-                    label: Text(
-                      appState.pairingProfile.status ==
-                              DesktopPairingStatus.connecting
-                          ? '连接中'
-                          : '测试连接',
-                    ),
-                  ),
-                ],
               ),
               const SizedBox(height: 12),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.desktop_windows_outlined),
-                title: const Text('配对状态'),
+                leading: const Icon(Icons.verified_user_outlined),
+                title: Text(signedIn ? '已登录' : '未登录'),
                 subtitle: Text(
-                  appState.pairingProfile.desktopAddress.isEmpty
-                      ? '还没有绑定桌面设备。'
-                      : appState.pairingProfile.desktopAddress,
+                  signedIn
+                      ? profile.accountLabel ?? 'HiddenShield 账户'
+                      : '本地功能可直接使用，跨设备同步需要登录。',
                 ),
                 trailing: Chip(
                   label: Text(
-                    desktopPairingStatusLabel(appState.pairingProfile.status),
+                    entitlementStatusLabel(profile.entitlementStatus),
                   ),
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   padding: EdgeInsets.zero,
@@ -187,52 +151,71 @@ class _SettingsContent extends StatelessWidget {
                 ),
               ),
               const Divider(height: 1),
-              _PairingChecklist(appState: appState),
-              const Divider(height: 1),
               const SizedBox(height: 12),
-              SegmentedButton<SyncTransportMode>(
-                segments: const [
-                  ButtonSegment(
-                    value: SyncTransportMode.mock,
-                    icon: Icon(Icons.science_outlined),
-                    label: Text('本地模拟'),
-                  ),
-                  ButtonSegment(
-                    value: SyncTransportMode.http,
-                    icon: Icon(Icons.cloud_sync_outlined),
-                    label: Text('桌面 HTTP'),
-                  ),
-                ],
-                selected: {appState.syncTransportMode},
-                onSelectionChanged: (value) =>
-                    appState.setSyncTransportMode(value.single),
+              _DiagnosticRow(
+                label: '当前权益',
+                value: '${profile.entitlementLabel} · 批量处理 / 云端视频处理按权益开放',
               ),
-              if (!appState.canUseHttpSync) ...[
-                const SizedBox(height: 8),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    '保存桌面地址和配对码后可启用桌面 HTTP。',
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                ),
-              ],
+              _DiagnosticRow(
+                label: '工作区',
+                value: profile.workspaceName ?? '未创建',
+              ),
+              _DiagnosticRow(
+                label: '设备',
+                value: profile.deviceRegistered
+                    ? '${profile.deviceName ?? '当前设备'} · ${profile.devicePlatform ?? 'unknown'}'
+                    : '未登记',
+              ),
+              _DiagnosticRow(
+                label: '权益模块',
+                value: _enabledEntitlementSummary(profile.entitlementFeatures),
+              ),
               const SizedBox(height: 12),
-              ListTile(
+              Align(
+                alignment: Alignment.centerRight,
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.end,
+                  children: [
+                    if (signedIn)
+                      OutlinedButton.icon(
+                        onPressed: appState.signOutCloud,
+                        icon: const Icon(Icons.logout_outlined),
+                        label: const Text('退出账户'),
+                      )
+                    else
+                      FilledButton.icon(
+                        onPressed: () =>
+                            appState.continueWithAccountPlaceholder(
+                              accountLabel: accountController.text,
+                            ),
+                        icon: const Icon(Icons.login_outlined),
+                        label: const Text('继续'),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _SectionCard(
+          title: '云同步',
+          icon: Icons.cloud_sync_outlined,
+          child: Column(
+            children: [
+              SwitchListTile(
+                value: appState.cloudSyncEnabled,
+                onChanged: signedIn ? appState.setCloudSyncEnabled : null,
+                title: const Text('开启云同步'),
+                subtitle: const Text('同步版权库、取证记录、创作者档案和权益状态；不默认上传媒体文件。'),
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.pending_actions_outlined),
-                title: const Text('待同步队列'),
-                subtitle: Text(
-                  appState.failedSyncQueueCount == 0
-                      ? '写入和取证命中会先进入本地队列。'
-                      : '${appState.failedSyncQueueCount} 条同步失败，可稍后重试。',
-                ),
-                trailing: Text('${appState.pendingSyncQueueCount}'),
               ),
-              const Divider(height: 1),
-              _SyncResolutionSummary(resolutions: appState.syncResolutions),
               const Divider(height: 1),
               _SyncDiagnosticsPanel(appState: appState),
+              const Divider(height: 1),
+              _SyncResolutionSummary(resolutions: appState.syncResolutions),
               const SizedBox(height: 8),
               Align(
                 alignment: Alignment.centerRight,
@@ -243,24 +226,27 @@ class _SettingsContent extends StatelessWidget {
                   children: [
                     OutlinedButton.icon(
                       onPressed:
-                          appState.isPullingDesktopChanges ||
-                              !appState.canUseHttpSync
+                          appState.isPullingRemoteChanges ||
+                              appState.syncTransportMode ==
+                                  SyncTransportMode.localOnly
                           ? null
-                          : appState.pullDesktopChanges,
-                      icon: appState.isPullingDesktopChanges
+                          : appState.pullRemoteChanges,
+                      icon: appState.isPullingRemoteChanges
                           ? const SizedBox.square(
                               dimension: 18,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.download_outlined),
                       label: Text(
-                        appState.isPullingDesktopChanges ? '正在拉取' : '拉取桌面变更',
+                        appState.isPullingRemoteChanges ? '正在拉取' : '拉取变更',
                       ),
                     ),
                     FilledButton.icon(
                       onPressed:
                           appState.isSyncing ||
-                              appState.pendingSyncQueueCount == 0
+                              appState.pendingSyncQueueCount == 0 ||
+                              appState.syncTransportMode ==
+                                  SyncTransportMode.localOnly
                           ? null
                           : appState.syncPendingQueue,
                       icon: appState.isSyncing
@@ -268,7 +254,7 @@ class _SettingsContent extends StatelessWidget {
                               dimension: 18,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Icon(Icons.cloud_sync_outlined),
+                          : const Icon(Icons.cloud_upload_outlined),
                       label: Text(
                         appState.isSyncing
                             ? '正在同步'
@@ -292,14 +278,95 @@ class _SettingsContent extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         _SectionCard(
+          title: '高级',
+          icon: Icons.tune_outlined,
+          child: ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            childrenPadding: EdgeInsets.zero,
+            title: const Text('局域网调试同步'),
+            subtitle: const Text('仅用于开发联调或临时迁移，不是正式同步路径。'),
+            children: [
+              TextField(
+                controller: lanAddressController,
+                decoration: const InputDecoration(
+                  labelText: 'LAN 调试地址',
+                  hintText: 'http://192.168.1.8:47219',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: pairingCodeController,
+                decoration: const InputDecoration(
+                  labelText: '调试配对码',
+                  hintText: '桌面端生成的一次性配对码',
+                ),
+              ),
+              const SizedBox(height: 12),
+              _LanDebugChecklist(appState: appState),
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.end,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: () => appState.saveLanDebugPairing(
+                        lanDebugAddress: lanAddressController.text,
+                        pairingCode: pairingCodeController.text,
+                      ),
+                      icon: const Icon(Icons.link_outlined),
+                      label: const Text('保存调试配置'),
+                    ),
+                    FilledButton.icon(
+                      onPressed: appState.syncProfile.canConnectLanDebug
+                          ? appState.testLanDebugConnection
+                          : null,
+                      icon:
+                          appState.syncProfile.status ==
+                              SyncConnectionStatus.connecting
+                          ? const SizedBox.square(
+                              dimension: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.wifi_tethering_outlined),
+                      label: Text(
+                        appState.syncProfile.status ==
+                                SyncConnectionStatus.connecting
+                            ? '连接中'
+                            : '测试连接',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _SectionCard(
           title: '隐私与权限',
           icon: Icons.lock_outline,
-          child: SwitchListTile(
-            value: appState.anonymousFeedbackEnabled,
-            onChanged: appState.setAnonymousFeedbackEnabled,
-            title: const Text('匿名反馈'),
-            subtitle: const Text('仅记录功能结果和稳定性状态，不上传原始媒体。'),
-            contentPadding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              SwitchListTile(
+                value: appState.anonymousFeedbackEnabled,
+                onChanged: appState.setAnonymousFeedbackEnabled,
+                title: const Text('匿名反馈'),
+                subtitle: const Text('仅记录功能结果和稳定性状态，不上传原始媒体。'),
+                contentPadding: EdgeInsets.zero,
+              ),
+              const Divider(height: 1),
+              const SizedBox(height: 12),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '默认不同步原始图片、加水印后的图片、原始音频、加水印后的音频、原始视频、加水印后的视频和本地文件路径。',
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -317,6 +384,7 @@ class _SyncDiagnosticsPanel extends StatelessWidget {
     final latestResolution = appState.syncResolutions.isEmpty
         ? null
         : appState.syncResolutions.first;
+    final profile = appState.syncProfile;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Column(
@@ -331,34 +399,36 @@ class _SyncDiagnosticsPanel extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           _DiagnosticRow(
-            label: '桌面地址',
-            value: appState.pairingProfile.desktopAddress.isEmpty
-                ? '未配置'
-                : appState.pairingProfile.desktopAddress,
-          ),
-          _DiagnosticRow(
-            label: '配对状态',
-            value: desktopPairingStatusLabel(appState.pairingProfile.status),
-          ),
-          _DiagnosticRow(
-            label: '同步通道',
+            label: '同步模式',
             value: syncTransportModeLabel(appState.syncTransportMode),
           ),
+          _DiagnosticRow(label: '账户', value: profile.accountLabel ?? '未登录'),
+          _DiagnosticRow(label: '工作区', value: profile.workspaceId ?? '无'),
+          _DiagnosticRow(label: '设备 ID', value: profile.deviceId ?? '无'),
           _DiagnosticRow(
-            label: '上次拉取游标',
-            value: appState.pairingProfile.lastDesktopPullSince ?? '尚未拉取',
+            label: '创作者档案',
+            value: profile.creatorProfileId ?? '无',
+          ),
+          _DiagnosticRow(
+            label: '云服务',
+            value: profile.cloudBaseUrl.isEmpty ? '由系统配置提供' : profile.cloudBaseUrl,
+          ),
+          _DiagnosticRow(
+            label: '连接状态',
+            value: syncConnectionStatusLabel(profile.status),
+          ),
+          _DiagnosticRow(
+            label: '上次游标',
+            value: profile.lastRemotePullCursor ?? '尚未拉取',
           ),
           _DiagnosticRow(
             label: '队列状态',
             value:
                 '待同步 ${appState.pendingSyncQueueCount} · 失败 ${appState.failedSyncQueueCount}',
           ),
+          _DiagnosticRow(label: '最近错误', value: profile.lastError ?? '无'),
           _DiagnosticRow(
-            label: '最近错误',
-            value: appState.pairingProfile.lastError ?? '无',
-          ),
-          _DiagnosticRow(
-            label: '最近自动解决',
+            label: '最近解决',
             value: latestResolution == null
                 ? '无'
                 : '${mobileSyncResolutionTypeLabel(latestResolution.resolutionType)} · ${latestResolution.watermarkUid}',
@@ -369,37 +439,36 @@ class _SyncDiagnosticsPanel extends StatelessWidget {
   }
 }
 
-class _PairingChecklist extends StatelessWidget {
-  const _PairingChecklist({required this.appState});
+class _LanDebugChecklist extends StatelessWidget {
+  const _LanDebugChecklist({required this.appState});
 
   final MobileAppState appState;
 
   @override
   Widget build(BuildContext context) {
+    final profile = appState.syncProfile;
     final checks = [
       _ChecklistItem(
-        label: '桌面地址',
-        ok: _isLikelyDesktopAddress(appState.pairingProfile.desktopAddress),
-        detail: appState.pairingProfile.desktopAddress.isEmpty
+        label: '调试地址',
+        ok: _isLikelyLanDebugAddress(profile.lanDebugAddress),
+        detail: profile.lanDebugAddress.isEmpty
             ? '填写电脑局域网地址'
-            : appState.pairingProfile.desktopAddress,
+            : profile.lanDebugAddress,
       ),
       _ChecklistItem(
         label: '配对码',
-        ok: appState.pairingProfile.pairingCode.isNotEmpty,
-        detail: appState.pairingProfile.pairingCode.isEmpty
-            ? '填写桌面端当前配对码'
-            : '已保存',
+        ok: profile.lanDebugPairingCode.isNotEmpty,
+        detail: profile.lanDebugPairingCode.isEmpty ? '填写当前配对码' : '已保存',
       ),
       _ChecklistItem(
-        label: '同步通道',
-        ok: appState.syncTransportMode == SyncTransportMode.http,
+        label: '同步模式',
+        ok: appState.syncTransportMode == SyncTransportMode.lanDebug,
         detail: syncTransportModeLabel(appState.syncTransportMode),
       ),
       _ChecklistItem(
         label: '最近错误',
-        ok: appState.pairingProfile.lastError == null,
-        detail: appState.pairingProfile.lastError ?? '无',
+        ok: profile.lastError == null,
+        detail: profile.lastError ?? '无',
       ),
     ];
     final ready = checks.every((item) => item.ok);
@@ -494,7 +563,7 @@ class _DiagnosticRow extends StatelessWidget {
   }
 }
 
-bool _isLikelyDesktopAddress(String value) {
+bool _isLikelyLanDebugAddress(String value) {
   final uri = Uri.tryParse(value.trim());
   return uri != null &&
       uri.scheme == 'http' &&
@@ -502,6 +571,31 @@ bool _isLikelyDesktopAddress(String value) {
       uri.host != '127.0.0.1' &&
       uri.host != 'localhost' &&
       uri.port == 47219;
+}
+
+String _enabledEntitlementSummary(Map<String, bool> features) {
+  if (features.isEmpty) {
+    return '未同步';
+  }
+  final enabled = features.entries
+      .where((entry) => entry.value)
+      .map((entry) => _entitlementFeatureLabel(entry.key))
+      .toList(growable: false);
+  if (enabled.isEmpty) {
+    return '基础功能';
+  }
+  return enabled.join(' / ');
+}
+
+String _entitlementFeatureLabel(String key) {
+  return switch (key) {
+    'batch_processing' => '批量处理',
+    'cloud_video_processing' => '云端视频',
+    'cloud_sync' => '云同步',
+    'priority_queue' => '优先队列',
+    'team_workspace' => '团队空间',
+    _ => key,
+  };
 }
 
 class _SyncResolutionSummary extends StatelessWidget {
@@ -518,7 +612,7 @@ class _SyncResolutionSummary extends StatelessWidget {
       title: const Text('自动解决审计'),
       subtitle: Text(
         latest == null
-            ? '还没有桌面下行自动解决记录。'
+            ? '还没有云端或调试下行自动解决记录。'
             : '${mobileSyncResolutionTypeLabel(latest.resolutionType)} · ${latest.watermarkUid} · v${latest.incomingRevision}',
       ),
       trailing: Column(

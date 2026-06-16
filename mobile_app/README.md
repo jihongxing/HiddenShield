@@ -13,7 +13,7 @@ Flutter 双端 App 的移动端壳。
 - 取证页已接入图片/WAV 切换、文件选择和提取结果摘要。
 - 移动端已加入 SQLite 版权库，写入和取证命中会持久化进入版权库时间线。
 - 移动端已加入本地同步队列，写入和取证命中会进入待发送队列。
-- 设置页已接入本机创作者身份、桌面端配对、匿名反馈开关、待同步队列数、本地模拟同步和桌面 HTTP 同步模式。
+- 设置页已接入创作者身份、账户与权益占位、云同步主入口、匿名反馈开关、待同步队列数和高级 LAN 调试同步。
 
 当前代码入口：
 
@@ -21,6 +21,7 @@ Flutter 双端 App 的移动端壳。
 - `lib/app/app.dart`
 - `lib/app/mobile_app_state.dart`
 - `lib/app/mobile_shell.dart`
+- `lib/app/system_config.dart`
 - `lib/storage/vault_store.dart`
 - `lib/sync/sync_transport.dart`
 - `lib/features/workspace/workspace_page.dart`
@@ -43,19 +44,32 @@ Flutter 双端 App 的移动端壳。
 - 当前数据库版本为 4。
 - `vault_records` 表覆盖水印 UID、revision、父级 UID、重写原因、同步状态和创建时间。
 - `sync_queue` 表记录待同步事件，当前事件类型为版权记录 upsert 和取证记录 upsert。
-- `sync_profile` 表保存桌面端地址、配对码、配对状态和更新时间。
+- `sync_profile` 表保存同步模式、系统云服务地址快照、账户、工作区、设备注册、默认创作者档案、权益快照、LAN 调试配置、远端游标和最近错误；兼容旧的桌面端地址 / 配对码字段。
 
 同步说明：
 
 - `SyncTransport` 是同步传输抽象。
-- `LocalMockSyncTransport` 是当前默认实现，只模拟本地发送，不访问网络。
-- `DesktopHttpSyncTransport` 已提供真实 HTTP 传输骨架，请求协议见 `docs/移动端桌面同步协议草案.md`。
-- 桌面配对使用桌面端设置页生成的配对码；桌面端会拒绝配对码缺失或不匹配的同步写入。
-- 设置页可在“本地模拟”和“桌面 HTTP”之间切换；只有保存桌面地址和配对码后才能启用 HTTP 模式。
-- 设置页“模拟同步”会消费 pending 队列，状态流转为 `pending -> syncing -> synced/failed`。
-- 失败项会记录 `attempts` 和 `last_error`，后续接真实桌面同步时可复用同一套状态机。
+- 正式产品模式统一为 `localOnly / cloud / lanDebug`。
+- `LocalOnlySyncTransport` 是默认实现，不访问网络，也不会把本地队列伪装成已同步。
+- `CloudSyncTransport` 已接入云同步 push / pull client：`POST /v1/sync/events:batch` 和 `GET /v1/sync/changes`。
+- `CloudAccountClient` 已实现 `POST /v1/auth/continue` 的请求 / 响应模型，可把云端返回映射进 `SyncProfile`。
+- 云服务地址由系统配置资产 `assets/hiddenshield.system.json` 提供，移动端加载入口为 `lib/app/system_config.dart`；用户设置页不提供手动填写云服务地址。
+- 仓库根目录提供最小真实云后端：`npm run cloud:backend`，契约验证：`npm run cloud:contract`；旧 `cloud:mock` 仅作为协议对照工具保留。
+- `LanDebugSyncTransport` 保留桌面 HTTP 传输骨架，仅用于开发联调 / 高级迁移，请求协议见 `docs/移动端桌面同步协议草案.md`。
+- 桌面 / 移动 / 云同步的一键联调入口见 `docs/桌面移动云同步联调指南.md`；桌面端必须通过 Tauri 启动，不使用 `vite preview` 代替。
+- 设置页主路径是“继续使用账户并开启云同步”；LAN 地址和配对码只出现在高级区。
+- 继续账户预览会生成本地账户契约快照，包括 `account_id`、`workspace_id`、`device_id`、`creator_profile_id` 和 `entitlement_id`；后端接入时对应登录注册合一的 `POST /v1/auth/continue`。
+- 同步状态流转为 `pending -> syncing -> synced/failed`。
+- 失败项会记录 `attempts` 和 `last_error`，后续接真实云同步时复用同一套状态机。
 - Android `debug` / `profile` 构建已允许局域网 HTTP，用于访问桌面端 `http://<局域网 IP>:47219`；`release` 构建不默认放宽明文 HTTP。
-- 设置页提供“联调检查”和“同步诊断”，用于确认桌面地址、配对码、HTTP 通道、队列和最近错误。
+- 设置页提供“同步诊断”和高级“联调检查”，用于确认同步模式、账户、队列、最近错误和 LAN 调试配置。
+
+默认不同步：
+
+- 原始图片、加水印后的图片。
+- 原始音频、加水印后的音频。
+- 原始视频、加水印后的视频。
+- 本地文件路径。
 
 联调诊断脚本：
 

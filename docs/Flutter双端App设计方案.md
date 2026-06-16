@@ -570,7 +570,7 @@ POST /v1/sync/push
 ### 10.2 拉取增量
 
 ```http
-GET /v1/sync/pull?since=sync_cursor_...
+GET /v1/sync/changes?cursor=sync_cursor_...
 ```
 
 响应：
@@ -581,6 +581,12 @@ GET /v1/sync/pull?since=sync_cursor_...
   "changes": []
 }
 ```
+
+当前实现状态：
+
+- 移动端已实现 `CloudAccountClient`、`CloudSyncTransport`。
+- 桌面端 Tauri 已实现同协议 `CloudSyncClient`，并提供 `continue_cloud_account`、`push_desktop_vault_record_to_cloud`、`fetch_cloud_changes` 命令。
+- 仓库根目录提供 `npm run cloud:backend` 与 `npm run cloud:contract`，用于本地验证双端共同协议；`cloud:mock` 仅保留为轻量协议对照工具。
 
 ### 10.3 设计要求
 
