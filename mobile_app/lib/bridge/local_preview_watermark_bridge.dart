@@ -27,9 +27,31 @@ class PreviewWatermarkBridge extends WatermarkBridge {
   }
 
   @override
-  Future<WatermarkWriteResult> write(WatermarkWriteRequest request) {
-    return Future.error(
-      UnsupportedError('Preview bridge does not write watermarks yet.'),
+  Future<WatermarkWriteResult> write(WatermarkWriteRequest request) async {
+    await Future<void>.delayed(const Duration(milliseconds: 450));
+    if (request.kind == WatermarkAssetKind.video) {
+      throw UnsupportedError('Mobile local video watermarking is disabled.');
+    }
+
+    final uidPrefix = request.kind == WatermarkAssetKind.image ? 'img' : 'aud';
+    final revision = request.allowRewrite ? 2 : 1;
+    final hash = _previewHash(request.bytes);
+    return WatermarkWriteResult(
+      kind: request.kind,
+      bytes: request.bytes,
+      watermarkUid: 'preview-$uidPrefix-${hash.substring(0, 12)}',
+      revision: revision,
+      sha256: hash,
     );
   }
+}
+
+String _previewHash(List<int> bytes) {
+  var hash = 0x811c9dc5;
+  for (final byte in bytes) {
+    hash ^= byte;
+    hash = (hash * 0x01000193) & 0xffffffff;
+  }
+  final hex = hash.toRadixString(16).padLeft(8, '0');
+  return List<String>.filled(8, hex).join();
 }

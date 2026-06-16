@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../bridge/watermark_bridge.dart';
 import '../../shared/widgets/action_card.dart';
 import '../../shared/widgets/feature_page_scaffold.dart';
+import 'image_embed_page.dart';
 
 class WorkspacePage extends StatelessWidget {
   const WorkspacePage({super.key, required this.bridge});
@@ -20,7 +21,11 @@ class WorkspacePage extends StatelessWidget {
           title: '图片嵌入',
           icon: Icons.image_outlined,
           description: '导入图片，生成带水印副本并写入版权库。',
-          onTap: () => _showComingSoon(context, '图片嵌入'),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => ImageEmbedPage(bridge: bridge),
+            ),
+          ),
         ),
         ActionCard(
           title: '音频嵌入',
