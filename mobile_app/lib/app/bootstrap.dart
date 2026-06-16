@@ -1,12 +1,6 @@
-import '../bridge/local_preview_watermark_bridge.dart';
-import '../bridge/rust_watermark_bridge.dart';
 import '../bridge/watermark_bridge.dart';
+import 'bootstrap_io.dart' if (dart.library.js_interop) 'bootstrap_web.dart';
 
-Future<WatermarkBridge> createDefaultWatermarkBridge() async {
-  try {
-    await RustWatermarkBridge.init();
-    return RustWatermarkBridge();
-  } catch (_) {
-    return const PreviewWatermarkBridge();
-  }
+Future<WatermarkBridge> createDefaultWatermarkBridge() {
+  return createPlatformWatermarkBridge();
 }
