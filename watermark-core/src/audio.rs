@@ -3,7 +3,9 @@ use realfft::RealFftPlanner;
 use std::io::Cursor;
 
 use crate::error::WatermarkError;
-use crate::payload::{bits_to_bytes, bytes_to_bits, decode_payload, encode_payload, WatermarkPayload};
+use crate::payload::{
+    bits_to_bytes, bytes_to_bits, decode_payload, encode_payload, WatermarkPayload,
+};
 
 const FRAME_SIZE: usize = 4096;
 const QIM_DELTA: f32 = 0.02;
@@ -12,7 +14,10 @@ const PAYLOAD_BITS: usize = 32 * 8;
 const BIN_LO: usize = 186;
 const BIN_HI: usize = 743;
 
-pub fn embed_watermark(samples: &mut [f32], payload: &WatermarkPayload) -> Result<(), WatermarkError> {
+pub fn embed_watermark(
+    samples: &mut [f32],
+    payload: &WatermarkPayload,
+) -> Result<(), WatermarkError> {
     embed_watermark_samples(samples, payload)
 }
 
@@ -24,11 +29,19 @@ pub fn embed_watermark_wav_bytes(
     input_wav: &[u8],
     payload: &WatermarkPayload,
 ) -> Result<Vec<u8>, WatermarkError> {
+    reject_existing_wav_watermark(input_wav)?;
+    embed_watermark_wav_bytes_allow_rewrite(input_wav, payload)
+}
+
+pub fn embed_watermark_wav_bytes_allow_rewrite(
+    input_wav: &[u8],
+    payload: &WatermarkPayload,
+) -> Result<Vec<u8>, WatermarkError> {
     let mut reader = hound::WavReader::new(Cursor::new(input_wav))
         .map_err(|e| WatermarkError::EmbedFailed(format!("open WAV: {e}")))?;
     let spec = reader.spec();
     let mut samples = read_wav_samples(&mut reader)?;
-    embed_watermark_samples(&mut samples, payload)?;
+    embed_watermark_samples_allow_rewrite(&mut samples, payload)?;
     write_wav_samples(&samples, spec)
 }
 
@@ -40,6 +53,14 @@ pub fn extract_watermark_wav_bytes(input_wav: &[u8]) -> Result<WatermarkPayload,
 }
 
 pub fn embed_watermark_samples(
+    samples: &mut [f32],
+    payload: &WatermarkPayload,
+) -> Result<(), WatermarkError> {
+    reject_existing_samples_watermark(samples)?;
+    embed_watermark_samples_allow_rewrite(samples, payload)
+}
+
+pub fn embed_watermark_samples_allow_rewrite(
     samples: &mut [f32],
     payload: &WatermarkPayload,
 ) -> Result<(), WatermarkError> {
@@ -90,6 +111,24 @@ pub fn embed_watermark_samples(
     }
 
     Ok(())
+}
+
+fn reject_existing_wav_watermark(input_wav: &[u8]) -> Result<(), WatermarkError> {
+    match extract_watermark_wav_bytes(input_wav) {
+        Ok(payload) => Err(WatermarkError::AlreadyWatermarked {
+            existing_uid: payload.watermark_uid(),
+        }),
+        Err(_) => Ok(()),
+    }
+}
+
+fn reject_existing_samples_watermark(samples: &[f32]) -> Result<(), WatermarkError> {
+    match extract_watermark_samples(samples) {
+        Ok(payload) => Err(WatermarkError::AlreadyWatermarked {
+            existing_uid: payload.watermark_uid(),
+        }),
+        Err(_) => Ok(()),
+    }
 }
 
 pub fn extract_watermark_samples(samples: &[f32]) -> Result<WatermarkPayload, WatermarkError> {
@@ -158,10 +197,7 @@ fn read_wav_samples(
     Ok(samples)
 }
 
-fn write_wav_samples(
-    samples: &[f32],
-    spec: hound::WavSpec,
-) -> Result<Vec<u8>, WatermarkError> {
+fn write_wav_samples(samples: &[f32], spec: hound::WavSpec) -> Result<Vec<u8>, WatermarkError> {
     let out_spec = hound::WavSpec {
         channels: spec.channels,
         sample_rate: spec.sample_rate,
@@ -219,7 +255,23 @@ mod tests {
     use super::*;
 
     fn sample_payload() -> WatermarkPayload {
-        WatermarkPayload::new([0x42; 8], 1_700_000_000, [0xAB; 4], [0xCD; 2], Default::default())
+        WatermarkPayload::new(
+            [0x42; 8],
+            1_700_000_000,
+            [0xAB; 4],
+            [0xCD; 2],
+            Default::default(),
+        )
+    }
+
+    fn second_payload() -> WatermarkPayload {
+        WatermarkPayload::new(
+            [0x24; 8],
+            1_700_000_100,
+            [0xBA; 4],
+            [0xDC; 2],
+            Default::default(),
+        )
     }
 
     fn make_wav_bytes() -> Vec<u8> {
@@ -257,6 +309,32 @@ mod tests {
     }
 
     #[test]
+    fn wav_bytes_rejects_existing_watermark_by_default() {
+        let input = make_wav_bytes();
+        let payload = sample_payload();
+        let embedded = embed_watermark_wav_bytes(&input, &payload).unwrap();
+        let err = embed_watermark_wav_bytes(&embedded, &second_payload()).unwrap_err();
+
+        assert!(matches!(
+            err,
+            WatermarkError::AlreadyWatermarked { existing_uid }
+                if existing_uid == payload.watermark_uid()
+        ));
+    }
+
+    #[test]
+    fn wav_bytes_allow_rewrite_replaces_existing_watermark() {
+        let input = make_wav_bytes();
+        let payload = sample_payload();
+        let second = second_payload();
+        let embedded = embed_watermark_wav_bytes(&input, &payload).unwrap();
+        let rewritten = embed_watermark_wav_bytes_allow_rewrite(&embedded, &second).unwrap();
+        let extracted = extract_watermark_wav_bytes(&rewritten).unwrap();
+
+        assert_eq!(extracted.watermark_uid(), second.watermark_uid());
+    }
+
+    #[test]
     fn samples_roundtrip() {
         let mut samples: Vec<f32> = (0..8_192)
             .map(|i| {
@@ -273,5 +351,25 @@ mod tests {
         assert_eq!(extracted.user_seed, payload.user_seed);
         assert_eq!(extracted.device_id, payload.device_id);
         assert_eq!(extracted.file_hash, payload.file_hash);
+    }
+
+    #[test]
+    fn samples_reject_existing_watermark_by_default() {
+        let mut samples: Vec<f32> = (0..8_192)
+            .map(|i| {
+                let t = i as f32 / 44_100.0;
+                (t * 440.0 * std::f32::consts::TAU).sin() * 0.2
+            })
+            .collect();
+        let payload = sample_payload();
+
+        embed_watermark_samples(&mut samples, &payload).unwrap();
+        let err = embed_watermark_samples(&mut samples, &second_payload()).unwrap_err();
+
+        assert!(matches!(
+            err,
+            WatermarkError::AlreadyWatermarked { existing_uid }
+                if existing_uid == payload.watermark_uid()
+        ));
     }
 }

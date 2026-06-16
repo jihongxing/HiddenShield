@@ -1,11 +1,13 @@
-use std::path::Path;
 use std::io::Cursor;
+use std::path::Path;
 
 use image::{DynamicImage, GenericImageView, ImageFormat, Rgba, RgbaImage};
 use nalgebra::{DMatrix, Matrix4, SVD};
 
 use crate::error::WatermarkError;
-use crate::payload::{bits_to_bytes, bytes_to_bits, decode_payload, encode_payload, WatermarkPayload};
+use crate::payload::{
+    bits_to_bytes, bytes_to_bits, decode_payload, encode_payload, WatermarkPayload,
+};
 
 const ALPHA: f64 = 50.0;
 const PAYLOAD_BITS: usize = 32 * 8;
@@ -26,7 +28,31 @@ pub fn embed_image_watermark(
     Ok(())
 }
 
+pub fn embed_image_watermark_allow_rewrite(
+    image_path: &Path,
+    payload: &WatermarkPayload,
+    output_path: &Path,
+) -> Result<(), WatermarkError> {
+    let input_bytes = std::fs::read(image_path)
+        .map_err(|e| WatermarkError::EmbedFailed(format!("failed to read image: {e}")))?;
+    let output_format = infer_image_format(output_path).unwrap_or(ImageFormat::Png);
+    let output_bytes =
+        embed_image_watermark_bytes_allow_rewrite(&input_bytes, payload, output_format)?;
+    std::fs::write(output_path, output_bytes)
+        .map_err(|e| WatermarkError::EmbedFailed(format!("failed to write image: {e}")))?;
+    Ok(())
+}
+
 pub fn embed_image_watermark_bytes(
+    image_bytes: &[u8],
+    payload: &WatermarkPayload,
+    output_format: ImageFormat,
+) -> Result<Vec<u8>, WatermarkError> {
+    reject_existing_image_watermark(image_bytes)?;
+    embed_image_watermark_bytes_allow_rewrite(image_bytes, payload, output_format)
+}
+
+pub fn embed_image_watermark_bytes_allow_rewrite(
     image_bytes: &[u8],
     payload: &WatermarkPayload,
     output_format: ImageFormat,
@@ -48,10 +74,21 @@ pub fn extract_image_watermark(image_path: &Path) -> Result<WatermarkPayload, Wa
     extract_image_watermark_bytes(&input_bytes)
 }
 
-pub fn extract_image_watermark_bytes(image_bytes: &[u8]) -> Result<WatermarkPayload, WatermarkError> {
+pub fn extract_image_watermark_bytes(
+    image_bytes: &[u8],
+) -> Result<WatermarkPayload, WatermarkError> {
     let img = image::load_from_memory(image_bytes)
         .map_err(|e| WatermarkError::ExtractFailed(format!("failed to open image: {e}")))?;
     extract_image_from_dynamic(&img)
+}
+
+fn reject_existing_image_watermark(image_bytes: &[u8]) -> Result<(), WatermarkError> {
+    match extract_image_watermark_bytes(image_bytes) {
+        Ok(payload) => Err(WatermarkError::AlreadyWatermarked {
+            existing_uid: payload.watermark_uid(),
+        }),
+        Err(_) => Ok(()),
+    }
 }
 
 fn embed_image_into_dynamic(
@@ -147,7 +184,23 @@ mod tests {
     use std::io::Cursor;
 
     fn sample_payload() -> WatermarkPayload {
-        WatermarkPayload::new([0x42; 8], 1_700_000_000, [0xAB; 4], [0xCD; 2], Default::default())
+        WatermarkPayload::new(
+            [0x42; 8],
+            1_700_000_000,
+            [0xAB; 4],
+            [0xCD; 2],
+            Default::default(),
+        )
+    }
+
+    fn second_payload() -> WatermarkPayload {
+        WatermarkPayload::new(
+            [0x24; 8],
+            1_700_000_100,
+            [0xBA; 4],
+            [0xDC; 2],
+            Default::default(),
+        )
     }
 
     fn make_png_bytes() -> Vec<u8> {
@@ -177,6 +230,35 @@ mod tests {
         assert_eq!(extracted.user_seed, payload.user_seed);
         assert_eq!(extracted.device_id, payload.device_id);
         assert_eq!(extracted.file_hash, payload.file_hash);
+    }
+
+    #[test]
+    fn image_bytes_rejects_existing_watermark_by_default() {
+        let input = make_png_bytes();
+        let payload = sample_payload();
+        let embedded = embed_image_watermark_bytes(&input, &payload, ImageFormat::Png).unwrap();
+        let err = embed_image_watermark_bytes(&embedded, &second_payload(), ImageFormat::Png)
+            .unwrap_err();
+
+        assert!(matches!(
+            err,
+            WatermarkError::AlreadyWatermarked { existing_uid }
+                if existing_uid == payload.watermark_uid()
+        ));
+    }
+
+    #[test]
+    fn image_bytes_allow_rewrite_replaces_existing_watermark() {
+        let input = make_png_bytes();
+        let payload = sample_payload();
+        let second = second_payload();
+        let embedded = embed_image_watermark_bytes(&input, &payload, ImageFormat::Png).unwrap();
+        let rewritten =
+            embed_image_watermark_bytes_allow_rewrite(&embedded, &second, ImageFormat::Png)
+                .unwrap();
+        let extracted = extract_image_watermark_bytes(&rewritten).unwrap();
+
+        assert_eq!(extracted.watermark_uid(), second.watermark_uid());
     }
 }
 
@@ -383,8 +465,16 @@ fn dct4x4(block: &Matrix4<f64>) -> Matrix4<f64> {
                     sum += block[(x, y)] * cos_x * cos_y;
                 }
             }
-            let cu = if u == 0 { 1.0 / n.sqrt() } else { (2.0 / n).sqrt() };
-            let cv = if v == 0 { 1.0 / n.sqrt() } else { (2.0 / n).sqrt() };
+            let cu = if u == 0 {
+                1.0 / n.sqrt()
+            } else {
+                (2.0 / n).sqrt()
+            };
+            let cv = if v == 0 {
+                1.0 / n.sqrt()
+            } else {
+                (2.0 / n).sqrt()
+            };
             result[(u, v)] = cu * cv * sum;
         }
     }
@@ -401,8 +491,16 @@ fn idct4x4(block: &Matrix4<f64>) -> Matrix4<f64> {
             let mut sum = 0.0;
             for u in 0..BLOCK_SIZE {
                 for v in 0..BLOCK_SIZE {
-                    let cu = if u == 0 { 1.0 / n.sqrt() } else { (2.0 / n).sqrt() };
-                    let cv = if v == 0 { 1.0 / n.sqrt() } else { (2.0 / n).sqrt() };
+                    let cu = if u == 0 {
+                        1.0 / n.sqrt()
+                    } else {
+                        (2.0 / n).sqrt()
+                    };
+                    let cv = if v == 0 {
+                        1.0 / n.sqrt()
+                    } else {
+                        (2.0 / n).sqrt()
+                    };
                     let cos_x =
                         ((2 * x + 1) as f64 * u as f64 * std::f64::consts::PI / (2.0 * n)).cos();
                     let cos_y =

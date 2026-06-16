@@ -48,19 +48,25 @@ pub enum MediaOutput {
         bytes: Vec<u8>,
         format: ImageOutputFormat,
     },
-    AudioWavBytes { bytes: Vec<u8> },
-    AudioSamples { samples: Vec<f32> },
+    AudioWavBytes {
+        bytes: Vec<u8>,
+    },
+    AudioSamples {
+        samples: Vec<f32>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EmbedOptions {
     pub image_output_format: ImageOutputFormat,
+    pub allow_rewrite: bool,
 }
 
 impl Default for EmbedOptions {
     fn default() -> Self {
         Self {
             image_output_format: ImageOutputFormat::Png,
+            allow_rewrite: false,
         }
     }
 }
@@ -76,15 +82,31 @@ impl WatermarkService {
         match input {
             MediaInput::ImageBytes { bytes } => {
                 let format = options.image_output_format;
-                let bytes = watermark_image::embed_image_watermark_bytes(&bytes, payload, format.into())?;
+                let bytes = if options.allow_rewrite {
+                    watermark_image::embed_image_watermark_bytes_allow_rewrite(
+                        &bytes,
+                        payload,
+                        format.into(),
+                    )?
+                } else {
+                    watermark_image::embed_image_watermark_bytes(&bytes, payload, format.into())?
+                };
                 Ok(MediaOutput::ImageBytes { bytes, format })
             }
             MediaInput::AudioWavBytes { bytes } => {
-                let bytes = audio::embed_watermark_wav_bytes(&bytes, payload)?;
+                let bytes = if options.allow_rewrite {
+                    audio::embed_watermark_wav_bytes_allow_rewrite(&bytes, payload)?
+                } else {
+                    audio::embed_watermark_wav_bytes(&bytes, payload)?
+                };
                 Ok(MediaOutput::AudioWavBytes { bytes })
             }
             MediaInput::AudioSamples { mut samples } => {
-                audio::embed_watermark_samples(&mut samples, payload)?;
+                if options.allow_rewrite {
+                    audio::embed_watermark_samples_allow_rewrite(&mut samples, payload)?;
+                } else {
+                    audio::embed_watermark_samples(&mut samples, payload)?;
+                }
                 Ok(MediaOutput::AudioSamples { samples })
             }
         }
@@ -92,7 +114,9 @@ impl WatermarkService {
 
     pub fn extract(input: MediaInput) -> Result<WatermarkPayload, WatermarkError> {
         match input {
-            MediaInput::ImageBytes { bytes } => watermark_image::extract_image_watermark_bytes(&bytes),
+            MediaInput::ImageBytes { bytes } => {
+                watermark_image::extract_image_watermark_bytes(&bytes)
+            }
             MediaInput::AudioWavBytes { bytes } => audio::extract_watermark_wav_bytes(&bytes),
             MediaInput::AudioSamples { samples } => audio::extract_watermark_samples(&samples),
         }
@@ -104,7 +128,13 @@ mod tests {
     use super::*;
 
     fn sample_payload() -> WatermarkPayload {
-        WatermarkPayload::new([0x42; 8], 1_700_000_000, [0xAB; 4], [0xCD; 2], Default::default())
+        WatermarkPayload::new(
+            [0x42; 8],
+            1_700_000_000,
+            [0xAB; 4],
+            [0xCD; 2],
+            Default::default(),
+        )
     }
 
     fn make_png_bytes() -> Vec<u8> {

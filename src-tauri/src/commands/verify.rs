@@ -48,7 +48,9 @@ pub async fn verify_suspect(
     let file_path = Path::new(&path);
     let file_type = classify_file(file_path);
     let media_type = media_type_label(file_type);
-    let file_size_bytes = std::fs::metadata(file_path).map(|meta| meta.len()).unwrap_or(0);
+    let file_size_bytes = std::fs::metadata(file_path)
+        .map(|meta| meta.len())
+        .unwrap_or(0);
 
     if !file_path.exists() {
         if let Ok(app_data_dir) = app_handle.path().app_data_dir() {
@@ -68,7 +70,9 @@ pub async fn verify_suspect(
     let mut extraction_error: Option<String> = None;
     let extraction = match file_type {
         FileType::Image => extract_from_image(file_path),
-        FileType::Video | FileType::Audio => extract_from_audio_bearing(file_path, &app_handle).await,
+        FileType::Video | FileType::Audio => {
+            extract_from_audio_bearing(file_path, &app_handle).await
+        }
     };
     let (payload, confidence) = match extraction {
         Ok((payload, confidence)) => (Some(payload), confidence),

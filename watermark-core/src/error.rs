@@ -5,5 +5,7 @@ pub enum WatermarkError {
 
     #[error("watermark extraction failed: {0}")]
     ExtractFailed(String),
-}
 
+    #[error("watermark already exists in source media: {existing_uid}")]
+    AlreadyWatermarked { existing_uid: String },
+}

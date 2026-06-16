@@ -7,8 +7,8 @@ use crate::encoder::hw_detect;
 use crate::pipeline::ffmpeg;
 use crate::pipeline::progress;
 use crate::pipeline::scheduler::{self, PipelineParams};
-use crate::AppState;
 use crate::telemetry;
+use crate::AppState;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Hash)]
 #[serde(rename_all = "snake_case")]
@@ -49,6 +49,8 @@ pub struct TranscodeOptions {
     pub aspect_strategy: AspectStrategy,
     pub encoding_mode: EncodingMode,
     pub ai_content: Option<AIContentOptions>,
+    pub allow_rewrite: bool,
+    pub rewrite_reason: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]

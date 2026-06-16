@@ -1,6 +1,6 @@
 /// Current schema version. Increment when adding migrations.
 #[allow(dead_code)]
-pub const CURRENT_VERSION: u32 = 6;
+pub const CURRENT_VERSION: u32 = 7;
 
 /// Base schema (version 0 → 1): initial vault_records table.
 pub const VAULT_RECORDS_SCHEMA: &str = r#"
@@ -131,6 +131,18 @@ pub fn run_migrations(conn: &rusqlite::Connection) -> Result<(), rusqlite::Error
             );",
         )?;
         set_user_version(conn, 6)?;
+    }
+
+    if current < 7 {
+        conn.execute_batch(
+            "ALTER TABLE vault_records ADD COLUMN parent_watermark_uid TEXT;
+             ALTER TABLE vault_records ADD COLUMN revision INTEGER NOT NULL DEFAULT 1;
+             ALTER TABLE vault_records ADD COLUMN rewrite_reason TEXT;
+
+             CREATE INDEX IF NOT EXISTS idx_vault_parent_watermark
+             ON vault_records(parent_watermark_uid);",
+        )?;
+        set_user_version(conn, 7)?;
     }
 
     Ok(())

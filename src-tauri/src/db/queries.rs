@@ -3,6 +3,50 @@ use rusqlite::{params, Connection, Transaction};
 use crate::commands::vault::VaultRecord;
 use crate::db::schema;
 
+const VAULT_COLUMNS: &str = "id, original_hash, file_name, created_at, duration_secs,
+    resolution, watermark_uid, thumbnail_path, output_douyin,
+    output_bilibili, output_xhs, is_hdr_source, hw_encoder_used,
+    process_time_ms, tsa_token_path, network_time, tsa_source, tsa_request_nonce,
+    is_ai_generated, ai_training_permission, ai_generation_method,
+    human_modification_level, authenticity_claim, custom_metadata,
+    output_douyin_hash, output_bilibili_hash, output_xhs_hash,
+    parent_watermark_uid, revision, rewrite_reason";
+
+fn row_to_vault_record(row: &rusqlite::Row<'_>) -> Result<VaultRecord, rusqlite::Error> {
+    Ok(VaultRecord {
+        id: row.get::<_, u32>(0)?,
+        original_hash: row.get(1)?,
+        file_name: row.get(2)?,
+        created_at: row.get(3)?,
+        duration_secs: row.get(4)?,
+        resolution: row.get(5)?,
+        watermark_uid: row.get(6)?,
+        thumbnail_path: row.get(7)?,
+        output_douyin: row.get(8)?,
+        output_bilibili: row.get(9)?,
+        output_xhs: row.get(10)?,
+        is_hdr_source: row.get::<_, i32>(11)? != 0,
+        hw_encoder_used: row.get(12)?,
+        process_time_ms: row.get::<_, Option<i64>>(13)?.map(|v| v as u64),
+        tsa_token_path: row.get(14)?,
+        network_time: row.get(15)?,
+        tsa_source: row.get(16)?,
+        tsa_request_nonce: row.get(17)?,
+        is_ai_generated: row.get::<_, i32>(18)? != 0,
+        ai_training_permission: row.get(19)?,
+        ai_generation_method: row.get(20)?,
+        human_modification_level: row.get(21)?,
+        authenticity_claim: row.get(22)?,
+        custom_metadata: row.get(23)?,
+        output_douyin_hash: row.get(24)?,
+        output_bilibili_hash: row.get(25)?,
+        output_xhs_hash: row.get(26)?,
+        parent_watermark_uid: row.get(27)?,
+        revision: row.get::<_, i64>(28)? as u32,
+        rewrite_reason: row.get(29)?,
+    })
+}
+
 /// Initialize the database by running all pending migrations.
 pub fn init_db(conn: &Connection) -> Result<(), rusqlite::Error> {
     schema::run_migrations(conn)
@@ -19,8 +63,9 @@ pub fn insert_record(conn: &Connection, record: &VaultRecord) -> Result<(), rusq
       tsa_token_path, network_time, tsa_source, tsa_request_nonce,
       is_ai_generated, ai_training_permission, ai_generation_method,
       human_modification_level, authenticity_claim, custom_metadata,
-      output_douyin_hash, output_bilibili_hash, output_xhs_hash
-    ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26)",
+      output_douyin_hash, output_bilibili_hash, output_xhs_hash,
+      parent_watermark_uid, revision, rewrite_reason
+    ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29)",
         params![
             record.original_hash,
             record.file_name,
@@ -48,6 +93,9 @@ pub fn insert_record(conn: &Connection, record: &VaultRecord) -> Result<(), rusq
             record.output_douyin_hash,
             record.output_bilibili_hash,
             record.output_xhs_hash,
+            record.parent_watermark_uid,
+            record.revision as i64,
+            record.rewrite_reason,
         ],
     )?;
     Ok(())
@@ -66,8 +114,9 @@ pub fn insert_record_tx(
       tsa_token_path, network_time, tsa_source, tsa_request_nonce,
       is_ai_generated, ai_training_permission, ai_generation_method,
       human_modification_level, authenticity_claim, custom_metadata,
-      output_douyin_hash, output_bilibili_hash, output_xhs_hash
-    ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26)",
+      output_douyin_hash, output_bilibili_hash, output_xhs_hash,
+      parent_watermark_uid, revision, rewrite_reason
+    ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29)",
         params![
             record.original_hash,
             record.file_name,
@@ -95,6 +144,9 @@ pub fn insert_record_tx(
             record.output_douyin_hash,
             record.output_bilibili_hash,
             record.output_xhs_hash,
+            record.parent_watermark_uid,
+            record.revision as i64,
+            record.rewrite_reason,
         ],
     )?;
     Ok(tx.last_insert_rowid())
@@ -102,51 +154,14 @@ pub fn insert_record_tx(
 
 /// Query all vault records ordered by created_at descending.
 pub fn list_records(conn: &Connection) -> Vec<VaultRecord> {
-    let mut stmt = match conn.prepare(
-        "SELECT id, original_hash, file_name, created_at, duration_secs,
-            resolution, watermark_uid, thumbnail_path, output_douyin,
-            output_bilibili, output_xhs, is_hdr_source, hw_encoder_used,
-            process_time_ms, tsa_token_path, network_time, tsa_source, tsa_request_nonce,
-            is_ai_generated, ai_training_permission, ai_generation_method,
-            human_modification_level, authenticity_claim, custom_metadata,
-            output_douyin_hash, output_bilibili_hash, output_xhs_hash
-     FROM vault_records ORDER BY created_at DESC",
-    ) {
+    let mut stmt = match conn.prepare(&format!(
+        "SELECT {VAULT_COLUMNS} FROM vault_records ORDER BY created_at DESC"
+    )) {
         Ok(s) => s,
         Err(_) => return Vec::new(),
     };
 
-    let rows = stmt.query_map([], |row| {
-        Ok(VaultRecord {
-            id: row.get::<_, u32>(0)?,
-            original_hash: row.get(1)?,
-            file_name: row.get(2)?,
-            created_at: row.get(3)?,
-            duration_secs: row.get(4)?,
-            resolution: row.get(5)?,
-            watermark_uid: row.get(6)?,
-            thumbnail_path: row.get(7)?,
-            output_douyin: row.get(8)?,
-            output_bilibili: row.get(9)?,
-            output_xhs: row.get(10)?,
-            is_hdr_source: row.get::<_, i32>(11)? != 0,
-            hw_encoder_used: row.get(12)?,
-            process_time_ms: row.get::<_, Option<i64>>(13)?.map(|v| v as u64),
-            tsa_token_path: row.get(14)?,
-            network_time: row.get(15)?,
-            tsa_source: row.get(16)?,
-            tsa_request_nonce: row.get(17)?,
-            is_ai_generated: row.get::<_, i32>(18)? != 0,
-            ai_training_permission: row.get(19)?,
-            ai_generation_method: row.get(20)?,
-            human_modification_level: row.get(21)?,
-            authenticity_claim: row.get(22)?,
-            custom_metadata: row.get(23)?,
-            output_douyin_hash: row.get(24)?,
-            output_bilibili_hash: row.get(25)?,
-            output_xhs_hash: row.get(26)?,
-        })
-    });
+    let rows = stmt.query_map([], row_to_vault_record);
 
     match rows {
         Ok(mapped) => mapped.filter_map(|r| r.ok()).collect(),
@@ -154,50 +169,15 @@ pub fn list_records(conn: &Connection) -> Vec<VaultRecord> {
     }
 }
 
-/// Find a single record by watermark_uid (returns first match).
+/// Find the latest record by watermark_uid.
 #[allow(dead_code)]
 pub fn find_by_watermark_uid(conn: &Connection, uid: &str) -> Option<VaultRecord> {
     conn.query_row(
-        "SELECT id, original_hash, file_name, created_at, duration_secs,
-              resolution, watermark_uid, thumbnail_path, output_douyin,
-              output_bilibili, output_xhs, is_hdr_source, hw_encoder_used,
-              process_time_ms, tsa_token_path, network_time, tsa_source, tsa_request_nonce,
-              is_ai_generated, ai_training_permission, ai_generation_method,
-              human_modification_level, authenticity_claim, custom_metadata,
-              output_douyin_hash, output_bilibili_hash, output_xhs_hash
-       FROM vault_records WHERE watermark_uid = ?1",
+        &format!(
+            "SELECT {VAULT_COLUMNS} FROM vault_records WHERE watermark_uid = ?1 ORDER BY created_at DESC, id DESC LIMIT 1"
+        ),
         params![uid],
-        |row| {
-            Ok(VaultRecord {
-                id: row.get::<_, u32>(0)?,
-                original_hash: row.get(1)?,
-                file_name: row.get(2)?,
-                created_at: row.get(3)?,
-                duration_secs: row.get(4)?,
-                resolution: row.get(5)?,
-                watermark_uid: row.get(6)?,
-                thumbnail_path: row.get(7)?,
-                output_douyin: row.get(8)?,
-                output_bilibili: row.get(9)?,
-                output_xhs: row.get(10)?,
-                is_hdr_source: row.get::<_, i32>(11)? != 0,
-                hw_encoder_used: row.get(12)?,
-                process_time_ms: row.get::<_, Option<i64>>(13)?.map(|v| v as u64),
-                tsa_token_path: row.get(14)?,
-                network_time: row.get(15)?,
-                tsa_source: row.get(16)?,
-                tsa_request_nonce: row.get(17)?,
-                is_ai_generated: row.get::<_, i32>(18)? != 0,
-                ai_training_permission: row.get(19)?,
-                ai_generation_method: row.get(20)?,
-                human_modification_level: row.get(21)?,
-                authenticity_claim: row.get(22)?,
-                custom_metadata: row.get(23)?,
-                output_douyin_hash: row.get(24)?,
-                output_bilibili_hash: row.get(25)?,
-                output_xhs_hash: row.get(26)?,
-            })
-        },
+        row_to_vault_record,
     )
     .ok()
 }
@@ -211,49 +191,14 @@ pub fn find_by_uid_and_hash(
 ) -> Option<VaultRecord> {
     let mut stmt = conn
         .prepare(
-            "SELECT id, original_hash, file_name, created_at, duration_secs,
-            resolution, watermark_uid, thumbnail_path, output_douyin,
-            output_bilibili, output_xhs, is_hdr_source, hw_encoder_used,
-            process_time_ms, tsa_token_path, network_time, tsa_source, tsa_request_nonce,
-            is_ai_generated, ai_training_permission, ai_generation_method,
-            human_modification_level, authenticity_claim, custom_metadata,
-            output_douyin_hash, output_bilibili_hash, output_xhs_hash
-     FROM vault_records WHERE watermark_uid = ?1 ORDER BY created_at DESC",
+            &format!(
+                "SELECT {VAULT_COLUMNS} FROM vault_records WHERE watermark_uid = ?1 ORDER BY created_at DESC"
+            ),
         )
         .ok()?;
 
     let records: Vec<VaultRecord> = stmt
-        .query_map(params![uid], |row| {
-            Ok(VaultRecord {
-                id: row.get::<_, u32>(0)?,
-                original_hash: row.get(1)?,
-                file_name: row.get(2)?,
-                created_at: row.get(3)?,
-                duration_secs: row.get(4)?,
-                resolution: row.get(5)?,
-                watermark_uid: row.get(6)?,
-                thumbnail_path: row.get(7)?,
-                output_douyin: row.get(8)?,
-                output_bilibili: row.get(9)?,
-                output_xhs: row.get(10)?,
-                is_hdr_source: row.get::<_, i32>(11)? != 0,
-                hw_encoder_used: row.get(12)?,
-                process_time_ms: row.get::<_, Option<i64>>(13)?.map(|v| v as u64),
-                tsa_token_path: row.get(14)?,
-                network_time: row.get(15)?,
-                tsa_source: row.get(16)?,
-                tsa_request_nonce: row.get(17)?,
-                is_ai_generated: row.get::<_, i32>(18)? != 0,
-                ai_training_permission: row.get(19)?,
-                ai_generation_method: row.get(20)?,
-                human_modification_level: row.get(21)?,
-                authenticity_claim: row.get(22)?,
-                custom_metadata: row.get(23)?,
-                output_douyin_hash: row.get(24)?,
-                output_bilibili_hash: row.get(25)?,
-                output_xhs_hash: row.get(26)?,
-            })
-        })
+        .query_map(params![uid], row_to_vault_record)
         .ok()?
         .filter_map(|r| r.ok())
         .collect();
@@ -321,6 +266,9 @@ mod tests {
             output_douyin_hash: None,
             output_bilibili_hash: None,
             output_xhs_hash: None,
+            parent_watermark_uid: None,
+            revision: 1,
+            rewrite_reason: None,
             is_hdr_source: false,
             hw_encoder_used: None,
             process_time_ms: None,

@@ -9,6 +9,7 @@ use crate::commands::transcode::{
 };
 use crate::commands::vault::VaultRecord;
 use crate::db::billing::{self, UsageLedgerEntry};
+use crate::db::queries;
 use crate::encoder::hw_detect::DetectedHardware;
 use crate::encoder::presets;
 use crate::encoder::tonemap;
@@ -132,10 +133,12 @@ async fn persist_record_and_usage_async(
                 return Err(PipelineError::DatabaseError(format!("DB lock failed: {e}")));
             }
         };
-        let record_id = billing::insert_record_and_usage(&mut conn, &record, usage_entry)
-            .map_err(|e| PipelineError::DatabaseError(format!(
-                "Failed to persist record and usage ledger: {e}"
-            )))?;
+        let record_id =
+            billing::insert_record_and_usage(&mut conn, &record, usage_entry).map_err(|e| {
+                PipelineError::DatabaseError(format!(
+                    "Failed to persist record and usage ledger: {e}"
+                ))
+            })?;
         let mut record = record;
         record.id = record_id as u32;
         Ok(record)
@@ -160,19 +163,50 @@ fn build_usage_entry(
     )
 }
 
-async fn load_entitlement_state(app_handle: &AppHandle) -> Result<billing::EntitlementState, PipelineError> {
+async fn load_entitlement_state(
+    app_handle: &AppHandle,
+) -> Result<billing::EntitlementState, PipelineError> {
     let handle = app_handle.clone();
-    tokio::task::spawn_blocking(move || -> Result<billing::EntitlementState, PipelineError> {
+    tokio::task::spawn_blocking(
+        move || -> Result<billing::EntitlementState, PipelineError> {
+            let state = handle.state::<AppState>();
+            let conn = state
+                .db
+                .lock()
+                .map_err(|e| PipelineError::DatabaseError(format!("db lock failed: {e}")))?;
+            billing::get_entitlement_state(&conn).map_err(|e| {
+                PipelineError::DatabaseError(format!("Failed to load entitlement: {e}"))
+            })
+        },
+    )
+    .await
+    .map_err(|e| PipelineError::DatabaseError(format!("join blocking DB read task: {e}")))?
+}
+
+async fn load_latest_record_by_uid(
+    app_handle: &AppHandle,
+    uid: String,
+) -> Result<Option<VaultRecord>, PipelineError> {
+    let handle = app_handle.clone();
+    tokio::task::spawn_blocking(move || -> Result<Option<VaultRecord>, PipelineError> {
         let state = handle.state::<AppState>();
         let conn = state
             .db
             .lock()
             .map_err(|e| PipelineError::DatabaseError(format!("db lock failed: {e}")))?;
-        billing::get_entitlement_state(&conn)
-            .map_err(|e| PipelineError::DatabaseError(format!("Failed to load entitlement: {e}")))
+        Ok(queries::find_by_watermark_uid(&conn, &uid))
     })
     .await
     .map_err(|e| PipelineError::DatabaseError(format!("join blocking DB read task: {e}")))?
+}
+
+fn rewrite_reason_from_options(options: &TranscodeOptions) -> Option<String> {
+    options
+        .rewrite_reason
+        .as_deref()
+        .map(str::trim)
+        .filter(|reason| !reason.is_empty())
+        .map(ToOwned::to_owned)
 }
 
 // ---------------------------------------------------------------------------
@@ -262,8 +296,13 @@ async fn run_video_pipeline(
     // Parse AI content flags from options
     let ai_flags = parse_ai_flags(&params.options.ai_content);
 
-    let payload =
-        WatermarkPayload::new(id_bytes.user_seed, timestamp, id_bytes.device_id, file_hash, ai_flags);
+    let payload = WatermarkPayload::new(
+        id_bytes.user_seed,
+        timestamp,
+        id_bytes.device_id,
+        file_hash,
+        ai_flags,
+    );
 
     let wav_bytes = std::fs::read(&temp_wav)
         .map_err(|e| PipelineError::WatermarkEmbedFailed(format!("read wav bytes: {e}")))?;
@@ -374,6 +413,8 @@ async fn run_video_pipeline(
                         aspect_strategy: params.options.aspect_strategy.clone(),
                         encoding_mode: EncodingMode::HighQualityCpu,
                         ai_content: params.options.ai_content.clone(),
+                        allow_rewrite: false,
+                        rewrite_reason: None,
                     };
                     let cpu_config = presets::build_transcode_config(
                         *platform,
@@ -432,9 +473,15 @@ async fn run_video_pipeline(
     let process_time_ms = start.elapsed().as_millis() as u64;
 
     // Compute output file hashes
-    let output_douyin_hash = output_douyin.as_ref().map(|p| hash::sha256_of_file(p).unwrap_or_default());
-    let output_bilibili_hash = output_bilibili.as_ref().map(|p| hash::sha256_of_file(p).unwrap_or_default());
-    let output_xhs_hash = output_xhs.as_ref().map(|p| hash::sha256_of_file(p).unwrap_or_default());
+    let output_douyin_hash = output_douyin
+        .as_ref()
+        .map(|p| hash::sha256_of_file(p).unwrap_or_default());
+    let output_bilibili_hash = output_bilibili
+        .as_ref()
+        .map(|p| hash::sha256_of_file(p).unwrap_or_default());
+    let output_xhs_hash = output_xhs
+        .as_ref()
+        .map(|p| hash::sha256_of_file(p).unwrap_or_default());
 
     let record = VaultRecord {
         id: 0,
@@ -458,12 +505,21 @@ async fn run_video_pipeline(
         is_ai_generated: ai_flags.is_ai_generated,
         ai_training_permission: Some(format!("{:?}", ai_flags.training_permission).to_lowercase()),
         ai_generation_method: Some(format!("{:?}", ai_flags.generation_method).to_lowercase()),
-        human_modification_level: Some(format!("{:?}", ai_flags.human_modification_level).to_lowercase()),
+        human_modification_level: Some(
+            format!("{:?}", ai_flags.human_modification_level).to_lowercase(),
+        ),
         authenticity_claim: Some(format!("{:?}", ai_flags.authenticity_claim).to_lowercase()),
-        custom_metadata: params.options.ai_content.as_ref().and_then(|ai| ai.custom_metadata.clone()),
+        custom_metadata: params
+            .options
+            .ai_content
+            .as_ref()
+            .and_then(|ai| ai.custom_metadata.clone()),
         output_douyin_hash,
         output_bilibili_hash,
         output_xhs_hash,
+        parent_watermark_uid: None,
+        revision: 1,
+        rewrite_reason: None,
     };
 
     // Request trusted timestamp (non-blocking, best-effort)
@@ -596,8 +652,13 @@ async fn run_image_pipeline(
     // Parse AI content flags from options
     let ai_flags = parse_ai_flags(&params.options.ai_content);
 
-    let payload =
-        WatermarkPayload::new(id_bytes.user_seed, timestamp, id_bytes.device_id, file_hash, ai_flags);
+    let payload = WatermarkPayload::new(
+        id_bytes.user_seed,
+        timestamp,
+        id_bytes.device_id,
+        file_hash,
+        ai_flags,
+    );
 
     // Output path: same directory, with _watermarked suffix
     let stem = params
@@ -630,11 +691,21 @@ async fn run_image_pipeline(
     let input_bytes = std::fs::read(&params.input_path)
         .map_err(|e| PipelineError::WatermarkEmbedFailed(format!("read image bytes: {e}")))?;
     let image_format = image_output_format_for_ext(out_ext);
+    let parent_watermark_uid = if params.options.allow_rewrite {
+        WatermarkService::extract(MediaInput::ImageBytes {
+            bytes: input_bytes.clone(),
+        })
+        .ok()
+        .map(|payload| payload.watermark_uid())
+    } else {
+        None
+    };
     let embedded = WatermarkService::embed(
         MediaInput::ImageBytes { bytes: input_bytes },
         &payload,
         EmbedOptions {
             image_output_format: image_format,
+            allow_rewrite: params.options.allow_rewrite,
         },
     )
     .map_err(|e| PipelineError::WatermarkEmbedFailed(e.to_string()))?;
@@ -656,7 +727,17 @@ async fn run_image_pipeline(
     let process_time_ms = start.elapsed().as_millis() as u64;
 
     // Compute output file hash
-    let output_hash = hash::sha256_of_file(&output_path.to_string_lossy().to_string()).unwrap_or_default();
+    let output_hash =
+        hash::sha256_of_file(output_path.to_string_lossy().as_ref()).unwrap_or_default();
+    let parent_record = if let Some(uid) = parent_watermark_uid.clone() {
+        load_latest_record_by_uid(&app_handle, uid).await?
+    } else {
+        None
+    };
+    let revision = parent_record
+        .as_ref()
+        .map(|record| record.revision.saturating_add(1))
+        .unwrap_or(1);
 
     let record = VaultRecord {
         id: 0,
@@ -685,12 +766,21 @@ async fn run_image_pipeline(
         is_ai_generated: ai_flags.is_ai_generated,
         ai_training_permission: Some(format!("{:?}", ai_flags.training_permission).to_lowercase()),
         ai_generation_method: Some(format!("{:?}", ai_flags.generation_method).to_lowercase()),
-        human_modification_level: Some(format!("{:?}", ai_flags.human_modification_level).to_lowercase()),
+        human_modification_level: Some(
+            format!("{:?}", ai_flags.human_modification_level).to_lowercase(),
+        ),
         authenticity_claim: Some(format!("{:?}", ai_flags.authenticity_claim).to_lowercase()),
-        custom_metadata: params.options.ai_content.as_ref().and_then(|ai| ai.custom_metadata.clone()),
+        custom_metadata: params
+            .options
+            .ai_content
+            .as_ref()
+            .and_then(|ai| ai.custom_metadata.clone()),
         output_douyin_hash: Some(output_hash),
         output_bilibili_hash: None,
         output_xhs_hash: None,
+        parent_watermark_uid,
+        revision,
+        rewrite_reason: rewrite_reason_from_options(&params.options),
     };
 
     // Request trusted timestamp (non-blocking, best-effort)
@@ -798,8 +888,13 @@ async fn run_audio_pipeline(
     // Parse AI content flags from options
     let ai_flags = parse_ai_flags(&params.options.ai_content);
 
-    let payload =
-        WatermarkPayload::new(id_bytes.user_seed, timestamp, id_bytes.device_id, file_hash, ai_flags);
+    let payload = WatermarkPayload::new(
+        id_bytes.user_seed,
+        timestamp,
+        id_bytes.device_id,
+        file_hash,
+        ai_flags,
+    );
 
     // Convert input to PCM WAV if needed, then embed watermark
     let temp_dir = ufs::create_temp_dir(&params.pipeline_id)
@@ -829,10 +924,22 @@ async fn run_audio_pipeline(
 
     let wav_bytes = std::fs::read(&temp_wav)
         .map_err(|e| PipelineError::WatermarkEmbedFailed(format!("read wav bytes: {e}")))?;
+    let parent_watermark_uid = if params.options.allow_rewrite {
+        WatermarkService::extract(MediaInput::AudioWavBytes {
+            bytes: wav_bytes.clone(),
+        })
+        .ok()
+        .map(|payload| payload.watermark_uid())
+    } else {
+        None
+    };
     let embedded = WatermarkService::embed(
         MediaInput::AudioWavBytes { bytes: wav_bytes },
         &payload,
-        EmbedOptions::default(),
+        EmbedOptions {
+            allow_rewrite: params.options.allow_rewrite,
+            ..EmbedOptions::default()
+        },
     )
     .map_err(|e| PipelineError::WatermarkEmbedFailed(e.to_string()))?;
 
@@ -851,7 +958,17 @@ async fn run_audio_pipeline(
     let process_time_ms = start.elapsed().as_millis() as u64;
 
     // Compute output file hash
-    let output_hash = hash::sha256_of_file(&output_path.to_string_lossy().to_string()).unwrap_or_default();
+    let output_hash =
+        hash::sha256_of_file(output_path.to_string_lossy().as_ref()).unwrap_or_default();
+    let parent_record = if let Some(uid) = parent_watermark_uid.clone() {
+        load_latest_record_by_uid(&app_handle, uid).await?
+    } else {
+        None
+    };
+    let revision = parent_record
+        .as_ref()
+        .map(|record| record.revision.saturating_add(1))
+        .unwrap_or(1);
 
     let record = VaultRecord {
         id: 0,
@@ -880,12 +997,21 @@ async fn run_audio_pipeline(
         is_ai_generated: ai_flags.is_ai_generated,
         ai_training_permission: Some(format!("{:?}", ai_flags.training_permission).to_lowercase()),
         ai_generation_method: Some(format!("{:?}", ai_flags.generation_method).to_lowercase()),
-        human_modification_level: Some(format!("{:?}", ai_flags.human_modification_level).to_lowercase()),
+        human_modification_level: Some(
+            format!("{:?}", ai_flags.human_modification_level).to_lowercase(),
+        ),
         authenticity_claim: Some(format!("{:?}", ai_flags.authenticity_claim).to_lowercase()),
-        custom_metadata: params.options.ai_content.as_ref().and_then(|ai| ai.custom_metadata.clone()),
+        custom_metadata: params
+            .options
+            .ai_content
+            .as_ref()
+            .and_then(|ai| ai.custom_metadata.clone()),
         output_douyin_hash: Some(output_hash),
         output_bilibili_hash: None,
         output_xhs_hash: None,
+        parent_watermark_uid,
+        revision,
+        rewrite_reason: rewrite_reason_from_options(&params.options),
     };
 
     // Request trusted timestamp (non-blocking, best-effort)
@@ -1271,8 +1397,12 @@ fn compute_file_hash_prefix(file_path: &str) -> [u8; 2] {
 }
 
 /// Parse AI content flags from frontend options.
-fn parse_ai_flags(ai_content: &Option<crate::commands::transcode::AIContentOptions>) -> watermark::AIContentFlags {
-    use watermark::{AIContentFlags, TrainingPermission, GenerationMethod, ModificationLevel, AuthenticityClaim};
+fn parse_ai_flags(
+    ai_content: &Option<crate::commands::transcode::AIContentOptions>,
+) -> watermark::AIContentFlags {
+    use watermark::{
+        AIContentFlags, AuthenticityClaim, GenerationMethod, ModificationLevel, TrainingPermission,
+    };
 
     let Some(ai) = ai_content else {
         return AIContentFlags::default();

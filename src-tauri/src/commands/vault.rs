@@ -38,6 +38,10 @@ pub struct VaultRecord {
     pub output_douyin_hash: Option<String>,
     pub output_bilibili_hash: Option<String>,
     pub output_xhs_hash: Option<String>,
+    // Rewrite lineage. Defaults to revision 1 for first-party original writes.
+    pub parent_watermark_uid: Option<String>,
+    pub revision: u32,
+    pub rewrite_reason: Option<String>,
 }
 
 #[tauri::command]

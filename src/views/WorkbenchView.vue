@@ -53,7 +53,12 @@ const aiMarkerRef = ref<InstanceType<typeof AIContentMarker> | null>(null);
 // For retry
 const lastInputPath = ref("");
 const lastPlatforms = ref<Platform[]>([]);
-const lastOptions = reactive<TranscodeOptions>({ aspectStrategy: "letterbox", encodingMode: "fast_gpu" });
+const lastOptions = reactive<TranscodeOptions>({
+  aspectStrategy: "letterbox",
+  encodingMode: "fast_gpu",
+  allowRewrite: false,
+  rewriteReason: "",
+});
 
 const progress = reactive<PipelineProgressPayload>({
   pipelineId: "",
@@ -65,6 +70,8 @@ const progress = reactive<PipelineProgressPayload>({
 const options = reactive<TranscodeOptions>({
   aspectStrategy: "letterbox",
   encodingMode: "fast_gpu",
+  allowRewrite: false,
+  rewriteReason: "",
 });
 
 const selectedPlatforms = ref<Platform[]>(["douyin"]);
@@ -156,6 +163,28 @@ function setProgress(payload: Partial<PipelineProgressPayload>) {
   progress.platformPercents = payload.platformPercents ?? progress.platformPercents;
 }
 
+async function confirmRewriteRisk() {
+  if (!options.allowRewrite || isVideo.value) return true;
+
+  const reason = options.rewriteReason?.trim() || "未填写，将使用默认重写原因";
+  const message = [
+    "你正在重写已有隐盾水印。",
+    "",
+    "这会覆盖当前媒体文件里可提取的旧水印。隐盾会在金库里记录父级 UID、写入版本和重写原因，但取证时通常会优先提取到新的水印。",
+    "",
+    `重写原因：${reason}`,
+    "",
+    "确认继续？",
+  ].join("\n");
+
+  if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+    const { confirm } = await import("@tauri-apps/plugin-dialog");
+    return confirm(message, { title: "确认重写水印" });
+  }
+
+  return window.confirm(message);
+}
+
 async function handleStart() {
   if (!selectedPath.value) { statusMessage.value = "请先选择源文件"; return; }
   if (isVideo.value && selectedPlatforms.value.length === 0) {
@@ -170,6 +199,10 @@ async function handleStart() {
   }
   if (systemStatus.value && !systemStatus.value.outputDirWritable) {
     statusMessage.value = `目标输出目录不可写：${systemStatus.value.outputDir}`;
+    return;
+  }
+  if (!(await confirmRewriteRisk())) {
+    statusMessage.value = "已取消重写";
     return;
   }
 
@@ -188,6 +221,8 @@ async function handleStart() {
   lastPlatforms.value = [...platforms];
   lastOptions.aspectStrategy = options.aspectStrategy;
   lastOptions.encodingMode = options.encodingMode;
+  lastOptions.allowRewrite = options.allowRewrite;
+  lastOptions.rewriteReason = options.rewriteReason;
 
   // Collect AI content options from AIContentMarker
   const aiContent = aiMarkerRef.value ? {
@@ -199,7 +234,12 @@ async function handleStart() {
     customMetadata: aiMarkerRef.value.customMetadata.trim() || undefined,
   } : undefined;
 
-  const optionsWithAI = { ...options, aiContent };
+  const rewriteReason = options.rewriteReason?.trim();
+  const optionsWithAI = {
+    ...options,
+    rewriteReason: options.allowRewrite ? (rewriteReason || "用户确认重写已有水印") : undefined,
+    aiContent,
+  };
 
   try {
     const result = await startPipeline(selectedPath.value, platforms, optionsWithAI);
@@ -222,6 +262,8 @@ async function handleRetry() {
   selectedPlatforms.value = [...lastPlatforms.value];
   options.aspectStrategy = lastOptions.aspectStrategy;
   options.encodingMode = lastOptions.encodingMode;
+  options.allowRewrite = lastOptions.allowRewrite;
+  options.rewriteReason = lastOptions.rewriteReason;
   await handleStart();
 }
 
@@ -424,6 +466,21 @@ onUnmounted(() => {
             </label>
           </div>
 
+          <div v-if="isImage || isAudio" class="rewrite-panel">
+            <label class="rewrite-panel__toggle">
+              <input v-model="options.allowRewrite" type="checkbox" :disabled="busy" />
+              <span>允许重写已有隐盾水印</span>
+            </label>
+            <input
+              v-if="options.allowRewrite"
+              v-model="options.rewriteReason"
+              class="rewrite-panel__input"
+              type="text"
+              :disabled="busy"
+              placeholder="重写原因，例如：修正版、授权派生、重新导出"
+            />
+          </div>
+
           <!-- AI Content Marker -->
           <AIContentMarker ref="aiMarkerRef" />
 
@@ -492,3 +549,35 @@ onUnmounted(() => {
     </template>
   </div>
 </template>
+
+<style scoped>
+.rewrite-panel {
+  margin-top: 0.9rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(198, 91, 32, 0.22);
+  border-radius: 10px;
+  background: rgba(198, 91, 32, 0.08);
+}
+
+.rewrite-panel__toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.rewrite-panel__toggle input {
+  accent-color: #c65b20;
+}
+
+.rewrite-panel__input {
+  width: 100%;
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid var(--border, #2a2a4a);
+  background: var(--surface-alt, #252545);
+  color: var(--text-primary, #e0e0e0);
+}
+</style>

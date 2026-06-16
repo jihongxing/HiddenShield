@@ -39,6 +39,14 @@ async function handleCopy() {
         <span>水印 UID</span>
         <strong>{{ record.watermarkUid }}</strong>
       </div>
+      <div v-if="record.revision > 1 || record.parentWatermarkUid" class="copyright-card__row">
+        <span>写入版本</span>
+        <strong>第 {{ record.revision }} 次</strong>
+      </div>
+      <div v-if="record.parentWatermarkUid" class="copyright-card__row">
+        <span>父级 UID</span>
+        <strong>{{ record.parentWatermarkUid }}</strong>
+      </div>
       <div class="copyright-card__row">
         <span>处理时间</span>
         <strong>{{ record.createdAt }}</strong>

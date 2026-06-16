@@ -45,6 +45,9 @@ export interface VaultRecord {
   outputDouyinHash: string | null;
   outputBilibiliHash: string | null;
   outputXhsHash: string | null;
+  parentWatermarkUid: string | null;
+  revision: number;
+  rewriteReason: string | null;
 }
 
 export type EntitlementStatus = "free" | "trial" | "active" | "grace" | "expired";
@@ -134,6 +137,8 @@ export interface TranscodeOptions {
   aspectStrategy: "letterbox" | "smart_crop";
   encodingMode: "fast_gpu" | "high_quality_cpu";
   aiContent?: AIContentOptions;
+  allowRewrite: boolean;
+  rewriteReason?: string;
 }
 
 export interface PipelineStartResult {
@@ -235,6 +240,9 @@ const mockVault: VaultRecord[] = [
     outputDouyinHash: "f8a8e4f22d7d5f0cdd7b8d7b5e8f8d7a4e0f5b3a2c1d0e9f1234567890abcdef",
     outputBilibiliHash: null,
     outputXhsHash: "9e8d7c6b5a49382716f0e1d2c3b4a5968776655443322110fedcba9876543210",
+    parentWatermarkUid: null,
+    revision: 1,
+    rewriteReason: null,
   },
   {
     id: 2,
@@ -259,6 +267,9 @@ const mockVault: VaultRecord[] = [
     outputDouyinHash: null,
     outputBilibiliHash: "2f3e4d5c6b7a8990a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0",
     outputXhsHash: null,
+    parentWatermarkUid: null,
+    revision: 1,
+    rewriteReason: null,
   },
 ];
 
@@ -541,7 +552,7 @@ export function recommendStrategy(
   const isLandscape = meta.width > meta.height;
   const aspectStrategy: TranscodeOptions["aspectStrategy"] = isLandscape ? "letterbox" : "letterbox";
 
-  return { aspectStrategy, encodingMode };
+  return { aspectStrategy, encodingMode, allowRewrite: false };
 }
 
 /** Generate warnings based on source meta and selected platforms. */
@@ -583,6 +594,8 @@ export function buildCopyrightSummary(record: VaultRecord): string {
   return [
     `【隐盾版权存证】`,
     `水印 UID: ${record.watermarkUid}`,
+    `写入版本: 第 ${record.revision} 次`,
+    record.parentWatermarkUid ? `父级水印 UID: ${record.parentWatermarkUid}` : "",
     `原文件: ${record.fileName}`,
     `SHA-256: ${record.originalHash}`,
     `处理时间: ${record.createdAt}`,
@@ -624,6 +637,13 @@ export function buildVerificationSummary(result: VerificationResult, filePath: s
     const r = result.matchedRecord;
     lines.push(`───────────── 版权记录 ─────────────`);
     lines.push(`原始文件: ${r.fileName}`);
+    lines.push(`写入版本: 第 ${r.revision} 次`);
+    if (r.parentWatermarkUid) {
+      lines.push(`父级 UID: ${r.parentWatermarkUid}`);
+    }
+    if (r.rewriteReason) {
+      lines.push(`重写原因: ${r.rewriteReason}`);
+    }
     lines.push(`入库时间: ${new Date(r.createdAt).toLocaleString()}`);
     if (r.resolution) {
       lines.push(`分辨率: ${r.resolution}`);

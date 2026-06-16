@@ -4,20 +4,15 @@ use serde::{Deserialize, Serialize};
 
 use crate::commands::vault::VaultRecord;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum EntitlementStatus {
+    #[default]
     Free,
     Trial,
     Active,
     Grace,
     Expired,
-}
-
-impl Default for EntitlementStatus {
-    fn default() -> Self {
-        Self::Free
-    }
 }
 
 impl EntitlementStatus {
@@ -157,7 +152,10 @@ fn entitlement_columns() -> &'static str {
 pub fn get_entitlement_state(conn: &Connection) -> Result<EntitlementState, rusqlite::Error> {
     let current = conn
         .query_row(
-            &format!("SELECT {} FROM entitlement_state WHERE id = 1", entitlement_columns()),
+            &format!(
+                "SELECT {} FROM entitlement_state WHERE id = 1",
+                entitlement_columns()
+            ),
             [],
             row_to_entitlement,
         )
@@ -396,6 +394,9 @@ mod tests {
             output_douyin_hash: None,
             output_bilibili_hash: None,
             output_xhs_hash: None,
+            parent_watermark_uid: None,
+            revision: 1,
+            rewrite_reason: None,
         };
 
         let usage = UsageLedgerEntry::success(

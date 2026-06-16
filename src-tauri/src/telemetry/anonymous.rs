@@ -103,12 +103,7 @@ fn current_timestamp() -> String {
 
 fn generate_event_id() -> String {
     let seq = EVENT_SEQ.fetch_add(1, Ordering::SeqCst);
-    let seed = format!(
-        "{}:{}:{}",
-        current_timestamp(),
-        seq,
-        anonymous_device_id()
-    );
+    let seed = format!("{}:{}:{}", current_timestamp(), seq, anonymous_device_id());
     let hash = sha2::Sha256::digest(seed.as_bytes());
     format!("evt-{}", &format!("{:x}", hash)[..16])
 }
@@ -131,7 +126,7 @@ fn read_queue(app_data_dir: &Path) -> Vec<AnonymousFeedbackEvent> {
     let reader = BufReader::new(file);
     reader
         .lines()
-        .filter_map(|line| line.ok())
+        .map_while(Result::ok)
         .filter_map(|line| serde_json::from_str::<AnonymousFeedbackEvent>(&line).ok())
         .collect()
 }
@@ -144,8 +139,8 @@ fn write_queue(app_data_dir: &Path, events: &[AnonymousFeedbackEvent]) -> Result
         .map_err(|e| format!("创建匿名反馈队列失败 {}: {e}", tmp_path.display()))?;
 
     for event in events {
-        let line = serde_json::to_string(event)
-            .map_err(|e| format!("序列化匿名反馈事件失败: {e}"))?;
+        let line =
+            serde_json::to_string(event).map_err(|e| format!("序列化匿名反馈事件失败: {e}"))?;
         file.write_all(line.as_bytes())
             .and_then(|_| file.write_all(b"\n"))
             .map_err(|e| format!("写入匿名反馈队列失败: {e}"))?;
@@ -154,8 +149,13 @@ fn write_queue(app_data_dir: &Path, events: &[AnonymousFeedbackEvent]) -> Result
     file.flush()
         .map_err(|e| format!("刷新匿名反馈队列失败: {e}"))?;
     let _ = fs::remove_file(&path);
-    fs::rename(&tmp_path, &path)
-        .map_err(|e| format!("提交匿名反馈队列失败 {} -> {}: {e}", tmp_path.display(), path.display()))
+    fs::rename(&tmp_path, &path).map_err(|e| {
+        format!(
+            "提交匿名反馈队列失败 {} -> {}: {e}",
+            tmp_path.display(),
+            path.display()
+        )
+    })
 }
 
 fn append_event(app_data_dir: &Path, event: &AnonymousFeedbackEvent) -> Result<(), String> {
@@ -167,8 +167,7 @@ fn append_event(app_data_dir: &Path, event: &AnonymousFeedbackEvent) -> Result<(
         .open(&path)
         .map_err(|e| format!("打开匿名反馈队列失败 {}: {e}", path.display()))?;
 
-    let line = serde_json::to_string(event)
-        .map_err(|e| format!("序列化匿名反馈事件失败: {e}"))?;
+    let line = serde_json::to_string(event).map_err(|e| format!("序列化匿名反馈事件失败: {e}"))?;
     file.write_all(line.as_bytes())
         .and_then(|_| file.write_all(b"\n"))
         .and_then(|_| file.flush())
@@ -214,6 +213,7 @@ fn error_code_from_text(text: &str) -> String {
     slug.trim_matches('_').chars().take(48).collect()
 }
 
+#[allow(clippy::too_many_arguments)]
 fn make_event(
     install_id: String,
     session_id: String,
@@ -375,6 +375,7 @@ pub fn record_failure_event(
     let _ = append_event(app_data_dir, &event);
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn record_crash_event(
     app_data_dir: &Path,
     feature_name: impl Into<String>,
@@ -673,7 +674,10 @@ fn flush_queue_impl(app_data_dir: &Path, endpoint_override: Option<&str>) -> Ano
             let _ = write_queue(app_data_dir, &[]);
             let flushed_at = Some(current_timestamp());
             record_feedback_flush(app_data_dir, flushed_at.clone(), None);
-            record_feedback_success(app_data_dir, flushed_at.clone().unwrap_or_else(current_timestamp));
+            record_feedback_success(
+                app_data_dir,
+                flushed_at.clone().unwrap_or_else(current_timestamp),
+            );
             AnonymousFlushResult {
                 attempted_events: batch.events.len(),
                 sent_events: batch.events.len(),
@@ -717,7 +721,10 @@ pub fn flush_queue(app_data_dir: &Path) -> AnonymousFlushResult {
 }
 
 #[cfg(test)]
-pub(crate) fn flush_queue_with_endpoint(app_data_dir: &Path, endpoint: &str) -> AnonymousFlushResult {
+pub(crate) fn flush_queue_with_endpoint(
+    app_data_dir: &Path,
+    endpoint: &str,
+) -> AnonymousFlushResult {
     flush_queue_impl(app_data_dir, Some(endpoint))
 }
 

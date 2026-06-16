@@ -8,8 +8,8 @@ use crate::AppState;
 pub async fn get_entitlement_state(app_handle: AppHandle) -> Result<EntitlementState, String> {
     let state = app_handle.state::<AppState>();
     let conn = state.db.lock().map_err(|e| format!("db lock error: {e}"))?;
-    let entitlement = billing::get_entitlement_state(&conn)
-        .map_err(|e| format!("读取权益状态失败: {e}"))?;
+    let entitlement =
+        billing::get_entitlement_state(&conn).map_err(|e| format!("读取权益状态失败: {e}"))?;
     if let Ok(app_data_dir) = app_handle.path().app_data_dir() {
         telemetry::anonymous::record_entitlement_snapshot(
             &app_data_dir,
@@ -57,8 +57,8 @@ pub async fn record_usage_event(
 ) -> Result<UsageLedgerSummary, String> {
     let state = app_handle.state::<AppState>();
     let conn = state.db.lock().map_err(|e| format!("db lock error: {e}"))?;
-    let entitlement = billing::get_entitlement_state(&conn)
-        .map_err(|e| format!("读取权益状态失败: {e}"))?;
+    let entitlement =
+        billing::get_entitlement_state(&conn).map_err(|e| format!("读取权益状态失败: {e}"))?;
     let entry = billing::UsageLedgerEntry::success(
         feature_name,
         media_type,
@@ -66,7 +66,6 @@ pub async fn record_usage_event(
         &entitlement,
         pipeline_id,
     );
-    billing::append_usage_entry(&conn, &entry)
-        .map_err(|e| format!("写入用量账本失败: {e}"))?;
+    billing::append_usage_entry(&conn, &entry).map_err(|e| format!("写入用量账本失败: {e}"))?;
     billing::get_usage_summary(&conn).map_err(|e| format!("读取用量账本失败: {e}"))
 }

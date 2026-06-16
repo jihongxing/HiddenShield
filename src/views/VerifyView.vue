@@ -171,6 +171,25 @@ function getUnmatchedReason(confidence: number): string {
         <div v-if="result && result.matchedRecord && result.confidence >= 0.95" class="verify-matched">
           <CopyrightCard :record="result.matchedRecord" />
 
+          <div
+            v-if="result.matchedRecord.revision > 1 || result.matchedRecord.parentWatermarkUid"
+            class="verify-lineage"
+          >
+            <strong>水印链路</strong>
+            <div class="verify-lineage__row">
+              <span>当前版本</span>
+              <b>第 {{ result.matchedRecord.revision }} 次写入</b>
+            </div>
+            <div v-if="result.matchedRecord.parentWatermarkUid" class="verify-lineage__row">
+              <span>父级 UID</span>
+              <b>{{ result.matchedRecord.parentWatermarkUid }}</b>
+            </div>
+            <div v-if="result.matchedRecord.rewriteReason" class="verify-lineage__row">
+              <span>重写原因</span>
+              <b>{{ result.matchedRecord.rewriteReason }}</b>
+            </div>
+          </div>
+
           <!-- TSA attestation badge -->
         <div v-if="result.tsaTokenPresent || result.networkTime" class="verify-tsa">
           <strong>时间信息</strong>
@@ -222,5 +241,35 @@ function getUnmatchedReason(confidence: number): string {
   margin-top: 0.75rem;
   font-size: 0.85rem;
   color: var(--text-muted, #8fb8ff);
+}
+
+.verify-lineage {
+  margin-top: 0.9rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(87, 143, 202, 0.28);
+  border-radius: 10px;
+  background: rgba(87, 143, 202, 0.08);
+}
+
+.verify-lineage strong {
+  display: block;
+  margin-bottom: 0.55rem;
+}
+
+.verify-lineage__row {
+  display: grid;
+  grid-template-columns: 6rem 1fr;
+  gap: 0.75rem;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.verify-lineage__row span {
+  color: var(--text-muted, #8b95a7);
+}
+
+.verify-lineage__row b {
+  color: var(--text-primary, #e0e0e0);
+  word-break: break-all;
 }
 </style>
