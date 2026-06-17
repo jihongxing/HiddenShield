@@ -66,6 +66,19 @@ impl Default for WatermarkStrength {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AudioProtectionMode {
+    StandaloneAudio,
+    VideoTrack,
+}
+
+impl Default for AudioProtectionMode {
+    fn default() -> Self {
+        Self::StandaloneAudio
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum MediaInput {
@@ -95,6 +108,8 @@ pub struct EmbedOptions {
     pub allow_rewrite: bool,
     #[serde(default)]
     pub strength: WatermarkStrength,
+    #[serde(default)]
+    pub audio_protection_mode: AudioProtectionMode,
 }
 
 impl Default for EmbedOptions {
@@ -103,6 +118,7 @@ impl Default for EmbedOptions {
             image_output_format: ImageOutputFormat::Png,
             allow_rewrite: false,
             strength: WatermarkStrength::default(),
+            audio_protection_mode: AudioProtectionMode::default(),
         }
     }
 }
@@ -138,17 +154,40 @@ impl WatermarkService {
             }
             MediaInput::AudioWavBytes { bytes } => {
                 let bytes = if options.allow_rewrite {
-                    audio::embed_watermark_wav_bytes_allow_rewrite_with_delta(
-                        &bytes,
-                        payload,
-                        strength.audio_qim_delta(),
-                    )?
+                    match options.audio_protection_mode {
+                        AudioProtectionMode::StandaloneAudio => {
+                            audio::embed_watermark_wav_bytes_allow_rewrite_with_delta(
+                                &bytes,
+                                payload,
+                                strength.audio_qim_delta(),
+                            )?
+                        }
+                        AudioProtectionMode::VideoTrack => {
+                            audio::embed_watermark_wav_bytes_allow_rewrite_with_delta_without_min_duration(
+                                &bytes,
+                                payload,
+                                strength.audio_qim_delta(),
+                            )?
+                        }
+                    }
                 } else {
-                    audio::embed_watermark_wav_bytes_with_delta(
-                        &bytes,
-                        payload,
-                        strength.audio_qim_delta(),
-                    )?
+                    audio::reject_existing_wav_watermark(&bytes)?;
+                    match options.audio_protection_mode {
+                        AudioProtectionMode::StandaloneAudio => {
+                            audio::embed_watermark_wav_bytes_allow_rewrite_with_delta(
+                                &bytes,
+                                payload,
+                                strength.audio_qim_delta(),
+                            )?
+                        }
+                        AudioProtectionMode::VideoTrack => {
+                            audio::embed_watermark_wav_bytes_allow_rewrite_with_delta_without_min_duration(
+                                &bytes,
+                                payload,
+                                strength.audio_qim_delta(),
+                            )?
+                        }
+                    }
                 };
                 Ok(MediaOutput::AudioWavBytes { bytes })
             }
@@ -253,15 +292,19 @@ mod tests {
     }
 
     fn make_wav_bytes() -> Vec<u8> {
+        make_wav_bytes_with_seconds(audio::MIN_AUDIO_PROTECTION_SECONDS)
+    }
+
+    fn make_wav_bytes_with_seconds(seconds: u32) -> Vec<u8> {
         let spec = hound::WavSpec {
-            channels: 2,
+            channels: 1,
             sample_rate: 44_100,
             bits_per_sample: 16,
             sample_format: hound::SampleFormat::Int,
         };
         let mut cursor = std::io::Cursor::new(Vec::new());
         let mut writer = hound::WavWriter::new(&mut cursor, spec).unwrap();
-        for i in 0..8_192 {
+        for i in 0..(44_100 * seconds as usize) {
             let t = i as f32 / 44_100.0;
             let sample = (t * 440.0 * std::f32::consts::TAU).sin() * 0.2;
             writer.write_sample((sample * 32767.0) as i16).unwrap();
@@ -310,6 +353,41 @@ mod tests {
         let extracted = WatermarkService::extract(MediaInput::AudioWavBytes { bytes }).unwrap();
         assert_eq!(extracted.user_seed, payload.user_seed);
         assert_eq!(extracted.device_id, payload.device_id);
+    }
+
+    #[test]
+    fn service_rejects_short_standalone_audio_but_allows_video_track_mode() {
+        let payload = sample_payload();
+        let short_wav = make_wav_bytes_with_seconds(10);
+
+        let standalone_error = WatermarkService::embed(
+            MediaInput::AudioWavBytes {
+                bytes: short_wav.clone(),
+            },
+            &payload,
+            EmbedOptions::default(),
+        )
+        .unwrap_err();
+        assert!(matches!(
+            standalone_error,
+            WatermarkError::EmbedFailed(message)
+                if message.contains("audio_protection_min_duration")
+        ));
+
+        let video_track_output = WatermarkService::embed(
+            MediaInput::AudioWavBytes { bytes: short_wav },
+            &payload,
+            EmbedOptions {
+                audio_protection_mode: AudioProtectionMode::VideoTrack,
+                ..EmbedOptions::default()
+            },
+        )
+        .unwrap();
+        let MediaOutput::AudioWavBytes { bytes } = video_track_output else {
+            panic!("unexpected output");
+        };
+        let extracted = WatermarkService::extract(MediaInput::AudioWavBytes { bytes }).unwrap();
+        assert_eq!(extracted.watermark_uid(), payload.watermark_uid());
     }
 
     #[test]

@@ -310,11 +310,20 @@ function isTauriRuntime() {
 function buildMockSource(path: string): SourceMeta {
   const baseName = path.split(/[\\/]/).pop() || "demo.mp4";
   const isHdr = /\.mov$/i.test(baseName) || /hdr/i.test(baseName);
+  const lowerName = baseName.toLowerCase();
 
   const ext = baseName.split(".").pop()?.toLowerCase() ?? "";
   const imageExts = ["jpg", "jpeg", "png", "webp", "bmp", "tiff"];
   const audioExts = ["mp3", "wav", "flac", "aac", "ogg"];
   const fileType = imageExts.includes(ext) ? "image" : audioExts.includes(ext) ? "audio" : "video";
+  const durationSecs =
+    fileType === "audio" && lowerName.includes("short")
+      ? 10
+      : fileType === "audio" && lowerName.includes("long")
+        ? 42
+        : isHdr
+          ? 74
+          : 42;
 
   return {
     fileName: baseName,
@@ -322,7 +331,7 @@ function buildMockSource(path: string): SourceMeta {
     width: isHdr ? 3840 : 1920,
     height: isHdr ? 2160 : 1080,
     fps: isHdr ? 60 : 30,
-    durationSecs: isHdr ? 74 : 42,
+    durationSecs,
     fileSizeMb: isHdr ? 824.6 : 186.2,
     isHdr,
     colorProfile: isHdr ? "BT.2020 / PQ" : "BT.709 / SDR",
@@ -831,6 +840,14 @@ export function createEmptyPlatformPercents() {
 // ---------------------------------------------------------------------------
 // Pure Functions: Recommendations, Warnings, Summaries
 // ---------------------------------------------------------------------------
+
+export const MIN_AUDIO_PROTECTION_SECONDS = 30;
+
+export function isStandaloneAudioTooShort(meta: SourceMeta | null): boolean {
+  return !!meta &&
+    meta.fileType === "audio" &&
+    meta.durationSecs < MIN_AUDIO_PROTECTION_SECONDS;
+}
 
 /** Recommend platforms based on source meta (aspect ratio + duration). */
 export function recommendPlatforms(meta: SourceMeta): Platform[] {

@@ -19,6 +19,7 @@ struct Config {
     max_audio: usize,
     output_dir: PathBuf,
     ffmpeg: String,
+    audio_matrix: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -36,6 +37,7 @@ struct CaseResult {
 struct BenchSummary {
     image_sources: usize,
     audio_sources: usize,
+    audio_matrix: bool,
     passed: usize,
     total: usize,
 }
@@ -66,10 +68,21 @@ fn run() -> Result<(), String> {
         results.extend(run_image_source(source, index, &run_dir)?);
     }
     for (index, source) in audio_sources.iter().enumerate() {
-        results.extend(run_audio_source(source, index, &run_dir, &config.ffmpeg)?);
+        results.extend(run_audio_source(
+            source,
+            index,
+            &run_dir,
+            &config.ffmpeg,
+            config.audio_matrix,
+        )?);
     }
 
-    let summary = summarize(image_sources.len(), audio_sources.len(), &results);
+    let summary = summarize(
+        image_sources.len(),
+        audio_sources.len(),
+        config.audio_matrix,
+        &results,
+    );
     write_markdown_report(&run_dir.join("report.md"), &summary, &results)?;
     write_json_report(&run_dir.join("report.json"), &summary, &results)?;
 
@@ -89,6 +102,7 @@ impl Config {
         let mut max_audio = 3usize;
         let mut output_dir = PathBuf::from("watermark-core/target/robustness-bench");
         let mut ffmpeg = "ffmpeg".to_string();
+        let mut audio_matrix = false;
 
         let mut index = 0;
         while index < args.len() {
@@ -117,6 +131,9 @@ impl Config {
                     index += 1;
                     ffmpeg = required_value(&args, index, "--ffmpeg")?.to_string();
                 }
+                "--audio-matrix" => {
+                    audio_matrix = true;
+                }
                 "--help" | "-h" => {
                     print_usage();
                     std::process::exit(0);
@@ -133,6 +150,7 @@ impl Config {
             max_audio,
             output_dir,
             ffmpeg,
+            audio_matrix,
         })
     }
 }
@@ -140,7 +158,7 @@ impl Config {
 fn print_usage() {
     println!(
         "Usage: cargo run --manifest-path watermark-core/Cargo.toml --bin robustness_bench -- \\
-  --image-dir <dir> --audio-glob <path/*.mp3> [--max-images 3] [--max-audio 3]"
+  --image-dir <dir> --audio-glob <path/*.mp3> [--max-images 3] [--max-audio 3] [--audio-matrix]"
     );
 }
 
@@ -367,6 +385,7 @@ fn run_audio_source(
     index: usize,
     run_dir: &Path,
     ffmpeg: &str,
+    audio_matrix: bool,
 ) -> Result<Vec<CaseResult>, String> {
     let audio_dir = run_dir.join("audio").join(safe_stem(source, index));
     fs::create_dir_all(&audio_dir).map_err(|error| format!("create audio output dir: {error}"))?;
@@ -416,10 +435,10 @@ fn run_audio_source(
         &expected_uid,
     ));
 
-    for variant in audio_variants(&audio_dir, &embedded_wav, ffmpeg)? {
+    for variant in audio_variants(&audio_dir, &embedded_wav, ffmpeg, audio_matrix)? {
         results.push(verify_audio_file(
             &source_name,
-            variant.name,
+            &variant.name,
             &variant.output_wav,
             &expected_uid,
         ));
@@ -428,7 +447,7 @@ fn run_audio_source(
 }
 
 struct AudioVariant {
-    name: &'static str,
+    name: String,
     output_wav: PathBuf,
 }
 
@@ -436,6 +455,7 @@ fn audio_variants(
     audio_dir: &Path,
     embedded_wav: &Path,
     ffmpeg: &str,
+    audio_matrix: bool,
 ) -> Result<Vec<AudioVariant>, String> {
     let mut variants = Vec::new();
     let specs = [
@@ -485,7 +505,10 @@ fn audio_variants(
         args.extend(params.into_iter().map(String::from));
         args.push(output_wav.display().to_string());
         run_ffmpeg_owned(ffmpeg, &args)?;
-        variants.push(AudioVariant { name, output_wav });
+        variants.push(AudioVariant {
+            name: name.to_string(),
+            output_wav,
+        });
     }
 
     let mp3 = audio_dir.join("mp3_192.mp3");
@@ -519,11 +542,96 @@ fn audio_variants(
         ],
     )?;
     variants.push(AudioVariant {
-        name: "mp3_192_roundtrip",
-        output_wav: mp3_roundtrip_wav,
+        name: "mp3_192_roundtrip".to_string(),
+        output_wav: mp3_roundtrip_wav.clone(),
     });
 
+    let clip_10s_middle = audio_dir.join("clip_10s_middle.wav");
+    run_ffmpeg(
+        ffmpeg,
+        &[
+            "-y",
+            "-i",
+            &embedded_wav.display().to_string(),
+            "-ss",
+            "10",
+            "-t",
+            "10",
+            "-ar",
+            "44100",
+            "-ac",
+            "1",
+            "-c:a",
+            "pcm_s16le",
+            &clip_10s_middle.display().to_string(),
+        ],
+    )?;
+    variants.push(AudioVariant {
+        name: "clip_10s_middle".to_string(),
+        output_wav: clip_10s_middle,
+    });
+
+    if audio_matrix {
+        append_audio_clip_matrix(&mut variants, audio_dir, embedded_wav, "wav", ffmpeg)?;
+        append_audio_clip_matrix(
+            &mut variants,
+            audio_dir,
+            &mp3_roundtrip_wav,
+            "mp3_192",
+            ffmpeg,
+        )?;
+    }
+
     Ok(variants)
+}
+
+fn append_audio_clip_matrix(
+    variants: &mut Vec<AudioVariant>,
+    audio_dir: &Path,
+    input_wav: &Path,
+    source_label: &str,
+    ffmpeg: &str,
+) -> Result<(), String> {
+    for duration in [5u32, 10, 15] {
+        for position in ["start", "middle", "end"] {
+            let output_wav =
+                audio_dir.join(format!("matrix_{source_label}_{duration}s_{position}.wav"));
+            let start = clip_start_for_position(position, duration);
+            run_ffmpeg(
+                ffmpeg,
+                &[
+                    "-y",
+                    "-i",
+                    &input_wav.display().to_string(),
+                    "-ss",
+                    &start.to_string(),
+                    "-t",
+                    &duration.to_string(),
+                    "-ar",
+                    "44100",
+                    "-ac",
+                    "1",
+                    "-c:a",
+                    "pcm_s16le",
+                    &output_wav.display().to_string(),
+                ],
+            )?;
+            variants.push(AudioVariant {
+                name: format!("matrix_{source_label}_{duration}s_{position}"),
+                output_wav,
+            });
+        }
+    }
+    Ok(())
+}
+
+fn clip_start_for_position(position: &str, duration: u32) -> u32 {
+    match position {
+        "start" => 0,
+        "middle" => (30 - duration) / 2,
+        "end" => 30 - duration,
+        _ => 0,
+    }
 }
 
 fn verify_audio_file(
@@ -631,10 +739,16 @@ fn run_ffmpeg_owned(ffmpeg: &str, args: &[String]) -> Result<(), String> {
     }
 }
 
-fn summarize(image_sources: usize, audio_sources: usize, results: &[CaseResult]) -> BenchSummary {
+fn summarize(
+    image_sources: usize,
+    audio_sources: usize,
+    audio_matrix: bool,
+    results: &[CaseResult],
+) -> BenchSummary {
     BenchSummary {
         image_sources,
         audio_sources,
+        audio_matrix,
         passed: results.iter().filter(|result| result.success).count(),
         total: results.len(),
     }
@@ -648,8 +762,16 @@ fn write_markdown_report(
     let mut out = String::new();
     out.push_str("# Watermark Robustness Bench\n\n");
     out.push_str(&format!(
-        "- Image sources: {}\n- Audio sources: {}\n- Passed: {}/{}\n\n",
-        summary.image_sources, summary.audio_sources, summary.passed, summary.total
+        "- Image sources: {}\n- Audio sources: {}\n- Audio matrix: {}\n- Passed: {}/{}\n\n",
+        summary.image_sources,
+        summary.audio_sources,
+        if summary.audio_matrix {
+            "enabled"
+        } else {
+            "disabled"
+        },
+        summary.passed,
+        summary.total
     ));
     out.push_str("| Media | Source | Transform | Result | Extracted UID | Error |\n");
     out.push_str("| --- | --- | --- | --- | --- | --- |\n");
@@ -675,8 +797,12 @@ fn write_json_report(
     let mut out = String::new();
     out.push_str("{\n");
     out.push_str(&format!(
-        "  \"summary\": {{ \"imageSources\": {}, \"audioSources\": {}, \"passed\": {}, \"total\": {} }},\n",
-        summary.image_sources, summary.audio_sources, summary.passed, summary.total
+        "  \"summary\": {{ \"imageSources\": {}, \"audioSources\": {}, \"audioMatrix\": {}, \"passed\": {}, \"total\": {} }},\n",
+        summary.image_sources,
+        summary.audio_sources,
+        summary.audio_matrix,
+        summary.passed,
+        summary.total
     ));
     out.push_str("  \"results\": [\n");
     for (index, result) in results.iter().enumerate() {

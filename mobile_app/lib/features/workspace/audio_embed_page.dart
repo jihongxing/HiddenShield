@@ -26,8 +26,11 @@ class AudioEmbedPage extends StatefulWidget {
 }
 
 class _AudioEmbedPageState extends State<AudioEmbedPage> {
+  static const int _minimumProtectionSeconds = 30;
+
   Uint8List? _selectedBytes;
   String? _fileName;
+  double? _selectedDurationSeconds;
   bool _allowRewrite = false;
   bool _isProcessing = false;
   bool _isInspecting = false;
@@ -40,6 +43,9 @@ class _AudioEmbedPageState extends State<AudioEmbedPage> {
   @override
   Widget build(BuildContext context) {
     final selectedBytes = _selectedBytes;
+    final durationSeconds = _selectedDurationSeconds;
+    final isTooShort =
+        durationSeconds != null && durationSeconds < _minimumProtectionSeconds;
     return Scaffold(
       appBar: AppBar(title: const Text('保护音频')),
       body: SafeArea(
@@ -52,7 +58,11 @@ class _AudioEmbedPageState extends State<AudioEmbedPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _AudioPreview(bytes: selectedBytes, fileName: _fileName),
+                  _AudioPreview(
+                    bytes: selectedBytes,
+                    fileName: _fileName,
+                    durationSeconds: durationSeconds,
+                  ),
                   const SizedBox(height: 12),
                   FilledButton.icon(
                     onPressed: _isProcessing ? null : _pickAudio,
@@ -81,8 +91,16 @@ class _AudioEmbedPageState extends State<AudioEmbedPage> {
                   const HsMessageCard(
                     icon: Icons.verified_outlined,
                     title: '音频取证优先',
-                    detail: '将生成 WAV 保护副本，并在完成前回读验证版权编号。',
+                    detail: '支持 30 秒以上 WAV 作品。完成前会回读验证版权编号。',
                   ),
+                  if (isTooShort) ...[
+                    const SizedBox(height: 8),
+                    const HsMessageCard(
+                      icon: Icons.info_outline,
+                      title: '音频时长不足',
+                      detail: '当前音频短于 30 秒，暂不生成版权保护副本。请选择完整作品或更长片段。',
+                    ),
+                  ],
                   const SizedBox(height: 8),
                   _PreflightStatusCard(
                     isInspecting: _isInspecting,
@@ -93,7 +111,7 @@ class _AudioEmbedPageState extends State<AudioEmbedPage> {
             ),
             const SizedBox(height: 12),
             FilledButton.icon(
-              onPressed: selectedBytes == null || _isProcessing
+              onPressed: selectedBytes == null || _isProcessing || isTooShort
                   ? null
                   : _embedAudio,
               icon: _isProcessing
@@ -137,6 +155,7 @@ class _AudioEmbedPageState extends State<AudioEmbedPage> {
     setState(() {
       _selectedBytes = bytes;
       _fileName = file.name;
+      _selectedDurationSeconds = _wavDurationSeconds(bytes);
       _result = null;
       _savedRecord = null;
       _preflight = null;
@@ -234,16 +253,25 @@ class _AudioEmbedPageState extends State<AudioEmbedPage> {
 }
 
 class _AudioPreview extends StatelessWidget {
-  const _AudioPreview({required this.bytes, required this.fileName});
+  const _AudioPreview({
+    required this.bytes,
+    required this.fileName,
+    required this.durationSeconds,
+  });
 
   final Uint8List? bytes;
   final String? fileName;
+  final double? durationSeconds;
 
   @override
   Widget build(BuildContext context) {
     final sizeText = bytes == null
-        ? '选择一段 WAV 音频，生成保护副本和版权记录。'
-        : '${(bytes!.length / 1024).toStringAsFixed(1)} KB';
+        ? '选择 30 秒以上 WAV 音频，生成保护副本和版权记录。'
+        : [
+            '${(bytes!.length / 1024).toStringAsFixed(1)} KB',
+            if (durationSeconds != null)
+              '${durationSeconds!.toStringAsFixed(1)} 秒',
+          ].join(' / ');
     return HsPreviewBox(
       height: 160,
       child: Row(
@@ -316,6 +344,66 @@ WatermarkPayloadSeed _buildPayloadSeed(List<int> bytes, String creatorLabel) {
     deviceId: creatorDigest.skip(8).take(4).toList(growable: false),
     fileHash: fileDigest.take(2).toList(growable: false),
   );
+}
+
+double? _wavDurationSeconds(Uint8List bytes) {
+  if (bytes.length < 44) {
+    return null;
+  }
+  final data = ByteData.sublistView(bytes);
+  final riff = String.fromCharCodes(bytes.sublist(0, 4));
+  final wave = String.fromCharCodes(bytes.sublist(8, 12));
+  if (riff != 'RIFF' || wave != 'WAVE') {
+    return null;
+  }
+
+  int? channels;
+  int? sampleRate;
+  int? bitsPerSample;
+  int? dataSize;
+  var offset = 12;
+
+  while (offset + 8 <= bytes.length) {
+    final chunkId = String.fromCharCodes(bytes.sublist(offset, offset + 4));
+    final chunkSize = data.getUint32(offset + 4, Endian.little);
+    final chunkDataOffset = offset + 8;
+    if (chunkDataOffset + chunkSize > bytes.length) {
+      break;
+    }
+
+    if (chunkId == 'fmt ' && chunkSize >= 16) {
+      channels = data.getUint16(chunkDataOffset + 2, Endian.little);
+      sampleRate = data.getUint32(chunkDataOffset + 4, Endian.little);
+      bitsPerSample = data.getUint16(chunkDataOffset + 14, Endian.little);
+    } else if (chunkId == 'data') {
+      dataSize = chunkSize;
+      break;
+    }
+
+    offset = chunkDataOffset + chunkSize + (chunkSize.isOdd ? 1 : 0);
+  }
+
+  final resolvedChannels = channels;
+  final resolvedSampleRate = sampleRate;
+  final resolvedBitsPerSample = bitsPerSample;
+  final resolvedDataSize = dataSize;
+  if (resolvedChannels == null ||
+      resolvedSampleRate == null ||
+      resolvedBitsPerSample == null ||
+      resolvedDataSize == null ||
+      resolvedChannels <= 0 ||
+      resolvedSampleRate <= 0 ||
+      resolvedBitsPerSample <= 0) {
+    return null;
+  }
+
+  final bytesPerSample = resolvedBitsPerSample / 8;
+  final bytesPerSecond =
+      resolvedSampleRate * resolvedChannels * bytesPerSample;
+  if (bytesPerSecond <= 0) {
+    return null;
+  }
+  return resolvedDataSize / bytesPerSecond;
 }
 
 class _PreflightStatusCard extends StatelessWidget {

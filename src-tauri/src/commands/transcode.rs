@@ -277,7 +277,7 @@ pub async fn start_pipeline(
                     "pipeline-progress",
                     PipelineProgressPayload {
                         pipeline_id: pipeline_id_clone,
-                        stage: format!("失败：{e}"),
+                        stage: pipeline_failure_stage(&e.to_string()),
                         percent: 0,
                         platform_percents: progress::PlatformPercents::new(),
                     },
@@ -290,6 +290,13 @@ pub async fn start_pipeline(
         pipeline_id,
         summary,
     })
+}
+
+fn pipeline_failure_stage(error: &str) -> String {
+    if error.contains("audio_protection_min_duration") {
+        return "失败：音频时长不足 30 秒，暂不支持生成版权保护副本".to_string();
+    }
+    format!("失败：{error}")
 }
 
 #[tauri::command]

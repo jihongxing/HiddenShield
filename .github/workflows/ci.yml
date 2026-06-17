@@ -63,6 +63,9 @@ jobs:
       - name: Build frontend
         run: npm run build
 
+      - name: Verify desktop audio duration rule
+        run: npm run desktop:audio-rule
+
       - name: Test desktop Rust
         run: cargo test --lib
         working-directory: src-tauri

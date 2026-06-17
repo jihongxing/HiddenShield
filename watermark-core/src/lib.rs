@@ -8,9 +8,11 @@ pub use audio::{
     embed_watermark, embed_watermark_samples, embed_watermark_samples_allow_rewrite,
     embed_watermark_samples_allow_rewrite_with_delta, embed_watermark_samples_with_delta,
     embed_watermark_wav_bytes, embed_watermark_wav_bytes_allow_rewrite,
-    embed_watermark_wav_bytes_allow_rewrite_with_delta, embed_watermark_wav_bytes_with_delta,
-    extract_watermark, extract_watermark_samples, extract_watermark_samples_with_delta,
-    extract_watermark_wav_bytes, extract_watermark_wav_bytes_with_delta,
+    embed_watermark_wav_bytes_allow_rewrite_with_delta,
+    embed_watermark_wav_bytes_allow_rewrite_with_delta_without_min_duration,
+    embed_watermark_wav_bytes_with_delta, extract_watermark, extract_watermark_samples,
+    extract_watermark_samples_with_delta, extract_watermark_wav_bytes,
+    extract_watermark_wav_bytes_with_delta,
 };
 pub use error::WatermarkError;
 pub use image::{
@@ -25,5 +27,6 @@ pub use payload::{
     ModificationLevel, TrainingPermission, WatermarkPayload,
 };
 pub use service::{
-    EmbedOptions, ImageOutputFormat, MediaInput, MediaOutput, WatermarkService, WatermarkStrength,
+    AudioProtectionMode, EmbedOptions, ImageOutputFormat, MediaInput, MediaOutput,
+    WatermarkService, WatermarkStrength,
 };

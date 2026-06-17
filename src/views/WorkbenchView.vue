@@ -24,6 +24,7 @@ import {
   recommendStrategy,
   startPipeline,
   systemCheck,
+  isStandaloneAudioTooShort as checkStandaloneAudioTooShort,
   type HardwareInfo,
   type PipelineCompletePayload,
   type PipelineProgressPayload,
@@ -81,7 +82,6 @@ const options = reactive<TranscodeOptions>({
 });
 
 const selectedPlatforms = ref<Platform[]>(["douyin"]);
-
 const outputSummary = computed(() => {
   if (!sourceMeta.value) return "等待导入";
   return `${sourceMeta.value.width}x${sourceMeta.value.height} / ${sourceMeta.value.fps}fps / ${sourceMeta.value.colorProfile}`;
@@ -91,6 +91,7 @@ const fileType = computed(() => sourceMeta.value?.fileType ?? "video");
 const isVideo = computed(() => fileType.value === "video");
 const isImage = computed(() => fileType.value === "image");
 const isAudio = computed(() => fileType.value === "audio");
+const isStandaloneAudioTooShort = computed(() => checkStandaloneAudioTooShort(sourceMeta.value));
 const fileTypeLabel = computed(() => {
   if (isImage.value) return "图片";
   if (isAudio.value) return "音频";
@@ -135,7 +136,9 @@ async function handleSourceSelect(path: string) {
   if (type === "image") {
     statusMessage.value = "图片已就绪";
   } else if (type === "audio") {
-    statusMessage.value = "音频已就绪";
+    statusMessage.value = isStandaloneAudioTooShort.value
+      ? "音频时长不足 30 秒，请选择完整作品或更长片段"
+      : "音频已就绪";
   } else if (sourceMeta.value.isHdr) {
     statusMessage.value = "HDR 已识别";
   } else {
@@ -206,6 +209,13 @@ function setProgress(payload: Partial<PipelineProgressPayload>) {
   progress.platformPercents = payload.platformPercents ?? progress.platformPercents;
 }
 
+function userFacingPipelineStage(stage: string) {
+  if (stage.includes("audio_protection_min_duration")) {
+    return "失败：音频时长不足 30 秒，请选择完整作品或更长片段";
+  }
+  return stage;
+}
+
 async function confirmRewriteRisk() {
   if (!options.allowRewrite || isVideo.value) return true;
 
@@ -242,6 +252,15 @@ async function handleStart() {
   }
   if (!isImage.value && systemStatus.value && !systemStatus.value.ffmpegAvailable) {
     statusMessage.value = "未找到 FFmpeg，请先安装";
+    return;
+  }
+  if (isStandaloneAudioTooShort.value) {
+    statusMessage.value = "音频时长不足 30 秒，请选择完整作品或更长片段";
+    trackFeatureEvent("watermark_audio", "failure", {
+      mediaType: "audio",
+      errorCode: "audio_duration_too_short",
+      source: "preflight",
+    });
     return;
   }
   if (systemStatus.value && !systemStatus.value.outputDirWritable) {
@@ -366,17 +385,21 @@ onMounted(async () => {
   systemStatus.value = await systemCheck();
 
   unlistenProgress = await listenPipelineProgress((payload) => {
-    setProgress(payload);
+    const nextPayload = {
+      ...payload,
+      stage: userFacingPipelineStage(payload.stage),
+    };
+    setProgress(nextPayload);
     if (payload.percent >= 100) {
       busy.value = false;
       statusMessage.value = "完成";
-    } else if (payload.stage.startsWith("失败")) {
+    } else if (nextPayload.stage.startsWith("失败")) {
       busy.value = false;
-      statusMessage.value = payload.stage;
+      statusMessage.value = nextPayload.stage;
       trackFeatureEvent(currentFeatureName(), "failure", {
         mediaType: currentMediaType(),
         errorCode: "pipeline_runtime_failed",
-        source: payload.stage,
+        source: nextPayload.stage,
       });
     }
   });
@@ -519,8 +542,12 @@ onUnmounted(() => {
               <span>
                 {{ isImage
                   ? '将生成 PNG 保护副本，并在完成前回读验证版权编号。'
-                  : '将生成 WAV 保护副本，并在完成前回读验证版权编号。' }}
+                  : '支持 30 秒以上音频作品。将生成 WAV 保护副本，并在完成前回读验证版权编号。' }}
               </span>
+            </div>
+            <div v-if="isStandaloneAudioTooShort" class="rewrite-panel__status rewrite-panel__status--danger">
+              <strong>音频时长不足</strong>
+              <span>当前音频短于 30 秒，暂不生成版权保护副本。请选择完整作品或更长片段。</span>
             </div>
             <label class="rewrite-panel__toggle">
               <input v-model="options.allowRewrite" type="checkbox" :disabled="busy" />
@@ -556,7 +583,12 @@ onUnmounted(() => {
           <AIContentMarker ref="aiMarkerRef" />
 
           <div class="action-row">
-            <button class="primary-button" type="button" :disabled="busy || !sourceMeta" @click="handleStart">
+            <button
+              class="primary-button"
+              type="button"
+              :disabled="busy || !sourceMeta || isStandaloneAudioTooShort"
+              @click="handleStart"
+            >
               {{ isVideo ? '开始处理' : '生成保护副本' }}
             </button>
             <button class="ghost-button" type="button" :disabled="!busy" @click="handleCancel">

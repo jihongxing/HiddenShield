@@ -6,7 +6,7 @@
 
 - **多平台视频压制**：一键输出抖音/B站/小红书最优规格（分辨率、帧率、码率）
 - **DWT-DCT-SVD 图片盲水印**：抗 JPEG 压缩、缩放、裁剪、截图
-- **QIM 频域音频盲水印**：抗重编码、格式转换
+- **QIM 频域音频盲水印**：面向 30 秒以上音频作品，抗重编码、格式转换
 - **视频音轨盲水印**：无感嵌入版权基因
 - **RFC 3161 可信时间戳**：第三方权威机构签发，防伪造时间
 - **本地版权金库**：SQLite 存证，零上传
@@ -67,6 +67,12 @@ npm run dev:stack
 
 详细流程见 [桌面 / 移动 / 云同步联调指南](docs/桌面移动云同步联调指南.md)。
 
+### 音频版权保护边界
+
+HiddenShield 的音频盲水印面向完整作品或可独立追索的音频内容。桌面端和移动端默认只为 **30 秒及以上** 的音频生成版权保护副本；短于 30 秒的片段暂不作为产品承诺范围。
+
+取证时，较短片段仍可能命中已写入的水印，但这属于辅助检测结果，不代表任意 5 秒或 10 秒片段都可稳定恢复完整版权信息。
+
 ### 前提条件
 
 - Node.js 18+
@@ -99,8 +105,8 @@ npx tauri build
 
 ## 致谢
 
-- [guofei9987/blind_watermark](https://github.com/guofei9987/blind_watermark) — 图片盲水印 DWT-DCT-SVD 算法参考，本项目基于其核心思路用纯 Rust 重新实现
-- [guofei9987/signal-transforms](https://github.com/guofei9987/signal-transforms) — Rust DCT 变换库参考
+- [guofei9987/blind_watermark](https://github.com/guofei9987/blind_watermark) — 图片盲水印 DWT-DCT-SVD 算法参考。本项目仅参考其核心思路，并基于 HiddenShield 的版权取证场景用纯 Rust 独立实现；同时额外增强了重复写入防覆盖、裁剪取证、同步备份层和版权库记录能力。
+- [guofei9987/signal-transforms](https://github.com/guofei9987/signal-transforms) — Rust DCT / 变换库参考。本项目未直接复用其产品逻辑，水印写入、提取、回归验证和跨端版权流程均为独立实现。
 
 ## 许可证
 

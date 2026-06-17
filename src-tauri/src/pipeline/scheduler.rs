@@ -25,7 +25,10 @@ use crate::tsa;
 use crate::utils::fs as ufs;
 use crate::utils::hash;
 use crate::AppState;
-use watermark_core::{EmbedOptions, ImageOutputFormat, MediaInput, MediaOutput, WatermarkService};
+use watermark_core::{
+    AudioProtectionMode, EmbedOptions, ImageOutputFormat, MediaInput, MediaOutput,
+    WatermarkService,
+};
 
 // ---------------------------------------------------------------------------
 // Pipeline Complete Payload
@@ -355,7 +358,10 @@ async fn run_video_pipeline(
     let embedded = WatermarkService::embed(
         MediaInput::AudioWavBytes { bytes: wav_bytes },
         &payload,
-        EmbedOptions::default(),
+        EmbedOptions {
+            audio_protection_mode: AudioProtectionMode::VideoTrack,
+            ..EmbedOptions::default()
+        },
     )
     .map_err(|e| PipelineError::WatermarkEmbedFailed(e.to_string()))?;
 
