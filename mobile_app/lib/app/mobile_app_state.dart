@@ -272,7 +272,8 @@ class MobileAppState extends ChangeNotifier {
         'cloud_sync': true,
       },
       entitlementLastCheckedAt: now,
-      cloudBaseUrl: _cloudAccountClient?.baseUrl ??
+      cloudBaseUrl:
+          _cloudAccountClient?.baseUrl ??
           HiddenShieldSystemConfig.fallback.cloudBaseUrl,
       updatedAt: now,
       clearLastError: true,
@@ -1274,6 +1275,7 @@ SyncTransport _defaultSyncTransportFactory(
       baseUrl: pairingProfile.cloudBaseUrl,
       authToken: pairingProfile.authToken,
       deviceId: pairingProfile.deviceId,
+      workspaceId: pairingProfile.workspaceId,
     ),
     SyncTransportMode.lanDebug => LanDebugSyncTransport(
       lanDebugAddress: pairingProfile.lanDebugAddress,

@@ -41,6 +41,7 @@ const batch = await request(
   '/v1/sync/events:batch',
   {
     deviceId,
+    workspaceId: session.body.workspace.id,
     events: [
       {
         clientEventId: queueId,
@@ -66,7 +67,79 @@ console.log(`events:batch: ${batch.status} accepted=${batch.body.accepted}`);
 assert(batch.status === 200, 'events:batch must return 200');
 assert(batch.body.acceptedEventIds?.includes(queueId), 'events:batch must accept the client event id');
 
-const changes = await request('GET', '/v1/sync/changes', null, token);
+const missingToken = await request(
+  'POST',
+  '/v1/sync/events:batch',
+  {
+    deviceId,
+    workspaceId: session.body.workspace.id,
+    events: [
+      {
+        clientEventId: `${queueId}-missing-token`,
+        operation: 'upsertVaultRecord',
+        entityType: 'vaultRecord',
+        entityId: `${recordId}-missing-token`,
+        payload: { id: `${recordId}-missing-token`, watermark_uid: 'missing-token' },
+      },
+    ],
+  },
+);
+assert(missingToken.status === 401, 'events:batch without token must return 401');
+
+const wrongDevice = await request(
+  'POST',
+  '/v1/sync/events:batch',
+  {
+    deviceId: `${deviceId}-other`,
+    workspaceId: session.body.workspace.id,
+    events: [
+      {
+        clientEventId: `${queueId}-wrong-device`,
+        operation: 'upsertVaultRecord',
+        entityType: 'vaultRecord',
+        entityId: `${recordId}-wrong-device`,
+        payload: { id: `${recordId}-wrong-device`, watermark_uid: 'wrong-device' },
+      },
+    ],
+  },
+  token,
+);
+assert(wrongDevice.status === 401, 'events:batch with mismatched device must return 401');
+
+const wrongWorkspace = await request(
+  'POST',
+  '/v1/sync/events:batch',
+  {
+    deviceId,
+    workspaceId: `${session.body.workspace.id}-other`,
+    events: [
+      {
+        clientEventId: `${queueId}-wrong-workspace`,
+        operation: 'upsertVaultRecord',
+        entityType: 'vaultRecord',
+        entityId: `${recordId}-wrong-workspace`,
+        payload: { id: `${recordId}-wrong-workspace`, watermark_uid: 'wrong-workspace' },
+      },
+    ],
+  },
+  token,
+);
+assert(wrongWorkspace.status === 403, 'events:batch with mismatched workspace must return 403');
+
+const wrongWorkspaceChanges = await request(
+  'GET',
+  `/v1/sync/changes?workspaceId=${encodeURIComponent(`${session.body.workspace.id}-other`)}`,
+  null,
+  token,
+);
+assert(wrongWorkspaceChanges.status === 403, 'changes with mismatched workspace must return 403');
+
+const changes = await request(
+  'GET',
+  `/v1/sync/changes?workspaceId=${encodeURIComponent(session.body.workspace.id)}`,
+  null,
+  token,
+);
 console.log(`changes: ${changes.status} count=${changes.body.changes?.length ?? 0}`);
 assert(changes.status === 200, 'changes must return 200');
 assert(Boolean(changes.body.nextCursor), 'changes must return nextCursor');
@@ -76,7 +149,12 @@ assert(synced.entityType === 'vaultRecord', 'change entityType must be vaultReco
 assert(synced.operation === 'upsert', 'change operation must be upsert');
 assert(synced.entity.watermark_uid === 'contract-watermark', 'change entity must preserve watermark_uid');
 
-const emptyChanges = await request('GET', `/v1/sync/changes?cursor=${encodeURIComponent(changes.body.nextCursor)}`, null, token);
+const emptyChanges = await request(
+  'GET',
+  `/v1/sync/changes?workspaceId=${encodeURIComponent(session.body.workspace.id)}&cursor=${encodeURIComponent(changes.body.nextCursor)}`,
+  null,
+  token,
+);
 console.log(`changes after cursor: ${emptyChanges.status} count=${emptyChanges.body.changes?.length ?? 0}`);
 assert(emptyChanges.status === 200, 'changes after cursor must return 200');
 assert((emptyChanges.body.changes?.length ?? 0) === 0, 'changes after nextCursor must be empty');

@@ -26,13 +26,25 @@ use crate::storage::{Storage, StorageError};
 
 #[derive(Debug, Parser, Clone)]
 pub struct ServerArgs {
-    #[arg(long, env = "HIDDENSHIELD_FEEDBACK_BIND_ADDR", default_value = "127.0.0.1:8787")]
+    #[arg(
+        long,
+        env = "HIDDENSHIELD_FEEDBACK_BIND_ADDR",
+        default_value = "127.0.0.1:8787"
+    )]
     pub bind_addr: SocketAddr,
 
-    #[arg(long, env = "HIDDENSHIELD_FEEDBACK_DB_PATH", default_value = "feedback.sqlite")]
+    #[arg(
+        long,
+        env = "HIDDENSHIELD_FEEDBACK_DB_PATH",
+        default_value = "feedback.sqlite"
+    )]
     pub db_path: PathBuf,
 
-    #[arg(long, env = "HIDDENSHIELD_FEEDBACK_RETENTION_DAYS", default_value_t = 180)]
+    #[arg(
+        long,
+        env = "HIDDENSHIELD_FEEDBACK_RETENTION_DAYS",
+        default_value_t = 180
+    )]
     pub retention_days: i64,
 }
 
@@ -65,6 +77,8 @@ pub enum ApiError {
     BadRequest(String),
     #[error("unauthorized")]
     Unauthorized,
+    #[error("forbidden")]
+    Forbidden,
     #[error("storage error")]
     Storage(String),
 }
@@ -72,9 +86,24 @@ pub enum ApiError {
 impl IntoResponse for ApiError {
     fn into_response(self) -> axum::response::Response {
         let (status, error, message) = match self {
-            ApiError::BadRequest(message) => (StatusCode::BAD_REQUEST, "bad_request".to_string(), message),
-            ApiError::Unauthorized => (StatusCode::UNAUTHORIZED, "unauthorized".to_string(), "unauthorized".to_string()),
-            ApiError::Storage(message) => (StatusCode::INTERNAL_SERVER_ERROR, "storage_error".to_string(), message),
+            ApiError::BadRequest(message) => {
+                (StatusCode::BAD_REQUEST, "bad_request".to_string(), message)
+            }
+            ApiError::Unauthorized => (
+                StatusCode::UNAUTHORIZED,
+                "unauthorized".to_string(),
+                "unauthorized".to_string(),
+            ),
+            ApiError::Forbidden => (
+                StatusCode::FORBIDDEN,
+                "forbidden".to_string(),
+                "forbidden".to_string(),
+            ),
+            ApiError::Storage(message) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "storage_error".to_string(),
+                message,
+            ),
         };
         (status, Json(ApiErrorResponse { error, message })).into_response()
     }
@@ -102,7 +131,10 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let app = build_app(storage);
     let listener = tokio::net::TcpListener::bind(args.bind_addr).await?;
 
-    tracing::info!("HiddenShield feedback backend listening on {}", args.bind_addr);
+    tracing::info!(
+        "HiddenShield feedback backend listening on {}",
+        args.bind_addr
+    );
     axum::serve(listener, app.into_make_service()).await?;
     Ok(())
 }
@@ -123,7 +155,12 @@ async fn continue_account(
     Json(request): Json<ContinueAccountRequest>,
 ) -> Result<Json<crate::schema::CloudAccountSession>, ApiError> {
     validate_continue_account(&request)?;
-    Ok(Json(state.storage.continue_account(&request).map_err(ApiError::from)?))
+    Ok(Json(
+        state
+            .storage
+            .continue_account(&request)
+            .map_err(ApiError::from)?,
+    ))
 }
 
 async fn push_cloud_events_batch(
@@ -147,7 +184,16 @@ async fn get_cloud_changes(
     Query(query): Query<CloudChangesQuery>,
 ) -> Result<Json<CloudSyncChangesResult>, ApiError> {
     let token = bearer_token(&headers)?;
-    Ok(Json(state.storage.get_cloud_changes(token, query.cursor.as_deref()).map_err(ApiError::from)?))
+    Ok(Json(
+        state
+            .storage
+            .get_cloud_changes(
+                token,
+                query.workspace_id.as_deref(),
+                query.cursor.as_deref(),
+            )
+            .map_err(ApiError::from)?,
+    ))
 }
 
 async fn ingest_batch(
@@ -178,7 +224,9 @@ fn validate_batch(batch: &AnonymousFeedbackBatch) -> Result<(), ApiError> {
         return Err(ApiError::BadRequest("events must not be empty".to_string()));
     }
     if batch.events.len() > 1000 {
-        return Err(ApiError::BadRequest("events exceeds maximum batch size".to_string()));
+        return Err(ApiError::BadRequest(
+            "events exceeds maximum batch size".to_string(),
+        ));
     }
 
     for event in &batch.events {
@@ -190,7 +238,9 @@ fn validate_batch(batch: &AnonymousFeedbackBatch) -> Result<(), ApiError> {
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct CloudChangesQuery {
+    workspace_id: Option<String>,
     cursor: Option<String>,
 }
 
@@ -199,7 +249,9 @@ fn validate_continue_account(request: &ContinueAccountRequest) -> Result<(), Api
         return Err(ApiError::BadRequest("identifier is required".to_string()));
     }
     if request.device.client_device_id.trim().is_empty() {
-        return Err(ApiError::BadRequest("device.clientDeviceId is required".to_string()));
+        return Err(ApiError::BadRequest(
+            "device.clientDeviceId is required".to_string(),
+        ));
     }
     Ok(())
 }
@@ -208,11 +260,16 @@ fn validate_cloud_batch(batch: &CloudSyncBatchRequest) -> Result<(), ApiError> {
     if batch.device_id.trim().is_empty() {
         return Err(ApiError::BadRequest("deviceId is required".to_string()));
     }
+    if batch.workspace_id.trim().is_empty() {
+        return Err(ApiError::BadRequest("workspaceId is required".to_string()));
+    }
     if batch.events.is_empty() {
         return Err(ApiError::BadRequest("events must not be empty".to_string()));
     }
     if batch.events.len() > 100 {
-        return Err(ApiError::BadRequest("events exceeds maximum batch size".to_string()));
+        return Err(ApiError::BadRequest(
+            "events exceeds maximum batch size".to_string(),
+        ));
     }
     Ok(())
 }
@@ -234,6 +291,7 @@ impl From<StorageError> for ApiError {
     fn from(value: StorageError) -> Self {
         match value {
             StorageError::Unauthorized => ApiError::Unauthorized,
+            StorageError::Forbidden => ApiError::Forbidden,
             StorageError::BadRequest(message) => ApiError::BadRequest(message),
             other => ApiError::Storage(other.to_string()),
         }
@@ -274,15 +332,27 @@ mod tests {
             events: vec![],
         };
 
-        assert!(matches!(validate_batch(&batch), Err(ApiError::BadRequest(_))));
+        assert!(matches!(
+            validate_batch(&batch),
+            Err(ApiError::BadRequest(_))
+        ));
 
         batch.install_id = "inst-1".to_string();
-        assert!(matches!(validate_batch(&batch), Err(ApiError::BadRequest(_))));
+        assert!(matches!(
+            validate_batch(&batch),
+            Err(ApiError::BadRequest(_))
+        ));
 
         batch.session_id = "sess-1".to_string();
-        assert!(matches!(validate_batch(&batch), Err(ApiError::BadRequest(_))));
+        assert!(matches!(
+            validate_batch(&batch),
+            Err(ApiError::BadRequest(_))
+        ));
 
         batch.events.push(sample_event(""));
-        assert!(matches!(validate_batch(&batch), Err(ApiError::BadRequest(_))));
+        assert!(matches!(
+            validate_batch(&batch),
+            Err(ApiError::BadRequest(_))
+        ));
     }
 }

@@ -5,8 +5,8 @@ use chrono::{Duration, Utc};
 use rusqlite::{params, params_from_iter, Connection, TransactionBehavior};
 
 use crate::schema::{
-    AnonymousFeedbackBatch, AnonymousFeedbackBatchAck, AnonymousFeedbackEvent,
-    AnonymousFeedbackStatsQuery, AnonymousFeedbackStatsResponse, AnonymousEventOutcome,
+    AnonymousEventOutcome, AnonymousFeedbackBatch, AnonymousFeedbackBatchAck,
+    AnonymousFeedbackEvent, AnonymousFeedbackStatsQuery, AnonymousFeedbackStatsResponse,
     CloudAccount, CloudAccountSession, CloudCreatorProfile, CloudDevice, CloudEntitlement,
     CloudSyncBatchRequest, CloudSyncBatchResult, CloudSyncChange, CloudSyncChangesResult,
     CloudWorkspace, FeedbackStatRow, FeedbackTotals, StatsDimension,
@@ -20,6 +20,8 @@ pub enum StorageError {
     InvalidRetentionDays,
     #[error("unauthorized")]
     Unauthorized,
+    #[error("forbidden")]
+    Forbidden,
     #[error("bad request: {0}")]
     BadRequest(String),
 }
@@ -277,8 +279,19 @@ impl Storage {
         if session.device_id != device_id {
             return Err(StorageError::Unauthorized);
         }
+        let workspace_id = request.workspace_id.trim();
+        if workspace_id.is_empty() {
+            return Err(StorageError::BadRequest(
+                "workspaceId is required".to_string(),
+            ));
+        }
+        if !self.session_workspace_matches(&session.account_id, workspace_id)? {
+            return Err(StorageError::Forbidden);
+        }
         if request.events.is_empty() {
-            return Err(StorageError::BadRequest("events must not be empty".to_string()));
+            return Err(StorageError::BadRequest(
+                "events must not be empty".to_string(),
+            ));
         }
 
         let mut conn = self.conn.lock().unwrap_or_else(|e| e.into_inner());
@@ -325,9 +338,19 @@ impl Storage {
     pub fn get_cloud_changes(
         &self,
         access_token: &str,
+        workspace_id: Option<&str>,
         cursor: Option<&str>,
     ) -> Result<CloudSyncChangesResult, StorageError> {
         let session = self.authenticate(access_token)?;
+        let workspace_id = workspace_id.unwrap_or_default().trim();
+        if workspace_id.is_empty() {
+            return Err(StorageError::BadRequest(
+                "workspaceId is required".to_string(),
+            ));
+        }
+        if !self.session_workspace_matches(&session.account_id, workspace_id)? {
+            return Err(StorageError::Forbidden);
+        }
         let since_sequence = sequence_from_cursor(cursor);
 
         let conn = self.conn.lock().unwrap_or_else(|e| e.into_inner());
@@ -344,16 +367,18 @@ impl Storage {
                 entity_type: row.get(3)?,
                 operation: cloud_operation(&row.get::<_, String>(2)?),
                 source_device: Some(row.get(1)?),
-                entity: serde_json::from_str(&payload_json).unwrap_or_else(|_| serde_json::json!({})),
+                entity: serde_json::from_str(&payload_json)
+                    .unwrap_or_else(|_| serde_json::json!({})),
             })
         })?;
         let changes = rows.collect::<Result<Vec<_>, _>>()?;
 
-        let next_cursor = account_cursor_with_conn(&conn, &session.account_id)?.unwrap_or_else(|| {
-            cursor
-                .map(ToOwned::to_owned)
-                .unwrap_or_else(|| cursor_from_sequence(since_sequence as u64))
-        });
+        let next_cursor =
+            account_cursor_with_conn(&conn, &session.account_id)?.unwrap_or_else(|| {
+                cursor
+                    .map(ToOwned::to_owned)
+                    .unwrap_or_else(|| cursor_from_sequence(since_sequence as u64))
+            });
         upsert_device_cursor(&conn, &session.account_id, &session.device_id, &next_cursor)?;
 
         Ok(CloudSyncChangesResult {
@@ -386,6 +411,21 @@ impl Storage {
         }
     }
 
+    fn session_workspace_matches(
+        &self,
+        account_id: &str,
+        workspace_id: &str,
+    ) -> Result<bool, StorageError> {
+        let conn = self.conn.lock().unwrap_or_else(|e| e.into_inner());
+        let stored_workspace_id = conn
+            .query_row(
+                "SELECT workspace_id FROM cloud_accounts WHERE id = ?1",
+                params![account_id],
+                |row| row.get::<_, String>(0),
+            )
+            .optional()?;
+        Ok(stored_workspace_id.as_deref() == Some(workspace_id))
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -813,7 +853,9 @@ fn short_id(input: &str) -> String {
 fn normalize_identifier(input: &str) -> Result<String, StorageError> {
     let identifier = input.trim().to_lowercase();
     if identifier.is_empty() {
-        return Err(StorageError::BadRequest("identifier is required".to_string()));
+        return Err(StorageError::BadRequest(
+            "identifier is required".to_string(),
+        ));
     }
     Ok(identifier)
 }
@@ -882,7 +924,9 @@ fn build_filters(query: &AnonymousFeedbackStatsQuery) -> (String, Vec<rusqlite::
     }
     if let Some(ref outcome) = query.outcome {
         clauses.push("outcome = ?".to_string());
-        values.push(rusqlite::types::Value::Text(outcome_to_str(outcome).to_string()));
+        values.push(rusqlite::types::Value::Text(
+            outcome_to_str(outcome).to_string(),
+        ));
     }
 
     if clauses.is_empty() {
@@ -916,7 +960,10 @@ mod tests {
         }
     }
 
-    fn sample_continue_request(identifier: &str, device_id: &str) -> crate::schema::ContinueAccountRequest {
+    fn sample_continue_request(
+        identifier: &str,
+        device_id: &str,
+    ) -> crate::schema::ContinueAccountRequest {
         crate::schema::ContinueAccountRequest {
             identifier: identifier.to_string(),
             verification_code: "000000".to_string(),
@@ -969,7 +1016,9 @@ mod tests {
         };
         storage.ingest_batch(&batch).unwrap();
 
-        let stats = storage.query_stats(&AnonymousFeedbackStatsQuery::default()).unwrap();
+        let stats = storage
+            .query_stats(&AnonymousFeedbackStatsQuery::default())
+            .unwrap();
         assert_eq!(stats.totals.total_events, 1);
         assert_eq!(stats.totals.failure_events, 1);
         assert_eq!(stats.rows.len(), 1);
@@ -979,7 +1028,9 @@ mod tests {
     fn continue_account_returns_session_and_persists() {
         let file = NamedTempFile::new().unwrap();
         let storage = Storage::open(file.path(), 30).unwrap();
-        let session = storage.continue_account(&sample_continue_request("alice@example.com", "dev-1")).unwrap();
+        let session = storage
+            .continue_account(&sample_continue_request("alice@example.com", "dev-1"))
+            .unwrap();
         assert_eq!(session.account.display_name, "alice@example.com");
         assert_eq!(session.workspace.name, "个人空间");
         assert_eq!(session.device.id, "dev-1");
@@ -991,9 +1042,12 @@ mod tests {
     fn push_and_pull_cloud_events_round_trip() {
         let file = NamedTempFile::new().unwrap();
         let storage = Storage::open(file.path(), 30).unwrap();
-        let session = storage.continue_account(&sample_continue_request("alice@example.com", "dev-1")).unwrap();
+        let session = storage
+            .continue_account(&sample_continue_request("alice@example.com", "dev-1"))
+            .unwrap();
         let batch = CloudSyncBatchRequest {
             device_id: "dev-1".to_string(),
+            workspace_id: session.workspace.id.clone(),
             events: vec![crate::schema::CloudSyncEvent {
                 client_event_id: "evt-1".to_string(),
                 operation: "upsertVaultRecord".to_string(),
@@ -1010,14 +1064,65 @@ mod tests {
                 }),
             }],
         };
-        let result = storage.push_cloud_events_batch(&session.access_token, &batch).unwrap();
+        let result = storage
+            .push_cloud_events_batch(&session.access_token, &batch)
+            .unwrap();
         assert_eq!(result.accepted, 1);
         assert_eq!(result.accepted_event_ids, vec!["evt-1".to_string()]);
 
-        let changes = storage.get_cloud_changes(&session.access_token, None).unwrap();
+        let changes = storage
+            .get_cloud_changes(&session.access_token, Some(&session.workspace.id), None)
+            .unwrap();
         assert_eq!(changes.changes.len(), 1);
         assert_eq!(changes.changes[0].entity_type, "vaultRecord");
         assert_eq!(changes.changes[0].operation, "upsert");
         assert_eq!(changes.changes[0].entity["watermark_uid"], "uid-1");
+    }
+
+    #[test]
+    fn push_cloud_events_rejects_device_and_workspace_mismatch() {
+        let file = NamedTempFile::new().unwrap();
+        let storage = Storage::open(file.path(), 30).unwrap();
+        let session = storage
+            .continue_account(&sample_continue_request("alice@example.com", "dev-1"))
+            .unwrap();
+        let event = crate::schema::CloudSyncEvent {
+            client_event_id: "evt-guard".to_string(),
+            operation: "upsertVaultRecord".to_string(),
+            entity_type: "vaultRecord".to_string(),
+            entity_id: "record-guard".to_string(),
+            payload: serde_json::json!({
+                "id": "record-guard",
+                "kind": "image",
+                "title": "guard.png",
+                "watermark_uid": "uid-guard",
+                "revision": 1,
+                "created_at": "2026-06-16T12:00:00Z"
+            }),
+        };
+        let wrong_device = CloudSyncBatchRequest {
+            device_id: "dev-other".to_string(),
+            workspace_id: session.workspace.id.clone(),
+            events: vec![event.clone()],
+        };
+        assert!(matches!(
+            storage.push_cloud_events_batch(&session.access_token, &wrong_device),
+            Err(StorageError::Unauthorized)
+        ));
+
+        let wrong_workspace = CloudSyncBatchRequest {
+            device_id: "dev-1".to_string(),
+            workspace_id: "ws-other".to_string(),
+            events: vec![event],
+        };
+        assert!(matches!(
+            storage.push_cloud_events_batch(&session.access_token, &wrong_workspace),
+            Err(StorageError::Forbidden)
+        ));
+
+        assert!(matches!(
+            storage.get_cloud_changes(&session.access_token, Some("ws-other"), None),
+            Err(StorageError::Forbidden)
+        ));
     }
 }

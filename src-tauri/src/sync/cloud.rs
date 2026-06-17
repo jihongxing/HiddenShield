@@ -226,6 +226,7 @@ impl CloudSyncClient {
         &self,
         access_token: &str,
         device_id: &str,
+        workspace_id: &str,
         events: Vec<CloudSyncEvent>,
     ) -> Result<CloudSyncBatchResult, String> {
         if access_token.trim().is_empty() {
@@ -234,11 +235,15 @@ impl CloudSyncClient {
         if device_id.trim().is_empty() {
             return Err("云同步 deviceId 为空".to_string());
         }
+        if workspace_id.trim().is_empty() {
+            return Err("云同步 workspaceId 为空".to_string());
+        }
         if events.is_empty() {
             return Err("云同步事件为空".to_string());
         }
         let body = json!({
             "deviceId": device_id,
+            "workspaceId": workspace_id,
             "events": events,
         });
         self.post_json("/v1/sync/events:batch", Some(access_token), &body)
@@ -247,14 +252,18 @@ impl CloudSyncClient {
     pub fn fetch_changes(
         &self,
         access_token: &str,
+        workspace_id: &str,
         cursor: Option<&str>,
     ) -> Result<CloudSyncChangesResult, String> {
         if access_token.trim().is_empty() {
             return Err("云同步 access token 为空".to_string());
         }
-        let mut path = "/v1/sync/changes".to_string();
+        if workspace_id.trim().is_empty() {
+            return Err("云同步 workspaceId 为空".to_string());
+        }
+        let mut path = format!("/v1/sync/changes?workspaceId={}", workspace_id.trim());
         if let Some(cursor) = cursor.filter(|value| !value.trim().is_empty()) {
-            path.push_str("?cursor=");
+            path.push_str("&cursor=");
             path.push_str(cursor);
         }
         self.get_json(&path, access_token)

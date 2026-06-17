@@ -78,6 +78,7 @@ class CloudSyncTransport implements SyncTransport {
     required this.baseUrl,
     required this.authToken,
     required this.deviceId,
+    required this.workspaceId,
     http.Client? client,
     Duration timeout = const Duration(seconds: 10),
   }) : _client = client ?? http.Client(),
@@ -86,6 +87,7 @@ class CloudSyncTransport implements SyncTransport {
   final String? baseUrl;
   final String? authToken;
   final String? deviceId;
+  final String? workspaceId;
   final http.Client _client;
   final Duration _timeout;
 
@@ -119,6 +121,12 @@ class CloudSyncTransport implements SyncTransport {
         'cloud sync device is not registered',
       );
     }
+    if (workspaceId?.isNotEmpty != true) {
+      return SyncBatchSendResult.failureForAll(
+        items,
+        'cloud sync workspace is not registered',
+      );
+    }
 
     final endpoint = baseUri.resolve('/v1/sync/events:batch');
     try {
@@ -131,6 +139,7 @@ class CloudSyncTransport implements SyncTransport {
             },
             body: jsonEncode({
               'deviceId': deviceId,
+              'workspaceId': workspaceId,
               'events': items.map(_cloudEventBody).toList(growable: false),
             }),
           )
@@ -175,11 +184,20 @@ class CloudSyncTransport implements SyncTransport {
         'cloud sync base URL is not configured',
       );
     }
+    if (workspaceId?.isNotEmpty != true) {
+      return const SyncChangesResult.failure(
+        'cloud sync workspace is not registered',
+      );
+    }
+    final queryParameters = <String, String>{
+      'workspaceId': workspaceId!.trim(),
+    };
+    if (since != null && since.isNotEmpty) {
+      queryParameters['cursor'] = since;
+    }
     final endpoint = baseUri.replace(
       path: '/v1/sync/changes',
-      queryParameters: since == null || since.isEmpty
-          ? null
-          : {'cursor': since},
+      queryParameters: queryParameters,
     );
     try {
       final response = await _client

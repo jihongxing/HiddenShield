@@ -97,6 +97,7 @@ pub struct CloudSyncEvent {
 #[serde(rename_all = "camelCase")]
 pub struct CloudSyncBatchRequest {
     pub device_id: String,
+    pub workspace_id: String,
     pub events: Vec<CloudSyncEvent>,
 }
 

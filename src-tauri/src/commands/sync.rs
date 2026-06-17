@@ -41,6 +41,7 @@ pub struct PushDesktopVaultRecordInput {
     pub base_url: String,
     pub access_token: String,
     pub device_id: String,
+    pub workspace_id: String,
     pub record_id: u32,
 }
 
@@ -49,6 +50,7 @@ pub struct PushDesktopVaultRecordInput {
 pub struct FetchCloudChangesInput {
     pub base_url: String,
     pub access_token: String,
+    pub workspace_id: String,
     pub cursor: Option<String>,
 }
 
@@ -218,6 +220,7 @@ pub async fn push_desktop_vault_record_to_cloud(
     CloudSyncClient::new(input.base_url)?.send_events_batch(
         &input.access_token,
         &input.device_id,
+        &input.workspace_id,
         vec![event],
     )
 }
@@ -248,8 +251,11 @@ pub async fn push_saved_desktop_vault_record_to_cloud(
 pub async fn fetch_cloud_changes(
     input: FetchCloudChangesInput,
 ) -> Result<CloudSyncChangesResult, String> {
-    CloudSyncClient::new(input.base_url)?
-        .fetch_changes(&input.access_token, input.cursor.as_deref())
+    CloudSyncClient::new(input.base_url)?.fetch_changes(
+        &input.access_token,
+        &input.workspace_id,
+        input.cursor.as_deref(),
+    )
 }
 
 #[tauri::command]
@@ -263,8 +269,11 @@ pub async fn pull_saved_cloud_changes_into_desktop(
         .map_err(|e| format!("failed to resolve app data directory: {e}"))?;
     let mut profile = load_desktop_cloud_sync_profile(&app_data_dir)
         .ok_or_else(|| "尚未继续使用 HiddenShield 账户".to_string())?;
-    let changes = CloudSyncClient::new(&profile.cloud_base_url)?
-        .fetch_changes(&profile.access_token, profile.last_remote_cursor.as_deref())?;
+    let changes = CloudSyncClient::new(&profile.cloud_base_url)?.fetch_changes(
+        &profile.access_token,
+        &profile.workspace_id,
+        profile.last_remote_cursor.as_deref(),
+    )?;
 
     let mut applied = 0u32;
     let mut skipped = 0u32;
@@ -389,6 +398,7 @@ fn flush_cloud_queue_with_profile(
     let result = CloudSyncClient::new(&profile.cloud_base_url)?.send_events_batch(
         &profile.access_token,
         &profile.device_id,
+        &profile.workspace_id,
         events,
     );
     match result {

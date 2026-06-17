@@ -18,6 +18,7 @@ const server = createServer(async (request, response) => {
         service: 'hidden-shield-cloud-sync-mock',
         accounts: accountsByIdentifier.size,
         events: events.length,
+        cloudSync: true,
       });
     }
 
@@ -97,7 +98,11 @@ async function handleAuthContinue(request, response) {
   account.devices.set(deviceId, device);
 
   const accessToken = `mock_${account.id}_${deviceId}_${Date.now()}`;
-  sessions.set(accessToken, { accountId: account.id, deviceId });
+  sessions.set(accessToken, {
+    accountId: account.id,
+    deviceId,
+    workspaceId: account.workspace.id,
+  });
 
   sendJson(response, 200, {
     accessToken,
@@ -121,6 +126,16 @@ async function handleEventsBatch(request, response) {
   const incomingEvents = Array.isArray(body.events) ? body.events : [];
   if (!deviceId) {
     return sendJson(response, 400, { error: 'device_id_required' });
+  }
+  if (session.deviceId !== deviceId) {
+    return sendJson(response, 401, { error: 'unauthorized' });
+  }
+  const workspaceId = String(body.workspaceId ?? '').trim();
+  if (!workspaceId) {
+    return sendJson(response, 400, { error: 'workspace_id_required' });
+  }
+  if (session.workspaceId !== workspaceId) {
+    return sendJson(response, 403, { error: 'forbidden' });
   }
   if (incomingEvents.length === 0) {
     return sendJson(response, 400, { error: 'events_required' });
@@ -160,6 +175,13 @@ function handleChanges(request, response, url) {
   const session = authenticate(request);
   if (!session) {
     return sendJson(response, 401, { error: 'unauthorized' });
+  }
+  const workspaceId = String(url.searchParams.get('workspaceId') ?? '').trim();
+  if (!workspaceId) {
+    return sendJson(response, 400, { error: 'workspace_id_required' });
+  }
+  if (session.workspaceId !== workspaceId) {
+    return sendJson(response, 403, { error: 'forbidden' });
   }
 
   const cursor = url.searchParams.get('cursor');

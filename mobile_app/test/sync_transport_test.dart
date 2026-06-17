@@ -86,6 +86,7 @@ void main() {
       baseUrl: 'https://api.hiddenshield.test',
       authToken: 'access-token',
       deviceId: 'device-1',
+      workspaceId: 'ws-1',
       client: MockClient((request) async {
         capturedUri = request.url;
         capturedHeaders = request.headers;
@@ -107,6 +108,7 @@ void main() {
     expect(capturedHeaders['authorization'], 'Bearer access-token');
     expect(capturedHeaders['content-type'], 'application/json');
     expect(capturedBody['deviceId'], 'device-1');
+    expect(capturedBody['workspaceId'], 'ws-1');
     final events = capturedBody['events']! as List<dynamic>;
     final event = events.single as Map<String, Object?>;
     expect(event['clientEventId'], 'queue-1');
@@ -123,6 +125,7 @@ void main() {
       baseUrl: 'https://api.hiddenshield.test',
       authToken: 'access-token',
       deviceId: 'device-1',
+      workspaceId: 'ws-1',
       client: MockClient((request) async {
         capturedUri = request.url;
         capturedHeaders = request.headers;
@@ -153,7 +156,7 @@ void main() {
     expect(result.isSuccess, isTrue);
     expect(
       capturedUri.toString(),
-      'https://api.hiddenshield.test/v1/sync/changes?cursor=cursor-1',
+      'https://api.hiddenshield.test/v1/sync/changes?workspaceId=ws-1&cursor=cursor-1',
     );
     expect(capturedHeaders['authorization'], 'Bearer access-token');
     expect(result.nextSince, 'cursor-2');
@@ -170,6 +173,7 @@ void main() {
       baseUrl: 'https://api.hiddenshield.test',
       authToken: '',
       deviceId: 'device-1',
+      workspaceId: 'ws-1',
       client: MockClient((_) async => http.Response('never', 200)),
     ).send(item);
     expect(missingToken.isSuccess, isFalse);
@@ -182,6 +186,7 @@ void main() {
       baseUrl: '',
       authToken: 'access-token',
       deviceId: 'device-1',
+      workspaceId: 'ws-1',
       client: MockClient((_) async => http.Response('never', 200)),
     ).send(item);
     expect(missingBaseUrl.isSuccess, isFalse);
@@ -194,12 +199,26 @@ void main() {
       baseUrl: 'https://api.hiddenshield.test',
       authToken: 'access-token',
       deviceId: '',
+      workspaceId: 'ws-1',
       client: MockClient((_) async => http.Response('never', 200)),
     ).send(item);
     expect(missingDevice.isSuccess, isFalse);
     expect(
       missingDevice.error,
       contains('cloud sync device is not registered'),
+    );
+
+    final missingWorkspace = await CloudSyncTransport(
+      baseUrl: 'https://api.hiddenshield.test',
+      authToken: 'access-token',
+      deviceId: 'device-1',
+      workspaceId: '',
+      client: MockClient((_) async => http.Response('never', 200)),
+    ).send(item);
+    expect(missingWorkspace.isSuccess, isFalse);
+    expect(
+      missingWorkspace.error,
+      contains('cloud sync workspace is not registered'),
     );
   });
 

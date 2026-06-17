@@ -42,7 +42,7 @@ assert(
 );
 assert(
   desktopSession.device.id !== mobileSession.device.id,
-  'desktop and mobile must register as separate devices',
+    'desktop and mobile must register as separate devices',
 );
 assert(
   desktopSession.entitlement.features?.cloud_sync === true &&
@@ -50,9 +50,11 @@ assert(
   'cloud_sync entitlement must be enabled on both clients',
 );
 
-const desktopBaseline = await changes(desktopSession.accessToken);
-const mobileBaseline = await changes(mobileSession.accessToken);
+const desktopBaseline = await changes(desktopSession);
+const mobileBaseline = await changes(mobileSession);
 console.log(`baseline cursors: desktop=${desktopBaseline.nextCursor} mobile=${mobileBaseline.nextCursor}`);
+
+await assertRejectedSyncBoundaries(desktopSession);
 
 await pushBatch(desktopSession, desktopDeviceId, [
   {
@@ -76,7 +78,7 @@ await pushBatch(desktopSession, desktopDeviceId, [
 ]);
 
 const mobilePullAfterDesktop = await changes(
-  mobileSession.accessToken,
+  mobileSession,
   mobileBaseline.nextCursor,
 );
 const desktopRecord = findChange(mobilePullAfterDesktop, desktopRecordId);
@@ -113,7 +115,7 @@ await pushBatch(mobileSession, mobileDeviceId, [
 ]);
 
 const desktopPullAfterMobile = await changes(
-  desktopSession.accessToken,
+  desktopSession,
   desktopBaseline.nextCursor,
 );
 const mobileRecord = findChange(desktopPullAfterMobile, mobileRecordId);
@@ -166,7 +168,7 @@ async function pushBatch(session, deviceId, events) {
   const response = await request(
     'POST',
     '/v1/sync/events:batch',
-    { deviceId, events },
+    { deviceId, workspaceId: session.workspace.id, events },
     session.accessToken,
   );
   assert(response.status === 200, `${deviceId} events:batch must return 200`);
@@ -179,11 +181,71 @@ async function pushBatch(session, deviceId, events) {
   console.log(`${deviceId}: pushed ${events.length} event(s)`);
 }
 
-async function changes(token, cursor) {
-  const path = cursor
-    ? `/v1/sync/changes?cursor=${encodeURIComponent(cursor)}`
-    : '/v1/sync/changes';
-  const response = await request('GET', path, null, token);
+async function assertRejectedSyncBoundaries(session) {
+  const event = {
+    clientEventId: `rejected-event-${runId}`,
+    operation: 'upsertVaultRecord',
+    entityType: 'vaultRecord',
+    entityId: `rejected-record-${runId}`,
+    payload: {
+      id: `rejected-record-${runId}`,
+      kind: 'image',
+      title: 'rejected.png',
+      watermark_uid: `wm-rejected-${runId}`,
+      revision: 1,
+      source: 'write',
+      created_at: new Date().toISOString(),
+    },
+  };
+
+  const missingToken = await request('POST', '/v1/sync/events:batch', {
+    deviceId: session.device.id,
+    workspaceId: session.workspace.id,
+    events: [{ ...event, clientEventId: `${event.clientEventId}-missing-token` }],
+  });
+  assert(missingToken.status === 401, 'events:batch without token must return 401');
+
+  const wrongDevice = await request(
+    'POST',
+    '/v1/sync/events:batch',
+    {
+      deviceId: `${session.device.id}-other`,
+      workspaceId: session.workspace.id,
+      events: [{ ...event, clientEventId: `${event.clientEventId}-wrong-device` }],
+    },
+    session.accessToken,
+  );
+  assert(wrongDevice.status === 401, 'events:batch with mismatched device must return 401');
+
+  const wrongWorkspace = await request(
+    'POST',
+    '/v1/sync/events:batch',
+    {
+      deviceId: session.device.id,
+      workspaceId: `${session.workspace.id}-other`,
+      events: [{ ...event, clientEventId: `${event.clientEventId}-wrong-workspace` }],
+    },
+    session.accessToken,
+  );
+  assert(wrongWorkspace.status === 403, 'events:batch with mismatched workspace must return 403');
+
+  const wrongWorkspaceChanges = await request(
+    'GET',
+    `/v1/sync/changes?workspaceId=${encodeURIComponent(`${session.workspace.id}-other`)}`,
+    null,
+    session.accessToken,
+  );
+  assert(wrongWorkspaceChanges.status === 403, 'changes with mismatched workspace must return 403');
+
+  console.log('sync boundary rejection checks passed');
+}
+
+async function changes(session, cursor) {
+  const params = new URLSearchParams({ workspaceId: session.workspace.id });
+  if (cursor) {
+    params.set('cursor', cursor);
+  }
+  const response = await request('GET', `/v1/sync/changes?${params}`, null, session.accessToken);
   assert(response.status === 200, 'changes must return 200');
   assert(Boolean(response.body.nextCursor), 'changes must return nextCursor');
   return response.body;

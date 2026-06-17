@@ -602,6 +602,7 @@ export async function pushDesktopVaultRecordToCloud(
   baseUrl: string,
   accessToken: string,
   deviceId: string,
+  workspaceId: string,
   recordId: number,
 ): Promise<CloudSyncBatchResult> {
   if (!isTauriRuntime()) {
@@ -614,7 +615,7 @@ export async function pushDesktopVaultRecordToCloud(
   }
   const { invoke } = await import("@tauri-apps/api/core");
   return invoke<CloudSyncBatchResult>("push_desktop_vault_record_to_cloud", {
-    input: { baseUrl, accessToken, deviceId, recordId },
+    input: { baseUrl, accessToken, deviceId, workspaceId, recordId },
   });
 }
 
@@ -667,6 +668,7 @@ export async function pullSavedCloudChangesIntoDesktop(): Promise<CloudPullResul
 export async function fetchCloudChanges(
   baseUrl: string,
   accessToken: string,
+  workspaceId: string,
   cursor?: string,
 ): Promise<CloudSyncChangesResult> {
   if (!isTauriRuntime()) {
@@ -674,7 +676,7 @@ export async function fetchCloudChanges(
   }
   const { invoke } = await import("@tauri-apps/api/core");
   return invoke<CloudSyncChangesResult>("fetch_cloud_changes", {
-    input: { baseUrl, accessToken, cursor },
+    input: { baseUrl, accessToken, workspaceId, cursor },
   });
 }
 
