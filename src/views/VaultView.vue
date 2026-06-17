@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from "vue";
 import CopyrightCard from "../components/CopyrightCard.vue";
 import ProBadge from "../components/ProBadge.vue";
 import {
+  buildCopyrightSummary,
   checkFilesExist,
   flushDesktopCloudSyncQueue,
   getDesktopCloudQueueStatus,
@@ -123,6 +124,11 @@ async function copyCloudDiagnostics() {
   }
   await navigator.clipboard.writeText(buildCloudDiagnosticsText());
   syncMessage.value = "同步诊断已复制到剪贴板";
+}
+
+async function copyLineageSummary(record: VaultRecord) {
+  await navigator.clipboard.writeText(buildCopyrightSummary(record));
+  syncMessage.value = "重写链路摘要已复制到剪贴板";
 }
 
 async function resetCloudAccountForRecovery() {
@@ -377,6 +383,9 @@ async function pullCloudChanges() {
           </div>
           <button class="ghost-button" type="button" @click="closeLineage">
             关闭
+          </button>
+          <button class="ghost-button" type="button" @click="copyLineageSummary(selectedLineageRecord)">
+            复制摘要
           </button>
         </div>
 

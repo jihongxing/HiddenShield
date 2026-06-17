@@ -164,33 +164,34 @@ function getUnmatchedReason(confidence: number): string {
         <div class="verify-result__meta">
           <span>置信度 {{ Math.round(result.confidence * 100) }}%</span>
           <span v-if="result.watermarkUid">UID {{ result.watermarkUid }}</span>
+          <span v-if="result.matchedRecord">第 {{ result.matchedRecord.revision }} 次写入</span>
         </div>
       </div>
 
       <!-- Matched record card -->
-        <div v-if="result && result.matchedRecord && result.confidence >= 0.95" class="verify-matched">
-          <CopyrightCard :record="result.matchedRecord" />
+      <div v-if="result && result.matchedRecord && result.confidence >= 0.95" class="verify-matched">
+        <CopyrightCard :record="result.matchedRecord" />
 
-          <div
-            v-if="result.matchedRecord.revision > 1 || result.matchedRecord.parentWatermarkUid"
-            class="verify-lineage"
-          >
-            <strong>水印链路</strong>
-            <div class="verify-lineage__row">
-              <span>当前版本</span>
-              <b>第 {{ result.matchedRecord.revision }} 次写入</b>
-            </div>
-            <div v-if="result.matchedRecord.parentWatermarkUid" class="verify-lineage__row">
-              <span>父级 UID</span>
-              <b>{{ result.matchedRecord.parentWatermarkUid }}</b>
-            </div>
-            <div v-if="result.matchedRecord.rewriteReason" class="verify-lineage__row">
-              <span>重写原因</span>
-              <b>{{ result.matchedRecord.rewriteReason }}</b>
-            </div>
+        <div
+          v-if="result.matchedRecord.revision > 1 || result.matchedRecord.parentWatermarkUid || result.matchedRecord.rewriteReason"
+          class="verify-lineage"
+        >
+          <strong>水印链路</strong>
+          <div class="verify-lineage__row">
+            <span>当前版本</span>
+            <b>第 {{ result.matchedRecord.revision }} 次写入</b>
           </div>
+          <div v-if="result.matchedRecord.parentWatermarkUid" class="verify-lineage__row">
+            <span>父级 UID</span>
+            <b>{{ result.matchedRecord.parentWatermarkUid }}</b>
+          </div>
+          <div v-if="result.matchedRecord.rewriteReason" class="verify-lineage__row">
+            <span>重写原因</span>
+            <b>{{ result.matchedRecord.rewriteReason }}</b>
+          </div>
+        </div>
 
-          <!-- TSA attestation badge -->
+        <!-- TSA attestation badge -->
         <div v-if="result.tsaTokenPresent || result.networkTime" class="verify-tsa">
           <strong>时间信息</strong>
           <p v-if="result.tsaTokenPresent && result.tsaTokenVerified">

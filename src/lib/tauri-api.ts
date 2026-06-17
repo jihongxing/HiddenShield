@@ -856,6 +856,7 @@ export function buildCopyrightSummary(record: VaultRecord): string {
     `水印 UID: ${record.watermarkUid}`,
     `写入版本: 第 ${record.revision} 次`,
     record.parentWatermarkUid ? `父级水印 UID: ${record.parentWatermarkUid}` : "",
+    record.rewriteReason ? `重写原因: ${record.rewriteReason}` : "",
     `原文件: ${record.fileName}`,
     `SHA-256: ${record.originalHash}`,
     `处理时间: ${record.createdAt}`,

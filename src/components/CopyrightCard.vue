@@ -47,6 +47,10 @@ async function handleCopy() {
         <span>父级 UID</span>
         <strong>{{ record.parentWatermarkUid }}</strong>
       </div>
+      <div v-if="record.rewriteReason" class="copyright-card__row">
+        <span>重写原因</span>
+        <strong>{{ record.rewriteReason }}</strong>
+      </div>
       <div class="copyright-card__row">
         <span>处理时间</span>
         <strong>{{ record.createdAt }}</strong>

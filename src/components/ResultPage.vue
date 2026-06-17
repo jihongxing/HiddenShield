@@ -26,6 +26,12 @@ const sizeInflated = computed(() => {
   return maxOutputMb > props.sourceMeta.fileSizeMb * 1.5;
 });
 
+const hasRewriteLineage = computed(() =>
+  props.payload.vaultRecord.revision > 1 ||
+  Boolean(props.payload.vaultRecord.parentWatermarkUid) ||
+  Boolean(props.payload.vaultRecord.rewriteReason),
+);
+
 async function handleOpenDir() {
   const firstOutput = props.payload.outputs[0];
   if (!firstOutput) return;
@@ -96,6 +102,20 @@ async function handleCopyPath() {
       <span>耗时 {{ processTimeFormatted }}</span>
     </section>
 
+    <section v-if="hasRewriteLineage" class="result-page__lineage">
+      <strong>水印链路</strong>
+      <div class="result-page__lineage-grid">
+        <span>当前版本</span>
+        <b>第 {{ payload.vaultRecord.revision }} 次写入</b>
+        <span>当前 UID</span>
+        <b>{{ payload.vaultRecord.watermarkUid }}</b>
+        <span v-if="payload.vaultRecord.parentWatermarkUid">父级 UID</span>
+        <b v-if="payload.vaultRecord.parentWatermarkUid">{{ payload.vaultRecord.parentWatermarkUid }}</b>
+        <span v-if="payload.vaultRecord.rewriteReason">重写原因</span>
+        <b v-if="payload.vaultRecord.rewriteReason">{{ payload.vaultRecord.rewriteReason }}</b>
+      </div>
+    </section>
+
     <CopyrightCard :record="payload.vaultRecord" highlight />
 
     <section class="result-page__actions">
@@ -121,5 +141,34 @@ async function handleCopyPath() {
 }
 .result-page__size-notice-icon {
   flex-shrink: 0;
+}
+
+.result-page__lineage {
+  margin: 1rem 0;
+  padding: 0.9rem;
+  border: 1px solid rgba(87, 143, 202, 0.28);
+  border-radius: 10px;
+  background: rgba(87, 143, 202, 0.08);
+}
+
+.result-page__lineage strong {
+  display: block;
+  margin-bottom: 0.6rem;
+}
+
+.result-page__lineage-grid {
+  display: grid;
+  grid-template-columns: minmax(90px, 0.35fr) minmax(0, 1fr);
+  gap: 0.45rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.result-page__lineage-grid span {
+  color: var(--text-muted, #8b95a7);
+}
+
+.result-page__lineage-grid b {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 </style>
