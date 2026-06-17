@@ -64,6 +64,37 @@ void main() {
     expect(state.pendingSyncQueueCount, 1);
   });
 
+  test('persists mobile rewrite lineage for write results', () async {
+    final store = MemoryVaultStore();
+    final state = MobileAppState(vaultStore: store);
+    await state.load();
+
+    state.addWriteResult(
+      result: const WatermarkWriteResult(
+        kind: WatermarkAssetKind.image,
+        bytes: [1, 2, 3],
+        watermarkUid: 'uid-rewrite',
+        revision: 2,
+        sha256: 'hash-rewrite',
+      ),
+      fileName: 'rewrite.png',
+      allowRewrite: true,
+      rewriteReason: 'mobile explicit rewrite',
+      parentWatermarkUid: 'uid-parent',
+      revision: 4,
+    );
+
+    final persisted = await store.loadRecords();
+    expect(persisted.single.revision, 4);
+    expect(persisted.single.parentWatermarkUid, 'uid-parent');
+    expect(persisted.single.rewriteReason, 'mobile explicit rewrite');
+
+    final queue = await store.loadSyncQueue();
+    expect(queue.single.payloadJson, contains('"revision":4'));
+    expect(queue.single.payloadJson, contains('uid-parent'));
+    expect(queue.single.payloadJson, contains('mobile explicit rewrite'));
+  });
+
   test('persists verify results and queues evidence records', () async {
     final store = MemoryVaultStore();
     final state = MobileAppState(vaultStore: store);

@@ -27,6 +27,7 @@ class _AudioEmbedPageState extends State<AudioEmbedPage> {
   bool _allowRewrite = false;
   bool _isProcessing = false;
   WatermarkWriteResult? _result;
+  VaultRecord? _savedRecord;
   String? _errorText;
 
   @override
@@ -89,7 +90,7 @@ class _AudioEmbedPageState extends State<AudioEmbedPage> {
             ],
             if (_result != null) ...[
               const SizedBox(height: 12),
-              _ResultCard(result: _result!),
+              _ResultCard(result: _result!, record: _savedRecord),
             ],
           ],
         ),
@@ -113,6 +114,7 @@ class _AudioEmbedPageState extends State<AudioEmbedPage> {
       _selectedBytes = bytes;
       _fileName = file.name;
       _result = null;
+      _savedRecord = null;
       _errorText = null;
     });
   }
@@ -127,9 +129,11 @@ class _AudioEmbedPageState extends State<AudioEmbedPage> {
       _isProcessing = true;
       _errorText = null;
       _result = null;
+      _savedRecord = null;
     });
 
     try {
+      final parent = await _readParentWatermark(bytes);
       final result = await widget.bridge.write(
         WatermarkWriteRequest(
           kind: WatermarkAssetKind.audio,
@@ -145,13 +149,18 @@ class _AudioEmbedPageState extends State<AudioEmbedPage> {
         ),
       );
       if (!mounted) return;
-      widget.appState.addWriteResult(
+      final record = widget.appState.addWriteResult(
         result: result,
         fileName: _fileName,
         allowRewrite: _allowRewrite,
         rewriteReason: _allowRewrite ? 'mobile explicit rewrite' : null,
+        parentWatermarkUid: parent?.watermarkUid,
+        revision: parent == null ? result.revision : parent.revision + 1,
       );
-      setState(() => _result = result);
+      setState(() {
+        _result = result;
+        _savedRecord = record;
+      });
     } catch (error) {
       if (!mounted) return;
       setState(() => _errorText = error.toString());
@@ -159,6 +168,19 @@ class _AudioEmbedPageState extends State<AudioEmbedPage> {
       if (mounted) {
         setState(() => _isProcessing = false);
       }
+    }
+  }
+
+  Future<WatermarkReadResult?> _readParentWatermark(List<int> bytes) async {
+    if (!_allowRewrite) {
+      return null;
+    }
+    try {
+      return await widget.bridge.read(
+        WatermarkReadRequest(kind: WatermarkAssetKind.audio, bytes: bytes),
+      );
+    } catch (_) {
+      return null;
     }
   }
 }
@@ -240,20 +262,28 @@ class _AudioPreview extends StatelessWidget {
 }
 
 class _ResultCard extends StatelessWidget {
-  const _ResultCard({required this.result});
+  const _ResultCard({required this.result, required this.record});
 
   final WatermarkWriteResult result;
+  final VaultRecord? record;
 
   @override
   Widget build(BuildContext context) {
     final shaPreview = result.sha256.length > 16
         ? '${result.sha256.substring(0, 16)}...'
         : result.sha256;
+    final savedRecord = record;
+    final revision = savedRecord?.revision ?? result.revision;
+    final parent = savedRecord?.parentWatermarkUid;
     return _MessageCard(
       icon: Icons.verified_outlined,
       title: '写入完成',
-      detail:
-          'UID: ${result.watermarkUid}\nrevision: ${result.revision}\nsha256: $shaPreview',
+      detail: [
+        'UID: ${result.watermarkUid}',
+        'revision: $revision',
+        if (parent != null) 'parent UID: $parent',
+        'sha256: $shaPreview',
+      ].join('\n'),
     );
   }
 }

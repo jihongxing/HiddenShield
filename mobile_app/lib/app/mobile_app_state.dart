@@ -151,6 +151,8 @@ class MobileAppState extends ChangeNotifier {
     required String? fileName,
     required bool allowRewrite,
     String? rewriteReason,
+    String? parentWatermarkUid,
+    int? revision,
   }) {
     final record = VaultRecord(
       id: _newRecordId(),
@@ -159,8 +161,9 @@ class MobileAppState extends ChangeNotifier {
           ? fileName!
           : _fallbackTitle(result.kind),
       watermarkUid: result.watermarkUid,
-      revision: result.revision,
+      revision: revision ?? result.revision,
       sha256: result.sha256,
+      parentWatermarkUid: allowRewrite ? parentWatermarkUid : null,
       source: VaultRecordSource.write,
       syncStatus: SyncStatus.pending,
       createdAt: DateTime.now(),
