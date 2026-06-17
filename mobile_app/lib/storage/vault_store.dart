@@ -306,6 +306,9 @@ CREATE TABLE $_syncResolutionsTable (
       lastRemotePullCursor:
           values['last_remote_pull_cursor'] ??
           values['last_desktop_pull_since'],
+      lastSyncAttemptAt: _parseDateTime(values['last_sync_attempt_at']),
+      lastSyncSuccessAt: _parseDateTime(values['last_sync_success_at']),
+      lastSyncFailureAt: _parseDateTime(values['last_sync_failure_at']),
     );
   }
 
@@ -395,6 +398,18 @@ CREATE TABLE $_syncResolutionsTable (
       await put('lan_debug_pairing_code', profile.lanDebugPairingCode);
       await put('last_remote_pull_cursor', profile.lastRemotePullCursor);
       await put('last_error', profile.lastError);
+      await put(
+        'last_sync_attempt_at',
+        profile.lastSyncAttemptAt?.toIso8601String(),
+      );
+      await put(
+        'last_sync_success_at',
+        profile.lastSyncSuccessAt?.toIso8601String(),
+      );
+      await put(
+        'last_sync_failure_at',
+        profile.lastSyncFailureAt?.toIso8601String(),
+      );
     });
   }
 

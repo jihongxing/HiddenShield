@@ -422,6 +422,18 @@ class _SyncDiagnosticsPanel extends StatelessWidget {
             value: profile.lastRemotePullCursor ?? '尚未拉取',
           ),
           _DiagnosticRow(
+            label: '最近尝试',
+            value: _formatDateTime(profile.lastSyncAttemptAt),
+          ),
+          _DiagnosticRow(
+            label: '最近成功',
+            value: _formatDateTime(profile.lastSyncSuccessAt),
+          ),
+          _DiagnosticRow(
+            label: '最近失败',
+            value: _formatDateTime(profile.lastSyncFailureAt),
+          ),
+          _DiagnosticRow(
             label: '队列状态',
             value:
                 '待同步 ${appState.pendingSyncQueueCount} · 失败 ${appState.failedSyncQueueCount}',
@@ -585,6 +597,13 @@ String _enabledEntitlementSummary(Map<String, bool> features) {
     return '基础功能';
   }
   return enabled.join(' / ');
+}
+
+String _formatDateTime(DateTime? value) {
+  if (value == null) {
+    return '无';
+  }
+  return value.toLocal().toString().split('.').first;
 }
 
 String _entitlementFeatureLabel(String key) {

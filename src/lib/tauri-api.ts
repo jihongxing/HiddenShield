@@ -161,6 +161,10 @@ export interface CloudQueueStatus {
   pending: number;
   failed: number;
   synced: number;
+  lastAttemptAt: string | null;
+  lastSuccessAt: string | null;
+  lastFailureAt: string | null;
+  lastError: string | null;
 }
 
 export interface CloudQueueFlushResult {
@@ -539,7 +543,17 @@ export async function getDesktopCloudSyncProfile(): Promise<DesktopCloudSyncProf
 }
 
 export async function getDesktopCloudQueueStatus(): Promise<CloudQueueStatus> {
-  if (!isTauriRuntime()) return { pending: 0, failed: 0, synced: 0 };
+  if (!isTauriRuntime()) {
+    return {
+      pending: 0,
+      failed: 0,
+      synced: 0,
+      lastAttemptAt: null,
+      lastSuccessAt: null,
+      lastFailureAt: null,
+      lastError: null,
+    };
+  }
   const { invoke } = await import("@tauri-apps/api/core");
   return invoke<CloudQueueStatus>("get_desktop_cloud_queue_status");
 }

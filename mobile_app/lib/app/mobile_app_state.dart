@@ -409,6 +409,12 @@ class MobileAppState extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final attemptAt = DateTime.now();
+      _syncProfile = _syncProfile.copyWith(
+        lastSyncAttemptAt: attemptAt,
+        updatedAt: attemptAt,
+      );
+      await _vaultStore.saveSyncProfile(_syncProfile);
       final syncingItems = <SyncQueueItem>[];
       for (final item in pendingItems) {
         final current = _updateQueueItem(
@@ -424,8 +430,14 @@ class MobileAppState extends ChangeNotifier {
       }
 
       final batchResult = await _activeSyncTransport().sendBatch(syncingItems);
+      var hasFailure = false;
+      String? latestError;
       for (final current in syncingItems) {
         final result = batchResult.resultFor(current.id);
+        if (!result.isSuccess) {
+          hasFailure = true;
+          latestError = result.error;
+        }
         final next = _updateQueueItem(
           current.copyWith(
             status: result.isSuccess
@@ -438,6 +450,18 @@ class MobileAppState extends ChangeNotifier {
         await _vaultStore.updateSyncItem(next);
         notifyListeners();
       }
+      final completedAt = DateTime.now();
+      _syncProfile = _syncProfile.copyWith(
+        status: hasFailure
+            ? SyncConnectionStatus.failed
+            : SyncConnectionStatus.connected,
+        lastSyncSuccessAt: hasFailure ? null : completedAt,
+        lastSyncFailureAt: hasFailure ? completedAt : null,
+        lastError: latestError,
+        updatedAt: completedAt,
+        clearLastError: !hasFailure,
+      );
+      await _vaultStore.saveSyncProfile(_syncProfile);
     } finally {
       _isSyncing = false;
       notifyListeners();
@@ -475,14 +499,22 @@ class MobileAppState extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final attemptAt = DateTime.now();
+      _syncProfile = _syncProfile.copyWith(
+        lastSyncAttemptAt: attemptAt,
+        updatedAt: attemptAt,
+      );
+      await _vaultStore.saveSyncProfile(_syncProfile);
       final result = await _activeSyncTransport().fetchChanges(
         since: _syncProfile.lastRemotePullCursor,
       );
+      final completedAt = DateTime.now();
       if (!result.isSuccess) {
         _syncProfile = _syncProfile.copyWith(
           status: SyncConnectionStatus.failed,
           lastError: result.error,
-          updatedAt: DateTime.now(),
+          lastSyncFailureAt: completedAt,
+          updatedAt: completedAt,
         );
         await _vaultStore.saveSyncProfile(_syncProfile);
         return;
@@ -504,7 +536,8 @@ class MobileAppState extends ChangeNotifier {
       }
       _syncProfile = _syncProfile.copyWith(
         status: SyncConnectionStatus.connected,
-        updatedAt: DateTime.now(),
+        lastSyncSuccessAt: completedAt,
+        updatedAt: completedAt,
         clearLastError: true,
       );
       await _vaultStore.saveSyncProfile(_syncProfile);
@@ -1000,6 +1033,9 @@ class SyncProfile {
     this.lanDebugPairingCode = '',
     this.lastError,
     this.lastRemotePullCursor,
+    this.lastSyncAttemptAt,
+    this.lastSyncSuccessAt,
+    this.lastSyncFailureAt,
   });
 
   factory SyncProfile.localOnly() {
@@ -1039,6 +1075,9 @@ class SyncProfile {
   final String lanDebugPairingCode;
   final String? lastError;
   final String? lastRemotePullCursor;
+  final DateTime? lastSyncAttemptAt;
+  final DateTime? lastSyncSuccessAt;
+  final DateTime? lastSyncFailureAt;
 
   @Deprecated('Use lanDebugAddress')
   String get desktopAddress => lanDebugAddress;
@@ -1084,6 +1123,9 @@ class SyncProfile {
     String? lanDebugPairingCode,
     String? lastError,
     String? lastRemotePullCursor,
+    DateTime? lastSyncAttemptAt,
+    DateTime? lastSyncSuccessAt,
+    DateTime? lastSyncFailureAt,
     bool clearLastError = false,
     bool clearAccount = false,
     bool clearAuthToken = false,
@@ -1145,6 +1187,9 @@ class SyncProfile {
       lanDebugPairingCode: lanDebugPairingCode ?? this.lanDebugPairingCode,
       lastError: clearLastError ? null : lastError ?? this.lastError,
       lastRemotePullCursor: lastRemotePullCursor ?? this.lastRemotePullCursor,
+      lastSyncAttemptAt: lastSyncAttemptAt ?? this.lastSyncAttemptAt,
+      lastSyncSuccessAt: lastSyncSuccessAt ?? this.lastSyncSuccessAt,
+      lastSyncFailureAt: lastSyncFailureAt ?? this.lastSyncFailureAt,
     );
   }
 }

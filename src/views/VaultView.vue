@@ -19,7 +19,15 @@ const records = ref<VaultRecord[]>([]);
 const missingPaths = ref<Set<string>>(new Set());
 const selectedLineageRecord = ref<VaultRecord | null>(null);
 const cloudProfile = ref<DesktopCloudSyncProfile | null>(null);
-const cloudQueueStatus = ref<CloudQueueStatus>({ pending: 0, failed: 0, synced: 0 });
+const cloudQueueStatus = ref<CloudQueueStatus>({
+  pending: 0,
+  failed: 0,
+  synced: 0,
+  lastAttemptAt: null,
+  lastSuccessAt: null,
+  lastFailureAt: null,
+  lastError: null,
+});
 const syncingRecordId = ref<number | null>(null);
 const flushingCloud = ref(false);
 const pullingCloud = ref(false);
@@ -42,6 +50,13 @@ function openLineage(record: VaultRecord) {
 
 function closeLineage() {
   selectedLineageRecord.value = null;
+}
+
+function formatSyncTime(value: string | null): string {
+  if (!value) return "无";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
 }
 
 onMounted(async () => {
@@ -154,6 +169,15 @@ async function pullCloudChanges() {
           <p v-if="cloudProfile" class="vault-sync-hint">
             云同步：{{ cloudProfile.accountLabel }} · {{ cloudProfile.workspaceName }}
             <span class="vault-sync-hint__queue">{{ cloudQueueSummary }}</span>
+          </p>
+          <p v-if="cloudProfile" class="vault-sync-meta">
+            最近成功：{{ formatSyncTime(cloudQueueStatus.lastSuccessAt) }}
+            <span v-if="cloudQueueStatus.lastFailureAt">
+              · 最近失败：{{ formatSyncTime(cloudQueueStatus.lastFailureAt) }}
+            </span>
+          </p>
+          <p v-if="cloudProfile && cloudQueueStatus.lastError" class="vault-sync-error">
+            最近错误：{{ cloudQueueStatus.lastError }}
           </p>
           <p v-else class="vault-sync-hint">
             云同步未连接，设置中继续账户后可上传版权元数据。
@@ -285,6 +309,17 @@ async function pullCloudChanges() {
   display: inline-block;
   margin-left: 0.5rem;
   color: var(--text-secondary, #aaa);
+}
+
+.vault-sync-meta,
+.vault-sync-error {
+  margin: 0.2rem 0 0;
+  color: var(--text-muted, #8b95a7);
+  font-size: 0.8rem;
+}
+
+.vault-sync-error {
+  color: #ffc857;
 }
 
 .vault-sync-actions {

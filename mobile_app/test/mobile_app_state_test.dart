@@ -127,6 +127,10 @@ void main() {
     expect(queue.single.attempts, 1);
     expect(queue.single.lastError, isNull);
     expect(state.pendingSyncQueueCount, 0);
+    expect(state.syncProfile.lastSyncAttemptAt, isNotNull);
+    expect(state.syncProfile.lastSyncSuccessAt, isNotNull);
+    expect(state.syncProfile.lastSyncFailureAt, isNull);
+    expect(state.syncProfile.status, SyncConnectionStatus.connected);
   });
 
   test('marks failed sync attempts and keeps retry metadata', () async {
@@ -156,6 +160,11 @@ void main() {
     expect(queue.single.attempts, 1);
     expect(queue.single.lastError, 'local mock sync failed');
     expect(state.failedSyncQueueCount, 1);
+    expect(state.syncProfile.lastSyncAttemptAt, isNotNull);
+    expect(state.syncProfile.lastSyncSuccessAt, isNull);
+    expect(state.syncProfile.lastSyncFailureAt, isNotNull);
+    expect(state.syncProfile.status, SyncConnectionStatus.failed);
+    expect(state.syncProfile.lastError, 'local mock sync failed');
   });
 
   test('retries failed sync queue items', () async {
@@ -413,6 +422,9 @@ void main() {
       state.syncProfile.lastRemotePullCursor,
       '2026-06-16T12:00:00.000Z',
     );
+    expect(state.syncProfile.lastSyncAttemptAt, isNotNull);
+    expect(state.syncProfile.lastSyncSuccessAt, isNotNull);
+    expect(state.syncProfile.lastSyncFailureAt, isNull);
 
     final reloaded = MobileAppState(
       vaultStore: store,

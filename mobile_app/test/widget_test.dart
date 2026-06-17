@@ -128,6 +128,9 @@ void main() {
         updatedAt: DateTime.fromMillisecondsSinceEpoch(2000),
         lastError: 'pairing rejected',
         lastRemotePullCursor: '2026-06-16T12:00:00.000Z',
+        lastSyncAttemptAt: DateTime.fromMillisecondsSinceEpoch(3000),
+        lastSyncSuccessAt: DateTime.fromMillisecondsSinceEpoch(2500),
+        lastSyncFailureAt: DateTime.fromMillisecondsSinceEpoch(3500),
       ),
     );
     final state = MobileAppState(vaultStore: store);
@@ -144,6 +147,9 @@ void main() {
     expect(find.text('同步诊断'), findsOneWidget);
     expect(find.text('连接失败'), findsWidgets);
     expect(find.text('待同步 0 · 失败 1'), findsOneWidget);
+    expect(find.text('最近尝试'), findsOneWidget);
+    expect(find.text('最近成功'), findsOneWidget);
+    expect(find.text('最近失败'), findsOneWidget);
     expect(find.textContaining('pairing rejected'), findsWidgets);
     expect(find.text('重试失败'), findsOneWidget);
   });

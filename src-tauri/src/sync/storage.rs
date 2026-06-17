@@ -241,6 +241,43 @@ pub fn count_cloud_sync_queue_by_status(
     Ok(count.max(0) as u64)
 }
 
+pub fn latest_cloud_sync_queue_update_by_status(
+    conn: &Connection,
+    statuses: &[&str],
+) -> Result<Option<String>, rusqlite::Error> {
+    if statuses.is_empty() {
+        return Ok(None);
+    }
+    let placeholders = std::iter::repeat("?")
+        .take(statuses.len())
+        .collect::<Vec<_>>()
+        .join(",");
+    let sql = format!(
+        "SELECT MAX(updated_at) FROM cloud_sync_queue WHERE status IN ({placeholders})"
+    );
+    let mut stmt = conn.prepare(&sql)?;
+    stmt.query_row(rusqlite::params_from_iter(statuses.iter()), |row| {
+        row.get::<_, Option<String>>(0)
+    })
+}
+
+pub fn latest_cloud_sync_queue_error(
+    conn: &Connection,
+) -> Result<Option<String>, rusqlite::Error> {
+    conn.query_row(
+        "SELECT last_error FROM cloud_sync_queue
+         WHERE status = 'failed' AND last_error IS NOT NULL AND last_error != ''
+         ORDER BY updated_at DESC
+         LIMIT 1",
+        [],
+        |row| row.get::<_, Option<String>>(0),
+    )
+    .or_else(|err| match err {
+        rusqlite::Error::QueryReturnedNoRows => Ok(None),
+        other => Err(other),
+    })
+}
+
 pub fn record_sync_event(
     conn: &Connection,
     item: &MobileSyncQueueItem,
@@ -968,6 +1005,46 @@ mod tests {
         assert!(pairing_code_matches(temp_dir.path(), "123456"));
         assert!(pairing_code_matches(temp_dir.path(), "123456  "));
         assert!(!pairing_code_matches(temp_dir.path(), "000000"));
+    }
+
+    #[test]
+    fn cloud_queue_status_exposes_latest_attempt_success_and_error() {
+        let conn = Connection::open_in_memory().unwrap();
+        init_sync_storage(&conn).unwrap();
+        enqueue_cloud_sync_event(&conn, "queue-ok", 1, "{}").unwrap();
+        enqueue_cloud_sync_event(&conn, "queue-failed", 2, "{}").unwrap();
+
+        mark_cloud_sync_queue_syncing(&conn, &["queue-ok".to_string()]).unwrap();
+        mark_cloud_sync_queue_synced(&conn, &["queue-ok".to_string()]).unwrap();
+        mark_cloud_sync_queue_syncing(&conn, &["queue-failed".to_string()]).unwrap();
+        mark_cloud_sync_queue_failed(
+            &conn,
+            &["queue-failed".to_string()],
+            "network timeout",
+        )
+        .unwrap();
+
+        assert_eq!(count_cloud_sync_queue_by_status(&conn, "synced").unwrap(), 1);
+        assert_eq!(count_cloud_sync_queue_by_status(&conn, "failed").unwrap(), 1);
+        assert!(
+            latest_cloud_sync_queue_update_by_status(&conn, &["syncing", "synced", "failed"])
+                .unwrap()
+                .is_some()
+        );
+        assert!(
+            latest_cloud_sync_queue_update_by_status(&conn, &["synced"])
+                .unwrap()
+                .is_some()
+        );
+        assert!(
+            latest_cloud_sync_queue_update_by_status(&conn, &["failed"])
+                .unwrap()
+                .is_some()
+        );
+        assert_eq!(
+            latest_cloud_sync_queue_error(&conn).unwrap().as_deref(),
+            Some("network timeout")
+        );
     }
 
     #[test]

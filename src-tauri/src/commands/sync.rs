@@ -132,6 +132,17 @@ pub fn get_desktop_cloud_queue_status(
             .map_err(|e| format!("读取云同步队列失败: {e}"))?,
         synced: storage::count_cloud_sync_queue_by_status(&conn, "synced")
             .map_err(|e| format!("读取云同步队列失败: {e}"))?,
+        last_attempt_at: storage::latest_cloud_sync_queue_update_by_status(
+            &conn,
+            &["syncing", "synced", "failed"],
+        )
+        .map_err(|e| format!("读取云同步最近尝试时间失败: {e}"))?,
+        last_success_at: storage::latest_cloud_sync_queue_update_by_status(&conn, &["synced"])
+            .map_err(|e| format!("读取云同步最近成功时间失败: {e}"))?,
+        last_failure_at: storage::latest_cloud_sync_queue_update_by_status(&conn, &["failed"])
+            .map_err(|e| format!("读取云同步最近失败时间失败: {e}"))?,
+        last_error: storage::latest_cloud_sync_queue_error(&conn)
+            .map_err(|e| format!("读取云同步最近错误失败: {e}"))?,
     })
 }
 
