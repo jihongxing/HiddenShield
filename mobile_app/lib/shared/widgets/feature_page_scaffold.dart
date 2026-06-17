@@ -1,20 +1,15 @@
 import 'package:flutter/material.dart';
 
-import '../../bridge/watermark_bridge.dart';
-import 'bridge_status_card.dart';
-
 class FeaturePageScaffold extends StatelessWidget {
   const FeaturePageScaffold({
     super.key,
     required this.title,
     required this.subtitle,
-    required this.bridge,
     required this.children,
   });
 
   final String title;
   final String subtitle;
-  final WatermarkBridge bridge;
   final List<Widget> children;
 
   @override
@@ -35,8 +30,6 @@ class FeaturePageScaffold extends StatelessWidget {
             context,
           ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
         ),
-        const SizedBox(height: 16),
-        BridgeStatusCard(bridge: bridge),
         const SizedBox(height: 16),
         ...children,
       ],

@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 
 import '../../app/mobile_app_state.dart';
 import '../../bridge/watermark_bridge.dart';
+import '../../shared/theme/design_tokens.dart';
 import '../../shared/widgets/feature_page_scaffold.dart';
+import '../../shared/widgets/tool_cards.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key, required this.bridge, required this.appState});
@@ -43,7 +45,6 @@ class _SettingsPageState extends State<SettingsPage> {
     return FeaturePageScaffold(
       title: '设置',
       subtitle: '身份、同步、隐私与帮助',
-      bridge: widget.bridge,
       children: [
         AnimatedBuilder(
           animation: widget.appState,
@@ -82,7 +83,7 @@ class _SettingsContent extends StatelessWidget {
 
     return Column(
       children: [
-        _SectionCard(
+        HsPanel(
           title: '创作者身份',
           icon: Icons.badge_outlined,
           child: Column(
@@ -100,10 +101,6 @@ class _SettingsContent extends StatelessWidget {
                 label: '档案同步',
                 value: profile.creatorProfileSynced ? '随账户同步' : '仅保存在本机',
               ),
-              _DiagnosticRow(
-                label: '档案 ID',
-                value: profile.creatorProfileId ?? '未加入账户',
-              ),
               const SizedBox(height: 12),
               Align(
                 alignment: Alignment.centerRight,
@@ -118,7 +115,7 @@ class _SettingsContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        _SectionCard(
+        HsPanel(
           title: '账户与权益',
           icon: Icons.account_circle_outlined,
           child: Column(
@@ -147,7 +144,7 @@ class _SettingsContent extends StatelessWidget {
                   ),
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   padding: EdgeInsets.zero,
-                  backgroundColor: const Color(0xFF1A2730),
+                  backgroundColor: HsColors.chip,
                   side: BorderSide.none,
                 ),
               ),
@@ -164,8 +161,8 @@ class _SettingsContent extends StatelessWidget {
               _DiagnosticRow(
                 label: '设备',
                 value: profile.deviceRegistered
-                    ? '${profile.deviceName ?? '当前设备'} · ${profile.devicePlatform ?? 'unknown'}'
-                    : '未登记',
+                    ? profile.deviceName ?? '当前设备'
+                    : '未加入账户',
               ),
               _DiagnosticRow(
                 label: '权益模块',
@@ -201,7 +198,7 @@ class _SettingsContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        _SectionCard(
+        HsPanel(
           title: '云同步',
           icon: Icons.cloud_sync_outlined,
           child: Column(
@@ -289,14 +286,14 @@ class _SettingsContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        _SectionCard(
-          title: '高级',
+        HsPanel(
+          title: '高级设置',
           icon: Icons.tune_outlined,
           child: ExpansionTile(
             tilePadding: EdgeInsets.zero,
             childrenPadding: EdgeInsets.zero,
-            title: const Text('局域网调试同步'),
-            subtitle: const Text('仅用于开发联调或临时迁移，不是正式同步路径。'),
+            title: const Text('临时直连'),
+            subtitle: const Text('仅用于内部联调或临时迁移，日常同步请使用云同步。'),
             children: [
               TextField(
                 controller: lanAddressController,
@@ -357,7 +354,7 @@ class _SettingsContent extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        _SectionCard(
+        HsPanel(
           title: '隐私与权限',
           icon: Icons.lock_outline,
           child: Column(
@@ -397,130 +394,139 @@ class _SyncDiagnosticsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final latestResolution = appState.syncResolutions.isEmpty
-        ? null
-        : appState.syncResolutions.first;
     final profile = appState.syncProfile;
     final recoverableError = _isRecoverableSyncError(profile.lastError);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    final hasProblem =
+        recoverableError ||
+        profile.lastError?.isNotEmpty == true ||
+        appState.failedSyncQueueCount > 0;
+    return ExpansionTile(
+      tilePadding: EdgeInsets.zero,
+      childrenPadding: EdgeInsets.zero,
+      initiallyExpanded: hasProblem,
+      leading: const Icon(Icons.manage_search_outlined),
+      title: const Text('问题排查'),
+      subtitle: Text(hasProblem ? '有同步问题需要处理' : '同步正常时无需打开'),
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.health_and_safety_outlined),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  '同步诊断',
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-              ),
-              IconButton(
-                tooltip: '复制诊断',
-                onPressed: () async {
-                  await Clipboard.setData(
-                    ClipboardData(text: _buildSyncDiagnosticsText(appState)),
-                  );
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(const SnackBar(content: Text('同步诊断已复制')));
-                  }
-                },
-                icon: const Icon(Icons.copy_outlined),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _DiagnosticRow(
-            label: '同步模式',
-            value: syncTransportModeLabel(appState.syncTransportMode),
-          ),
-          _DiagnosticRow(label: '账户', value: profile.accountLabel ?? '未登录'),
-          _DiagnosticRow(label: '工作区', value: profile.workspaceId ?? '无'),
-          _DiagnosticRow(label: '设备 ID', value: profile.deviceId ?? '无'),
-          _DiagnosticRow(
-            label: '创作者档案',
-            value: profile.creatorProfileId ?? '无',
-          ),
-          _DiagnosticRow(
-            label: '云服务',
-            value: profile.cloudBaseUrl.isEmpty
-                ? '由系统配置提供'
-                : profile.cloudBaseUrl,
-          ),
-          _DiagnosticRow(
-            label: '连接状态',
-            value: syncConnectionStatusLabel(profile.status),
-          ),
-          _DiagnosticRow(
-            label: '上次游标',
-            value: profile.lastRemotePullCursor ?? '尚未拉取',
-          ),
-          _DiagnosticRow(
-            label: '最近尝试',
-            value: _formatDateTime(profile.lastSyncAttemptAt),
-          ),
-          _DiagnosticRow(
-            label: '最近成功',
-            value: _formatDateTime(profile.lastSyncSuccessAt),
-          ),
-          _DiagnosticRow(
-            label: '最近失败',
-            value: _formatDateTime(profile.lastSyncFailureAt),
-          ),
-          _DiagnosticRow(
-            label: '队列状态',
-            value:
-                '待同步 ${appState.pendingSyncQueueCount} · 失败 ${appState.failedSyncQueueCount}',
-          ),
-          _DiagnosticRow(label: '下次自动重试', value: _mobileRetryDetail(appState)),
-          _DiagnosticRow(label: '最近错误', value: profile.lastError ?? '无'),
-          if (recoverableError) ...[
-            const SizedBox(height: 4),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2C2212),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFFFC857)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
                 children: [
-                  const Text(
-                    '账户状态需要恢复',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    '当前账户、设备或工作区与云端不一致。重新继续账户会刷新授权、设备登记和工作区绑定。',
-                    style: TextStyle(color: Colors.white70),
-                  ),
-                  const SizedBox(height: 10),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: FilledButton.icon(
-                      onPressed: onRecoverAccount,
-                      icon: const Icon(Icons.login_outlined),
-                      label: const Text('重新继续账户'),
-                    ),
+                  const Spacer(),
+                  IconButton(
+                    tooltip: '复制排查信息',
+                    onPressed: () async {
+                      await Clipboard.setData(
+                        ClipboardData(
+                          text: _buildSyncDiagnosticsText(appState),
+                        ),
+                      );
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('排查信息已复制')),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.copy_outlined),
                   ),
                 ],
               ),
-            ),
-          ],
-          _DiagnosticRow(
-            label: '最近解决',
-            value: latestResolution == null
-                ? '无'
-                : '${mobileSyncResolutionTypeLabel(latestResolution.resolutionType)} · ${latestResolution.watermarkUid}',
+              const SizedBox(height: 12),
+              _DiagnosticRow(
+                label: '同步模式',
+                value: syncTransportModeLabel(appState.syncTransportMode),
+              ),
+              _DiagnosticRow(label: '账户', value: profile.accountLabel ?? '未登录'),
+              _DiagnosticRow(label: '工作区', value: profile.workspaceName ?? '无'),
+              _DiagnosticRow(label: '设备', value: profile.deviceName ?? '当前设备'),
+              _DiagnosticRow(
+                label: '档案',
+                value: profile.creatorProfileSynced ? '随账户同步' : '仅保存在本机',
+              ),
+              _DiagnosticRow(
+                label: '云服务',
+                value: profile.cloudBaseUrl.isEmpty
+                    ? '由系统配置提供'
+                    : profile.cloudBaseUrl,
+              ),
+              _DiagnosticRow(
+                label: '连接状态',
+                value: syncConnectionStatusLabel(profile.status),
+              ),
+              _DiagnosticRow(
+                label: '同步位置',
+                value: profile.lastRemotePullCursor ?? '尚未拉取',
+              ),
+              _DiagnosticRow(
+                label: '最近尝试',
+                value: _formatDateTime(profile.lastSyncAttemptAt),
+              ),
+              _DiagnosticRow(
+                label: '最近成功',
+                value: _formatDateTime(profile.lastSyncSuccessAt),
+              ),
+              _DiagnosticRow(
+                label: '最近失败',
+                value: _formatDateTime(profile.lastSyncFailureAt),
+              ),
+              _DiagnosticRow(
+                label: '处理状态',
+                value:
+                    '待同步 ${appState.pendingSyncQueueCount} · 失败 ${appState.failedSyncQueueCount}',
+              ),
+              _DiagnosticRow(
+                label: '下次自动重试',
+                value: _mobileRetryDetail(appState),
+              ),
+              _DiagnosticRow(label: '最近错误', value: profile.lastError ?? '无'),
+              if (recoverableError) ...[
+                const SizedBox(height: 4),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: HsColors.warningSurface,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: HsColors.warning),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '账户状态需要恢复',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        '当前账户、设备或工作区与云端不一致。重新继续账户会刷新授权、设备登记和工作区绑定。',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                      const SizedBox(height: 10),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: FilledButton.icon(
+                          onPressed: onRecoverAccount,
+                          icon: const Icon(Icons.login_outlined),
+                          label: const Text('重新继续账户'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              _DiagnosticRow(
+                label: '解决记录',
+                value: appState.syncResolutions.isEmpty
+                    ? '无'
+                    : '${appState.syncResolutions.length} 条',
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -611,7 +617,7 @@ class _LanDebugChecklist extends StatelessWidget {
             children: [
               Icon(
                 ready ? Icons.verified_outlined : Icons.fact_check_outlined,
-                color: ready ? const Color(0xFF59D2C2) : Colors.white70,
+                color: ready ? HsColors.accent : HsColors.textMuted,
               ),
               const SizedBox(width: 12),
               Text('联调检查', style: Theme.of(context).textTheme.titleSmall),
@@ -640,7 +646,7 @@ class _ChecklistLine extends StatelessWidget {
           Icon(
             item.ok ? Icons.check_circle_outline : Icons.error_outline,
             size: 18,
-            color: item.ok ? const Color(0xFF59D2C2) : const Color(0xFFFFC857),
+            color: item.ok ? HsColors.accent : HsColors.warning,
           ),
           const SizedBox(width: 8),
           SizedBox(
@@ -838,7 +844,7 @@ String _buildSyncDiagnosticsText(MobileAppState appState) {
     '设备: ${profile.deviceName ?? '无'}',
     '设备 ID: ${profile.deviceId ?? '无'}',
     '设备平台: ${profile.devicePlatform ?? '无'}',
-    '创作者档案: ${profile.creatorProfileId ?? '无'}',
+    '创作者档案: ${profile.creatorProfileSynced ? '已同步' : '本机'}',
     '权益: ${profile.entitlementLabel} / ${entitlementStatusLabel(profile.entitlementStatus)}',
     '权益模块: ${_enabledEntitlementSummary(profile.entitlementFeatures)}',
     '云服务: ${profile.cloudBaseUrl.isEmpty ? '由系统配置提供' : profile.cloudBaseUrl}',
@@ -897,44 +903,6 @@ class _SyncResolutionSummary extends StatelessWidget {
             style: TextStyle(color: Colors.white70, fontSize: 12),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({
-    required this.title,
-    required this.icon,
-    required this.child,
-  });
-
-  final String title;
-  final IconData icon;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: const Color(0xFF141B22),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: const Color(0xFF59D2C2)),
-                const SizedBox(width: 12),
-                Text(title, style: Theme.of(context).textTheme.titleMedium),
-              ],
-            ),
-            const SizedBox(height: 12),
-            child,
-          ],
-        ),
       ),
     );
   }

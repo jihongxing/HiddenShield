@@ -215,6 +215,20 @@ export interface VerificationResult {
   originalHash: string | null;
 }
 
+export interface RewriteTargetInspectionResult {
+  supported: boolean;
+  fileKind: string;
+  hasWatermark: boolean;
+  watermarkUid: string | null;
+  detectedRevision: number | null;
+  nextRevision: number;
+  parentWatermarkUid: string | null;
+  rewriteReason: string | null;
+  summary: string;
+  reasonCode: string;
+  reasonDetail: string;
+}
+
 export type TsaVerificationPath = "systemRoots" | "embeddedRoots";
 
 export interface AIContentOptions {
@@ -709,6 +723,26 @@ export async function verifySuspect(path: string): Promise<VerificationResult> {
   }
   const { invoke } = await import("@tauri-apps/api/core");
   return invoke<VerificationResult>("verify_suspect", { path });
+}
+
+export async function inspectRewriteTarget(path: string): Promise<RewriteTargetInspectionResult> {
+  if (!isTauriRuntime()) {
+    return {
+      supported: true,
+      fileKind: "image",
+      hasWatermark: false,
+      watermarkUid: null,
+      detectedRevision: null,
+      nextRevision: 1,
+      parentWatermarkUid: null,
+      rewriteReason: null,
+      summary: "未检测到已有隐盾水印，将按首次写入处理。",
+      reasonCode: "first_write",
+      reasonDetail: "写前预检没有提取到有效水印；如果继续写入，会创建新的版权存证。",
+    };
+  }
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<RewriteTargetInspectionResult>("inspect_rewrite_target", { path });
 }
 
 export async function startPipeline(

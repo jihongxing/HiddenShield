@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../../app/mobile_app_state.dart';
 import '../../bridge/watermark_bridge.dart';
 import '../../bridge/watermark_models.dart';
+import '../../shared/theme/design_tokens.dart';
 import '../../shared/widgets/feature_page_scaffold.dart';
+import '../../shared/widgets/tool_cards.dart';
 
 class VaultPage extends StatefulWidget {
   const VaultPage({super.key, required this.bridge, required this.appState});
@@ -54,8 +56,7 @@ class _VaultPageState extends State<VaultPage> {
   Widget build(BuildContext context) {
     return FeaturePageScaffold(
       title: '版权库',
-      subtitle: '时间线、详情和派生链',
-      bridge: widget.bridge,
+      subtitle: '查看作品记录、写入次数和同步状态',
       children: [
         AnimatedBuilder(
           animation: widget.appState,
@@ -157,25 +158,21 @@ class _EmptyVaultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: const Color(0xFF141B22),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: const Padding(
-        padding: EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(Icons.folder_open_outlined, color: Color(0xFF59D2C2)),
-            SizedBox(height: 12),
-            Text('还没有版权记录'),
-            SizedBox(height: 8),
-            Text(
-              '完成图片或 WAV 写入后，记录会自动进入这里。取证命中也会保存为本机证据线索。',
-              style: TextStyle(color: Colors.white70),
-            ),
-          ],
-        ),
+    return const HsPanel(
+      radius: HsRadii.panel,
+      padding: EdgeInsets.all(HsSpacing.xl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.folder_open_outlined, color: HsColors.accent),
+          SizedBox(height: 12),
+          Text('还没有版权记录'),
+          SizedBox(height: 8),
+          Text(
+            '完成图片或 WAV 写入后，记录会自动进入这里。取证命中也会保存为本机证据线索。',
+            style: TextStyle(color: Colors.white70),
+          ),
+        ],
       ),
     );
   }
@@ -189,22 +186,18 @@ class _StatsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: const Color(0xFF162028),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Expanded(
-              child: _Metric(label: '记录', value: '$total'),
-            ),
-            Expanded(
-              child: _Metric(label: '待同步', value: '$pendingSync'),
-            ),
-          ],
-        ),
+    return HsPanel(
+      color: HsColors.surfaceRaised,
+      radius: HsRadii.panel,
+      child: Row(
+        children: [
+          Expanded(
+            child: _Metric(label: '记录', value: '$total'),
+          ),
+          Expanded(
+            child: _Metric(label: '待同步', value: '$pendingSync'),
+          ),
+        ],
       ),
     );
   }
@@ -241,100 +234,91 @@ class _VaultFilterPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: const Color(0xFF141B22),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: searchController,
-              onChanged: onSearchChanged,
-              decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search_outlined),
-                suffixIcon: searchController.text.trim().isEmpty
-                    ? null
-                    : IconButton(
-                        tooltip: '清空搜索',
-                        onPressed: onClearFilters,
-                        icon: const Icon(Icons.close_outlined),
-                      ),
-                labelText: '搜索版权记录',
-                hintText: '标题、UID、哈希、设备 ID',
+    return HsPanel(
+      radius: HsRadii.panel,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: searchController,
+            onChanged: onSearchChanged,
+            decoration: InputDecoration(
+              prefixIcon: const Icon(Icons.search_outlined),
+              suffixIcon: searchController.text.trim().isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: '清空搜索',
+                      onPressed: onClearFilters,
+                      icon: const Icon(Icons.close_outlined),
+                    ),
+              labelText: '搜索版权记录',
+              hintText: '标题、版权编号、作品指纹',
+            ),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _FilterChipItem(
+                label: '图片',
+                icon: Icons.image_outlined,
+                selected: kindFilter == WatermarkAssetKind.image,
+                onSelected: () => onKindFilterChanged(WatermarkAssetKind.image),
               ),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _FilterChipItem(
-                  label: '图片',
-                  icon: Icons.image_outlined,
-                  selected: kindFilter == WatermarkAssetKind.image,
-                  onSelected: () =>
-                      onKindFilterChanged(WatermarkAssetKind.image),
+              _FilterChipItem(
+                label: 'WAV',
+                icon: Icons.graphic_eq_outlined,
+                selected: kindFilter == WatermarkAssetKind.audio,
+                onSelected: () => onKindFilterChanged(WatermarkAssetKind.audio),
+              ),
+              _FilterChipItem(
+                label: '写入',
+                icon: Icons.edit_note_outlined,
+                selected: sourceFilter == VaultRecordSource.write,
+                onSelected: () =>
+                    onSourceFilterChanged(VaultRecordSource.write),
+              ),
+              _FilterChipItem(
+                label: '取证',
+                icon: Icons.search_outlined,
+                selected: sourceFilter == VaultRecordSource.verify,
+                onSelected: () =>
+                    onSourceFilterChanged(VaultRecordSource.verify),
+              ),
+              _FilterChipItem(
+                label: '待同步',
+                icon: Icons.pending_actions_outlined,
+                selected: syncStatusFilter == SyncStatus.pending,
+                onSelected: () => onSyncStatusFilterChanged(SyncStatus.pending),
+              ),
+              _FilterChipItem(
+                label: '已同步',
+                icon: Icons.cloud_done_outlined,
+                selected: syncStatusFilter == SyncStatus.synced,
+                onSelected: () => onSyncStatusFilterChanged(SyncStatus.synced),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  hasActiveFilters
+                      ? '显示 $filteredCount / $totalCount 条记录'
+                      : '显示全部 $totalCount 条记录',
+                  style: const TextStyle(color: Colors.white70),
                 ),
-                _FilterChipItem(
-                  label: 'WAV',
-                  icon: Icons.graphic_eq_outlined,
-                  selected: kindFilter == WatermarkAssetKind.audio,
-                  onSelected: () =>
-                      onKindFilterChanged(WatermarkAssetKind.audio),
-                ),
-                _FilterChipItem(
-                  label: '写入',
-                  icon: Icons.edit_note_outlined,
-                  selected: sourceFilter == VaultRecordSource.write,
-                  onSelected: () =>
-                      onSourceFilterChanged(VaultRecordSource.write),
-                ),
-                _FilterChipItem(
-                  label: '取证',
-                  icon: Icons.search_outlined,
-                  selected: sourceFilter == VaultRecordSource.verify,
-                  onSelected: () =>
-                      onSourceFilterChanged(VaultRecordSource.verify),
-                ),
-                _FilterChipItem(
-                  label: '待同步',
-                  icon: Icons.pending_actions_outlined,
-                  selected: syncStatusFilter == SyncStatus.pending,
-                  onSelected: () =>
-                      onSyncStatusFilterChanged(SyncStatus.pending),
-                ),
-                _FilterChipItem(
-                  label: '已同步',
-                  icon: Icons.cloud_done_outlined,
-                  selected: syncStatusFilter == SyncStatus.synced,
-                  onSelected: () =>
-                      onSyncStatusFilterChanged(SyncStatus.synced),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    hasActiveFilters
-                        ? '显示 $filteredCount / $totalCount 条记录'
-                        : '显示全部 $totalCount 条记录',
-                    style: const TextStyle(color: Colors.white70),
-                  ),
-                ),
-                TextButton.icon(
-                  onPressed: hasActiveFilters ? onClearFilters : null,
-                  icon: const Icon(Icons.filter_alt_off_outlined),
-                  label: const Text('重置'),
-                ),
-              ],
-            ),
-          ],
-        ),
+              ),
+              TextButton.icon(
+                onPressed: hasActiveFilters ? onClearFilters : null,
+                icon: const Icon(Icons.filter_alt_off_outlined),
+                label: const Text('重置'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -363,8 +347,8 @@ class _FilterChipItem extends StatelessWidget {
       label: Text(label),
       showCheckmark: false,
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      backgroundColor: const Color(0xFF1A2730),
-      selectedColor: const Color(0xFF1E6F66),
+      backgroundColor: HsColors.chip,
+      selectedColor: HsColors.accentSeed,
       side: BorderSide.none,
     );
   }
@@ -377,31 +361,27 @@ class _EmptyFilterResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: const Color(0xFF141B22),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Icon(Icons.manage_search_outlined, color: Color(0xFF59D2C2)),
-            const SizedBox(height: 12),
-            const Text('没有匹配的版权记录'),
-            const SizedBox(height: 8),
-            const Text(
-              '换一个 UID、标题或哈希关键词，或者重置筛选条件。',
-              style: TextStyle(color: Colors.white70),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: onClearFilters,
-              icon: const Icon(Icons.filter_alt_off_outlined),
-              label: const Text('重置筛选'),
-            ),
-          ],
-        ),
+    return HsPanel(
+      radius: HsRadii.panel,
+      padding: const EdgeInsets.all(HsSpacing.xl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.manage_search_outlined, color: HsColors.accent),
+          const SizedBox(height: 12),
+          const Text('没有匹配的版权记录'),
+          const SizedBox(height: 8),
+          const Text(
+            '换一个标题、版权编号或作品指纹，或者重置筛选条件。',
+            style: TextStyle(color: Colors.white70),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: onClearFilters,
+            icon: const Icon(Icons.filter_alt_off_outlined),
+            label: const Text('重置筛选'),
+          ),
+        ],
       ),
     );
   }
@@ -433,18 +413,19 @@ class _VaultRecordCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final parent = record.parentWatermarkUid;
     final sha = record.sha256;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Card(
         key: ValueKey('vault-record-${record.id}'),
         elevation: 0,
-        color: const Color(0xFF141B22),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        color: HsColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(HsRadii.panel),
+        ),
         child: ListTile(
           onTap: () => _showVaultRecordDetails(context, record),
-          leading: Icon(_kindIcon(record.kind), color: const Color(0xFF59D2C2)),
+          leading: Icon(_kindIcon(record.kind), color: HsColors.accent),
           title: Text(
             record.title,
             maxLines: 1,
@@ -452,21 +433,14 @@ class _VaultRecordCard extends StatelessWidget {
           ),
           subtitle: Text(
             [
-              '${vaultRecordSourceLabel(record.source)} · ${_kindLabel(record.kind)} · revision ${record.revision}',
-              'UID: ${record.watermarkUid}',
-              if (parent != null) 'parent UID: $parent',
-              if (record.rewriteReason != null)
-                'rewrite_reason: ${record.rewriteReason}',
-              if (sha != null) 'sha256: ${_shorten(sha)}',
+              '${vaultRecordSourceLabel(record.source)} · ${_kindLabel(record.kind)} · 第 ${record.revision} 次写入',
+              '版权编号: ${record.watermarkUid}',
+              if (record.parentWatermarkUid != null) '包含上一版本记录',
+              if (record.rewriteReason != null) '原因: ${record.rewriteReason}',
+              if (sha != null) '作品指纹: ${_shorten(sha)}',
             ].join('\n'),
           ),
-          trailing: Chip(
-            label: Text(syncStatusLabel(record.syncStatus)),
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            padding: EdgeInsets.zero,
-            backgroundColor: const Color(0xFF1A2730),
-            side: BorderSide.none,
-          ),
+          trailing: HsStatusChip(label: syncStatusLabel(record.syncStatus)),
         ),
       ),
     );
@@ -478,7 +452,7 @@ void _showVaultRecordDetails(BuildContext context, VaultRecord record) {
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    backgroundColor: const Color(0xFF10171E),
+    backgroundColor: HsColors.appBar,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
@@ -512,7 +486,7 @@ class _VaultRecordDetailsSheet extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(_kindIcon(record.kind), color: const Color(0xFF59D2C2)),
+              Icon(_kindIcon(record.kind), color: HsColors.accent),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -536,9 +510,9 @@ class _VaultRecordDetailsSheet extends StatelessWidget {
           _DetailGroup(
             title: '水印信息',
             rows: [
-              _DetailRow(label: '水印 UID', value: record.watermarkUid),
+              _DetailRow(label: '版权编号', value: record.watermarkUid),
               _DetailRow(label: '写入次数', value: '第 ${record.revision} 次'),
-              _DetailRow(label: '父水印 UID', value: record.parentWatermarkUid),
+              _DetailRow(label: '上一版本', value: record.parentWatermarkUid),
               _DetailRow(label: '重写原因', value: record.rewriteReason),
             ],
           ),
@@ -546,8 +520,8 @@ class _VaultRecordDetailsSheet extends StatelessWidget {
           _DetailGroup(
             title: '文件指纹',
             rows: [
-              _DetailRow(label: 'SHA-256', value: record.sha256),
-              _DetailRow(label: '提取文件哈希', value: record.extractedFileHashHex),
+              _DetailRow(label: '作品指纹', value: record.sha256),
+              _DetailRow(label: '提取片段', value: record.extractedFileHashHex),
             ],
           ),
           const SizedBox(height: 12),
@@ -558,7 +532,7 @@ class _VaultRecordDetailsSheet extends StatelessWidget {
                 label: '提取时间戳',
                 value: record.extractedTimestamp?.toString(),
               ),
-              _DetailRow(label: '设备 ID', value: record.extractedDeviceIdHex),
+              _DetailRow(label: '来源设备', value: record.extractedDeviceIdHex),
             ],
           ),
           const SizedBox(height: 12),
@@ -596,8 +570,8 @@ class _DetailGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFF141B22),
-        borderRadius: BorderRadius.circular(16),
+        color: HsColors.surface,
+        borderRadius: BorderRadius.circular(HsRadii.panel),
         border: Border.all(color: Colors.white10),
       ),
       child: Padding(

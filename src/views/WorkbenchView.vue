@@ -15,6 +15,7 @@ import {
   createEmptyPlatformPercents,
   generateWarnings,
   getHardwareInfo,
+  inspectRewriteTarget,
   listenHwDegradation,
   listenPipelineComplete,
   listenPipelineProgress,
@@ -31,6 +32,7 @@ import {
   type SourceWarning,
   type SystemCheckResult,
   type TranscodeOptions,
+  type RewriteTargetInspectionResult,
 } from "../lib/tauri-api";
 
 const selectedPath = ref("");
@@ -46,6 +48,10 @@ const showRecommendHint = ref(false);
 const completePayload = ref<PipelineCompletePayload | null>(null);
 const showResult = ref(false);
 const degradationWarning = ref("");
+const rewriteInspection = ref<RewriteTargetInspectionResult | null>(null);
+const rewriteInspectionLoading = ref(false);
+const rewriteInspectionError = ref("");
+let rewriteInspectionRequestId = 0;
 
 // AI Content Marker ref
 const aiMarkerRef = ref<InstanceType<typeof AIContentMarker> | null>(null);
@@ -92,6 +98,13 @@ const fileTypeLabel = computed(() => {
 });
 
 const showProMultiPlatform = computed(() => selectedPlatforms.value.length > 1);
+const rewriteInspectionTone = computed(() => {
+  const result = rewriteInspection.value;
+  if (!result) return "neutral";
+  if (result.hasWatermark) return "warning";
+  if (result.reasonCode === "preflight_extract_failed") return "danger";
+  return "ok";
+});
 
 function currentFeatureName() {
   if (isImage.value) return "watermark_image";
@@ -110,7 +123,10 @@ async function refreshHardwareInfo() {
 }
 
 async function handleSourceSelect(path: string) {
+  const requestId = ++rewriteInspectionRequestId;
   selectedPath.value = path;
+  rewriteInspection.value = null;
+  rewriteInspectionError.value = "";
   sourceMeta.value = await probeSource(path);
   systemStatus.value = await systemCheck(path);
   trackFeatureEvent("source_probe", "success", { mediaType: currentMediaType(), source: "dropzone" });
@@ -141,6 +157,33 @@ async function handleSourceSelect(path: string) {
 
   // Generate warnings
   warnings.value = generateWarnings(sourceMeta.value, selectedPlatforms.value);
+
+  if (isImage.value || isAudio.value) {
+    await refreshRewriteInspection(path, requestId);
+  }
+}
+
+async function refreshRewriteInspection(path: string, requestId = ++rewriteInspectionRequestId) {
+  rewriteInspectionLoading.value = true;
+  rewriteInspectionError.value = "";
+  try {
+    const result = await inspectRewriteTarget(path);
+    if (requestId === rewriteInspectionRequestId) {
+      rewriteInspection.value = result;
+      if (result.hasWatermark && !options.allowRewrite) {
+        statusMessage.value = `检测到已有水印；如需覆盖，请开启重写，下一次将记录为第 ${result.nextRevision} 次写入`;
+      }
+    }
+  } catch (err: any) {
+    if (requestId === rewriteInspectionRequestId) {
+      rewriteInspection.value = null;
+      rewriteInspectionError.value = err?.message ?? String(err);
+    }
+  } finally {
+    if (requestId === rewriteInspectionRequestId) {
+      rewriteInspectionLoading.value = false;
+    }
+  }
 }
 
 function togglePlatform(platform: Platform) {
@@ -167,11 +210,15 @@ async function confirmRewriteRisk() {
   if (!options.allowRewrite || isVideo.value) return true;
 
   const reason = options.rewriteReason?.trim() || "未填写，将使用默认重写原因";
+  const detected = rewriteInspection.value?.hasWatermark ? rewriteInspection.value : null;
   const message = [
-    "你正在重写已有隐盾水印。",
+    detected
+      ? `你正在重写已有隐盾水印，本次会记录为第 ${detected.nextRevision} 次写入。`
+      : "你正在允许重写已有隐盾水印。",
     "",
     "这会覆盖当前媒体文件里可提取的旧水印。隐盾会在金库里记录父级 UID、写入版本和重写原因，但取证时通常会优先提取到新的水印。",
     "",
+    detected?.watermarkUid ? `父级 UID：${detected.watermarkUid}` : "父级 UID：写入时再次检测，若存在则自动记录",
     `重写原因：${reason}`,
     "",
     "确认继续？",
@@ -471,6 +518,22 @@ onUnmounted(() => {
               <input v-model="options.allowRewrite" type="checkbox" :disabled="busy" />
               <span>允许重写已有隐盾水印</span>
             </label>
+            <div v-if="rewriteInspectionLoading" class="rewrite-panel__status">
+              正在检测已有水印...
+            </div>
+            <div
+              v-else-if="rewriteInspection"
+              class="rewrite-panel__status"
+              :class="`rewrite-panel__status--${rewriteInspectionTone}`"
+            >
+              <strong>{{ rewriteInspection.summary }}</strong>
+              <span>{{ rewriteInspection.reasonDetail }}</span>
+              <span v-if="rewriteInspection.watermarkUid">父级 UID：{{ rewriteInspection.watermarkUid }}</span>
+              <span v-if="rewriteInspection.detectedRevision">当前识别为第 {{ rewriteInspection.detectedRevision }} 次写入</span>
+            </div>
+            <div v-else-if="rewriteInspectionError" class="rewrite-panel__status rewrite-panel__status--danger">
+              写前预检失败：{{ rewriteInspectionError }}
+            </div>
             <input
               v-if="options.allowRewrite"
               v-model="options.rewriteReason"
@@ -579,5 +642,38 @@ onUnmounted(() => {
   border: 1px solid var(--border, #2a2a4a);
   background: var(--surface-alt, #252545);
   color: var(--text-primary, #e0e0e0);
+}
+
+.rewrite-panel__status {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 0.75rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary, #b8bac7);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.rewrite-panel__status strong {
+  color: var(--text-primary, #f5f6fb);
+  font-weight: 700;
+}
+
+.rewrite-panel__status--ok {
+  border-color: rgba(89, 210, 194, 0.28);
+  background: rgba(89, 210, 194, 0.08);
+}
+
+.rewrite-panel__status--warning {
+  border-color: rgba(245, 177, 66, 0.36);
+  background: rgba(245, 177, 66, 0.1);
+}
+
+.rewrite-panel__status--danger {
+  border-color: rgba(232, 93, 93, 0.34);
+  background: rgba(232, 93, 93, 0.1);
 }
 </style>

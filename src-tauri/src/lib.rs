@@ -140,6 +140,7 @@ pub fn run() {
             commands::transcode::open_output_dir,
             commands::vault::list_vault_records,
             commands::vault::check_files_exist,
+            commands::verify::inspect_rewrite_target,
             commands::verify::verify_suspect,
             commands::billing::get_entitlement_state,
             commands::billing::set_entitlement_state,

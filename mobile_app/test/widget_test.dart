@@ -15,7 +15,7 @@ void main() {
     expect(find.text('取证'), findsWidgets);
     expect(find.text('版权库'), findsWidgets);
     expect(find.text('设置'), findsWidgets);
-    expect(find.text('桥接层已接入'), findsOneWidget);
+    expect(find.text('桥接层已接入'), findsNothing);
   });
 
   testWidgets('opens the image embed flow', (WidgetTester tester) async {
@@ -26,8 +26,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('选择图片'), findsOneWidget);
-    expect(find.text('允许重写已有隐盾水印'), findsOneWidget);
-    expect(find.text('写入盲水印'), findsOneWidget);
+    expect(find.text('作为新版写入'), findsOneWidget);
+    expect(find.text('写入检查'), findsOneWidget);
+    expect(find.text('生成保护副本', skipOffstage: false), findsOneWidget);
   });
 
   testWidgets('opens the audio embed flow', (WidgetTester tester) async {
@@ -38,8 +39,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('选择 WAV'), findsOneWidget);
-    expect(find.text('允许重写已有隐盾水印'), findsOneWidget);
-    expect(find.text('写入盲水印'), findsOneWidget);
+    expect(find.text('作为新版写入'), findsOneWidget);
+    expect(find.text('写入检查'), findsOneWidget);
+    expect(find.text('生成保护副本', skipOffstage: false), findsOneWidget);
   });
 
   testWidgets('renders the verify extraction flow', (
@@ -51,7 +53,7 @@ void main() {
     await tester.tap(find.text('取证').last);
     await tester.pumpAndSettle();
 
-    expect(find.text('文件提取'), findsOneWidget);
+    expect(find.text('检测文件'), findsOneWidget);
     expect(
       find.descendant(
         of: find.byType(SegmentedButton<WatermarkAssetKind>),
@@ -69,7 +71,7 @@ void main() {
     expect(find.text('选择文件'), findsOneWidget);
     await tester.drag(find.byType(ListView).last, const Offset(0, -300));
     await tester.pumpAndSettle();
-    expect(find.text('提取水印'), findsOneWidget);
+    expect(find.text('开始检测'), findsOneWidget);
   });
 
   testWidgets('renders mobile sync resolution summary in settings', (
@@ -145,7 +147,7 @@ void main() {
     await tester.drag(find.byType(ListView).last, const Offset(0, -520));
     await tester.pumpAndSettle();
 
-    expect(find.text('同步诊断'), findsOneWidget);
+    expect(find.text('问题排查'), findsOneWidget);
     expect(find.text('需恢复账户'), findsOneWidget);
     expect(find.text('账户、设备或工作区授权不一致，请重新继续账户。'), findsOneWidget);
     expect(find.text('连接失败'), findsWidgets);
@@ -154,7 +156,7 @@ void main() {
     expect(find.text('最近尝试'), findsOneWidget);
     expect(find.text('最近成功'), findsOneWidget);
     expect(find.text('最近失败'), findsOneWidget);
-    expect(find.byTooltip('复制诊断'), findsOneWidget);
+    expect(find.byTooltip('复制排查信息'), findsOneWidget);
     expect(find.textContaining('HTTP 403'), findsWidgets);
     expect(find.text('账户状态需要恢复'), findsOneWidget);
     expect(find.text('重新继续账户'), findsOneWidget);
@@ -181,7 +183,7 @@ void main() {
     expect(find.text('个人空间'), findsWidgets);
     expect(find.textContaining('当前移动设备'), findsWidgets);
     expect(find.text('云同步'), findsWidgets);
-    expect(find.textContaining('creator_'), findsWidgets);
+    expect(find.textContaining('creator_'), findsNothing);
   });
 
   testWidgets('renders mobile pairing checklist in settings', (
@@ -207,15 +209,15 @@ void main() {
     await tester.tap(find.text('设置').last);
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
-      find.text('局域网调试同步').first,
+      find.text('临时直连').first,
       120,
       scrollable: find.byType(Scrollable).last,
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(ExpansionTile).first);
+    await tester.tap(find.text('临时直连'));
     await tester.pumpAndSettle();
 
-    expect(find.text('联调检查'), findsOneWidget);
+    expect(find.text('问题排查'), findsOneWidget);
     expect(find.text('http://192.168.1.8:47219'), findsWidgets);
     expect(find.text('已保存'), findsOneWidget);
     expect(find.text('局域网调试'), findsWidgets);

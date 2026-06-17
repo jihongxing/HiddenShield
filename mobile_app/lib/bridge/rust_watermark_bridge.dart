@@ -14,8 +14,8 @@ class RustWatermarkBridge extends WatermarkBridge {
   Future<BridgeStatus> status() {
     return Future.value(
       const BridgeStatus(
-        label: 'Rust 桥接层已就绪',
-        detail: '图片和 WAV 音频将调用 watermark-core 的移动端 Rust API；视频仍由桌面端处理。',
+        label: '本地处理已就绪',
+        detail: '图片和 WAV 音频可直接在本机处理，视频继续由桌面端负责。',
         capabilities: BridgeCapabilities(
           supportedKinds: [WatermarkAssetKind.image, WatermarkAssetKind.audio],
           supportsDesktopSync: false,

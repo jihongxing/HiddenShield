@@ -6,6 +6,9 @@ import 'package:flutter/material.dart';
 import '../../app/mobile_app_state.dart';
 import '../../bridge/watermark_bridge.dart';
 import '../../bridge/watermark_models.dart';
+import '../../shared/theme/design_tokens.dart';
+import '../../shared/widgets/tool_cards.dart';
+import 'rewrite_preflight.dart';
 
 class AudioEmbedPage extends StatefulWidget {
   const AudioEmbedPage({
@@ -26,20 +29,24 @@ class _AudioEmbedPageState extends State<AudioEmbedPage> {
   String? _fileName;
   bool _allowRewrite = false;
   bool _isProcessing = false;
+  bool _isInspecting = false;
   WatermarkWriteResult? _result;
   VaultRecord? _savedRecord;
+  RewritePreflightResult? _preflight;
   String? _errorText;
+  int _preflightRequestId = 0;
 
   @override
   Widget build(BuildContext context) {
     final selectedBytes = _selectedBytes;
     return Scaffold(
-      appBar: AppBar(title: const Text('音频嵌入')),
+      appBar: AppBar(title: const Text('保护音频')),
       body: SafeArea(
         child: ListView(
+          cacheExtent: 1000,
           padding: const EdgeInsets.all(16),
           children: [
-            _SectionCard(
+            HsPanel(
               title: '导入 WAV',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -55,16 +62,26 @@ class _AudioEmbedPageState extends State<AudioEmbedPage> {
               ),
             ),
             const SizedBox(height: 12),
-            _SectionCard(
-              title: '写入设置',
-              child: SwitchListTile(
-                value: _allowRewrite,
-                onChanged: _isProcessing
-                    ? null
-                    : (value) => setState(() => _allowRewrite = value),
-                title: const Text('允许重写已有隐盾水印'),
-                subtitle: const Text('默认关闭，避免覆盖第一次写入记录。'),
-                contentPadding: EdgeInsets.zero,
+            HsPanel(
+              title: '保护设置',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SwitchListTile(
+                    value: _allowRewrite,
+                    onChanged: _isProcessing
+                        ? null
+                        : (value) => setState(() => _allowRewrite = value),
+                    title: const Text('作为新版写入'),
+                    subtitle: const Text('默认关闭。开启后会保留上一版记录，并生成新的写入次数。'),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  const SizedBox(height: 8),
+                  _PreflightStatusCard(
+                    isInspecting: _isInspecting,
+                    result: _preflight,
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 12),
@@ -78,11 +95,11 @@ class _AudioEmbedPageState extends State<AudioEmbedPage> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.shield_outlined),
-              label: Text(_isProcessing ? '正在写入' : '写入盲水印'),
+              label: Text(_isProcessing ? '正在处理' : '生成保护副本'),
             ),
             if (_errorText != null) ...[
               const SizedBox(height: 12),
-              _MessageCard(
+              HsMessageCard(
                 icon: Icons.error_outline,
                 title: '处理失败',
                 detail: _errorText!,
@@ -115,8 +132,10 @@ class _AudioEmbedPageState extends State<AudioEmbedPage> {
       _fileName = file.name;
       _result = null;
       _savedRecord = null;
+      _preflight = null;
       _errorText = null;
     });
+    await _inspectSelected(bytes);
   }
 
   Future<void> _embedAudio() async {
@@ -133,7 +152,9 @@ class _AudioEmbedPageState extends State<AudioEmbedPage> {
     });
 
     try {
-      final parent = await _readParentWatermark(bytes);
+      final parent = _allowRewrite
+          ? (_preflight?.readResult ?? await _readParentWatermark(bytes))
+          : null;
       final result = await widget.bridge.write(
         WatermarkWriteRequest(
           kind: WatermarkAssetKind.audio,
@@ -145,17 +166,24 @@ class _AudioEmbedPageState extends State<AudioEmbedPage> {
             fileHash: const [13, 14],
           ),
           allowRewrite: _allowRewrite,
-          rewriteReason: _allowRewrite ? 'mobile explicit rewrite' : null,
+          rewriteReason: _allowRewrite ? '移动端确认重写已有水印' : null,
         ),
       );
       if (!mounted) return;
+      final revision = _allowRewrite
+          ? (_preflight?.hasWatermark == true
+                ? _preflight!.nextRevision
+                : parent == null
+                ? result.revision
+                : parent.revision + 1)
+          : result.revision;
       final record = widget.appState.addWriteResult(
         result: result,
         fileName: _fileName,
         allowRewrite: _allowRewrite,
-        rewriteReason: _allowRewrite ? 'mobile explicit rewrite' : null,
+        rewriteReason: _allowRewrite ? '移动端确认重写已有水印' : null,
         parentWatermarkUid: parent?.watermarkUid,
-        revision: parent == null ? result.revision : parent.revision + 1,
+        revision: revision,
       );
       setState(() {
         _result = result;
@@ -183,32 +211,23 @@ class _AudioEmbedPageState extends State<AudioEmbedPage> {
       return null;
     }
   }
-}
 
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.title, required this.child});
-
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: const Color(0xFF141B22),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
-            child,
-          ],
-        ),
-      ),
+  Future<void> _inspectSelected(List<int> bytes) async {
+    final requestId = ++_preflightRequestId;
+    setState(() => _isInspecting = true);
+    final result = await inspectMobileRewriteTarget(
+      bridge: widget.bridge,
+      appState: widget.appState,
+      kind: WatermarkAssetKind.audio,
+      bytes: bytes,
     );
+    if (!mounted || requestId != _preflightRequestId) {
+      return;
+    }
+    setState(() {
+      _preflight = result;
+      _isInspecting = false;
+    });
   }
 }
 
@@ -221,22 +240,16 @@ class _AudioPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sizeText = bytes == null
-        ? '选择一段 WAV 音频，生成本地版权记录。'
+        ? '选择一段 WAV 音频，生成保护副本和版权记录。'
         : '${(bytes!.length / 1024).toStringAsFixed(1)} KB';
-    return Container(
+    return HsPreviewBox(
       height: 160,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white12),
-        color: const Color(0xFF0F151B),
-      ),
       child: Row(
         children: [
           const Icon(
             Icons.graphic_eq_outlined,
             size: 42,
-            color: Colors.white54,
+            color: HsColors.iconMuted,
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -251,7 +264,10 @@ class _AudioPreview extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 8),
-                Text(sizeText, style: const TextStyle(color: Colors.white70)),
+                Text(
+                  sizeText,
+                  style: const TextStyle(color: HsColors.textMuted),
+                ),
               ],
             ),
           ),
@@ -275,41 +291,57 @@ class _ResultCard extends StatelessWidget {
     final savedRecord = record;
     final revision = savedRecord?.revision ?? result.revision;
     final parent = savedRecord?.parentWatermarkUid;
-    return _MessageCard(
+    return HsMessageCard(
       icon: Icons.verified_outlined,
       title: '写入完成',
       detail: [
-        'UID: ${result.watermarkUid}',
-        'revision: $revision',
-        if (parent != null) 'parent UID: $parent',
-        'sha256: $shaPreview',
+        '版权编号: ${result.watermarkUid}',
+        '写入次数: 第 $revision 次',
+        if (parent != null) '上一版本: $parent',
+        '作品指纹: $shaPreview',
       ].join('\n'),
     );
   }
 }
 
-class _MessageCard extends StatelessWidget {
-  const _MessageCard({
-    required this.icon,
-    required this.title,
-    required this.detail,
+class _PreflightStatusCard extends StatelessWidget {
+  const _PreflightStatusCard({
+    required this.isInspecting,
+    required this.result,
   });
 
-  final IconData icon;
-  final String title;
-  final String detail;
+  final bool isInspecting;
+  final RewritePreflightResult? result;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: const Color(0xFF162028),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        leading: Icon(icon, color: const Color(0xFF59D2C2)),
-        title: Text(title),
-        subtitle: Text(detail),
-      ),
+    if (isInspecting) {
+      return const HsMessageCard(
+        icon: Icons.search_outlined,
+        title: '写入检查',
+        detail: '正在检查是否已有版权记录...',
+      );
+    }
+    final result = this.result;
+    if (result == null) {
+      return const HsMessageCard(
+        icon: Icons.info_outline,
+        title: '写入检查',
+        detail: '选择 WAV 后会自动检查是否已有版权记录。',
+      );
+    }
+    final detail = [
+      result.reasonDetail,
+      if (result.watermarkUid != null) '上一版本: ${result.watermarkUid}',
+      if (result.detectedRevision != null)
+        '当前识别为第 ${result.detectedRevision} 次写入',
+    ].join('\n');
+    return HsMessageCard(
+      icon: result.hasWatermark
+          ? Icons.warning_amber_outlined
+          : Icons.check_circle_outline,
+      title: result.summary,
+      detail: detail,
     );
   }
 }

@@ -8,8 +8,8 @@ class PreviewWatermarkBridge extends WatermarkBridge {
   Future<BridgeStatus> status() {
     return Future.value(
       const BridgeStatus(
-        label: '桥接层已接入',
-        detail: 'Flutter 侧已预留 Rust/FRB 接口，当前移动端仅开放图片和音频的本地链路，视频仍由桌面端处理。',
+        label: '本地处理已就绪',
+        detail: '移动端支持图片和 WAV 音频的本地处理，视频继续由桌面端负责。',
         capabilities: BridgeCapabilities(
           supportedKinds: [WatermarkAssetKind.image, WatermarkAssetKind.audio],
           supportsDesktopSync: true,
@@ -25,9 +25,12 @@ class PreviewWatermarkBridge extends WatermarkBridge {
     if (request.kind == WatermarkAssetKind.video) {
       throw UnsupportedError('Mobile local video watermarking is disabled.');
     }
+    if (!_hasPreviewMarker(request.bytes)) {
+      return null;
+    }
 
     final uidPrefix = request.kind == WatermarkAssetKind.image ? 'img' : 'aud';
-    final hash = _previewHash(request.bytes);
+    final hash = _previewHash(_stripPreviewMarker(request.bytes));
     return WatermarkReadResult(
       kind: request.kind,
       watermarkUid: 'preview-$uidPrefix-${hash.substring(0, 12)}',
@@ -50,12 +53,48 @@ class PreviewWatermarkBridge extends WatermarkBridge {
     final hash = _previewHash(request.bytes);
     return WatermarkWriteResult(
       kind: request.kind,
-      bytes: request.bytes,
+      bytes: [...request.bytes, ..._previewMarker],
       watermarkUid: 'preview-$uidPrefix-${hash.substring(0, 12)}',
       revision: revision,
       sha256: hash,
     );
   }
+}
+
+const List<int> _previewMarker = [
+  0x48,
+  0x53,
+  0x5f,
+  0x50,
+  0x52,
+  0x45,
+  0x56,
+  0x49,
+  0x45,
+  0x57,
+  0x5f,
+  0x57,
+  0x4d,
+];
+
+bool _hasPreviewMarker(List<int> bytes) {
+  if (bytes.length < _previewMarker.length) {
+    return false;
+  }
+  final offset = bytes.length - _previewMarker.length;
+  for (var i = 0; i < _previewMarker.length; i += 1) {
+    if (bytes[offset + i] != _previewMarker[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+List<int> _stripPreviewMarker(List<int> bytes) {
+  if (!_hasPreviewMarker(bytes)) {
+    return bytes;
+  }
+  return bytes.sublist(0, bytes.length - _previewMarker.length);
 }
 
 String _previewHash(List<int> bytes) {

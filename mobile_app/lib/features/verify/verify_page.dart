@@ -6,7 +6,9 @@ import 'package:flutter/material.dart';
 import '../../app/mobile_app_state.dart';
 import '../../bridge/watermark_bridge.dart';
 import '../../bridge/watermark_models.dart';
+import '../../shared/theme/design_tokens.dart';
 import '../../shared/widgets/feature_page_scaffold.dart';
+import '../../shared/widgets/tool_cards.dart';
 import 'mobile_verify_reason.dart';
 
 class VerifyPage extends StatefulWidget {
@@ -32,11 +34,10 @@ class _VerifyPageState extends State<VerifyPage> {
   Widget build(BuildContext context) {
     return FeaturePageScaffold(
       title: '取证',
-      subtitle: '检测疑似侵权图片或 WAV 音频，展示命中和链路',
-      bridge: widget.bridge,
+      subtitle: '检查文件是否保留隐盾版权记录',
       children: [
-        _SectionCard(
-          title: '文件提取',
+        HsPanel(
+          title: '检测文件',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -88,15 +89,15 @@ class _VerifyPageState extends State<VerifyPage> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.document_scanner_outlined),
-          label: Text(_isProcessing ? '正在提取' : '提取水印'),
+          label: Text(_isProcessing ? '正在检测' : '开始检测'),
         ),
         if (_errorText != null) ...[
           const SizedBox(height: 12),
-          _MessageCard(
+          HsMessageCard(
             icon: Icons.error_outline,
-            title: '未能提取',
+            title: '未检测到记录',
             detail: _errorText!,
-            reason: _reason,
+            detailWidget: _MessageDetail(detail: _errorText!, reason: _reason),
           ),
         ],
         if (_result != null) ...[
@@ -172,33 +173,6 @@ class _VerifyPageState extends State<VerifyPage> {
   }
 }
 
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.title, required this.child});
-
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: const Color(0xFF141B22),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 12),
-            child,
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _SelectedFileSummary extends StatelessWidget {
   const _SelectedFileSummary({
     required this.kind,
@@ -213,19 +187,13 @@ class _SelectedFileSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final emptyText = kind == WatermarkAssetKind.image
-        ? '选择疑似侵权图片，检测是否含有隐盾水印。'
-        : '选择疑似侵权 WAV，检测是否含有隐盾水印。';
+        ? '选择疑似侵权图片，检查是否保留版权记录。'
+        : '选择疑似侵权 WAV，检查是否保留版权记录。';
     final detail = bytes == null
         ? emptyText
         : '${(bytes!.length / 1024).toStringAsFixed(1)} KB';
-    return Container(
+    return HsPreviewBox(
       height: 150,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white12),
-        color: const Color(0xFF0F151B),
-      ),
       child: Row(
         children: [
           Icon(
@@ -233,7 +201,7 @@ class _SelectedFileSummary extends StatelessWidget {
                 ? Icons.image_search_outlined
                 : Icons.graphic_eq_outlined,
             size: 42,
-            color: Colors.white54,
+            color: HsColors.iconMuted,
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -248,7 +216,7 @@ class _SelectedFileSummary extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 8),
-                Text(detail, style: const TextStyle(color: Colors.white70)),
+                Text(detail, style: const TextStyle(color: HsColors.textMuted)),
               ],
             ),
           ),
@@ -266,61 +234,53 @@ class _ResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final parent = result.parentWatermarkUid ?? '无';
-    final rewriteReason = result.rewriteReason ?? '无';
-    return _MessageCard(
+    return HsMessageCard(
       icon: Icons.fact_check_outlined,
-      title: '提取成功',
+      title: '检测到版权记录',
       detail: [
-        'UID: ${result.watermarkUid}',
-        'revision: ${result.revision}',
-        'parent UID: $parent',
-        'rewrite_reason: $rewriteReason',
-        '设备: ${result.deviceIdHex}',
-        '文件哈希片段: ${result.fileHashHex}',
+        '版权编号: ${result.watermarkUid}',
+        '写入次数: 第 ${result.revision} 次',
+        if (result.parentWatermarkUid != null)
+          '上一版本: ${result.parentWatermarkUid}',
+        if (result.rewriteReason != null) '重写原因: ${result.rewriteReason}',
+        '作品指纹: ${result.fileHashHex}',
       ].join('\n'),
-      reason: reason,
+      detailWidget: _MessageDetail(
+        detail: [
+          '版权编号: ${result.watermarkUid}',
+          '写入次数: 第 ${result.revision} 次',
+          if (result.parentWatermarkUid != null)
+            '上一版本: ${result.parentWatermarkUid}',
+          if (result.rewriteReason != null) '重写原因: ${result.rewriteReason}',
+          '作品指纹: ${result.fileHashHex}',
+        ].join('\n'),
+        reason: reason,
+      ),
     );
   }
 }
 
-class _MessageCard extends StatelessWidget {
-  const _MessageCard({
-    required this.icon,
-    required this.title,
-    required this.detail,
-    this.reason,
-  });
+class _MessageDetail extends StatelessWidget {
+  const _MessageDetail({required this.detail, this.reason});
 
-  final IconData icon;
-  final String title;
   final String detail;
   final MobileVerifyReason? reason;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: const Color(0xFF162028),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        leading: Icon(icon, color: const Color(0xFF59D2C2)),
-        title: Text(title),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(detail),
-            if (reason != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                '原因分层: ${reason!.code}\n${reason!.detail}',
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
-              ),
-            ],
-          ],
-        ),
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(detail),
+        if (reason != null) ...[
+          const SizedBox(height: HsSpacing.sm),
+          Text(
+            reason!.detail,
+            style: const TextStyle(color: HsColors.textMuted, fontSize: 12),
+          ),
+        ],
+      ],
     );
   }
 }

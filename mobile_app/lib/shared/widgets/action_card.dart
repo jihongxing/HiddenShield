@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/design_tokens.dart';
+
 class ActionCard extends StatelessWidget {
   const ActionCard({
     super.key,
@@ -20,13 +22,15 @@ class ActionCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12),
       child: Card(
         elevation: 0,
-        color: const Color(0xFF141B22),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        color: HsColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(HsRadii.panel),
+        ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(HsRadii.panel),
           onTap: onTap,
           child: ListTile(
-            leading: Icon(icon, color: const Color(0xFF59D2C2)),
+            leading: Icon(icon, color: HsColors.accent),
             title: Text(title),
             subtitle: Text(description),
             trailing: const Icon(Icons.chevron_right),

@@ -5,6 +5,7 @@ import '../features/settings/settings_page.dart';
 import '../features/verify/verify_page.dart';
 import '../features/vault/vault_page.dart';
 import '../features/workspace/workspace_page.dart';
+import '../shared/theme/design_tokens.dart';
 import 'mobile_app_state.dart';
 
 class MobileShell extends StatefulWidget {
@@ -47,7 +48,7 @@ class _MobileShellState extends State<MobileShell> {
       appBar: AppBar(
         title: const Text('HiddenShield'),
         centerTitle: false,
-        backgroundColor: const Color(0xFF0F151B),
+        backgroundColor: HsColors.appBar,
       ),
       body: SafeArea(
         child: IndexedStack(
@@ -63,7 +64,7 @@ class _MobileShellState extends State<MobileShell> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) => setState(() => _currentIndex = index),
-        backgroundColor: const Color(0xFF121920),
+        backgroundColor: HsColors.navigation,
         destinations: _tabs
             .map(
               (tab) => NavigationDestination(

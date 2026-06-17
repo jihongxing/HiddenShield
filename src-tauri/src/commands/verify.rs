@@ -41,9 +41,65 @@ pub struct VerificationResult {
     pub original_hash: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RewriteTargetInspectionResult {
+    pub supported: bool,
+    pub file_kind: String,
+    pub has_watermark: bool,
+    pub watermark_uid: Option<String>,
+    pub detected_revision: Option<u32>,
+    pub next_revision: u32,
+    pub parent_watermark_uid: Option<String>,
+    pub rewrite_reason: Option<String>,
+    pub summary: String,
+    pub reason_code: String,
+    pub reason_detail: String,
+}
+
 struct VerificationReason {
     code: &'static str,
     detail: &'static str,
+}
+
+#[derive(Debug, Clone)]
+struct RewriteTargetPlan {
+    supported: bool,
+    file_kind: String,
+    has_watermark: bool,
+    watermark_uid: Option<String>,
+    detected_revision: Option<u32>,
+    next_revision: u32,
+    parent_watermark_uid: Option<String>,
+    rewrite_reason: Option<String>,
+    summary: String,
+    reason_code: String,
+    reason_detail: String,
+}
+
+#[tauri::command]
+pub async fn inspect_rewrite_target(
+    path: String,
+    app_handle: AppHandle,
+) -> Result<RewriteTargetInspectionResult, String> {
+    let file_path = Path::new(&path);
+    if !file_path.exists() {
+        return Err(format!("文件不存在: {path}"));
+    }
+    let plan = inspect_rewrite_target_plan(file_path, &app_handle).await;
+    Ok(RewriteTargetInspectionResult {
+        supported: plan.supported,
+        file_kind: plan.file_kind,
+        has_watermark: plan.has_watermark,
+        watermark_uid: plan.watermark_uid,
+        detected_revision: plan.detected_revision,
+        next_revision: plan.next_revision,
+        parent_watermark_uid: plan.parent_watermark_uid,
+        rewrite_reason: plan.rewrite_reason,
+        summary: plan.summary,
+        reason_code: plan.reason_code,
+        reason_detail: plan.reason_detail,
+    })
 }
 
 #[tauri::command]
@@ -461,6 +517,127 @@ fn confidence_bucket(confidence: f64) -> &'static str {
     }
 }
 
+async fn inspect_rewrite_target_plan(
+    file_path: &Path,
+    app_handle: &AppHandle,
+) -> RewriteTargetPlan {
+    let file_type = classify_file(file_path);
+    let file_kind = media_type_label(file_type).to_string();
+    let extraction = match file_type {
+        FileType::Image => extract_from_image(file_path),
+        FileType::Audio => extract_from_audio_bearing(file_path, app_handle).await,
+        FileType::Video => {
+            return unsupported_rewrite_plan(file_kind);
+        }
+    };
+
+    let (payload, confidence) = match extraction {
+        Ok((payload, confidence)) => (payload, confidence),
+        Err(err) => {
+            return extraction_error_rewrite_plan(file_kind, &err);
+        }
+    };
+
+    if confidence < 0.95 {
+        return RewriteTargetPlan {
+            supported: true,
+            file_kind,
+            has_watermark: false,
+            watermark_uid: None,
+            detected_revision: None,
+            next_revision: 1,
+            parent_watermark_uid: None,
+            rewrite_reason: None,
+            summary: "检测到疑似水印特征但置信度不足，将按首次写入处理。".to_string(),
+            reason_code: "preflight_low_confidence".to_string(),
+            reason_detail: "当前文件可能经过强压缩、裁剪或转码；若确认要覆盖旧水印，请开启重写。"
+                .to_string(),
+        };
+    }
+
+    let uid = payload.watermark_uid();
+    let record = {
+        let state = app_handle.state::<AppState>();
+        let conn = state.db.lock().ok();
+        conn.and_then(|conn| queries::find_by_watermark_uid(&conn, &uid))
+    };
+    rewrite_detected_plan(file_kind, uid, record)
+}
+
+fn unsupported_rewrite_plan(file_kind: String) -> RewriteTargetPlan {
+    RewriteTargetPlan {
+        supported: false,
+        file_kind,
+        has_watermark: false,
+        watermark_uid: None,
+        detected_revision: None,
+        next_revision: 1,
+        parent_watermark_uid: None,
+        rewrite_reason: None,
+        summary: "该类型暂不支持写前水印预检。".to_string(),
+        reason_code: "unsupported_preflight".to_string(),
+        reason_detail: "当前写前预检只覆盖图片和音频；视频仍按桌面端转码管线处理。".to_string(),
+    }
+}
+
+fn extraction_error_rewrite_plan(file_kind: String, error: &str) -> RewriteTargetPlan {
+    let reason_code = extraction_error_reason_code(Some(error));
+    let is_no_valid_watermark = reason_code == "no_valid_watermark";
+    RewriteTargetPlan {
+        supported: true,
+        file_kind,
+        has_watermark: false,
+        watermark_uid: None,
+        detected_revision: None,
+        next_revision: 1,
+        parent_watermark_uid: None,
+        rewrite_reason: None,
+        summary: if is_no_valid_watermark {
+            "未检测到已有隐盾水印，将按首次写入处理。".to_string()
+        } else {
+            "写前预检未完成，继续写入前请先处理检测异常。".to_string()
+        },
+        reason_code: if is_no_valid_watermark {
+            "no_valid_watermark".to_string()
+        } else {
+            "preflight_extract_failed".to_string()
+        },
+        reason_detail: if is_no_valid_watermark {
+            "写前预检没有提取到有效水印；如果继续写入，会创建新的版权存证。".to_string()
+        } else {
+            extraction_error_reason_detail(Some(error)).to_string()
+        },
+    }
+}
+
+fn rewrite_detected_plan(
+    file_kind: String,
+    uid: String,
+    record: Option<VaultRecord>,
+) -> RewriteTargetPlan {
+    let detected_revision = record.as_ref().map(|record| record.revision).unwrap_or(1);
+    let next_revision = detected_revision.saturating_add(1);
+    RewriteTargetPlan {
+        supported: true,
+        file_kind,
+        has_watermark: true,
+        watermark_uid: Some(uid.clone()),
+        detected_revision: Some(detected_revision),
+        next_revision,
+        parent_watermark_uid: Some(uid.clone()),
+        rewrite_reason: record
+            .as_ref()
+            .and_then(|record| record.rewrite_reason.clone()),
+        summary: format!("检测到已有隐盾水印，继续写入将记录为第 {next_revision} 次写入。"),
+        reason_code: "rewrite_detected".to_string(),
+        reason_detail: if record.is_some() {
+            "已在本地版权库找到同 UID 记录，重写会保留父级 UID 和递增版本。".to_string()
+        } else {
+            "检测到有效水印但本机版权库未找到对应记录，重写仍会保留提取到的父级 UID。".to_string()
+        },
+    }
+}
+
 fn extraction_error_reason_code(error: Option<&str>) -> &'static str {
     let Some(error) = error else {
         return "no_valid_watermark";
@@ -531,5 +708,32 @@ mod tests {
             extraction_error_reason_detail(Some("audio_watermark_extract_failed")).contains("音频")
         );
         assert!(extraction_error_reason_detail(None).contains("水印"));
+    }
+
+    #[test]
+    fn rewrite_preflight_maps_no_watermark_to_first_write() {
+        let plan = extraction_error_rewrite_plan(
+            "image".to_string(),
+            "image_watermark_extract_failed: decode",
+        );
+
+        assert!(plan.supported);
+        assert!(!plan.has_watermark);
+        assert_eq!(plan.next_revision, 1);
+        assert_eq!(plan.reason_code, "no_valid_watermark");
+        assert!(plan.summary.contains("首次写入"));
+    }
+
+    #[test]
+    fn rewrite_preflight_keeps_parent_uid_and_increments_revision() {
+        let plan = rewrite_detected_plan("audio".to_string(), "uid-parent".to_string(), None);
+
+        assert!(plan.supported);
+        assert!(plan.has_watermark);
+        assert_eq!(plan.watermark_uid.as_deref(), Some("uid-parent"));
+        assert_eq!(plan.parent_watermark_uid.as_deref(), Some("uid-parent"));
+        assert_eq!(plan.detected_revision, Some(1));
+        assert_eq!(plan.next_revision, 2);
+        assert_eq!(plan.reason_code, "rewrite_detected");
     }
 }
