@@ -158,8 +158,14 @@ function getUnmatchedReason(confidence: number): string {
         <template v-else>
           <strong>❌ 未命中</strong>
           <p>{{ result.summary }}</p>
-          <p class="verify-result__reason">{{ getUnmatchedReason(result.confidence) }}</p>
+          <p class="verify-result__reason">{{ result.reasonDetail || getUnmatchedReason(result.confidence) }}</p>
         </template>
+
+        <div v-if="result.reasonDetail" class="verify-reason">
+          <span>原因分层</span>
+          <strong>{{ result.reasonCode }}</strong>
+          <p>{{ result.reasonDetail }}</p>
+        </div>
 
         <div class="verify-result__meta">
           <span>置信度 {{ Math.round(result.confidence * 100) }}%</span>
@@ -250,6 +256,31 @@ function getUnmatchedReason(confidence: number): string {
   border: 1px solid rgba(87, 143, 202, 0.28);
   border-radius: 10px;
   background: rgba(87, 143, 202, 0.08);
+}
+
+.verify-reason {
+  margin-top: 0.85rem;
+  padding: 0.8rem;
+  border: 1px solid rgba(255, 200, 87, 0.22);
+  border-radius: 10px;
+  background: rgba(255, 200, 87, 0.08);
+}
+
+.verify-reason span {
+  display: block;
+  color: var(--text-muted, #8b95a7);
+  font-size: 0.78rem;
+}
+
+.verify-reason strong {
+  display: block;
+  margin-top: 0.2rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  overflow-wrap: anywhere;
+}
+
+.verify-reason p {
+  margin: 0.45rem 0 0;
 }
 
 .verify-lineage strong {

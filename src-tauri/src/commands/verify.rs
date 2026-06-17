@@ -28,6 +28,8 @@ pub struct VerificationResult {
     pub confidence: f64,
     pub matched_record: Option<VaultRecord>,
     pub summary: String,
+    pub reason_code: String,
+    pub reason_detail: String,
     pub disclaimer: String,
     /// Whether a TSA token file is present locally. This is not a cryptographic verification.
     pub tsa_token_present: bool,
@@ -37,6 +39,11 @@ pub struct VerificationResult {
     pub network_time: Option<String>,
     pub created_at: Option<String>,
     pub original_hash: Option<String>,
+}
+
+struct VerificationReason {
+    code: &'static str,
+    detail: &'static str,
 }
 
 #[tauri::command]
@@ -95,11 +102,16 @@ pub async fn verify_suspect(
         };
 
         if confidence >= 0.95 {
+            let reason;
             let summary = if let Some(ref record) = matched_record {
                 let file_hash_2bytes = [payload.file_hash[0], payload.file_hash[1]];
                 let prefix_hex = hex::encode(file_hash_2bytes);
 
                 if record.original_hash.starts_with(&prefix_hex) {
+                    reason = VerificationReason {
+                        code: "matched_original",
+                        detail: "水印有效，文件哈希片段与原始存证匹配。",
+                    };
                     format!("✅ 原始文件验证通过，水印 UID: {uid}")
                 } else if record
                     .output_douyin_hash
@@ -107,6 +119,10 @@ pub async fn verify_suspect(
                     .map(|h| h.starts_with(&prefix_hex))
                     .unwrap_or(false)
                 {
+                    reason = VerificationReason {
+                        code: "matched_output",
+                        detail: "水印有效，文件哈希片段与抖音输出副本匹配。",
+                    };
                     format!("✅ 输出文件验证通过（抖音），水印 UID: {uid}")
                 } else if record
                     .output_bilibili_hash
@@ -114,6 +130,10 @@ pub async fn verify_suspect(
                     .map(|h| h.starts_with(&prefix_hex))
                     .unwrap_or(false)
                 {
+                    reason = VerificationReason {
+                        code: "matched_output",
+                        detail: "水印有效，文件哈希片段与 B 站输出副本匹配。",
+                    };
                     format!("✅ 输出文件验证通过（B站），水印 UID: {uid}")
                 } else if record
                     .output_xhs_hash
@@ -121,13 +141,30 @@ pub async fn verify_suspect(
                     .map(|h| h.starts_with(&prefix_hex))
                     .unwrap_or(false)
                 {
+                    reason = VerificationReason {
+                        code: "matched_output",
+                        detail: "水印有效，文件哈希片段与小红书输出副本匹配。",
+                    };
                     format!("✅ 输出文件验证通过（小红书），水印 UID: {uid}")
                 } else {
+                    reason = VerificationReason {
+                        code: "matched_hash_mismatch",
+                        detail: "水印 UID 命中本地记录，但文件哈希片段与已登记原件/输出不一致，可能经历过压缩、裁剪、转码或二次传播。",
+                    };
                     format!("✅ 文件验证通过，水印 UID: {uid}")
                 }
             } else if uid_exists {
+                reason = VerificationReason {
+                    code: "watermark_detected_asset_mismatch",
+                    detail: "检测到有效水印 UID，但当前文件哈希片段未绑定到本地版权库记录。",
+                };
                 format!("⚠️ 检测到有效水印但文件已被修改，水印 UID: {uid}")
             } else {
+                reason = VerificationReason {
+                    code: "watermark_detected_unregistered",
+                    detail:
+                        "检测到有效水印，但本机版权库没有对应 UID，可能来自其他设备或尚未同步。",
+                };
                 format!("⚠️ 检测到有效水印但未在本地金库找到记录，水印 UID: {uid}")
             };
             let tsa_token_path = matched_record
@@ -170,6 +207,8 @@ pub async fn verify_suspect(
                 confidence,
                 matched_record,
                 summary,
+                reason_code: reason.code.to_string(),
+                reason_detail: reason.detail.to_string(),
                 disclaimer: DISCLAIMER.to_string(),
                 tsa_token_present,
                 tsa_token_verified,
@@ -186,6 +225,8 @@ pub async fn verify_suspect(
                 confidence,
                 matched_record: None,
                 summary: "检测到疑似水印特征但置信度不足，无法确认匹配".to_string(),
+                reason_code: "low_confidence".to_string(),
+                reason_detail: "提取到了部分水印特征，但完整性不足；文件可能经过强压缩、裁剪、重采样或音轨替换。".to_string(),
                 disclaimer: DISCLAIMER.to_string(),
                 tsa_token_present: false,
                 tsa_token_verified: false,
@@ -202,6 +243,8 @@ pub async fn verify_suspect(
                 confidence,
                 matched_record: None,
                 summary: "未检测到有效水印".to_string(),
+                reason_code: "no_valid_watermark".to_string(),
+                reason_detail: "未提取到可验证的 HiddenShield 水印载荷；可能不是本软件处理的作品，或水印已被严重破坏。".to_string(),
                 disclaimer: DISCLAIMER.to_string(),
                 tsa_token_present: false,
                 tsa_token_verified: false,
@@ -219,6 +262,8 @@ pub async fn verify_suspect(
             confidence,
             matched_record: None,
             summary: "未检测到有效水印".to_string(),
+            reason_code: extraction_error_reason_code(extraction_error.as_deref()).to_string(),
+            reason_detail: extraction_error_reason_detail(extraction_error.as_deref()).to_string(),
             disclaimer: DISCLAIMER.to_string(),
             tsa_token_present: false,
             tsa_token_verified: false,
@@ -413,5 +458,78 @@ fn confidence_bucket(confidence: f64) -> &'static str {
         "0.50-0.94"
     } else {
         "0.00-0.49"
+    }
+}
+
+fn extraction_error_reason_code(error: Option<&str>) -> &'static str {
+    let Some(error) = error else {
+        return "no_valid_watermark";
+    };
+    if error.contains("ffmpeg_unavailable") {
+        "ffmpeg_unavailable"
+    } else if error.contains("audio_extract_failed") {
+        "audio_extract_failed"
+    } else if error.contains("image_read_failed") || error.contains("wav_read_failed") {
+        "file_read_failed"
+    } else if error.contains("image_watermark_extract_failed")
+        || error.contains("audio_watermark_extract_failed")
+    {
+        "no_valid_watermark"
+    } else {
+        "extract_failed"
+    }
+}
+
+fn extraction_error_reason_detail(error: Option<&str>) -> &'static str {
+    let Some(error) = error else {
+        return "未提取到可验证的 HiddenShield 水印载荷。";
+    };
+    if error.contains("ffmpeg_unavailable") {
+        "音视频取证需要 FFmpeg；当前环境未找到可用 FFmpeg，无法抽取音轨。"
+    } else if error.contains("audio_extract_failed") {
+        "无法从该文件抽取可检测音轨；可能没有音轨、音轨损坏，或格式暂不受支持。"
+    } else if error.contains("image_read_failed") || error.contains("wav_read_failed") {
+        "文件读取失败，请确认文件仍存在且当前用户有读取权限。"
+    } else if error.contains("image_watermark_extract_failed") {
+        "图片中未提取到可验证水印；可能不是 HiddenShield 输出，或图片经过强压缩、裁剪、截图转发。"
+    } else if error.contains("audio_watermark_extract_failed") {
+        "音频中未提取到可验证水印；可能不是 HiddenShield 输出，或音频经过重采样、降噪、裁剪、转码。"
+    } else {
+        "提取过程异常，建议复制报告或发送诊断以便定位。"
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn extraction_errors_map_to_actionable_reason_codes() {
+        assert_eq!(
+            extraction_error_reason_code(Some("ffmpeg_unavailable: not found")),
+            "ffmpeg_unavailable"
+        );
+        assert_eq!(
+            extraction_error_reason_code(Some("audio_extract_failed")),
+            "audio_extract_failed"
+        );
+        assert_eq!(
+            extraction_error_reason_code(Some("image_watermark_extract_failed: decode")),
+            "no_valid_watermark"
+        );
+        assert_eq!(
+            extraction_error_reason_code(Some("image_read_failed: denied")),
+            "file_read_failed"
+        );
+        assert_eq!(extraction_error_reason_code(None), "no_valid_watermark");
+    }
+
+    #[test]
+    fn extraction_error_details_are_user_facing() {
+        assert!(extraction_error_reason_detail(Some("audio_extract_failed")).contains("音轨"));
+        assert!(
+            extraction_error_reason_detail(Some("audio_watermark_extract_failed")).contains("音频")
+        );
+        assert!(extraction_error_reason_detail(None).contains("水印"));
     }
 }

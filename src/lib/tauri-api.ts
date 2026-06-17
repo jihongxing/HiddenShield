@@ -203,6 +203,8 @@ export interface VerificationResult {
   confidence: number;
   matchedRecord: VaultRecord | null;
   summary: string;
+  reasonCode: string;
+  reasonDetail: string;
   disclaimer: string;
   tsaTokenPresent: boolean;
   tsaTokenVerified: boolean;
@@ -693,6 +695,8 @@ export async function verifySuspect(path: string): Promise<VerificationResult> {
       confidence: 0.88,
       matchedRecord,
       summary: "检测到有效水印样本，已命中本地版权金库中的作品记录。",
+      reasonCode: "matched_original",
+      reasonDetail: "水印有效，并且与本地版权库记录完成绑定。",
       disclaimer: "本报告仅基于既定算法进行特征码技术提取，仅供参考，不代表任何司法鉴定意见。平台不对因本报告引发的连带法律责任负责。",
       tsaTokenPresent: true,
       tsaTokenVerified: true,
@@ -885,6 +889,8 @@ export function buildVerificationSummary(result: VerificationResult, filePath: s
     `【检测结果】${status}`,
     `置信度: ${Math.round(result.confidence * 100)}%`,
     result.watermarkUid ? `水印 UID: ${result.watermarkUid}` : "",
+    result.reasonCode ? `原因代码: ${result.reasonCode}` : "",
+    result.reasonDetail ? `原因说明: ${result.reasonDetail}` : "",
     ``,
     `───────────── 文件信息 ─────────────`,
     `检测文件: ${filePath.split(/[\\/]/).pop() ?? filePath}`,
