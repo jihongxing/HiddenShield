@@ -891,12 +891,12 @@ export function buildCopyrightSummary(record: VaultRecord): string {
 
   return [
     `【隐盾版权存证】`,
-    `水印 UID: ${record.watermarkUid}`,
-    `写入版本: 第 ${record.revision} 次`,
-    record.parentWatermarkUid ? `父级水印 UID: ${record.parentWatermarkUid}` : "",
-    record.rewriteReason ? `重写原因: ${record.rewriteReason}` : "",
+    `版权编号: ${record.watermarkUid}`,
+    `写入次数: 第 ${record.revision} 次`,
+    record.parentWatermarkUid ? `上一版编号: ${record.parentWatermarkUid}` : "",
+    record.rewriteReason ? `新版原因: ${record.rewriteReason}` : "",
     `原文件: ${record.fileName}`,
-    `SHA-256: ${record.originalHash}`,
+    `作品指纹: ${record.originalHash}`,
     `处理时间: ${record.createdAt}`,
     `输出平台: ${platforms.join("、") || "无"}`,
     `分辨率: ${record.resolution}`,
@@ -922,14 +922,14 @@ export function buildVerificationSummary(result: VerificationResult, filePath: s
     ``,
     `【检测结果】${status}`,
     `置信度: ${Math.round(result.confidence * 100)}%`,
-    result.watermarkUid ? `水印 UID: ${result.watermarkUid}` : "",
-    result.reasonCode ? `原因代码: ${result.reasonCode}` : "",
-    result.reasonDetail ? `原因说明: ${result.reasonDetail}` : "",
+    result.watermarkUid ? `版权编号: ${result.watermarkUid}` : "",
+    result.reasonCode ? `判断依据: ${result.reasonCode}` : "",
+    result.reasonDetail ? `判断说明: ${result.reasonDetail}` : "",
     ``,
     `───────────── 文件信息 ─────────────`,
     `检测文件: ${filePath.split(/[\\/]/).pop() ?? filePath}`,
     `文件路径: ${filePath}`,
-    result.originalHash ? `原文件 SHA-256: ${result.originalHash}` : "",
+    result.originalHash ? `原文件作品指纹: ${result.originalHash}` : "",
     `检测时间: ${new Date().toLocaleString()}`,
     ``,
   ];
@@ -938,25 +938,25 @@ export function buildVerificationSummary(result: VerificationResult, filePath: s
     const r = result.matchedRecord;
     lines.push(`───────────── 版权记录 ─────────────`);
     lines.push(`原始文件: ${r.fileName}`);
-    lines.push(`写入版本: 第 ${r.revision} 次`);
+    lines.push(`写入次数: 第 ${r.revision} 次`);
     if (r.parentWatermarkUid) {
-      lines.push(`父级 UID: ${r.parentWatermarkUid}`);
+      lines.push(`上一版编号: ${r.parentWatermarkUid}`);
     }
     if (r.rewriteReason) {
-      lines.push(`重写原因: ${r.rewriteReason}`);
+      lines.push(`新版原因: ${r.rewriteReason}`);
     }
     lines.push(`入库时间: ${new Date(r.createdAt).toLocaleString()}`);
     if (r.resolution) {
       lines.push(`分辨率: ${r.resolution}`);
     }
-    lines.push(`原文件哈希: ${r.originalHash}`);
+    lines.push(`作品指纹: ${r.originalHash}`);
     lines.push(``);
   }
 
   if (result.tsaTokenPresent || result.networkTime) {
     lines.push(`───────────── 时间取证材料 ─────────────`);
     if (result.tsaTokenPresent && result.tsaSource) {
-      lines.push(`RFC 3161 时间戳回执: 已获取`);
+      lines.push(`可信时间回执: 已获取`);
       lines.push(`回执来源: ${result.tsaSource}`);
       lines.push(
         `状态: ${
@@ -980,13 +980,13 @@ export function buildVerificationSummary(result: VerificationResult, filePath: s
       lines.push(
         ``,
         `⚠️ 上述回执与网络授时仅作为补充取证材料，`,
-        `   RFC 3161 回执仍需完成独立验签后方可作为正式证明使用。`,
+        `   可信时间回执仍需完成独立验签后方可作为正式证明使用。`,
         ``,
       );
     } else {
       lines.push(
         ``,
-        `RFC 3161 回执：${getTsaVerificationLabel(result.tsaVerificationPath) ?? "已完成本地复验"}。`,
+        `可信时间回执：${getTsaVerificationLabel(result.tsaVerificationPath) ?? "已完成本地复验"}。`,
         ``,
       );
     }

@@ -31,9 +31,9 @@ const platformOutputs = [
             <span>{{ record.resolution }}</span>
           </div>
           <div class="timeline__meta">
-            <span>UID {{ record.watermarkUid }}</span>
+            <span>版权编号 {{ record.watermarkUid }}</span>
             <span v-if="record.revision > 1">第 {{ record.revision }} 次写入</span>
-            <span v-if="record.parentWatermarkUid">派生</span>
+            <span v-if="record.parentWatermarkUid">有上一版</span>
             <span>{{ record.durationSecs }}s</span>
             <span>{{ record.isHdrSource ? "HDR 源" : "SDR 源" }}</span>
           </div>

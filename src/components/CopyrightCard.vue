@@ -36,19 +36,19 @@ async function handleCopy() {
     </div>
     <div class="copyright-card__body">
       <div class="copyright-card__row">
-        <span>水印 UID</span>
+        <span>版权编号</span>
         <strong>{{ record.watermarkUid }}</strong>
       </div>
       <div v-if="record.revision > 1 || record.parentWatermarkUid" class="copyright-card__row">
-        <span>写入版本</span>
+        <span>写入次数</span>
         <strong>第 {{ record.revision }} 次</strong>
       </div>
       <div v-if="record.parentWatermarkUid" class="copyright-card__row">
-        <span>父级 UID</span>
+        <span>上一版编号</span>
         <strong>{{ record.parentWatermarkUid }}</strong>
       </div>
       <div v-if="record.rewriteReason" class="copyright-card__row">
-        <span>重写原因</span>
+        <span>新版原因</span>
         <strong>{{ record.rewriteReason }}</strong>
       </div>
       <div class="copyright-card__row">
@@ -56,7 +56,7 @@ async function handleCopy() {
         <strong>{{ record.createdAt }}</strong>
       </div>
       <div class="copyright-card__row">
-        <span>SHA-256</span>
+        <span>作品指纹</span>
         <strong class="hash-text">{{ record.originalHash.slice(0, 16) }}...</strong>
       </div>
       <div class="copyright-card__row">

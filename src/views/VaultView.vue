@@ -390,17 +390,17 @@ async function pullCloudChanges() {
         </div>
 
         <div class="vault-lineage-drawer__grid">
-          <span>当前 UID</span>
+          <span>版权编号</span>
           <b>{{ selectedLineageRecord.watermarkUid }}</b>
-          <span>父级 UID</span>
+          <span>上一版编号</span>
           <b>{{ selectedLineageRecord.parentWatermarkUid ?? "未知父级" }}</b>
-          <span>写入版本</span>
+          <span>写入次数</span>
           <b>第 {{ selectedLineageRecord.revision }} 次</b>
-          <span>重写原因</span>
+          <span>新版原因</span>
           <b>{{ selectedLineageRecord.rewriteReason ?? "未记录" }}</b>
           <span>入库时间</span>
           <b>{{ selectedLineageRecord.createdAt }}</b>
-          <span>原文件哈希</span>
+          <span>作品指纹</span>
           <b>{{ selectedLineageRecord.originalHash }}</b>
         </div>
       </aside>

@@ -48,8 +48,8 @@ async function handleCopyPath() {
 <template>
   <div class="result-page">
     <section class="result-page__header">
-      <h3>✅ 已完成</h3>
-      <p>UID: {{ payload.watermarkUid }}</p>
+      <h3>✅ 处理完成</h3>
+      <p>版权编号：{{ payload.watermarkUid }}</p>
     </section>
 
     <section class="result-page__outputs">
@@ -67,7 +67,7 @@ async function handleCopyPath() {
     </section>
 
     <section class="result-page__compare">
-      <h4>结果</h4>
+      <h4>处理结果</h4>
       <table class="result-page__table">
         <thead>
           <tr><th></th><th>源文件</th><th>输出</th></tr>
@@ -103,15 +103,15 @@ async function handleCopyPath() {
     </section>
 
     <section v-if="hasRewriteLineage" class="result-page__lineage">
-      <strong>水印链路</strong>
+      <strong>写入记录</strong>
       <div class="result-page__lineage-grid">
-        <span>当前版本</span>
+        <span>写入次数</span>
         <b>第 {{ payload.vaultRecord.revision }} 次写入</b>
-        <span>当前 UID</span>
+        <span>版权编号</span>
         <b>{{ payload.vaultRecord.watermarkUid }}</b>
-        <span v-if="payload.vaultRecord.parentWatermarkUid">父级 UID</span>
+        <span v-if="payload.vaultRecord.parentWatermarkUid">上一版编号</span>
         <b v-if="payload.vaultRecord.parentWatermarkUid">{{ payload.vaultRecord.parentWatermarkUid }}</b>
-        <span v-if="payload.vaultRecord.rewriteReason">重写原因</span>
+        <span v-if="payload.vaultRecord.rewriteReason">新版原因</span>
         <b v-if="payload.vaultRecord.rewriteReason">{{ payload.vaultRecord.rewriteReason }}</b>
       </div>
     </section>

@@ -183,9 +183,9 @@ async function refreshMobileSyncStatus() {
 }
 
 function syncResolutionLabel(type: string) {
-  if (type === "variant_accepted") return "已接收为同 UID 素材变体";
-  if (type === "revision_upgraded") return "已升级为更高写入版本";
-  if (type === "stale_revision_ignored") return "已忽略过期写入版本";
+  if (type === "variant_accepted") return "已接收为同版权编号的素材变体";
+  if (type === "revision_upgraded") return "已升级为更高写入次数";
+  if (type === "stale_revision_ignored") return "已忽略过期写入记录";
   if (type === "record_inserted") return "已写入新版权记录";
   return type;
 }
@@ -372,14 +372,14 @@ onMounted(loadState);
     <div v-if="feedbackNudgeVisible" class="feedback-nudge">
       <div>
         <strong>这次体验顺手吗？</strong>
-        <p>如果遇到问题，点一下“发送诊断”，我们只收匿名队列，不会上传原始素材。</p>
+        <p>如果遇到问题，点一下“发送反馈”，我们只收必要的匿名信息，不会上传原始素材。</p>
       </div>
       <div class="feedback-nudge__actions">
         <button class="btn btn--secondary" type="button" @click="dismissFeedbackNudge">
           这次还好
         </button>
         <button class="btn btn--primary" type="button" @click="handleFeedbackNudgeDiagnostic">
-          发送诊断
+          发送反馈
         </button>
       </div>
     </div>
@@ -389,7 +389,7 @@ onMounted(loadState);
       <div class="settings-row">
         <div>
           <strong>匿名统计</strong>
-          <p class="settings-hint">仅上传必要诊断信息，可随时关闭</p>
+          <p class="settings-hint">仅上传必要反馈信息，可随时关闭</p>
         </div>
         <button
           class="toggle-btn"
@@ -514,11 +514,11 @@ onMounted(loadState);
       </div>
       <div class="feedback-log">
         <button class="btn btn--primary" :disabled="flushingFeedback" @click="handleFlushFeedback">
-          发送诊断
+          发送反馈
         </button>
       </div>
       <p class="settings-hint">
-        发送的是当前匿名队列中的诊断事件，不包含文件名、路径、hash 或原始媒体内容。
+        发送的是当前匿名队列中的反馈事件，不包含文件名、路径、作品指纹或原始媒体内容。
       </p>
       <p class="settings-hint">
         {{ feedbackStatus.endpointConfigured ? "已配置上报地址" : "未配置上报地址，队列仅本地保留" }}
@@ -532,11 +532,11 @@ onMounted(loadState);
 
     <details class="settings-section advanced-sync" v-if="mobileSyncStatus">
       <summary>
-        <strong>高级：局域网调试同步</strong>
-        <span>开发联调 / 临时迁移</span>
+        <strong>高级：临时直连</strong>
+        <span>内部维护 / 临时迁移</span>
       </summary>
       <div class="settings-row advanced-sync__row">
-        <p class="settings-hint">该通道不是正式跨端同步方案；正式同步请使用账户与云同步。</p>
+        <p class="settings-hint">该通道仅用于内部维护或临时迁移；正式跨端同步请使用账户与云同步。</p>
         <button class="btn btn--secondary" type="button" @click="refreshMobileSyncStatus">
           刷新
         </button>
@@ -548,17 +548,17 @@ onMounted(loadState);
         <span>配对码</span><span class="mono">{{ mobileSyncStatus.pairingCode }}</span>
         <span>已收事件</span><span>{{ mobileSyncStatus.receivedEvents }} 条</span>
         <span>最近事件</span><span>{{ mobileSyncStatus.latestEventAt ? formatDateTime(mobileSyncStatus.latestEventAt) : "—" }}</span>
-        <span>自动解决</span><span>{{ mobileSyncStatus.resolutionCount }} 次</span>
+        <span>自动处理</span><span>{{ mobileSyncStatus.resolutionCount }} 次</span>
       </div>
       <div v-if="mobileSyncStatus.latestResolution" class="feedback-log">
         <p class="settings-hint">
           最近处理：{{ syncResolutionLabel(mobileSyncStatus.latestResolution.resolutionType) }}
         </p>
         <div class="usage-grid">
-          <span>水印 UID</span><span class="mono">{{ mobileSyncStatus.latestResolution.watermarkUid }}</span>
+          <span>版权编号</span><span class="mono">{{ mobileSyncStatus.latestResolution.watermarkUid }}</span>
           <span>处理时间</span><span>{{ formatDateTime(mobileSyncStatus.latestResolution.resolvedAt) }}</span>
-          <span>桌面 hash</span><span class="mono">{{ mobileSyncStatus.latestResolution.desktopHash ?? "—" }}</span>
-          <span>移动 hash</span><span class="mono">{{ mobileSyncStatus.latestResolution.mobileHash ?? "—" }}</span>
+          <span>桌面指纹</span><span class="mono">{{ mobileSyncStatus.latestResolution.desktopHash ?? "—" }}</span>
+          <span>移动指纹</span><span class="mono">{{ mobileSyncStatus.latestResolution.mobileHash ?? "—" }}</span>
           <span>桌面版本</span><span>{{ mobileSyncStatus.latestResolution.desktopRevision ?? "—" }}</span>
           <span>移动版本</span><span>{{ mobileSyncStatus.latestResolution.mobileRevision ?? "—" }}</span>
         </div>
@@ -574,7 +574,7 @@ onMounted(loadState);
         </button>
       </div>
       <p class="settings-hint">
-        手机端填写本机局域网地址和配对码后，可切换到桌面 HTTP 同步模式。
+        手机端填写本机地址和配对码后，可进行一次临时直连。
       </p>
     </details>
 

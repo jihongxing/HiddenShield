@@ -171,7 +171,7 @@ async function refreshRewriteInspection(path: string, requestId = ++rewriteInspe
     if (requestId === rewriteInspectionRequestId) {
       rewriteInspection.value = result;
       if (result.hasWatermark && !options.allowRewrite) {
-        statusMessage.value = `检测到已有水印；如需覆盖，请开启重写，下一次将记录为第 ${result.nextRevision} 次写入`;
+        statusMessage.value = `检测到已有版权记录；如需生成新版，请开启重写，本次将记录为第 ${result.nextRevision} 次写入`;
       }
     }
   } catch (err: any) {
@@ -209,24 +209,24 @@ function setProgress(payload: Partial<PipelineProgressPayload>) {
 async function confirmRewriteRisk() {
   if (!options.allowRewrite || isVideo.value) return true;
 
-  const reason = options.rewriteReason?.trim() || "未填写，将使用默认重写原因";
+  const reason = options.rewriteReason?.trim() || "未填写，将使用默认新版原因";
   const detected = rewriteInspection.value?.hasWatermark ? rewriteInspection.value : null;
   const message = [
     detected
-      ? `你正在重写已有隐盾水印，本次会记录为第 ${detected.nextRevision} 次写入。`
-      : "你正在允许重写已有隐盾水印。",
+      ? `你正在为已有版权记录生成新版，本次会记录为第 ${detected.nextRevision} 次写入。`
+      : "你正在允许为已有版权记录生成新版。",
     "",
-    "这会覆盖当前媒体文件里可提取的旧水印。隐盾会在金库里记录父级 UID、写入版本和重写原因，但取证时通常会优先提取到新的水印。",
+    "这会让当前文件优先识别到新的版权编号。HiddenShield 会在版权库中记录上一版编号、写入次数和新版原因。",
     "",
-    detected?.watermarkUid ? `父级 UID：${detected.watermarkUid}` : "父级 UID：写入时再次检测，若存在则自动记录",
-    `重写原因：${reason}`,
+    detected?.watermarkUid ? `上一版编号：${detected.watermarkUid}` : "上一版编号：写入时再次检测，若存在则自动记录",
+    `新版原因：${reason}`,
     "",
     "确认继续？",
   ].join("\n");
 
   if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
     const { confirm } = await import("@tauri-apps/plugin-dialog");
-    return confirm(message, { title: "确认重写水印" });
+    return confirm(message, { title: "确认生成新版" });
   }
 
   return window.confirm(message);
@@ -445,12 +445,12 @@ onUnmounted(() => {
     <template v-else>
       <section class="hero-card">
         <div>
-          <p class="eyebrow">Workbench</p>
-          <h2>开始处理</h2>
+          <p class="eyebrow">工作台</p>
+          <h2>处理作品</h2>
         </div>
         <div class="hero-card__stats">
           <div>
-            <span>编码</span>
+            <span>处理方式</span>
             <strong>{{ hardwareInfo?.preferredEncoder ?? "检测中" }}</strong>
           </div>
           <div>
@@ -516,10 +516,10 @@ onUnmounted(() => {
           <div v-if="isImage || isAudio" class="rewrite-panel">
             <label class="rewrite-panel__toggle">
               <input v-model="options.allowRewrite" type="checkbox" :disabled="busy" />
-              <span>允许重写已有隐盾水印</span>
+              <span>作为新版写入</span>
             </label>
             <div v-if="rewriteInspectionLoading" class="rewrite-panel__status">
-              正在检测已有水印...
+              正在检查已有版权记录...
             </div>
             <div
               v-else-if="rewriteInspection"
@@ -528,11 +528,11 @@ onUnmounted(() => {
             >
               <strong>{{ rewriteInspection.summary }}</strong>
               <span>{{ rewriteInspection.reasonDetail }}</span>
-              <span v-if="rewriteInspection.watermarkUid">父级 UID：{{ rewriteInspection.watermarkUid }}</span>
+              <span v-if="rewriteInspection.watermarkUid">上一版编号：{{ rewriteInspection.watermarkUid }}</span>
               <span v-if="rewriteInspection.detectedRevision">当前识别为第 {{ rewriteInspection.detectedRevision }} 次写入</span>
             </div>
             <div v-else-if="rewriteInspectionError" class="rewrite-panel__status rewrite-panel__status--danger">
-              写前预检失败：{{ rewriteInspectionError }}
+              写入检查失败：{{ rewriteInspectionError }}
             </div>
             <input
               v-if="options.allowRewrite"
@@ -540,7 +540,7 @@ onUnmounted(() => {
               class="rewrite-panel__input"
               type="text"
               :disabled="busy"
-              placeholder="重写原因，例如：修正版、授权派生、重新导出"
+              placeholder="新版原因，例如：修正版、授权派生、重新导出"
             />
           </div>
 
@@ -549,7 +549,7 @@ onUnmounted(() => {
 
           <div class="action-row">
             <button class="primary-button" type="button" :disabled="busy || !sourceMeta" @click="handleStart">
-              {{ isVideo ? '开始' : '写入水印' }}
+              {{ isVideo ? '开始处理' : '生成保护副本' }}
             </button>
             <button class="ghost-button" type="button" :disabled="!busy" @click="handleCancel">
               取消任务
@@ -563,7 +563,7 @@ onUnmounted(() => {
               <h3>素材</h3>
               <p>{{ outputSummary }}</p>
             </div>
-            <span class="pill">{{ sourceMeta ? (sourceMeta.isHdr ? "HDR" : "SDR") : "待探测" }}</span>
+            <span class="pill">{{ sourceMeta ? (sourceMeta.isHdr ? "HDR" : "SDR") : "待检查" }}</span>
           </div>
 
           <!-- Source Warnings -->
@@ -591,7 +591,7 @@ onUnmounted(() => {
               <strong>{{ sourceMeta ? `${sourceMeta.fileSizeMb} MB` : "--" }}</strong>
             </div>
             <div class="meta-card">
-              <span>哈希</span>
+              <span>作品指纹</span>
               <strong class="hash-text">{{ sourceMeta?.sha256 ?? "待计算" }}</strong>
             </div>
           </div>

@@ -93,7 +93,7 @@ function getUnmatchedReason(confidence: number): string {
   <div class="view-shell">
     <section class="hero-card hero-card--compact">
       <div>
-        <p class="eyebrow">Verify</p>
+        <p class="eyebrow">取证</p>
         <h2>取证</h2>
       </div>
     </section>
@@ -130,7 +130,7 @@ function getUnmatchedReason(confidence: number): string {
         <strong>识别失败</strong>
         <p>{{ errorMsg }}</p>
         <button class="ghost-button" type="button" @click="handleSendDiagnostic">
-          发送诊断
+          发送反馈
         </button>
         <p v-if="diagnosticMsg" class="verify-result__confidence">{{ diagnosticMsg }}</p>
       </div>
@@ -162,14 +162,13 @@ function getUnmatchedReason(confidence: number): string {
         </template>
 
         <div v-if="result.reasonDetail" class="verify-reason">
-          <span>原因分层</span>
-          <strong>{{ result.reasonCode }}</strong>
+          <span>判断依据</span>
           <p>{{ result.reasonDetail }}</p>
         </div>
 
         <div class="verify-result__meta">
           <span>置信度 {{ Math.round(result.confidence * 100) }}%</span>
-          <span v-if="result.watermarkUid">UID {{ result.watermarkUid }}</span>
+          <span v-if="result.watermarkUid">版权编号 {{ result.watermarkUid }}</span>
           <span v-if="result.matchedRecord">第 {{ result.matchedRecord.revision }} 次写入</span>
         </div>
       </div>
@@ -182,17 +181,17 @@ function getUnmatchedReason(confidence: number): string {
           v-if="result.matchedRecord.revision > 1 || result.matchedRecord.parentWatermarkUid || result.matchedRecord.rewriteReason"
           class="verify-lineage"
         >
-          <strong>水印链路</strong>
+          <strong>写入记录</strong>
           <div class="verify-lineage__row">
-            <span>当前版本</span>
+            <span>写入次数</span>
             <b>第 {{ result.matchedRecord.revision }} 次写入</b>
           </div>
           <div v-if="result.matchedRecord.parentWatermarkUid" class="verify-lineage__row">
-            <span>父级 UID</span>
+            <span>上一版编号</span>
             <b>{{ result.matchedRecord.parentWatermarkUid }}</b>
           </div>
           <div v-if="result.matchedRecord.rewriteReason" class="verify-lineage__row">
-            <span>重写原因</span>
+            <span>新版原因</span>
             <b>{{ result.matchedRecord.rewriteReason }}</b>
           </div>
         </div>
@@ -226,7 +225,7 @@ function getUnmatchedReason(confidence: number): string {
           type="button"
           @click="handleSendDiagnostic"
         >
-          发送诊断
+          发送反馈
         </button>
         <ProBadge label="PDF 报告" :disabled="true" />
       </div>
