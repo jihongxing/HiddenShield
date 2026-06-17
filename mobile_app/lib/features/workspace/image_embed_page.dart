@@ -44,7 +44,6 @@ class _ImageEmbedPageState extends State<ImageEmbedPage> {
       appBar: AppBar(title: const Text('保护图片')),
       body: SafeArea(
         child: ListView(
-          cacheExtent: 1000,
           padding: const EdgeInsets.all(16),
           children: [
             HsPanel(

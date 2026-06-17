@@ -50,7 +50,6 @@ class _AudioEmbedPageState extends State<AudioEmbedPage> {
       appBar: AppBar(title: const Text('保护音频')),
       body: SafeArea(
         child: ListView(
-          cacheExtent: 1000,
           padding: const EdgeInsets.all(16),
           children: [
             HsPanel(
