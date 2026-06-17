@@ -521,15 +521,15 @@ class _VaultRecordDetailsSheet extends StatelessWidget {
             title: '文件指纹',
             rows: [
               _DetailRow(label: '作品指纹', value: record.sha256),
-              _DetailRow(label: '提取片段', value: record.extractedFileHashHex),
+              _DetailRow(label: '命中片段', value: record.extractedFileHashHex),
             ],
           ),
           const SizedBox(height: 12),
           _DetailGroup(
-            title: '取证字段',
+            title: '取证信息',
             rows: [
               _DetailRow(
-                label: '提取时间戳',
+                label: '写入时间',
                 value: record.extractedTimestamp?.toString(),
               ),
               _DetailRow(label: '来源设备', value: record.extractedDeviceIdHex),
@@ -539,7 +539,7 @@ class _VaultRecordDetailsSheet extends StatelessWidget {
           _DetailGroup(
             title: '本地记录',
             rows: [
-              _DetailRow(label: '记录 ID', value: record.id),
+              _DetailRow(label: '记录编号', value: record.id),
               _DetailRow(
                 label: '创建时间',
                 value: _formatDateTime(record.createdAt),

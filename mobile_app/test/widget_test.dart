@@ -74,7 +74,7 @@ void main() {
     expect(find.text('开始检测'), findsOneWidget);
   });
 
-  testWidgets('renders mobile sync resolution summary in settings', (
+  testWidgets('renders mobile sync handling summary in settings', (
     WidgetTester tester,
   ) async {
     final store = MemoryVaultStore();
@@ -99,12 +99,12 @@ void main() {
     await tester.tap(find.text('设置').last);
     await tester.pumpAndSettle();
 
-    expect(find.text('自动解决审计'), findsOneWidget);
+    expect(find.text('同步处理记录'), findsOneWidget);
     expect(find.text('接收变体 · uid-variant · v2'), findsOneWidget);
     expect(find.text('累计'), findsOneWidget);
   });
 
-  testWidgets('renders sync diagnostics in settings', (
+  testWidgets('renders sync help in settings', (
     WidgetTester tester,
   ) async {
     final store = MemoryVaultStore();
@@ -147,7 +147,7 @@ void main() {
     await tester.drag(find.byType(ListView).last, const Offset(0, -520));
     await tester.pumpAndSettle();
 
-    expect(find.text('问题排查'), findsOneWidget);
+    expect(find.text('同步帮助'), findsOneWidget);
     expect(find.text('需恢复账户'), findsOneWidget);
     expect(find.text('账户、设备或工作区授权不一致，请重新继续账户。'), findsOneWidget);
     expect(find.text('连接失败'), findsWidgets);
@@ -156,7 +156,7 @@ void main() {
     expect(find.text('最近尝试'), findsOneWidget);
     expect(find.text('最近成功'), findsOneWidget);
     expect(find.text('最近失败'), findsOneWidget);
-    expect(find.byTooltip('复制排查信息'), findsOneWidget);
+    expect(find.byTooltip('复制同步信息'), findsOneWidget);
     expect(find.textContaining('HTTP 403'), findsWidgets);
     expect(find.text('账户状态需要恢复'), findsOneWidget);
     expect(find.text('重新继续账户'), findsOneWidget);
@@ -186,7 +186,7 @@ void main() {
     expect(find.textContaining('creator_'), findsNothing);
   });
 
-  testWidgets('renders mobile pairing checklist in settings', (
+  testWidgets('hides temporary direct connection controls in settings', (
     WidgetTester tester,
   ) async {
     final store = MemoryVaultStore();
@@ -208,19 +208,13 @@ void main() {
 
     await tester.tap(find.text('设置').last);
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(
-      find.text('临时直连').first,
-      120,
-      scrollable: find.byType(Scrollable).last,
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('临时直连'));
+    await tester.drag(find.byType(ListView).last, const Offset(0, -720));
     await tester.pumpAndSettle();
 
-    expect(find.text('问题排查'), findsOneWidget);
-    expect(find.text('http://192.168.1.8:47219'), findsWidgets);
-    expect(find.text('已保存'), findsOneWidget);
-    expect(find.text('局域网调试'), findsWidgets);
+    expect(find.text('临时直连'), findsNothing);
+    expect(find.text('LAN 调试地址'), findsNothing);
+    expect(find.text('调试配对码'), findsNothing);
+    expect(find.text('联调检查'), findsNothing);
   });
 
   testWidgets('opens vault record details sheet', (WidgetTester tester) async {
@@ -264,7 +258,7 @@ void main() {
     await tester.drag(find.byType(ListView).last, const Offset(0, -420));
     await tester.pumpAndSettle();
 
-    expect(find.text('取证字段'), findsOneWidget);
+    expect(find.text('取证信息'), findsOneWidget);
     expect(find.text('本地记录'), findsOneWidget);
   });
 

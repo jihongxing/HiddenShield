@@ -24,19 +24,11 @@ class _SettingsPageState extends State<SettingsPage> {
   late final TextEditingController _accountController = TextEditingController(
     text: widget.appState.syncProfile.accountLabel ?? '',
   );
-  late final TextEditingController _lanAddressController =
-      TextEditingController(text: widget.appState.syncProfile.lanDebugAddress);
-  late final TextEditingController _pairingCodeController =
-      TextEditingController(
-        text: widget.appState.syncProfile.lanDebugPairingCode,
-      );
 
   @override
   void dispose() {
     _creatorController.dispose();
     _accountController.dispose();
-    _lanAddressController.dispose();
-    _pairingCodeController.dispose();
     super.dispose();
   }
 
@@ -52,8 +44,6 @@ class _SettingsPageState extends State<SettingsPage> {
             appState: widget.appState,
             creatorController: _creatorController,
             accountController: _accountController,
-            lanAddressController: _lanAddressController,
-            pairingCodeController: _pairingCodeController,
           ),
         ),
       ],
@@ -66,15 +56,11 @@ class _SettingsContent extends StatelessWidget {
     required this.appState,
     required this.creatorController,
     required this.accountController,
-    required this.lanAddressController,
-    required this.pairingCodeController,
   });
 
   final MobileAppState appState;
   final TextEditingController creatorController;
   final TextEditingController accountController;
-  final TextEditingController lanAddressController;
-  final TextEditingController pairingCodeController;
 
   @override
   Widget build(BuildContext context) {
@@ -287,74 +273,6 @@ class _SettingsContent extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         HsPanel(
-          title: '高级设置',
-          icon: Icons.tune_outlined,
-          child: ExpansionTile(
-            tilePadding: EdgeInsets.zero,
-            childrenPadding: EdgeInsets.zero,
-            title: const Text('临时直连'),
-            subtitle: const Text('仅用于内部联调或临时迁移，日常同步请使用云同步。'),
-            children: [
-              TextField(
-                controller: lanAddressController,
-                decoration: const InputDecoration(
-                  labelText: 'LAN 调试地址',
-                  hintText: 'http://192.168.1.8:47219',
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: pairingCodeController,
-                decoration: const InputDecoration(
-                  labelText: '调试配对码',
-                  hintText: '桌面端生成的一次性配对码',
-                ),
-              ),
-              const SizedBox(height: 12),
-              _LanDebugChecklist(appState: appState),
-              const SizedBox(height: 12),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  alignment: WrapAlignment.end,
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: () => appState.saveLanDebugPairing(
-                        lanDebugAddress: lanAddressController.text,
-                        pairingCode: pairingCodeController.text,
-                      ),
-                      icon: const Icon(Icons.link_outlined),
-                      label: const Text('保存调试配置'),
-                    ),
-                    FilledButton.icon(
-                      onPressed: appState.syncProfile.canConnectLanDebug
-                          ? appState.testLanDebugConnection
-                          : null,
-                      icon:
-                          appState.syncProfile.status ==
-                              SyncConnectionStatus.connecting
-                          ? const SizedBox.square(
-                              dimension: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.wifi_tethering_outlined),
-                      label: Text(
-                        appState.syncProfile.status ==
-                                SyncConnectionStatus.connecting
-                            ? '连接中'
-                            : '测试连接',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        HsPanel(
           title: '隐私与权限',
           icon: Icons.lock_outline,
           child: Column(
@@ -405,7 +323,7 @@ class _SyncDiagnosticsPanel extends StatelessWidget {
       childrenPadding: EdgeInsets.zero,
       initiallyExpanded: hasProblem,
       leading: const Icon(Icons.manage_search_outlined),
-      title: const Text('问题排查'),
+      title: const Text('同步帮助'),
       subtitle: Text(hasProblem ? '有同步问题需要处理' : '同步正常时无需打开'),
       children: [
         Padding(
@@ -417,7 +335,7 @@ class _SyncDiagnosticsPanel extends StatelessWidget {
                 children: [
                   const Spacer(),
                   IconButton(
-                    tooltip: '复制排查信息',
+                    tooltip: '复制同步信息',
                     onPressed: () async {
                       await Clipboard.setData(
                         ClipboardData(
@@ -426,7 +344,7 @@ class _SyncDiagnosticsPanel extends StatelessWidget {
                       );
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('排查信息已复制')),
+                          const SnackBar(content: Text('同步信息已复制')),
                         );
                       }
                     },
@@ -575,106 +493,6 @@ class _SyncHealthSummary extends StatelessWidget {
   }
 }
 
-class _LanDebugChecklist extends StatelessWidget {
-  const _LanDebugChecklist({required this.appState});
-
-  final MobileAppState appState;
-
-  @override
-  Widget build(BuildContext context) {
-    final profile = appState.syncProfile;
-    final checks = [
-      _ChecklistItem(
-        label: '调试地址',
-        ok: _isLikelyLanDebugAddress(profile.lanDebugAddress),
-        detail: profile.lanDebugAddress.isEmpty
-            ? '填写电脑局域网地址'
-            : profile.lanDebugAddress,
-      ),
-      _ChecklistItem(
-        label: '配对码',
-        ok: profile.lanDebugPairingCode.isNotEmpty,
-        detail: profile.lanDebugPairingCode.isEmpty ? '填写当前配对码' : '已保存',
-      ),
-      _ChecklistItem(
-        label: '同步模式',
-        ok: appState.syncTransportMode == SyncTransportMode.lanDebug,
-        detail: syncTransportModeLabel(appState.syncTransportMode),
-      ),
-      _ChecklistItem(
-        label: '最近错误',
-        ok: profile.lastError == null,
-        detail: profile.lastError ?? '无',
-      ),
-    ];
-    final ready = checks.every((item) => item.ok);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                ready ? Icons.verified_outlined : Icons.fact_check_outlined,
-                color: ready ? HsColors.accent : HsColors.textMuted,
-              ),
-              const SizedBox(width: 12),
-              Text('联调检查', style: Theme.of(context).textTheme.titleSmall),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ...checks.map((item) => _ChecklistLine(item: item)),
-        ],
-      ),
-    );
-  }
-}
-
-class _ChecklistLine extends StatelessWidget {
-  const _ChecklistLine({required this.item});
-
-  final _ChecklistItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            item.ok ? Icons.check_circle_outline : Icons.error_outline,
-            size: 18,
-            color: item.ok ? HsColors.accent : HsColors.warning,
-          ),
-          const SizedBox(width: 8),
-          SizedBox(
-            width: 76,
-            child: Text(
-              item.label,
-              style: const TextStyle(color: Colors.white70),
-            ),
-          ),
-          Expanded(child: Text(item.detail)),
-        ],
-      ),
-    );
-  }
-}
-
-class _ChecklistItem {
-  const _ChecklistItem({
-    required this.label,
-    required this.ok,
-    required this.detail,
-  });
-
-  final String label;
-  final bool ok;
-  final String detail;
-}
-
 class _DiagnosticRow extends StatelessWidget {
   const _DiagnosticRow({required this.label, required this.value});
 
@@ -697,16 +515,6 @@ class _DiagnosticRow extends StatelessWidget {
       ),
     );
   }
-}
-
-bool _isLikelyLanDebugAddress(String value) {
-  final uri = Uri.tryParse(value.trim());
-  return uri != null &&
-      uri.scheme == 'http' &&
-      uri.host.isNotEmpty &&
-      uri.host != '127.0.0.1' &&
-      uri.host != 'localhost' &&
-      uri.port == 47219;
 }
 
 String _enabledEntitlementSummary(Map<String, bool> features) {
@@ -833,7 +641,7 @@ class _SyncHealthState {
 String _buildSyncDiagnosticsText(MobileAppState appState) {
   final profile = appState.syncProfile;
   return [
-    'HiddenShield 移动端同步诊断',
+    'HiddenShield 移动端同步信息',
     '生成时间: ${_formatDateTime(DateTime.now())}',
     '同步模式: ${syncTransportModeLabel(appState.syncTransportMode)}',
     '连接状态: ${syncConnectionStatusLabel(profile.status)}',
@@ -853,12 +661,12 @@ String _buildSyncDiagnosticsText(MobileAppState appState) {
     '最近成功: ${_formatDateTime(profile.lastSyncSuccessAt)}',
     '最近失败: ${_formatDateTime(profile.lastSyncFailureAt)}',
     '待同步: ${appState.pendingSyncQueueCount}',
-    '失败队列: ${appState.failedSyncQueueCount}',
-    '可立即同步队列: ${appState.readySyncQueueCount}',
+    '失败记录: ${appState.failedSyncQueueCount}',
+    '可立即同步记录: ${appState.readySyncQueueCount}',
     '已达自动重试上限: ${appState.retryExhaustedSyncQueueCount}',
     '下次自动重试: ${_mobileRetryDetail(appState)}',
     '最近错误: ${profile.lastError ?? '无'}',
-    '自动解决记录: ${appState.syncResolutions.length}',
+    '同步处理记录: ${appState.syncResolutions.length}',
   ].join('\n');
 }
 
@@ -884,10 +692,10 @@ class _SyncResolutionSummary extends StatelessWidget {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: const Icon(Icons.rule_folder_outlined),
-      title: const Text('自动解决审计'),
+      title: const Text('同步处理记录'),
       subtitle: Text(
         latest == null
-            ? '还没有云端或调试下行自动解决记录。'
+            ? '还没有跨端同步处理记录。'
             : '${mobileSyncResolutionTypeLabel(latest.resolutionType)} · ${latest.watermarkUid} · v${latest.incomingRevision}',
       ),
       trailing: Column(
