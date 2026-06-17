@@ -7,6 +7,7 @@ import '../../app/mobile_app_state.dart';
 import '../../bridge/watermark_bridge.dart';
 import '../../bridge/watermark_models.dart';
 import '../../shared/widgets/feature_page_scaffold.dart';
+import 'mobile_verify_reason.dart';
 
 class VerifyPage extends StatefulWidget {
   const VerifyPage({super.key, required this.bridge, required this.appState});
@@ -24,6 +25,7 @@ class _VerifyPageState extends State<VerifyPage> {
   String? _fileName;
   bool _isProcessing = false;
   WatermarkReadResult? _result;
+  MobileVerifyReason? _reason;
   String? _errorText;
 
   @override
@@ -94,11 +96,12 @@ class _VerifyPageState extends State<VerifyPage> {
             icon: Icons.error_outline,
             title: '未能提取',
             detail: _errorText!,
+            reason: _reason,
           ),
         ],
         if (_result != null) ...[
           const SizedBox(height: 12),
-          _ResultCard(result: _result!),
+          _ResultCard(result: _result!, reason: _reason),
         ],
       ],
     );
@@ -122,6 +125,7 @@ class _VerifyPageState extends State<VerifyPage> {
       _selectedBytes = bytes;
       _fileName = file.name;
       _result = null;
+      _reason = null;
       _errorText = null;
     });
   }
@@ -135,6 +139,7 @@ class _VerifyPageState extends State<VerifyPage> {
     setState(() {
       _isProcessing = true;
       _result = null;
+      _reason = null;
       _errorText = null;
     });
 
@@ -148,11 +153,17 @@ class _VerifyPageState extends State<VerifyPage> {
       }
       setState(() {
         _result = result;
+        _reason = result == null
+            ? MobileVerifyReason.noWatermark()
+            : MobileVerifyReason.forSuccess(result);
         _errorText = result == null ? '没有检测到有效隐盾水印。' : null;
       });
     } catch (error) {
       if (!mounted) return;
-      setState(() => _errorText = error.toString());
+      setState(() {
+        _reason = MobileVerifyReason.forError(error.toString());
+        _errorText = '提取过程未完成。';
+      });
     } finally {
       if (mounted) {
         setState(() => _isProcessing = false);
@@ -248,19 +259,27 @@ class _SelectedFileSummary extends StatelessWidget {
 }
 
 class _ResultCard extends StatelessWidget {
-  const _ResultCard({required this.result});
+  const _ResultCard({required this.result, required this.reason});
 
   final WatermarkReadResult result;
+  final MobileVerifyReason? reason;
 
   @override
   Widget build(BuildContext context) {
     final parent = result.parentWatermarkUid ?? '无';
-    final reason = result.rewriteReason ?? '无';
+    final rewriteReason = result.rewriteReason ?? '无';
     return _MessageCard(
       icon: Icons.fact_check_outlined,
       title: '提取成功',
-      detail:
-          'UID: ${result.watermarkUid}\nrevision: ${result.revision}\nparent UID: $parent\nrewrite_reason: $reason\n设备: ${result.deviceIdHex}\n文件哈希片段: ${result.fileHashHex}',
+      detail: [
+        'UID: ${result.watermarkUid}',
+        'revision: ${result.revision}',
+        'parent UID: $parent',
+        'rewrite_reason: $rewriteReason',
+        '设备: ${result.deviceIdHex}',
+        '文件哈希片段: ${result.fileHashHex}',
+      ].join('\n'),
+      reason: reason,
     );
   }
 }
@@ -270,11 +289,13 @@ class _MessageCard extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.detail,
+    this.reason,
   });
 
   final IconData icon;
   final String title;
   final String detail;
+  final MobileVerifyReason? reason;
 
   @override
   Widget build(BuildContext context) {
@@ -285,7 +306,20 @@ class _MessageCard extends StatelessWidget {
       child: ListTile(
         leading: Icon(icon, color: const Color(0xFF59D2C2)),
         title: Text(title),
-        subtitle: Text(detail),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(detail),
+            if (reason != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                '原因分层: ${reason!.code}\n${reason!.detail}',
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

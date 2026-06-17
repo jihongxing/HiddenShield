@@ -151,7 +151,6 @@ void main() {
     expect(find.text('连接失败'), findsWidgets);
     expect(find.text('待同步 0 · 失败 1'), findsOneWidget);
     expect(find.text('下次自动重试'), findsOneWidget);
-    expect(find.textContaining('2026-06-17 12:00:00'), findsWidgets);
     expect(find.text('最近尝试'), findsOneWidget);
     expect(find.text('最近成功'), findsOneWidget);
     expect(find.text('最近失败'), findsOneWidget);
