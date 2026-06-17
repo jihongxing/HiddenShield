@@ -10,10 +10,13 @@ import {
   listVaultRecords,
   pushSavedDesktopVaultRecordToCloud,
   pullSavedCloudChangesIntoDesktop,
+  signOutDesktopCloud,
   type CloudQueueStatus,
   type DesktopCloudSyncProfile,
   type VaultRecord,
 } from "../lib/tauri-api";
+
+const emit = defineEmits<{ openSettings: [] }>();
 
 const records = ref<VaultRecord[]>([]);
 const missingPaths = ref<Set<string>>(new Set());
@@ -42,6 +45,15 @@ const cloudQueueSummary = computed(() => {
   const failed = cloudQueueStatus.value.failed;
   if (pending === 0 && failed === 0) return "队列已清空";
   return `待同步 ${pending} 条 · 失败 ${failed} 条`;
+});
+
+const recoverableCloudError = computed(() => {
+  const error = cloudQueueStatus.value.lastError ?? "";
+  return error.includes("HTTP 401") ||
+    error.includes("HTTP 403") ||
+    error.includes("登录状态已失效") ||
+    error.includes("设备未被当前账户授权") ||
+    error.includes("工作区或设备与云端账户不匹配");
 });
 
 function openLineage(record: VaultRecord) {
@@ -95,6 +107,18 @@ async function copyCloudDiagnostics() {
   }
   await navigator.clipboard.writeText(buildCloudDiagnosticsText());
   syncMessage.value = "同步诊断已复制到剪贴板";
+}
+
+async function resetCloudAccountForRecovery() {
+  if (!cloudProfile.value) {
+    syncMessage.value = "请先在设置中继续使用 HiddenShield 账户";
+    return;
+  }
+  await signOutDesktopCloud();
+  cloudProfile.value = null;
+  syncMessage.value = "已退出当前云同步账户，请在设置中重新继续账户";
+  emit("openSettings");
+  await loadCloudState();
 }
 
 onMounted(async () => {
@@ -217,7 +241,19 @@ async function pullCloudChanges() {
           <p v-if="cloudProfile && cloudQueueStatus.lastError" class="vault-sync-error">
             最近错误：{{ cloudQueueStatus.lastError }}
           </p>
-          <p v-else class="vault-sync-hint">
+          <div v-if="cloudProfile && recoverableCloudError" class="vault-sync-recovery">
+            <strong>账户状态需要恢复</strong>
+            <p>当前账户、设备或工作区与云端不一致。请重新继续账户以刷新授权和工作区绑定。</p>
+            <div class="vault-sync-recovery__actions">
+              <button class="ghost-button" type="button" @click="emit('openSettings')">
+                打开设置
+              </button>
+              <button class="ghost-button" type="button" @click="resetCloudAccountForRecovery">
+                退出并重新继续
+              </button>
+            </div>
+          </div>
+          <p v-if="!cloudProfile" class="vault-sync-hint">
             云同步未连接，设置中继续账户后可上传版权元数据。
           </p>
         </div>
@@ -366,6 +402,29 @@ async function pullCloudChanges() {
 
 .vault-sync-error {
   color: #ffc857;
+}
+
+.vault-sync-recovery {
+  margin-top: 0.65rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(255, 200, 87, 0.42);
+  border-radius: 8px;
+  background: rgba(255, 200, 87, 0.08);
+  color: var(--text-primary, #e0e0e0);
+  font-size: 0.84rem;
+}
+
+.vault-sync-recovery p {
+  margin: 0.35rem 0 0;
+  color: var(--text-secondary, #aaa);
+  line-height: 1.5;
+}
+
+.vault-sync-recovery__actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.65rem;
 }
 
 .vault-sync-actions {

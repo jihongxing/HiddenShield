@@ -214,7 +214,17 @@ class _SettingsContent extends StatelessWidget {
                 contentPadding: EdgeInsets.zero,
               ),
               const Divider(height: 1),
-              _SyncDiagnosticsPanel(appState: appState),
+              _SyncDiagnosticsPanel(
+                appState: appState,
+                onRecoverAccount: () {
+                  final accountLabel = accountController.text.trim().isEmpty
+                      ? appState.syncProfile.accountLabel ?? ''
+                      : accountController.text.trim();
+                  appState.continueWithAccountPlaceholder(
+                    accountLabel: accountLabel,
+                  );
+                },
+              ),
               const Divider(height: 1),
               _SyncResolutionSummary(resolutions: appState.syncResolutions),
               const SizedBox(height: 8),
@@ -376,9 +386,13 @@ class _SettingsContent extends StatelessWidget {
 }
 
 class _SyncDiagnosticsPanel extends StatelessWidget {
-  const _SyncDiagnosticsPanel({required this.appState});
+  const _SyncDiagnosticsPanel({
+    required this.appState,
+    required this.onRecoverAccount,
+  });
 
   final MobileAppState appState;
+  final VoidCallback onRecoverAccount;
 
   @override
   Widget build(BuildContext context) {
@@ -386,6 +400,7 @@ class _SyncDiagnosticsPanel extends StatelessWidget {
         ? null
         : appState.syncResolutions.first;
     final profile = appState.syncProfile;
+    final recoverableError = _isRecoverableSyncError(profile.lastError);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Column(
@@ -461,6 +476,41 @@ class _SyncDiagnosticsPanel extends StatelessWidget {
                 '待同步 ${appState.pendingSyncQueueCount} · 失败 ${appState.failedSyncQueueCount}',
           ),
           _DiagnosticRow(label: '最近错误', value: profile.lastError ?? '无'),
+          if (recoverableError) ...[
+            const SizedBox(height: 4),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2C2212),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFFC857)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '账户状态需要恢复',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    '当前账户、设备或工作区与云端不一致。重新继续账户会刷新授权、设备登记和工作区绑定。',
+                    style: TextStyle(color: Colors.white70),
+                  ),
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: FilledButton.icon(
+                      onPressed: onRecoverAccount,
+                      icon: const Icon(Icons.login_outlined),
+                      label: const Text('重新继续账户'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           _DiagnosticRow(
             label: '最近解决',
             value: latestResolution == null
@@ -626,6 +676,17 @@ String _formatDateTime(DateTime? value) {
     return '无';
   }
   return value.toLocal().toString().split('.').first;
+}
+
+bool _isRecoverableSyncError(String? value) {
+  if (value == null || value.isEmpty) {
+    return false;
+  }
+  return value.contains('HTTP 401') ||
+      value.contains('HTTP 403') ||
+      value.contains('登录状态已失效') ||
+      value.contains('设备未被当前账户授权') ||
+      value.contains('工作区或设备与云端账户不匹配');
 }
 
 String _buildSyncDiagnosticsText(MobileAppState appState) {

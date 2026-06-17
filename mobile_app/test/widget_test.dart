@@ -126,7 +126,7 @@ void main() {
         lanDebugPairingCode: 'abcdef',
         status: SyncConnectionStatus.failed,
         updatedAt: DateTime.fromMillisecondsSinceEpoch(2000),
-        lastError: 'pairing rejected',
+        lastError: 'HTTP 403 工作区或设备与云端账户不匹配',
         lastRemotePullCursor: '2026-06-16T12:00:00.000Z',
         lastSyncAttemptAt: DateTime.fromMillisecondsSinceEpoch(3000),
         lastSyncSuccessAt: DateTime.fromMillisecondsSinceEpoch(2500),
@@ -151,7 +151,9 @@ void main() {
     expect(find.text('最近成功'), findsOneWidget);
     expect(find.text('最近失败'), findsOneWidget);
     expect(find.byTooltip('复制诊断'), findsOneWidget);
-    expect(find.textContaining('pairing rejected'), findsWidgets);
+    expect(find.textContaining('HTTP 403'), findsWidgets);
+    expect(find.text('账户状态需要恢复'), findsOneWidget);
+    expect(find.text('重新继续账户'), findsOneWidget);
     expect(find.text('重试失败'), findsOneWidget);
   });
 

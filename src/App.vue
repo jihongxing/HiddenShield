@@ -48,6 +48,11 @@ function closeSubscription() {
   showSubscription.value = false;
 }
 
+function openSettingsPanel() {
+  showSettings.value = true;
+  showHelp.value = false;
+}
+
 const tabs: Array<{ key: AppTab; label: string }> = [
   { key: "workbench", label: "工作台" },
   { key: "vault", label: "版权库" },
@@ -145,7 +150,7 @@ onMounted(async () => {
         <HelpCenter v-else-if="showHelp" />
 
         <WorkbenchView v-else-if="activeTab === 'workbench'" />
-        <VaultView v-else-if="activeTab === 'vault'" />
+        <VaultView v-else-if="activeTab === 'vault'" @open-settings="openSettingsPanel" />
         <VerifyView v-else @switch-tab="switchTab" />
       </main>
     </div>
