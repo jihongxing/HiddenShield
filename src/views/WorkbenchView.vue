@@ -514,6 +514,14 @@ onUnmounted(() => {
           </div>
 
           <div v-if="isImage || isAudio" class="rewrite-panel">
+            <div class="rewrite-panel__status rewrite-panel__status--ok">
+              <strong>{{ isImage ? '图片取证优先' : '音频取证优先' }}</strong>
+              <span>
+                {{ isImage
+                  ? '将生成 PNG 保护副本，并在完成前回读验证版权编号。'
+                  : '将生成 WAV 保护副本，并在完成前回读验证版权编号。' }}
+              </span>
+            </div>
             <label class="rewrite-panel__toggle">
               <input v-model="options.allowRewrite" type="checkbox" :disabled="busy" />
               <span>作为新版写入</span>

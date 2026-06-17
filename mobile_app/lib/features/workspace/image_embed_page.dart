@@ -81,6 +81,12 @@ class _ImageEmbedPageState extends State<ImageEmbedPage> {
                     contentPadding: EdgeInsets.zero,
                   ),
                   const SizedBox(height: 8),
+                  const HsMessageCard(
+                    icon: Icons.verified_outlined,
+                    title: '图片取证优先',
+                    detail: '将生成 PNG 保护副本，并在完成前回读验证版权编号。',
+                  ),
+                  const SizedBox(height: 8),
                   _PreflightStatusCard(
                     isInspecting: _isInspecting,
                     result: _preflight,

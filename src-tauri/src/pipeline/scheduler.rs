@@ -714,19 +714,8 @@ async fn run_image_pipeline(
         .unwrap_or_default()
         .to_string_lossy()
         .to_string();
-    let ext = params
-        .input_path
-        .extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or("")
-        .to_ascii_lowercase();
-    // DWT-DCT-SVD watermark can survive JPEG, but PNG preserves full fidelity.
-    // Always output as PNG for maximum watermark extraction reliability.
-    let out_ext = if ext == "jpg" || ext == "jpeg" {
-        "png"
-    } else {
-        &ext
-    };
+    // 图片保护采用取证优先策略：统一输出 PNG，减少有损压缩对后续取证的影响。
+    let out_ext = "png";
     let output_path = params
         .input_path
         .parent()

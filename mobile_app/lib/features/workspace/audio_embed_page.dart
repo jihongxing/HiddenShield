@@ -78,6 +78,12 @@ class _AudioEmbedPageState extends State<AudioEmbedPage> {
                     contentPadding: EdgeInsets.zero,
                   ),
                   const SizedBox(height: 8),
+                  const HsMessageCard(
+                    icon: Icons.verified_outlined,
+                    title: '音频取证优先',
+                    detail: '将生成 WAV 保护副本，并在完成前回读验证版权编号。',
+                  ),
+                  const SizedBox(height: 8),
                   _PreflightStatusCard(
                     isInspecting: _isInspecting,
                     result: _preflight,
