@@ -213,6 +213,7 @@ class _SettingsContent extends StatelessWidget {
                 subtitle: const Text('同步版权库、取证记录、创作者档案和权益状态；不默认上传媒体文件。'),
                 contentPadding: EdgeInsets.zero,
               ),
+              _SyncHealthSummary(appState: appState),
               const Divider(height: 1),
               _SyncDiagnosticsPanel(
                 appState: appState,
@@ -523,6 +524,50 @@ class _SyncDiagnosticsPanel extends StatelessWidget {
   }
 }
 
+class _SyncHealthSummary extends StatelessWidget {
+  const _SyncHealthSummary({required this.appState});
+
+  final MobileAppState appState;
+
+  @override
+  Widget build(BuildContext context) {
+    final health = _mobileSyncHealth(appState);
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: health.background,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: health.border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(health.icon, color: health.iconColor),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  health.label,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  health.detail,
+                  style: const TextStyle(color: Colors.white70),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _LanDebugChecklist extends StatelessWidget {
   const _LanDebugChecklist({required this.appState});
 
@@ -687,6 +732,76 @@ bool _isRecoverableSyncError(String? value) {
       value.contains('登录状态已失效') ||
       value.contains('设备未被当前账户授权') ||
       value.contains('工作区或设备与云端账户不匹配');
+}
+
+_SyncHealthState _mobileSyncHealth(MobileAppState appState) {
+  final profile = appState.syncProfile;
+  if (_isRecoverableSyncError(profile.lastError)) {
+    return const _SyncHealthState(
+      label: '需恢复账户',
+      detail: '账户、设备或工作区授权不一致，请重新继续账户。',
+      icon: Icons.warning_amber_outlined,
+      iconColor: Color(0xFFFFC857),
+      background: Color(0xFF2C2212),
+      border: Color(0xFFFFC857),
+    );
+  }
+  if (!appState.hasCloudAccount) {
+    return const _SyncHealthState(
+      label: '未连接',
+      detail: '本地功能可直接使用，云同步需要继续账户。',
+      icon: Icons.cloud_off_outlined,
+      iconColor: Colors.white70,
+      background: Color(0xFF182028),
+      border: Color(0xFF2C3945),
+    );
+  }
+  if (appState.failedSyncQueueCount > 0) {
+    return _SyncHealthState(
+      label: '有失败',
+      detail: '有 ${appState.failedSyncQueueCount} 条同步失败，建议复制诊断后重试。',
+      icon: Icons.error_outline,
+      iconColor: const Color(0xFFFFC857),
+      background: const Color(0xFF2A2118),
+      border: const Color(0xFF6A4B20),
+    );
+  }
+  if (appState.pendingSyncQueueCount > 0) {
+    return _SyncHealthState(
+      label: '有待同步',
+      detail: '还有 ${appState.pendingSyncQueueCount} 条版权元数据等待上传。',
+      icon: Icons.cloud_upload_outlined,
+      iconColor: const Color(0xFF8BB8FF),
+      background: const Color(0xFF172235),
+      border: const Color(0xFF2B4D7A),
+    );
+  }
+  return const _SyncHealthState(
+    label: '正常',
+    detail: '同步队列已清空，最近没有需要处理的同步问题。',
+    icon: Icons.check_circle_outline,
+    iconColor: Color(0xFF59D2C2),
+    background: Color(0xFF132A25),
+    border: Color(0xFF2A6B61),
+  );
+}
+
+class _SyncHealthState {
+  const _SyncHealthState({
+    required this.label,
+    required this.detail,
+    required this.icon,
+    required this.iconColor,
+    required this.background,
+    required this.border,
+  });
+
+  final String label;
+  final String detail;
+  final IconData icon;
+  final Color iconColor;
+  final Color background;
+  final Color border;
 }
 
 String _buildSyncDiagnosticsText(MobileAppState appState) {

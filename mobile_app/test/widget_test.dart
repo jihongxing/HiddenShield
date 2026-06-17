@@ -145,6 +145,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('同步诊断'), findsOneWidget);
+    expect(find.text('需恢复账户'), findsOneWidget);
+    expect(find.text('账户、设备或工作区授权不一致，请重新继续账户。'), findsOneWidget);
     expect(find.text('连接失败'), findsWidgets);
     expect(find.text('待同步 0 · 失败 1'), findsOneWidget);
     expect(find.text('最近尝试'), findsOneWidget);

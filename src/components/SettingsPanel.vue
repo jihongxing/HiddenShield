@@ -20,8 +20,10 @@ import {
   type UsageLedgerSummary,
   type MobileSyncStatus,
   type DesktopCloudSyncProfile,
+  type CloudQueueStatus,
   continueCloudAccount,
   getDesktopCloudSyncProfile,
+  getDesktopCloudQueueStatus,
   getMobileSyncStatus,
   regenerateMobilePairingCode,
   signOutDesktopCloud,
@@ -39,6 +41,7 @@ const usageSummary = ref<UsageLedgerSummary | null>(null);
 const feedbackStatus = ref<AnonymousFeedbackStatus | null>(null);
 const mobileSyncStatus = ref<MobileSyncStatus | null>(null);
 const cloudSyncProfile = ref<DesktopCloudSyncProfile | null>(null);
+const cloudQueueStatus = ref<CloudQueueStatus | null>(null);
 const analyticsOverview = ref<ReturnType<typeof getAnalyticsOverview> | null>(null);
 const riskSnapshot = ref<ReturnType<typeof getRiskSnapshot> | null>(null);
 const clearing = ref(false);
@@ -104,6 +107,7 @@ async function loadState() {
   usageSummary.value = await getUsageLedgerSummary();
   feedbackStatus.value = await getAnonymousFeedbackStatus();
   cloudSyncProfile.value = await getDesktopCloudSyncProfile();
+  cloudQueueStatus.value = await getDesktopCloudQueueStatus();
   if (cloudSyncProfile.value) {
     cloudIdentifier.value = cloudSyncProfile.value.accountLabel;
     creatorDisplayName.value = cloudSyncProfile.value.creatorDisplayName;
@@ -112,6 +116,52 @@ async function loadState() {
   analyticsOverview.value = getAnalyticsOverview();
   riskSnapshot.value = getRiskSnapshot();
   refreshFeedbackNudge();
+}
+
+function isRecoverableCloudError(value?: string | null) {
+  const error = value ?? "";
+  return error.includes("HTTP 401") ||
+    error.includes("HTTP 403") ||
+    error.includes("登录状态已失效") ||
+    error.includes("设备未被当前账户授权") ||
+    error.includes("工作区或设备与云端账户不匹配");
+}
+
+function cloudHealthState() {
+  const queue = cloudQueueStatus.value;
+  if (isRecoverableCloudError(queue?.lastError)) {
+    return {
+      label: "需恢复账户",
+      detail: "账户、设备或工作区授权不一致，请退出后重新继续账户。",
+      tone: "danger",
+    };
+  }
+  if (!cloudSyncProfile.value) {
+    return {
+      label: "未连接",
+      detail: "本地功能可直接使用，云同步需要继续账户。",
+      tone: "muted",
+    };
+  }
+  if ((queue?.failed ?? 0) > 0) {
+    return {
+      label: "有失败",
+      detail: `有 ${queue?.failed ?? 0} 条同步失败，建议在版权库复制诊断后重试。`,
+      tone: "warning",
+    };
+  }
+  if ((queue?.pending ?? 0) > 0) {
+    return {
+      label: "有待同步",
+      detail: `还有 ${queue?.pending ?? 0} 条版权元数据等待上传。`,
+      tone: "pending",
+    };
+  }
+  return {
+    label: "正常",
+    detail: "云同步队列已清空，最近没有需要处理的同步问题。",
+    tone: "ok",
+  };
 }
 
 async function refreshMobileSyncStatus() {
@@ -386,6 +436,11 @@ onMounted(loadState);
         </span>
       </div>
 
+      <div class="cloud-health" :class="`cloud-health--${cloudHealthState().tone}`">
+        <strong>{{ cloudHealthState().label }}</strong>
+        <span>{{ cloudHealthState().detail }}</span>
+      </div>
+
       <div v-if="cloudSyncProfile" class="usage-grid">
         <span>账户</span><span>{{ cloudSyncProfile.accountLabel }}</span>
         <span>工作区</span><span>{{ cloudSyncProfile.workspaceName }}</span>
@@ -395,6 +450,7 @@ onMounted(loadState);
         <span>权益模块</span><span>{{ entitlementFeatureSummary(cloudSyncProfile.entitlementFeatures) }}</span>
         <span>云服务</span><span class="mono">{{ cloudSyncProfile.cloudBaseUrl }}</span>
         <span>更新时间</span><span>{{ formatDateTime(cloudSyncProfile.updatedAt) }}</span>
+        <span>队列</span><span>待同步 {{ cloudQueueStatus?.pending ?? 0 }} / 失败 {{ cloudQueueStatus?.failed ?? 0 }} / 已同步 {{ cloudQueueStatus?.synced ?? 0 }}</span>
       </div>
 
       <div v-else class="cloud-form">
@@ -685,6 +741,39 @@ onMounted(loadState);
   color: #9ee7bf;
   background: rgba(35, 96, 58, 0.18);
   border-color: rgba(35, 96, 58, 0.32);
+}
+.cloud-health {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  margin-top: 0.85rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(139, 149, 167, 0.22);
+  border-radius: 8px;
+  background: rgba(139, 149, 167, 0.08);
+  color: var(--text-secondary, #aaa);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+.cloud-health strong {
+  min-width: 4.5rem;
+  color: var(--text-primary, #e0e0e0);
+}
+.cloud-health--ok {
+  background: rgba(35, 96, 58, 0.13);
+  border-color: rgba(35, 96, 58, 0.32);
+}
+.cloud-health--pending {
+  background: rgba(87, 143, 202, 0.1);
+  border-color: rgba(87, 143, 202, 0.3);
+}
+.cloud-health--warning {
+  background: rgba(171, 116, 31, 0.13);
+  border-color: rgba(171, 116, 31, 0.35);
+}
+.cloud-health--danger {
+  background: rgba(160, 53, 53, 0.14);
+  border-color: rgba(160, 53, 53, 0.38);
 }
 .cloud-form {
   display: grid;
