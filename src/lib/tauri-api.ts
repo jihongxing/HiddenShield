@@ -279,6 +279,13 @@ export interface OutputFileInfo {
   fps: number;
 }
 
+export interface WriteVerificationInfo {
+  verified: boolean;
+  watermarkUid: string;
+  revision: number;
+  message: string;
+}
+
 export interface PipelineCompletePayload {
   pipelineId: string;
   watermarkUid: string;
@@ -286,6 +293,7 @@ export interface PipelineCompletePayload {
   encoderUsed: string;
   outputs: OutputFileInfo[];
   vaultRecord: VaultRecord;
+  writeVerification?: WriteVerificationInfo | null;
 }
 
 export interface SourceWarning {

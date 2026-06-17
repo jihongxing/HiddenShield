@@ -43,6 +43,15 @@ pub struct OutputFileInfo {
 
 #[derive(Debug, Clone, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct WriteVerificationInfo {
+    pub verified: bool,
+    pub watermark_uid: String,
+    pub revision: u32,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PipelineCompletePayload {
     pub pipeline_id: String,
     pub watermark_uid: String,
@@ -50,6 +59,7 @@ pub struct PipelineCompletePayload {
     pub encoder_used: String,
     pub outputs: Vec<OutputFileInfo>,
     pub vault_record: VaultRecord,
+    pub write_verification: Option<WriteVerificationInfo>,
 }
 
 // ---------------------------------------------------------------------------
@@ -221,6 +231,28 @@ fn rewrite_reason_from_options(options: &TranscodeOptions) -> Option<String> {
         .map(str::trim)
         .filter(|reason| !reason.is_empty())
         .map(ToOwned::to_owned)
+}
+
+fn verify_embedded_bytes(
+    media_input: MediaInput,
+    expected_payload: &WatermarkPayload,
+    revision: u32,
+) -> Result<WriteVerificationInfo, PipelineError> {
+    let extracted = WatermarkService::extract(media_input)
+        .map_err(|e| PipelineError::WatermarkExtractFailed(format!("写入后回读失败: {e}")))?;
+    let expected_uid = expected_payload.watermark_uid();
+    let actual_uid = extracted.watermark_uid();
+    if actual_uid != expected_uid {
+        return Err(PipelineError::WatermarkExtractFailed(format!(
+            "写入后回读的版权编号不一致，期望 {expected_uid}，实际 {actual_uid}"
+        )));
+    }
+    Ok(WriteVerificationInfo {
+        verified: true,
+        watermark_uid: actual_uid,
+        revision,
+        message: format!("已回读验证版权编号，保护副本可取证。写入次数：第 {revision} 次"),
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -624,6 +656,7 @@ async fn run_video_pipeline(
         encoder_used: hw_info.preferred_encoder.clone(),
         outputs,
         vault_record: record,
+        write_verification: None,
     };
     let _ = app_handle.emit("pipeline-complete", &complete_payload);
 
@@ -729,11 +762,11 @@ async fn run_image_pipeline(
             "unexpected non-image output from watermark service".into(),
         ));
     };
-    std::fs::write(&output_path, bytes)
+    std::fs::write(&output_path, &bytes)
         .map_err(|e| PipelineError::WatermarkEmbedFailed(format!("write image bytes: {e}")))?;
 
     check_cancelled(&app_handle, &params.pipeline_id)?;
-    emit_progress(&app_handle, &params.pipeline_id, "水印嵌入完成", 80);
+    emit_progress(&app_handle, &params.pipeline_id, "写入验收中", 80);
 
     // Read image dimensions for the record
     let (width, height) = image::image_dimensions(&params.input_path).unwrap_or((0, 0));
@@ -752,6 +785,13 @@ async fn run_image_pipeline(
         .as_ref()
         .map(|record| record.revision.saturating_add(1))
         .unwrap_or(1);
+    let write_verification = verify_embedded_bytes(
+        MediaInput::ImageBytes {
+            bytes: bytes.clone(),
+        },
+        &payload,
+        revision,
+    )?;
 
     let record = VaultRecord {
         id: 0,
@@ -855,6 +895,7 @@ async fn run_image_pipeline(
             fps: 0.0,
         }],
         vault_record: record,
+        write_verification: Some(write_verification),
     };
     let _ = app_handle.emit("pipeline-complete", &complete_payload);
 
@@ -962,11 +1003,11 @@ async fn run_audio_pipeline(
             "unexpected non-audio output from watermark service".into(),
         ));
     };
-    std::fs::write(&output_path, bytes)
+    std::fs::write(&output_path, &bytes)
         .map_err(|e| PipelineError::WatermarkEmbedFailed(format!("write wav bytes: {e}")))?;
 
     check_cancelled(&app_handle, &params.pipeline_id)?;
-    emit_progress(&app_handle, &params.pipeline_id, "水印嵌入完成", 80);
+    emit_progress(&app_handle, &params.pipeline_id, "写入验收中", 80);
 
     let sha256 = hash::sha256_of_file(&input_str).unwrap_or_default();
     let process_time_ms = start.elapsed().as_millis() as u64;
@@ -983,6 +1024,13 @@ async fn run_audio_pipeline(
         .as_ref()
         .map(|record| record.revision.saturating_add(1))
         .unwrap_or(1);
+    let write_verification = verify_embedded_bytes(
+        MediaInput::AudioWavBytes {
+            bytes: bytes.clone(),
+        },
+        &payload,
+        revision,
+    )?;
 
     let record = VaultRecord {
         id: 0,
@@ -1086,6 +1134,7 @@ async fn run_audio_pipeline(
             fps: 0.0,
         }],
         vault_record: record,
+        write_verification: Some(write_verification),
     };
     let _ = app_handle.emit("pipeline-complete", &complete_payload);
 

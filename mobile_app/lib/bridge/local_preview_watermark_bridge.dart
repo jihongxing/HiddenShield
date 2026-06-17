@@ -51,12 +51,21 @@ class PreviewWatermarkBridge extends WatermarkBridge {
     final uidPrefix = request.kind == WatermarkAssetKind.image ? 'img' : 'aud';
     final revision = request.allowRewrite ? 2 : 1;
     final hash = _previewHash(request.bytes);
+    final watermarkUid = 'preview-$uidPrefix-${hash.substring(0, 12)}';
     return WatermarkWriteResult(
       kind: request.kind,
       bytes: [...request.bytes, ..._previewMarker],
-      watermarkUid: 'preview-$uidPrefix-${hash.substring(0, 12)}',
+      watermarkUid: watermarkUid,
       revision: revision,
       sha256: hash,
+      verification: WatermarkWriteVerification(
+        verified: true,
+        watermarkUid: watermarkUid,
+        revision: revision,
+        message: '已回读验证版权编号，保护副本可取证。',
+        fileHashHex: hash.substring(0, 4),
+        deviceIdHex: '090a0b0c',
+      ),
     );
   }
 }

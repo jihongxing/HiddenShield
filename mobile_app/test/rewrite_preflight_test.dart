@@ -66,6 +66,12 @@ void main() {
         watermarkUid: 'uid-existing',
         revision: 1,
         sha256: 'hash',
+        verification: WatermarkWriteVerification(
+          verified: true,
+          watermarkUid: 'verified-uid',
+          revision: 1,
+          message: '已回读验证版权编号，保护副本可取证。',
+        ),
       ),
       fileName: 'cover.png',
       allowRewrite: true,

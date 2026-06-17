@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
@@ -159,12 +160,7 @@ class _AudioEmbedPageState extends State<AudioEmbedPage> {
         WatermarkWriteRequest(
           kind: WatermarkAssetKind.audio,
           bytes: bytes,
-          seed: WatermarkPayloadSeed(
-            userSeed: const [1, 2, 3, 4, 5, 6, 7, 8],
-            timestamp: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-            deviceId: const [9, 10, 11, 12],
-            fileHash: const [13, 14],
-          ),
+          seed: _buildPayloadSeed(bytes, widget.appState.creatorLabel),
           allowRewrite: _allowRewrite,
           rewriteReason: _allowRewrite ? '移动端确认重写已有水印' : null,
         ),
@@ -298,10 +294,22 @@ class _ResultCard extends StatelessWidget {
         '版权编号: ${result.watermarkUid}',
         '写入次数: 第 $revision 次',
         if (parent != null) '上一版本: $parent',
+        result.verification.message,
         '作品指纹: $shaPreview',
       ].join('\n'),
     );
   }
+}
+
+WatermarkPayloadSeed _buildPayloadSeed(List<int> bytes, String creatorLabel) {
+  final creatorDigest = sha256.convert(creatorLabel.trim().codeUnits).bytes;
+  final fileDigest = sha256.convert(bytes).bytes;
+  return WatermarkPayloadSeed(
+    userSeed: creatorDigest.take(8).toList(growable: false),
+    timestamp: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    deviceId: creatorDigest.skip(8).take(4).toList(growable: false),
+    fileHash: fileDigest.take(2).toList(growable: false),
+  );
 }
 
 class _PreflightStatusCard extends StatelessWidget {

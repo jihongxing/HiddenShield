@@ -37,6 +37,7 @@ class WatermarkWriteResult {
     required this.watermarkUid,
     required this.revision,
     required this.sha256,
+    required this.verification,
   });
 
   final WatermarkAssetKind kind;
@@ -44,6 +45,25 @@ class WatermarkWriteResult {
   final String watermarkUid;
   final int revision;
   final String sha256;
+  final WatermarkWriteVerification verification;
+}
+
+class WatermarkWriteVerification {
+  const WatermarkWriteVerification({
+    required this.verified,
+    required this.watermarkUid,
+    required this.revision,
+    required this.message,
+    this.fileHashHex,
+    this.deviceIdHex,
+  });
+
+  final bool verified;
+  final String watermarkUid;
+  final int revision;
+  final String message;
+  final String? fileHashHex;
+  final String? deviceIdHex;
 }
 
 class WatermarkReadRequest {

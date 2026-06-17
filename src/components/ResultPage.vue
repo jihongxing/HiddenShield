@@ -102,6 +102,17 @@ async function handleCopyPath() {
       <span>耗时 {{ processTimeFormatted }}</span>
     </section>
 
+    <section v-if="payload.writeVerification" class="result-page__verification">
+      <strong>写入验收</strong>
+      <p>{{ payload.writeVerification.message }}</p>
+      <div class="result-page__lineage-grid">
+        <span>版权编号</span>
+        <b>{{ payload.writeVerification.watermarkUid }}</b>
+        <span>写入次数</span>
+        <b>第 {{ payload.writeVerification.revision }} 次写入</b>
+      </div>
+    </section>
+
     <section v-if="hasRewriteLineage" class="result-page__lineage">
       <strong>写入记录</strong>
       <div class="result-page__lineage-grid">
@@ -149,6 +160,23 @@ async function handleCopyPath() {
   border: 1px solid rgba(87, 143, 202, 0.28);
   border-radius: 10px;
   background: rgba(87, 143, 202, 0.08);
+}
+
+.result-page__verification {
+  margin: 1rem 0;
+  padding: 0.9rem;
+  border: 1px solid rgba(89, 210, 194, 0.32);
+  border-radius: 10px;
+  background: rgba(89, 210, 194, 0.1);
+}
+
+.result-page__verification strong {
+  display: block;
+  margin-bottom: 0.45rem;
+}
+
+.result-page__verification p {
+  margin: 0 0 0.65rem;
 }
 
 .result-page__lineage strong {

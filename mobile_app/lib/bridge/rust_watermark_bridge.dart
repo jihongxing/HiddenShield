@@ -75,12 +75,20 @@ class RustWatermarkBridge extends WatermarkBridge {
       outputFormat: rust_api.MobileImageOutputFormat.png,
       allowRewrite: request.allowRewrite,
     );
+    final revision = request.allowRewrite ? 2 : 1;
+    final verification = await _verifyWriteResult(
+      kind: WatermarkAssetKind.image,
+      bytes: result.bytes,
+      watermarkUid: result.watermarkUid,
+      revision: revision,
+    );
     return WatermarkWriteResult(
       kind: WatermarkAssetKind.image,
       bytes: result.bytes,
       watermarkUid: result.watermarkUid,
-      revision: request.allowRewrite ? 2 : 1,
+      revision: revision,
       sha256: result.sha256,
+      verification: verification,
     );
   }
 
@@ -93,12 +101,45 @@ class RustWatermarkBridge extends WatermarkBridge {
       payload: payload,
       allowRewrite: request.allowRewrite,
     );
+    final revision = request.allowRewrite ? 2 : 1;
+    final verification = await _verifyWriteResult(
+      kind: WatermarkAssetKind.audio,
+      bytes: result.bytes,
+      watermarkUid: result.watermarkUid,
+      revision: revision,
+    );
     return WatermarkWriteResult(
       kind: WatermarkAssetKind.audio,
       bytes: result.bytes,
       watermarkUid: result.watermarkUid,
-      revision: request.allowRewrite ? 2 : 1,
+      revision: revision,
       sha256: result.sha256,
+      verification: verification,
+    );
+  }
+
+  Future<WatermarkWriteVerification> _verifyWriteResult({
+    required WatermarkAssetKind kind,
+    required List<int> bytes,
+    required String watermarkUid,
+    required int revision,
+  }) async {
+    final extracted = await read(WatermarkReadRequest(kind: kind, bytes: bytes));
+    if (extracted == null) {
+      throw StateError('写入后回读失败，保护副本暂不可取证。');
+    }
+    if (extracted.watermarkUid != watermarkUid) {
+      throw StateError(
+        '写入后回读的版权编号不一致，期望 $watermarkUid，实际 ${extracted.watermarkUid}。',
+      );
+    }
+    return WatermarkWriteVerification(
+      verified: true,
+      watermarkUid: extracted.watermarkUid,
+      revision: revision,
+      message: '已回读验证版权编号，保护副本可取证。',
+      fileHashHex: extracted.fileHashHex,
+      deviceIdHex: extracted.deviceIdHex,
     );
   }
 }
