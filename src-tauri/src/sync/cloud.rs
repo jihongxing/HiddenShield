@@ -130,9 +130,11 @@ pub struct CloudQueueStatus {
     pub pending: u64,
     pub failed: u64,
     pub synced: u64,
+    pub retry_exhausted: u64,
     pub last_attempt_at: Option<String>,
     pub last_success_at: Option<String>,
     pub last_failure_at: Option<String>,
+    pub next_retry_at: Option<String>,
     pub last_error: Option<String>,
 }
 

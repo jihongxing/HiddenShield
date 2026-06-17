@@ -146,7 +146,7 @@ function cloudHealthState() {
   if ((queue?.failed ?? 0) > 0) {
     return {
       label: "有失败",
-      detail: `有 ${queue?.failed ?? 0} 条同步失败，建议在版权库复制诊断后重试。`,
+      detail: cloudRetryDetail(),
       tone: "warning",
     };
   }
@@ -162,6 +162,20 @@ function cloudHealthState() {
     detail: "云同步队列已清空，最近没有需要处理的同步问题。",
     tone: "ok",
   };
+}
+
+function cloudRetryDetail() {
+  const queue = cloudQueueStatus.value;
+  if (!queue || queue.failed === 0) {
+    return "队列暂时没有失败项。";
+  }
+  if (queue.retryExhausted > 0 && queue.retryExhausted === queue.failed) {
+    return "已达自动重试上限；点击版权库中的同步队列可手动再试。";
+  }
+  if (queue.nextRetryAt) {
+    return `下次自动重试：${formatDateTime(queue.nextRetryAt)}；也可在版权库手动同步。`;
+  }
+  return "失败项可立即重试，也可继续等待自动重试。";
 }
 
 async function refreshMobileSyncStatus() {
@@ -451,6 +465,7 @@ onMounted(loadState);
         <span>云服务</span><span class="mono">{{ cloudSyncProfile.cloudBaseUrl }}</span>
         <span>更新时间</span><span>{{ formatDateTime(cloudSyncProfile.updatedAt) }}</span>
         <span>队列</span><span>待同步 {{ cloudQueueStatus?.pending ?? 0 }} / 失败 {{ cloudQueueStatus?.failed ?? 0 }} / 已同步 {{ cloudQueueStatus?.synced ?? 0 }}</span>
+        <span>重试状态</span><span>{{ cloudRetryDetail() }}</span>
       </div>
 
       <div v-else class="cloud-form">

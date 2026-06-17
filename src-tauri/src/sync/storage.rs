@@ -356,6 +356,29 @@ pub fn latest_cloud_sync_queue_error(conn: &Connection) -> Result<Option<String>
     })
 }
 
+pub fn earliest_cloud_sync_queue_retry_at(
+    conn: &Connection,
+) -> Result<Option<String>, rusqlite::Error> {
+    conn.query_row(
+        "SELECT MIN(next_retry_at) FROM cloud_sync_queue
+         WHERE status = 'failed'
+           AND attempts < ?1
+           AND next_retry_at IS NOT NULL",
+        params![CLOUD_SYNC_QUEUE_MAX_ATTEMPTS as i64],
+        |row| row.get::<_, Option<String>>(0),
+    )
+}
+
+pub fn count_cloud_sync_queue_retry_exhausted(conn: &Connection) -> Result<u64, rusqlite::Error> {
+    let count: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM cloud_sync_queue
+         WHERE status = 'failed' AND attempts >= ?1",
+        params![CLOUD_SYNC_QUEUE_MAX_ATTEMPTS as i64],
+        |row| row.get(0),
+    )?;
+    Ok(count.max(0) as u64)
+}
+
 pub fn record_sync_event(
     conn: &Connection,
     item: &MobileSyncQueueItem,
@@ -1121,6 +1144,8 @@ mod tests {
             latest_cloud_sync_queue_error(&conn).unwrap().as_deref(),
             Some("network timeout")
         );
+        assert_eq!(count_cloud_sync_queue_retry_exhausted(&conn).unwrap(), 0);
+        assert!(earliest_cloud_sync_queue_retry_at(&conn).unwrap().is_some());
     }
 
     #[test]

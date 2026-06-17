@@ -82,6 +82,38 @@ class MobileAppState extends ChangeNotifier {
       .where((item) => item.status == SyncQueueItemStatus.failed)
       .length;
 
+  int get retryExhaustedSyncQueueCount => _syncQueue
+      .where(
+        (item) =>
+            item.status == SyncQueueItemStatus.failed &&
+            item.attempts >= syncQueueMaxAttempts,
+      )
+      .length;
+
+  int get readySyncQueueCount {
+    final now = DateTime.now();
+    return _syncQueue
+        .where((item) => _canSyncQueueItem(item, now, manualRetry: false))
+        .length;
+  }
+
+  DateTime? get nextSyncQueueRetryAt {
+    final retryTimes = _syncQueue
+        .where(
+          (item) =>
+              item.status == SyncQueueItemStatus.failed &&
+              item.attempts < syncQueueMaxAttempts,
+        )
+        .map((item) => item.nextRetryAt)
+        .whereType<DateTime>()
+        .toList(growable: false);
+    if (retryTimes.isEmpty) {
+      return null;
+    }
+    retryTimes.sort();
+    return retryTimes.first;
+  }
+
   bool get canUseLanDebugSync =>
       _syncProfile.lanDebugAddress.isNotEmpty &&
       _syncProfile.lanDebugPairingCode.isNotEmpty &&

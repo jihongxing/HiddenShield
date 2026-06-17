@@ -161,9 +161,11 @@ export interface CloudQueueStatus {
   pending: number;
   failed: number;
   synced: number;
+  retryExhausted: number;
   lastAttemptAt: string | null;
   lastSuccessAt: string | null;
   lastFailureAt: string | null;
+  nextRetryAt: string | null;
   lastError: string | null;
 }
 
@@ -548,9 +550,11 @@ export async function getDesktopCloudQueueStatus(): Promise<CloudQueueStatus> {
       pending: 0,
       failed: 0,
       synced: 0,
+      retryExhausted: 0,
       lastAttemptAt: null,
       lastSuccessAt: null,
       lastFailureAt: null,
+      nextRetryAt: null,
       lastError: null,
     };
   }

@@ -26,9 +26,11 @@ const cloudQueueStatus = ref<CloudQueueStatus>({
   pending: 0,
   failed: 0,
   synced: 0,
+  retryExhausted: 0,
   lastAttemptAt: null,
   lastSuccessAt: null,
   lastFailureAt: null,
+  nextRetryAt: null,
   lastError: null,
 });
 const syncingRecordId = ref<number | null>(null);
@@ -45,6 +47,18 @@ const cloudQueueSummary = computed(() => {
   const failed = cloudQueueStatus.value.failed;
   if (pending === 0 && failed === 0) return "队列已清空";
   return `待同步 ${pending} 条 · 失败 ${failed} 条`;
+});
+
+const cloudQueueRetrySummary = computed(() => {
+  const queue = cloudQueueStatus.value;
+  if (queue.failed === 0) return "暂无失败重试压力";
+  if (queue.retryExhausted > 0 && queue.retryExhausted === queue.failed) {
+    return "已达自动重试上限，需手动同步";
+  }
+  if (queue.nextRetryAt) {
+    return `下次自动重试：${formatSyncTime(queue.nextRetryAt)}`;
+  }
+  return "失败项可立即重试";
 });
 
 const recoverableCloudError = computed(() => {
@@ -93,6 +107,8 @@ function buildCloudDiagnosticsText(): string {
     `队列待同步: ${queue.pending}`,
     `队列失败: ${queue.failed}`,
     `队列已同步: ${queue.synced}`,
+    `重试状态: ${queue.retryExhausted > 0 ? `${queue.retryExhausted} 条已达上限` : "正常"}`,
+    `下次自动重试: ${queue.nextRetryAt ? formatSyncTime(queue.nextRetryAt) : "无"}`,
     `最近尝试: ${formatSyncTime(queue.lastAttemptAt)}`,
     `最近成功: ${formatSyncTime(queue.lastSuccessAt)}`,
     `最近失败: ${formatSyncTime(queue.lastFailureAt)}`,
@@ -237,6 +253,9 @@ async function pullCloudChanges() {
             <span v-if="cloudQueueStatus.lastFailureAt">
               · 最近失败：{{ formatSyncTime(cloudQueueStatus.lastFailureAt) }}
             </span>
+          </p>
+          <p v-if="cloudProfile" class="vault-sync-meta">
+            {{ cloudQueueRetrySummary }}
           </p>
           <p v-if="cloudProfile && cloudQueueStatus.lastError" class="vault-sync-error">
             最近错误：{{ cloudQueueStatus.lastError }}

@@ -116,6 +116,7 @@ void main() {
         status: SyncQueueItemStatus.failed,
         attempts: 1,
         createdAt: DateTime.fromMillisecondsSinceEpoch(1000),
+        nextRetryAt: DateTime(2026, 6, 17, 12),
         lastError: 'network failed',
       ),
     );
@@ -149,6 +150,8 @@ void main() {
     expect(find.text('账户、设备或工作区授权不一致，请重新继续账户。'), findsOneWidget);
     expect(find.text('连接失败'), findsWidgets);
     expect(find.text('待同步 0 · 失败 1'), findsOneWidget);
+    expect(find.text('下次自动重试'), findsOneWidget);
+    expect(find.textContaining('2026-06-17 12:00:00'), findsWidgets);
     expect(find.text('最近尝试'), findsOneWidget);
     expect(find.text('最近成功'), findsOneWidget);
     expect(find.text('最近失败'), findsOneWidget);

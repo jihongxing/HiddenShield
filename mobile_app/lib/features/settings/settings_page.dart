@@ -256,7 +256,7 @@ class _SettingsContent extends StatelessWidget {
                     FilledButton.icon(
                       onPressed:
                           appState.isSyncing ||
-                              appState.pendingSyncQueueCount == 0 ||
+                              appState.readySyncQueueCount == 0 ||
                               appState.syncTransportMode ==
                                   SyncTransportMode.localOnly
                           ? null
@@ -476,6 +476,7 @@ class _SyncDiagnosticsPanel extends StatelessWidget {
             value:
                 '待同步 ${appState.pendingSyncQueueCount} · 失败 ${appState.failedSyncQueueCount}',
           ),
+          _DiagnosticRow(label: '下次自动重试', value: _mobileRetryDetail(appState)),
           _DiagnosticRow(label: '最近错误', value: profile.lastError ?? '无'),
           if (recoverableError) ...[
             const SizedBox(height: 4),
@@ -723,6 +724,25 @@ String _formatDateTime(DateTime? value) {
   return value.toLocal().toString().split('.').first;
 }
 
+String _mobileRetryDetail(MobileAppState appState) {
+  if (appState.failedSyncQueueCount == 0) {
+    return '无失败队列';
+  }
+  final readyCount = appState.readySyncQueueCount;
+  if (readyCount > 0) {
+    return '有 $readyCount 条可立即同步；点击同步或重试失败会立即处理。';
+  }
+  final exhausted = appState.retryExhaustedSyncQueueCount;
+  if (exhausted == appState.failedSyncQueueCount) {
+    return '已达自动重试上限；点击重试失败可手动再试。';
+  }
+  final nextRetryAt = appState.nextSyncQueueRetryAt;
+  if (nextRetryAt != null) {
+    return '下次自动重试：${_formatDateTime(nextRetryAt)}；点击重试失败可立即处理。';
+  }
+  return '等待手动重试；点击重试失败可立即处理。';
+}
+
 bool _isRecoverableSyncError(String? value) {
   if (value == null || value.isEmpty) {
     return false;
@@ -759,7 +779,7 @@ _SyncHealthState _mobileSyncHealth(MobileAppState appState) {
   if (appState.failedSyncQueueCount > 0) {
     return _SyncHealthState(
       label: '有失败',
-      detail: '有 ${appState.failedSyncQueueCount} 条同步失败，建议复制诊断后重试。',
+      detail: _mobileRetryDetail(appState),
       icon: Icons.error_outline,
       iconColor: const Color(0xFFFFC857),
       background: const Color(0xFF2A2118),
@@ -828,6 +848,9 @@ String _buildSyncDiagnosticsText(MobileAppState appState) {
     '最近失败: ${_formatDateTime(profile.lastSyncFailureAt)}',
     '待同步: ${appState.pendingSyncQueueCount}',
     '失败队列: ${appState.failedSyncQueueCount}',
+    '可立即同步队列: ${appState.readySyncQueueCount}',
+    '已达自动重试上限: ${appState.retryExhaustedSyncQueueCount}',
+    '下次自动重试: ${_mobileRetryDetail(appState)}',
     '最近错误: ${profile.lastError ?? '无'}',
     '自动解决记录: ${appState.syncResolutions.length}',
   ].join('\n');
