@@ -68,6 +68,7 @@ pub fn embed_image_for_mobile(
         watermark_core::EmbedOptions {
             image_output_format: format,
             allow_rewrite,
+            ..watermark_core::EmbedOptions::default()
         },
     )
     .map_err(|error| MobileWatermarkError::OperationFailed(error.to_string()))?;
@@ -105,6 +106,7 @@ pub fn embed_audio_wav_for_mobile(
         watermark_core::EmbedOptions {
             image_output_format: ImageOutputFormat::Png,
             allow_rewrite,
+            ..watermark_core::EmbedOptions::default()
         },
     )
     .map_err(|error| MobileWatermarkError::OperationFailed(error.to_string()))?;

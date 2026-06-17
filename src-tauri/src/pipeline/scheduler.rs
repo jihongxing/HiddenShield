@@ -742,6 +742,7 @@ async fn run_image_pipeline(
         EmbedOptions {
             image_output_format: image_format,
             allow_rewrite: params.options.allow_rewrite,
+            ..EmbedOptions::default()
         },
     )
     .map_err(|e| PipelineError::WatermarkEmbedFailed(e.to_string()))?;

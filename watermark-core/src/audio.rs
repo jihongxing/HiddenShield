@@ -8,7 +8,9 @@ use crate::payload::{
 };
 
 const FRAME_SIZE: usize = 4096;
-const QIM_DELTA: f32 = 0.02;
+pub const DEFAULT_QIM_DELTA: f32 = 0.02;
+pub const BALANCED_QIM_DELTA: f32 = 0.014;
+const KNOWN_QIM_DELTAS: [f32; 2] = [DEFAULT_QIM_DELTA, BALANCED_QIM_DELTA];
 const SILENCE_THRESHOLD: f32 = 0.001;
 const PAYLOAD_BITS: usize = 32 * 8;
 const BIN_LO: usize = 186;
@@ -29,40 +31,79 @@ pub fn embed_watermark_wav_bytes(
     input_wav: &[u8],
     payload: &WatermarkPayload,
 ) -> Result<Vec<u8>, WatermarkError> {
+    embed_watermark_wav_bytes_with_delta(input_wav, payload, DEFAULT_QIM_DELTA)
+}
+
+pub fn embed_watermark_wav_bytes_with_delta(
+    input_wav: &[u8],
+    payload: &WatermarkPayload,
+    delta: f32,
+) -> Result<Vec<u8>, WatermarkError> {
     reject_existing_wav_watermark(input_wav)?;
-    embed_watermark_wav_bytes_allow_rewrite(input_wav, payload)
+    embed_watermark_wav_bytes_allow_rewrite_with_delta(input_wav, payload, delta)
 }
 
 pub fn embed_watermark_wav_bytes_allow_rewrite(
     input_wav: &[u8],
     payload: &WatermarkPayload,
 ) -> Result<Vec<u8>, WatermarkError> {
+    embed_watermark_wav_bytes_allow_rewrite_with_delta(input_wav, payload, DEFAULT_QIM_DELTA)
+}
+
+pub fn embed_watermark_wav_bytes_allow_rewrite_with_delta(
+    input_wav: &[u8],
+    payload: &WatermarkPayload,
+    delta: f32,
+) -> Result<Vec<u8>, WatermarkError> {
     let mut reader = hound::WavReader::new(Cursor::new(input_wav))
         .map_err(|e| WatermarkError::EmbedFailed(format!("open WAV: {e}")))?;
     let spec = reader.spec();
     let mut samples = read_wav_samples(&mut reader)?;
-    embed_watermark_samples_allow_rewrite(&mut samples, payload)?;
+    embed_watermark_samples_allow_rewrite_with_delta(&mut samples, payload, delta)?;
     write_wav_samples(&samples, spec)
 }
 
 pub fn extract_watermark_wav_bytes(input_wav: &[u8]) -> Result<WatermarkPayload, WatermarkError> {
+    extract_watermark_wav_bytes_with_delta(input_wav, DEFAULT_QIM_DELTA)
+}
+
+pub fn extract_watermark_wav_bytes_with_delta(
+    input_wav: &[u8],
+    delta: f32,
+) -> Result<WatermarkPayload, WatermarkError> {
     let mut reader = hound::WavReader::new(Cursor::new(input_wav))
         .map_err(|e| WatermarkError::ExtractFailed(format!("open WAV: {e}")))?;
     let samples = read_wav_samples(&mut reader)?;
-    extract_watermark_samples(&samples)
+    extract_watermark_samples_with_delta(&samples, delta)
 }
 
 pub fn embed_watermark_samples(
     samples: &mut [f32],
     payload: &WatermarkPayload,
 ) -> Result<(), WatermarkError> {
+    embed_watermark_samples_with_delta(samples, payload, DEFAULT_QIM_DELTA)
+}
+
+pub fn embed_watermark_samples_with_delta(
+    samples: &mut [f32],
+    payload: &WatermarkPayload,
+    delta: f32,
+) -> Result<(), WatermarkError> {
     reject_existing_samples_watermark(samples)?;
-    embed_watermark_samples_allow_rewrite(samples, payload)
+    embed_watermark_samples_allow_rewrite_with_delta(samples, payload, delta)
 }
 
 pub fn embed_watermark_samples_allow_rewrite(
     samples: &mut [f32],
     payload: &WatermarkPayload,
+) -> Result<(), WatermarkError> {
+    embed_watermark_samples_allow_rewrite_with_delta(samples, payload, DEFAULT_QIM_DELTA)
+}
+
+pub fn embed_watermark_samples_allow_rewrite_with_delta(
+    samples: &mut [f32],
+    payload: &WatermarkPayload,
+    delta: f32,
 ) -> Result<(), WatermarkError> {
     if samples.len() < FRAME_SIZE {
         return Err(WatermarkError::EmbedFailed(
@@ -96,7 +137,7 @@ pub fn embed_watermark_samples_allow_rewrite(
             let bit_idx = (frame_idx * usable_bins + i) % PAYLOAD_BITS;
             let mag = spectrum[bin_idx].norm();
             let phase = spectrum[bin_idx].arg();
-            let new_mag = qim_embed(mag, bits[bit_idx]);
+            let new_mag = qim_embed(mag, bits[bit_idx], delta);
             spectrum[bin_idx] = Complex::from_polar(new_mag, phase);
         }
 
@@ -114,24 +155,35 @@ pub fn embed_watermark_samples_allow_rewrite(
 }
 
 fn reject_existing_wav_watermark(input_wav: &[u8]) -> Result<(), WatermarkError> {
-    match extract_watermark_wav_bytes(input_wav) {
-        Ok(payload) => Err(WatermarkError::AlreadyWatermarked {
-            existing_uid: payload.watermark_uid(),
-        }),
-        Err(_) => Ok(()),
+    for delta in KNOWN_QIM_DELTAS {
+        if let Ok(payload) = extract_watermark_wav_bytes_with_delta(input_wav, delta) {
+            return Err(WatermarkError::AlreadyWatermarked {
+                existing_uid: payload.watermark_uid(),
+            });
+        }
     }
+    Ok(())
 }
 
 fn reject_existing_samples_watermark(samples: &[f32]) -> Result<(), WatermarkError> {
-    match extract_watermark_samples(samples) {
-        Ok(payload) => Err(WatermarkError::AlreadyWatermarked {
-            existing_uid: payload.watermark_uid(),
-        }),
-        Err(_) => Ok(()),
+    for delta in KNOWN_QIM_DELTAS {
+        if let Ok(payload) = extract_watermark_samples_with_delta(samples, delta) {
+            return Err(WatermarkError::AlreadyWatermarked {
+                existing_uid: payload.watermark_uid(),
+            });
+        }
     }
+    Ok(())
 }
 
 pub fn extract_watermark_samples(samples: &[f32]) -> Result<WatermarkPayload, WatermarkError> {
+    extract_watermark_samples_with_delta(samples, DEFAULT_QIM_DELTA)
+}
+
+pub fn extract_watermark_samples_with_delta(
+    samples: &[f32],
+    delta: f32,
+) -> Result<WatermarkPayload, WatermarkError> {
     if samples.len() < FRAME_SIZE {
         return Err(WatermarkError::ExtractFailed(
             "audio too short for watermark extraction".into(),
@@ -159,7 +211,7 @@ pub fn extract_watermark_samples(samples: &[f32]) -> Result<WatermarkPayload, Wa
 
         for (i, bin_idx) in (BIN_LO..BIN_HI).enumerate() {
             let bit_idx = (frame_idx * usable_bins + i) % PAYLOAD_BITS;
-            let bit = qim_extract(spectrum[bin_idx].norm());
+            let bit = qim_extract(spectrum[bin_idx].norm(), delta);
             if bit {
                 votes[bit_idx] += 1;
             } else {
@@ -222,8 +274,8 @@ fn write_wav_samples(samples: &[f32], spec: hound::WavSpec) -> Result<Vec<u8>, W
     Ok(cursor.into_inner())
 }
 
-fn qim_embed(mag: f32, bit: bool) -> f32 {
-    let half = QIM_DELTA / 2.0;
+fn qim_embed(mag: f32, bit: bool, delta: f32) -> f32 {
+    let half = delta / 2.0;
     let idx = (mag / half).round() as i32;
     let target_odd = if bit { 1 } else { 0 };
     let adjusted = if (idx & 1) == target_odd {
@@ -236,8 +288,8 @@ fn qim_embed(mag: f32, bit: bool) -> f32 {
     (adjusted as f32 * half).max(0.0)
 }
 
-fn qim_extract(mag: f32) -> bool {
-    let half = QIM_DELTA / 2.0;
+fn qim_extract(mag: f32, delta: f32) -> bool {
+    let half = delta / 2.0;
     let idx = (mag / half).round() as i32;
     (idx & 1) == 1
 }

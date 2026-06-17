@@ -18,7 +18,8 @@
     "cloud:contract": "node scripts/verify-cloud-sync-contract.mjs",
     "cloud:e2e": "node scripts/verify-cloud-sync-e2e.mjs",
     "cloud:ci": "node scripts/run-cloud-sync-ci.mjs",
-    "mobile:doctor": "node scripts/mobile-doctor.mjs"
+    "mobile:doctor": "node scripts/mobile-doctor.mjs",
+    "watermark:bench": "cargo run --manifest-path watermark-core/Cargo.toml --bin robustness_bench --"
   },
   "keywords": [
     "tauri",

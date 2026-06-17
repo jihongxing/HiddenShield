@@ -9,7 +9,9 @@ use crate::payload::{
     bits_to_bytes, bytes_to_bits, decode_payload, encode_payload, WatermarkPayload,
 };
 
-const ALPHA: f64 = 50.0;
+pub const DEFAULT_IMAGE_ALPHA: f64 = 50.0;
+pub const BALANCED_IMAGE_ALPHA: f64 = 36.0;
+const KNOWN_IMAGE_ALPHAS: [f64; 2] = [DEFAULT_IMAGE_ALPHA, BALANCED_IMAGE_ALPHA];
 const PAYLOAD_BITS: usize = 32 * 8;
 const BLOCK_SIZE: usize = 4;
 const REDUNDANCY: usize = 3;
@@ -48,8 +50,17 @@ pub fn embed_image_watermark_bytes(
     payload: &WatermarkPayload,
     output_format: ImageFormat,
 ) -> Result<Vec<u8>, WatermarkError> {
+    embed_image_watermark_bytes_with_alpha(image_bytes, payload, output_format, DEFAULT_IMAGE_ALPHA)
+}
+
+pub fn embed_image_watermark_bytes_with_alpha(
+    image_bytes: &[u8],
+    payload: &WatermarkPayload,
+    output_format: ImageFormat,
+    alpha: f64,
+) -> Result<Vec<u8>, WatermarkError> {
     reject_existing_image_watermark(image_bytes)?;
-    embed_image_watermark_bytes_allow_rewrite(image_bytes, payload, output_format)
+    embed_image_watermark_bytes_allow_rewrite_with_alpha(image_bytes, payload, output_format, alpha)
 }
 
 pub fn embed_image_watermark_bytes_allow_rewrite(
@@ -57,10 +68,24 @@ pub fn embed_image_watermark_bytes_allow_rewrite(
     payload: &WatermarkPayload,
     output_format: ImageFormat,
 ) -> Result<Vec<u8>, WatermarkError> {
+    embed_image_watermark_bytes_allow_rewrite_with_alpha(
+        image_bytes,
+        payload,
+        output_format,
+        DEFAULT_IMAGE_ALPHA,
+    )
+}
+
+pub fn embed_image_watermark_bytes_allow_rewrite_with_alpha(
+    image_bytes: &[u8],
+    payload: &WatermarkPayload,
+    output_format: ImageFormat,
+    alpha: f64,
+) -> Result<Vec<u8>, WatermarkError> {
     let img = image::load_from_memory(image_bytes)
         .map_err(|e| WatermarkError::EmbedFailed(format!("failed to open image: {e}")))?;
 
-    let output_img = embed_image_into_dynamic(&img, payload)?;
+    let output_img = embed_image_into_dynamic(&img, payload, alpha)?;
     let mut cursor = Cursor::new(Vec::new());
     DynamicImage::ImageRgba8(output_img)
         .write_to(&mut cursor, output_format)
@@ -77,23 +102,33 @@ pub fn extract_image_watermark(image_path: &Path) -> Result<WatermarkPayload, Wa
 pub fn extract_image_watermark_bytes(
     image_bytes: &[u8],
 ) -> Result<WatermarkPayload, WatermarkError> {
+    extract_image_watermark_bytes_with_alpha(image_bytes, DEFAULT_IMAGE_ALPHA)
+}
+
+pub fn extract_image_watermark_bytes_with_alpha(
+    image_bytes: &[u8],
+    alpha: f64,
+) -> Result<WatermarkPayload, WatermarkError> {
     let img = image::load_from_memory(image_bytes)
         .map_err(|e| WatermarkError::ExtractFailed(format!("failed to open image: {e}")))?;
-    extract_image_from_dynamic(&img)
+    extract_image_from_dynamic(&img, alpha)
 }
 
 fn reject_existing_image_watermark(image_bytes: &[u8]) -> Result<(), WatermarkError> {
-    match extract_image_watermark_bytes(image_bytes) {
-        Ok(payload) => Err(WatermarkError::AlreadyWatermarked {
-            existing_uid: payload.watermark_uid(),
-        }),
-        Err(_) => Ok(()),
+    for alpha in KNOWN_IMAGE_ALPHAS {
+        if let Ok(payload) = extract_image_watermark_bytes_with_alpha(image_bytes, alpha) {
+            return Err(WatermarkError::AlreadyWatermarked {
+                existing_uid: payload.watermark_uid(),
+            });
+        }
     }
+    Ok(())
 }
 
 fn embed_image_into_dynamic(
     img: &DynamicImage,
     payload: &WatermarkPayload,
+    alpha: f64,
 ) -> Result<RgbaImage, WatermarkError> {
     let (w, h) = img.dimensions();
     let half_w = (w / 2) as usize;
@@ -120,14 +155,25 @@ fn embed_image_into_dynamic(
 
     let (mut y_channel, cb_channel, cr_channel) = rgb_to_ycbcr_channels(&img);
     let (mut ll, lh, hl, hh) = haar_dwt_2d(&y_channel, half_w, half_h);
-    embed_bits_dct_svd(&mut ll, half_w, half_h, blocks_x, blocks_y, &redundant_bits);
+    embed_bits_dct_svd(
+        &mut ll,
+        half_w,
+        half_h,
+        blocks_x,
+        blocks_y,
+        &redundant_bits,
+        alpha,
+    );
     haar_idwt_2d(&mut y_channel, &ll, &lh, &hl, &hh, half_w, half_h);
 
     let output_img = ycbcr_to_rgba(&y_channel, &cb_channel, &cr_channel, w, h);
     Ok(output_img)
 }
 
-fn extract_image_from_dynamic(img: &DynamicImage) -> Result<WatermarkPayload, WatermarkError> {
+fn extract_image_from_dynamic(
+    img: &DynamicImage,
+    alpha: f64,
+) -> Result<WatermarkPayload, WatermarkError> {
     let (w, h) = img.dimensions();
     let half_w = (w / 2) as usize;
     let half_h = (h / 2) as usize;
@@ -143,7 +189,7 @@ fn extract_image_from_dynamic(img: &DynamicImage) -> Result<WatermarkPayload, Wa
 
     let (y_channel, _, _) = rgb_to_ycbcr_channels(&img);
     let (ll, _, _, _) = haar_dwt_2d(&y_channel, half_w, half_h);
-    let raw_bits = extract_bits_dct_svd(&ll, half_w, blocks_x, blocks_y);
+    let raw_bits = extract_bits_dct_svd(&ll, half_w, blocks_x, blocks_y, alpha);
 
     let bits: Vec<bool> = raw_bits
         .chunks(REDUNDANCY)
@@ -269,6 +315,7 @@ fn embed_bits_dct_svd(
     blocks_x: usize,
     blocks_y: usize,
     bits: &[bool],
+    alpha: f64,
 ) {
     let total_bits = bits.len();
     let mut bit_idx = 0;
@@ -292,7 +339,7 @@ fn embed_bits_dct_svd(
             let svd = SVD::new(dmat, true, true);
             let mut sigma = svd.singular_values.clone();
 
-            sigma[0] = quantize_embed(sigma[0], bits[bit_idx], ALPHA);
+            sigma[0] = quantize_embed(sigma[0], bits[bit_idx], alpha);
 
             let u = svd.u.unwrap();
             let vt = svd.v_t.unwrap();
@@ -320,7 +367,13 @@ fn embed_bits_dct_svd(
     }
 }
 
-fn extract_bits_dct_svd(ll: &[f64], ll_w: usize, blocks_x: usize, blocks_y: usize) -> Vec<bool> {
+fn extract_bits_dct_svd(
+    ll: &[f64],
+    ll_w: usize,
+    blocks_x: usize,
+    blocks_y: usize,
+    alpha: f64,
+) -> Vec<bool> {
     let total_bits = PAYLOAD_BITS * REDUNDANCY;
     let mut bits = Vec::with_capacity(total_bits);
 
@@ -343,7 +396,7 @@ fn extract_bits_dct_svd(ll: &[f64], ll_w: usize, blocks_x: usize, blocks_y: usiz
             let dmat = DMatrix::from_row_slice(4, 4, dct_block.as_slice());
             let svd = SVD::new(dmat, true, true);
             let s0 = svd.singular_values[0];
-            bits.push(quantize_extract(s0, ALPHA));
+            bits.push(quantize_extract(s0, alpha));
         }
     }
 
