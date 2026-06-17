@@ -442,17 +442,42 @@ mod tests {
 
     #[test]
     fn system_check_uses_source_directory_as_output_dir() {
-        let app_data_dir = Path::new("C:\\Users\\tester\\AppData\\Roaming\\HiddenShield");
-        let output =
-            resolve_system_check_output_dir(app_data_dir, Some("D:\\media\\readonly\\source.mp4"));
-        assert_eq!(output, Path::new("D:\\media\\readonly"));
+        #[cfg(windows)]
+        {
+            let app_data_dir = Path::new("C:\\Users\\tester\\AppData\\Roaming\\HiddenShield");
+            let output = resolve_system_check_output_dir(
+                app_data_dir,
+                Some("D:\\media\\readonly\\source.mp4"),
+            );
+            assert_eq!(output, Path::new("D:\\media\\readonly"));
+        }
+
+        #[cfg(not(windows))]
+        {
+            let app_data_dir = Path::new("/home/tester/.config/HiddenShield");
+            let output = resolve_system_check_output_dir(
+                app_data_dir,
+                Some("/mnt/media/readonly/source.mp4"),
+            );
+            assert_eq!(output, Path::new("/mnt/media/readonly"));
+        }
     }
 
     #[test]
     fn system_check_falls_back_when_input_is_missing() {
-        let app_data_dir = Path::new("C:\\Users\\tester\\AppData\\Roaming\\HiddenShield");
-        let output = resolve_system_check_output_dir(app_data_dir, None);
-        assert_eq!(output, Path::new("C:\\Users\\tester\\AppData\\Roaming"));
+        #[cfg(windows)]
+        {
+            let app_data_dir = Path::new("C:\\Users\\tester\\AppData\\Roaming\\HiddenShield");
+            let output = resolve_system_check_output_dir(app_data_dir, None);
+            assert_eq!(output, Path::new("C:\\Users\\tester\\AppData\\Roaming"));
+        }
+
+        #[cfg(not(windows))]
+        {
+            let app_data_dir = Path::new("/home/tester/.config/HiddenShield");
+            let output = resolve_system_check_output_dir(app_data_dir, None);
+            assert_eq!(output, Path::new("/home/tester/.config"));
+        }
     }
 
     #[test]
