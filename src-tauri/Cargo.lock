@@ -1920,6 +1920,7 @@ dependencies = [
  "hmac",
  "hostname",
  "image",
+ "libc",
  "log",
  "nalgebra",
  "obfstr",
