@@ -222,6 +222,62 @@ void main() {
     );
   });
 
+  test('CloudSyncTransport maps cloud auth and workspace errors', () async {
+    final item = _queueItem();
+
+    final unauthorized = await CloudSyncTransport(
+      baseUrl: 'https://api.hiddenshield.test',
+      authToken: 'expired-token',
+      deviceId: 'device-1',
+      workspaceId: 'ws-1',
+      client: MockClient(
+        (_) async => _jsonResponse({'error': 'unauthorized'}, statusCode: 401),
+      ),
+    ).send(item);
+    expect(unauthorized.isSuccess, isFalse);
+    expect(unauthorized.error, contains('登录状态已失效'));
+    expect(unauthorized.error, contains('HTTP 401'));
+
+    final forbidden = await CloudSyncTransport(
+      baseUrl: 'https://api.hiddenshield.test',
+      authToken: 'access-token',
+      deviceId: 'device-1',
+      workspaceId: 'ws-other',
+      client: MockClient(
+        (_) async => _jsonResponse({'error': 'forbidden'}, statusCode: 403),
+      ),
+    ).send(item);
+    expect(forbidden.isSuccess, isFalse);
+    expect(forbidden.error, contains('工作区或设备与云端账户不匹配'));
+    expect(forbidden.error, contains('HTTP 403'));
+
+    final changes = await CloudSyncTransport(
+      baseUrl: 'https://api.hiddenshield.test',
+      authToken: 'access-token',
+      deviceId: 'device-1',
+      workspaceId: 'ws-other',
+      client: MockClient(
+        (_) async => _jsonResponse({'error': 'forbidden'}, statusCode: 403),
+      ),
+    ).fetchChanges();
+    expect(changes.isSuccess, isFalse);
+    expect(changes.error, contains('工作区或设备与云端账户不匹配'));
+  });
+
+  test('CloudSyncTransport maps network failures to retry guidance', () async {
+    final result = await CloudSyncTransport(
+      baseUrl: 'https://api.hiddenshield.test',
+      authToken: 'access-token',
+      deviceId: 'device-1',
+      workspaceId: 'ws-1',
+      client: MockClient((_) async => throw Exception('socket closed')),
+    ).send(_queueItem());
+
+    expect(result.isSuccess, isFalse);
+    expect(result.error, contains('无法连接云服务'));
+    expect(result.error, contains('检查网络'));
+  });
+
   test(
     'LanDebugSyncTransport posts a queue item to the desktop endpoint',
     () async {

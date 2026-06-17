@@ -284,7 +284,9 @@ impl CloudSyncClient {
         if let Some(token) = token {
             request = request.bearer_auth(token.trim());
         }
-        let response = request.send().map_err(|e| format!("云同步请求失败: {e}"))?;
+        let response = request
+            .send()
+            .map_err(|e| cloud_network_error_message("发送云同步请求", &e.to_string()))?;
         parse_response(response)
     }
 
@@ -297,7 +299,7 @@ impl CloudSyncClient {
             .get(format!("{}{}", self.base_url, path))
             .bearer_auth(token.trim())
             .send()
-            .map_err(|e| format!("云同步请求失败: {e}"))?;
+            .map_err(|e| cloud_network_error_message("拉取云端变更", &e.to_string()))?;
         parse_response(response)
     }
 }
@@ -343,14 +345,38 @@ where
         .text()
         .map_err(|e| format!("读取云同步响应失败: {e}"))?;
     if !status.is_success() {
-        return Err(format!(
-            "云同步 HTTP {} {}",
-            status.as_u16(),
-            short_body(&body)
-        ));
+        return Err(cloud_http_error_message(status.as_u16(), &body));
     }
     serde_json::from_str(&body)
         .map_err(|e| format!("解析云同步响应失败: {e}; body={}", short_body(&body)))
+}
+
+fn cloud_http_error_message(status_code: u16, body: &str) -> String {
+    let detail = short_body(body);
+    let suffix = if detail.is_empty() {
+        format!("HTTP {status_code}")
+    } else {
+        format!("HTTP {status_code} {detail}")
+    };
+    match status_code {
+        401 => format!(
+            "云同步失败：登录状态已失效或设备未被当前账户授权，请重新继续账户后再同步。({suffix})"
+        ),
+        403 => format!(
+            "云同步失败：当前工作区或设备与云端账户不匹配，请确认桌面端和移动端使用同一个账户后重新登录。({suffix})"
+        ),
+        408 | 429 | 500..=599 => {
+            format!("云同步失败：云服务暂时不可用或网络超时，请稍后重试。({suffix})")
+        }
+        _ => format!("云同步失败：云端返回异常，请复制同步诊断并反馈。({suffix})"),
+    }
+}
+
+fn cloud_network_error_message(action: &str, error: &str) -> String {
+    format!(
+        "{action}失败：无法连接云服务，请检查网络或系统配置中的云服务地址后重试。({})",
+        short_body(error)
+    )
 }
 
 fn normalize_base_url(value: String) -> Result<String, String> {
@@ -483,5 +509,20 @@ mod tests {
     fn desktop_record_kind_detects_audio_and_video() {
         assert_eq!(desktop_record_kind(&sample_record("song.wav")), "audio");
         assert_eq!(desktop_record_kind(&sample_record("movie.mp4")), "video");
+    }
+
+    #[test]
+    fn cloud_http_errors_map_to_actionable_guidance() {
+        let unauthorized = cloud_http_error_message(401, r#"{"error":"unauthorized"}"#);
+        assert!(unauthorized.contains("登录状态已失效"));
+        assert!(unauthorized.contains("HTTP 401"));
+
+        let forbidden = cloud_http_error_message(403, r#"{"error":"forbidden"}"#);
+        assert!(forbidden.contains("工作区或设备与云端账户不匹配"));
+        assert!(forbidden.contains("HTTP 403"));
+
+        let unavailable = cloud_http_error_message(503, r#"{"error":"unavailable"}"#);
+        assert!(unavailable.contains("稍后重试"));
+        assert!(unavailable.contains("HTTP 503"));
     }
 }

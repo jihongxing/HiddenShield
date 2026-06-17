@@ -147,7 +147,11 @@ class CloudSyncTransport implements SyncTransport {
       if (response.statusCode < 200 || response.statusCode >= 300) {
         return SyncBatchSendResult.failureForAll(
           items,
-          'cloud sync failed: HTTP ${response.statusCode} ${_shortBody(response.body)}',
+          _cloudHttpErrorMessage(
+            action: '上传云同步队列',
+            statusCode: response.statusCode,
+            body: response.body,
+          ),
         );
       }
       final body = jsonDecode(response.body) as Map<String, Object?>;
@@ -166,7 +170,7 @@ class CloudSyncTransport implements SyncTransport {
     } catch (error) {
       return SyncBatchSendResult.failureForAll(
         items,
-        'cloud sync failed: $error',
+        _cloudNetworkErrorMessage('上传云同步队列', error),
       );
     }
   }
@@ -208,7 +212,11 @@ class CloudSyncTransport implements SyncTransport {
           .timeout(_timeout);
       if (response.statusCode < 200 || response.statusCode >= 300) {
         return SyncChangesResult.failure(
-          'cloud changes failed: HTTP ${response.statusCode} ${_shortBody(response.body)}',
+          _cloudHttpErrorMessage(
+            action: '拉取云端变更',
+            statusCode: response.statusCode,
+            body: response.body,
+          ),
         );
       }
       final body = jsonDecode(response.body) as Map<String, Object?>;
@@ -221,7 +229,9 @@ class CloudSyncTransport implements SyncTransport {
             .toList(growable: false),
       );
     } catch (error) {
-      return SyncChangesResult.failure('cloud changes failed: $error');
+      return SyncChangesResult.failure(
+        _cloudNetworkErrorMessage('拉取云端变更', error),
+      );
     }
   }
 
@@ -485,6 +495,27 @@ String _shortBody(String body) {
     return '';
   }
   return trimmed.length > 160 ? '${trimmed.substring(0, 160)}...' : trimmed;
+}
+
+String _cloudHttpErrorMessage({
+  required String action,
+  required int statusCode,
+  required String body,
+}) {
+  final detail = _shortBody(body);
+  final suffix = detail.isEmpty
+      ? 'HTTP $statusCode'
+      : 'HTTP $statusCode $detail';
+  return switch (statusCode) {
+    401 => '$action失败：登录状态已失效或设备未被当前账户授权，请重新继续账户后再同步。($suffix)',
+    403 => '$action失败：当前工作区或设备与云端账户不匹配，请确认桌面端和移动端使用同一个账户后重新登录。($suffix)',
+    408 || 429 || >= 500 => '$action失败：云服务暂时不可用或网络超时，请稍后重试。($suffix)',
+    _ => '$action失败：云端返回异常，请复制同步诊断并反馈。($suffix)',
+  };
+}
+
+String _cloudNetworkErrorMessage(String action, Object error) {
+  return '$action失败：无法连接云服务，请检查网络或系统配置中的云服务地址后重试。(${_shortBody('$error')})';
 }
 
 String _cloudEntityType(String payloadType) {
