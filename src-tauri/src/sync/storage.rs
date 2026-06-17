@@ -5,6 +5,9 @@ use sha2::{Digest, Sha256};
 use crate::commands::vault::VaultRecord;
 use crate::db::queries;
 
+pub const CLOUD_SYNC_QUEUE_MAX_ATTEMPTS: u32 = 5;
+const CLOUD_SYNC_QUEUE_RETRY_BACKOFF_SECS: [i64; 4] = [60, 300, 900, 3600];
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct MobileSyncQueueItem {
     #[serde(rename = "queueId")]
@@ -31,6 +34,7 @@ pub struct CloudSyncQueueItem {
     pub status: String,
     pub attempts: u32,
     pub last_error: Option<String>,
+    pub next_retry_at: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -103,6 +107,7 @@ CREATE TABLE IF NOT EXISTS cloud_sync_queue (
   status TEXT NOT NULL,
   attempts INTEGER NOT NULL DEFAULT 0,
   last_error TEXT,
+  next_retry_at TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
@@ -110,6 +115,27 @@ CREATE TABLE IF NOT EXISTS cloud_sync_queue (
 CREATE INDEX IF NOT EXISTS idx_cloud_sync_queue_status_created
 ON cloud_sync_queue(status, created_at ASC);
 ",
+    )?;
+    ensure_column(conn, "cloud_sync_queue", "next_retry_at", "TEXT")?;
+    Ok(())
+}
+
+fn ensure_column(
+    conn: &Connection,
+    table: &str,
+    column: &str,
+    column_type: &str,
+) -> Result<(), rusqlite::Error> {
+    let mut stmt = conn.prepare(&format!("PRAGMA table_info({table})"))?;
+    let rows = stmt.query_map([], |row| row.get::<_, String>(1))?;
+    for name in rows {
+        if name? == column {
+            return Ok(());
+        }
+    }
+    conn.execute(
+        &format!("ALTER TABLE {table} ADD COLUMN {column} {column_type}"),
+        [],
     )?;
     Ok(())
 }
@@ -124,14 +150,15 @@ pub fn enqueue_cloud_sync_event(
     conn.execute(
         "
 INSERT INTO cloud_sync_queue (
-  id, record_id, event_json, status, attempts, last_error, created_at, updated_at
-) VALUES (?1, ?2, ?3, 'pending', 0, NULL, ?4, ?4)
+  id, record_id, event_json, status, attempts, last_error, next_retry_at, created_at, updated_at
+) VALUES (?1, ?2, ?3, 'pending', 0, NULL, NULL, ?4, ?4)
 ON CONFLICT(id) DO UPDATE SET
   event_json = excluded.event_json,
   status = CASE
     WHEN cloud_sync_queue.status = 'synced' THEN 'synced'
     ELSE 'pending'
   END,
+  next_retry_at = NULL,
   updated_at = excluded.updated_at
 ",
         params![queue_id, record_id as i64, event_json, now],
@@ -145,25 +172,35 @@ pub fn list_pending_cloud_sync_queue(
 ) -> Result<Vec<CloudSyncQueueItem>, rusqlite::Error> {
     let mut stmt = conn.prepare(
         "
-SELECT id, record_id, event_json, status, attempts, last_error, created_at, updated_at
+SELECT id, record_id, event_json, status, attempts, last_error, next_retry_at, created_at, updated_at
 FROM cloud_sync_queue
-WHERE status IN ('pending', 'failed')
+WHERE status = 'pending'
+   OR (
+     status = 'failed'
+     AND attempts < ?2
+     AND (next_retry_at IS NULL OR next_retry_at <= ?3)
+   )
 ORDER BY created_at ASC
 LIMIT ?1
 ",
     )?;
-    let rows = stmt.query_map(params![limit as i64], |row| {
-        Ok(CloudSyncQueueItem {
-            id: row.get(0)?,
-            record_id: row.get::<_, i64>(1)? as u32,
-            event_json: row.get(2)?,
-            status: row.get(3)?,
-            attempts: row.get::<_, i64>(4)? as u32,
-            last_error: row.get(5)?,
-            created_at: row.get(6)?,
-            updated_at: row.get(7)?,
-        })
-    })?;
+    let now = chrono::Utc::now().to_rfc3339();
+    let rows = stmt.query_map(
+        params![limit as i64, CLOUD_SYNC_QUEUE_MAX_ATTEMPTS as i64, now],
+        |row| {
+            Ok(CloudSyncQueueItem {
+                id: row.get(0)?,
+                record_id: row.get::<_, i64>(1)? as u32,
+                event_json: row.get(2)?,
+                status: row.get(3)?,
+                attempts: row.get::<_, i64>(4)? as u32,
+                last_error: row.get(5)?,
+                next_retry_at: row.get(6)?,
+                created_at: row.get(7)?,
+                updated_at: row.get(8)?,
+            })
+        },
+    )?;
     rows.collect()
 }
 
@@ -179,6 +216,7 @@ UPDATE cloud_sync_queue
 SET status = 'syncing',
     attempts = attempts + 1,
     last_error = NULL,
+    next_retry_at = NULL,
     updated_at = ?1
 WHERE id = ?2
 ",
@@ -199,6 +237,7 @@ pub fn mark_cloud_sync_queue_synced(
 UPDATE cloud_sync_queue
 SET status = 'synced',
     last_error = NULL,
+    next_retry_at = NULL,
     updated_at = ?1
 WHERE id = ?2
 ",
@@ -215,18 +254,60 @@ pub fn mark_cloud_sync_queue_failed(
 ) -> Result<(), rusqlite::Error> {
     let now = chrono::Utc::now().to_rfc3339();
     for queue_id in queue_ids {
+        let attempts = cloud_sync_queue_attempts(conn, queue_id)?;
+        let next_retry_at = next_cloud_sync_queue_retry_at(attempts, chrono::Utc::now());
         conn.execute(
             "
 UPDATE cloud_sync_queue
 SET status = 'failed',
     last_error = ?1,
-    updated_at = ?2
-WHERE id = ?3
+    next_retry_at = ?2,
+    updated_at = ?3
+WHERE id = ?4
 ",
-            params![error, now, queue_id],
+            params![error, next_retry_at, now, queue_id],
         )?;
     }
     Ok(())
+}
+
+pub fn reset_cloud_sync_queue_backoff(conn: &Connection) -> Result<(), rusqlite::Error> {
+    let now = chrono::Utc::now().to_rfc3339();
+    conn.execute(
+        "
+UPDATE cloud_sync_queue
+SET status = 'pending',
+    next_retry_at = NULL,
+    updated_at = ?1
+WHERE status = 'failed'
+",
+        params![now],
+    )?;
+    Ok(())
+}
+
+fn cloud_sync_queue_attempts(conn: &Connection, queue_id: &str) -> Result<u32, rusqlite::Error> {
+    let attempts = conn.query_row(
+        "SELECT attempts FROM cloud_sync_queue WHERE id = ?1",
+        params![queue_id],
+        |row| row.get::<_, i64>(0),
+    )?;
+    Ok(attempts.max(0) as u32)
+}
+
+fn next_cloud_sync_queue_retry_at(
+    attempts: u32,
+    failed_at: chrono::DateTime<chrono::Utc>,
+) -> Option<String> {
+    if attempts >= CLOUD_SYNC_QUEUE_MAX_ATTEMPTS {
+        return None;
+    }
+    let index = attempts.saturating_sub(1) as usize;
+    let seconds = CLOUD_SYNC_QUEUE_RETRY_BACKOFF_SECS
+        .get(index)
+        .copied()
+        .unwrap_or_else(|| *CLOUD_SYNC_QUEUE_RETRY_BACKOFF_SECS.last().unwrap());
+    Some((failed_at + chrono::Duration::seconds(seconds)).to_rfc3339())
 }
 
 pub fn count_cloud_sync_queue_by_status(
@@ -1040,6 +1121,52 @@ mod tests {
             latest_cloud_sync_queue_error(&conn).unwrap().as_deref(),
             Some("network timeout")
         );
+    }
+
+    #[test]
+    fn cloud_queue_failed_items_wait_for_retry_backoff() {
+        let conn = Connection::open_in_memory().unwrap();
+        init_sync_storage(&conn).unwrap();
+        enqueue_cloud_sync_event(&conn, "queue-failed", 1, "{}").unwrap();
+
+        mark_cloud_sync_queue_syncing(&conn, &["queue-failed".to_string()]).unwrap();
+        mark_cloud_sync_queue_failed(&conn, &["queue-failed".to_string()], "network timeout")
+            .unwrap();
+
+        let pending = list_pending_cloud_sync_queue(&conn, 10).unwrap();
+        assert!(pending.is_empty());
+
+        reset_cloud_sync_queue_backoff(&conn).unwrap();
+        let pending = list_pending_cloud_sync_queue(&conn, 10).unwrap();
+        assert_eq!(pending.len(), 1);
+        assert_eq!(pending[0].id, "queue-failed");
+        assert_eq!(pending[0].attempts, 1);
+    }
+
+    #[test]
+    fn cloud_queue_stops_automatic_retry_after_max_attempts() {
+        let conn = Connection::open_in_memory().unwrap();
+        init_sync_storage(&conn).unwrap();
+        enqueue_cloud_sync_event(&conn, "queue-max", 1, "{}").unwrap();
+
+        for _ in 0..CLOUD_SYNC_QUEUE_MAX_ATTEMPTS {
+            mark_cloud_sync_queue_syncing(&conn, &["queue-max".to_string()]).unwrap();
+            mark_cloud_sync_queue_failed(&conn, &["queue-max".to_string()], "network timeout")
+                .unwrap();
+            conn.execute(
+                "UPDATE cloud_sync_queue SET next_retry_at = NULL WHERE id = 'queue-max'",
+                [],
+            )
+            .unwrap();
+        }
+
+        let pending = list_pending_cloud_sync_queue(&conn, 10).unwrap();
+        assert!(pending.is_empty());
+
+        reset_cloud_sync_queue_backoff(&conn).unwrap();
+        let pending = list_pending_cloud_sync_queue(&conn, 10).unwrap();
+        assert_eq!(pending.len(), 1);
+        assert_eq!(pending[0].attempts, CLOUD_SYNC_QUEUE_MAX_ATTEMPTS);
     }
 
     #[test]

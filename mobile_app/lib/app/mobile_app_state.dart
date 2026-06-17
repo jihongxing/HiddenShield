@@ -21,6 +21,14 @@ class MobileAppState extends ChangeNotifier {
        _transportOverride = syncTransport,
        _cloudAccountClient = cloudAccountClient;
 
+  static const int syncQueueMaxAttempts = 5;
+  static const List<Duration> _syncQueueRetryBackoff = [
+    Duration(minutes: 1),
+    Duration(minutes: 5),
+    Duration(minutes: 15),
+    Duration(hours: 1),
+  ];
+
   final VaultStore _vaultStore;
   final SyncTransportFactory _syncTransportFactory;
   final SyncTransport? _transportOverride;
@@ -394,13 +402,16 @@ class MobileAppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> syncPendingQueue() async {
+  Future<void> syncPendingQueue() => _syncPendingQueue();
+
+  Future<void> _syncPendingQueue({bool manualRetry = false}) async {
     if (_isSyncing) {
       return;
     }
 
+    final now = DateTime.now();
     final pendingItems = _syncQueue
-        .where((item) => item.status == SyncQueueItemStatus.pending)
+        .where((item) => _canSyncQueueItem(item, now, manualRetry: manualRetry))
         .toList(growable: false);
     if (pendingItems.isEmpty) {
       return;
@@ -446,6 +457,10 @@ class MobileAppState extends ChangeNotifier {
                 : SyncQueueItemStatus.failed,
             lastError: result.error,
             clearLastError: result.isSuccess,
+            nextRetryAt: result.isSuccess
+                ? null
+                : _nextSyncQueueRetryAt(current.attempts, DateTime.now()),
+            clearNextRetryAt: result.isSuccess,
           ),
         );
         await _vaultStore.updateSyncItem(next);
@@ -482,12 +497,13 @@ class MobileAppState extends ChangeNotifier {
         item.copyWith(
           status: SyncQueueItemStatus.pending,
           clearLastError: true,
+          clearNextRetryAt: true,
         ),
       );
       await _vaultStore.updateSyncItem(next);
     }
     notifyListeners();
-    await syncPendingQueue();
+    await _syncPendingQueue(manualRetry: true);
   }
 
   Future<void> pullRemoteChanges() async {
@@ -580,6 +596,37 @@ class MobileAppState extends ChangeNotifier {
       attempts: 0,
       createdAt: DateTime.now(),
     );
+  }
+
+  bool _canSyncQueueItem(
+    SyncQueueItem item,
+    DateTime now, {
+    required bool manualRetry,
+  }) {
+    if (item.status == SyncQueueItemStatus.pending) {
+      return true;
+    }
+    if (item.status != SyncQueueItemStatus.failed) {
+      return false;
+    }
+    if (manualRetry) {
+      return true;
+    }
+    if (item.attempts >= syncQueueMaxAttempts) {
+      return false;
+    }
+    final nextRetryAt = item.nextRetryAt;
+    return nextRetryAt == null || !nextRetryAt.isAfter(now);
+  }
+
+  DateTime? _nextSyncQueueRetryAt(int attempts, DateTime failedAt) {
+    if (attempts >= syncQueueMaxAttempts) {
+      return null;
+    }
+    final index = (attempts - 1)
+        .clamp(0, _syncQueueRetryBackoff.length - 1)
+        .toInt();
+    return failedAt.add(_syncQueueRetryBackoff[index]);
   }
 
   SyncQueueItem _updateQueueItem(SyncQueueItem item) {
@@ -967,6 +1014,7 @@ class SyncQueueItem {
     required this.attempts,
     required this.createdAt,
     this.lastError,
+    this.nextRetryAt,
   });
 
   final String id;
@@ -978,12 +1026,15 @@ class SyncQueueItem {
   final int attempts;
   final DateTime createdAt;
   final String? lastError;
+  final DateTime? nextRetryAt;
 
   SyncQueueItem copyWith({
     SyncQueueItemStatus? status,
     int? attempts,
     String? lastError,
+    DateTime? nextRetryAt,
     bool clearLastError = false,
+    bool clearNextRetryAt = false,
   }) {
     return SyncQueueItem(
       id: id,
@@ -995,6 +1046,7 @@ class SyncQueueItem {
       attempts: attempts ?? this.attempts,
       createdAt: createdAt,
       lastError: clearLastError ? null : lastError ?? this.lastError,
+      nextRetryAt: clearNextRetryAt ? null : nextRetryAt ?? this.nextRetryAt,
     );
   }
 }

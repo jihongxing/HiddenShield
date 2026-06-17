@@ -159,6 +159,8 @@ void main() {
     expect(queue.single.status, SyncQueueItemStatus.failed);
     expect(queue.single.attempts, 1);
     expect(queue.single.lastError, 'local mock sync failed');
+    expect(queue.single.nextRetryAt, isNotNull);
+    expect(queue.single.nextRetryAt!.isAfter(DateTime.now()), isTrue);
     expect(state.failedSyncQueueCount, 1);
     expect(state.syncProfile.lastSyncAttemptAt, isNotNull);
     expect(state.syncProfile.lastSyncSuccessAt, isNull);
@@ -187,7 +189,72 @@ void main() {
     expect(queue.single.status, SyncQueueItemStatus.synced);
     expect(queue.single.attempts, 2);
     expect(queue.single.lastError, isNull);
+    expect(queue.single.nextRetryAt, isNull);
     expect(state.failedSyncQueueCount, 0);
+  });
+
+  test('skips failed sync queue items before retry backoff expires', () async {
+    final store = MemoryVaultStore();
+    final failedItem = _syncQueueItem('queue-backoff').copyWith(
+      status: SyncQueueItemStatus.failed,
+      attempts: 1,
+      lastError: 'network failed',
+      nextRetryAt: DateTime.now().add(const Duration(minutes: 5)),
+    );
+    await store.enqueueSyncItem(failedItem);
+    final transport = _RecordingBatchTransport();
+    final state = MobileAppState(vaultStore: store, syncTransport: transport);
+    await state.load();
+
+    await state.syncPendingQueue();
+
+    final queue = await store.loadSyncQueue();
+    expect(transport.batchCalls, 0);
+    expect(queue.single.status, SyncQueueItemStatus.failed);
+    expect(queue.single.attempts, 1);
+  });
+
+  test('manually retries failed queue items even during backoff', () async {
+    final store = MemoryVaultStore();
+    final failedItem = _syncQueueItem('queue-manual-backoff').copyWith(
+      status: SyncQueueItemStatus.failed,
+      attempts: 1,
+      lastError: 'network failed',
+      nextRetryAt: DateTime.now().add(const Duration(hours: 1)),
+    );
+    await store.enqueueSyncItem(failedItem);
+    final state = MobileAppState(
+      vaultStore: store,
+      syncTransport: const LocalMockSyncTransport(),
+    );
+    await state.load();
+
+    await state.retryFailedSyncQueue();
+
+    final queue = await store.loadSyncQueue();
+    expect(queue.single.status, SyncQueueItemStatus.synced);
+    expect(queue.single.attempts, 2);
+    expect(queue.single.nextRetryAt, isNull);
+  });
+
+  test('stops automatic sync after max failed attempts', () async {
+    final store = MemoryVaultStore();
+    final failedItem = _syncQueueItem('queue-max-attempts').copyWith(
+      status: SyncQueueItemStatus.failed,
+      attempts: MobileAppState.syncQueueMaxAttempts,
+      lastError: 'network failed',
+    );
+    await store.enqueueSyncItem(failedItem);
+    final transport = _RecordingBatchTransport();
+    final state = MobileAppState(vaultStore: store, syncTransport: transport);
+    await state.load();
+
+    await state.syncPendingQueue();
+
+    final queue = await store.loadSyncQueue();
+    expect(transport.batchCalls, 0);
+    expect(queue.single.status, SyncQueueItemStatus.failed);
+    expect(queue.single.attempts, MobileAppState.syncQueueMaxAttempts);
   });
 
   test('saves and loads LAN debug sync profile', () async {
@@ -212,103 +279,122 @@ void main() {
     expect(reloaded.syncProfile.lanDebugPairingCode, '123456');
   });
 
-  test('continue with account creates or loads account identity contract', () async {
-    final store = MemoryVaultStore();
-    final state = MobileAppState(vaultStore: store);
-    await state.load();
-    state.updateCreatorLabel('Alice Creator');
+  test(
+    'continue with account creates or loads account identity contract',
+    () async {
+      final store = MemoryVaultStore();
+      final state = MobileAppState(vaultStore: store);
+      await state.load();
+      state.updateCreatorLabel('Alice Creator');
 
-    await state.continueWithAccountPlaceholder(accountLabel: 'alice@example.com');
+      await state.continueWithAccountPlaceholder(
+        accountLabel: 'alice@example.com',
+      );
 
-    expect(state.cloudSyncEnabled, isTrue);
-    expect(state.syncProfile.accountId, startsWith('acct_'));
-    expect(state.syncProfile.workspaceId, startsWith('ws_'));
-    expect(state.syncProfile.workspaceName, '个人空间');
-    expect(state.syncProfile.deviceId, startsWith('dev_'));
-    expect(state.syncProfile.deviceRegistered, isTrue);
-    expect(state.syncProfile.creatorProfileId, startsWith('creator_'));
-    expect(state.syncProfile.creatorDisplayName, 'Alice Creator');
-    expect(state.syncProfile.creatorProfileSynced, isTrue);
-    expect(state.syncProfile.entitlementId, startsWith('ent_'));
-    expect(state.syncProfile.entitlementPlanCode, 'free');
-    expect(state.syncProfile.entitlementFeatures['cloud_sync'], isTrue);
+      expect(state.cloudSyncEnabled, isTrue);
+      expect(state.syncProfile.accountId, startsWith('acct_'));
+      expect(state.syncProfile.workspaceId, startsWith('ws_'));
+      expect(state.syncProfile.workspaceName, '个人空间');
+      expect(state.syncProfile.deviceId, startsWith('dev_'));
+      expect(state.syncProfile.deviceRegistered, isTrue);
+      expect(state.syncProfile.creatorProfileId, startsWith('creator_'));
+      expect(state.syncProfile.creatorDisplayName, 'Alice Creator');
+      expect(state.syncProfile.creatorProfileSynced, isTrue);
+      expect(state.syncProfile.entitlementId, startsWith('ent_'));
+      expect(state.syncProfile.entitlementPlanCode, 'free');
+      expect(state.syncProfile.entitlementFeatures['cloud_sync'], isTrue);
 
-    final reloaded = MobileAppState(vaultStore: store);
-    await reloaded.load();
+      final reloaded = MobileAppState(vaultStore: store);
+      await reloaded.load();
 
-    expect(reloaded.cloudSyncEnabled, isTrue);
-    expect(reloaded.syncProfile.accountLabel, 'alice@example.com');
-    expect(reloaded.syncProfile.workspaceName, '个人空间');
-    expect(reloaded.syncProfile.deviceRegistered, isTrue);
-    expect(reloaded.syncProfile.creatorDisplayName, 'Alice Creator');
-    expect(reloaded.syncProfile.entitlementFeatures['cloud_sync'], isTrue);
-  });
+      expect(reloaded.cloudSyncEnabled, isTrue);
+      expect(reloaded.syncProfile.accountLabel, 'alice@example.com');
+      expect(reloaded.syncProfile.workspaceName, '个人空间');
+      expect(reloaded.syncProfile.deviceRegistered, isTrue);
+      expect(reloaded.syncProfile.creatorDisplayName, 'Alice Creator');
+      expect(reloaded.syncProfile.entitlementFeatures['cloud_sync'], isTrue);
+    },
+  );
 
   test('continue with the same account is idempotent', () async {
     final store = MemoryVaultStore();
     final state = MobileAppState(vaultStore: store);
     await state.load();
 
-    await state.continueWithAccountPlaceholder(accountLabel: 'alice@example.com');
+    await state.continueWithAccountPlaceholder(
+      accountLabel: 'alice@example.com',
+    );
     final firstAccountId = state.syncProfile.accountId;
     final firstWorkspaceId = state.syncProfile.workspaceId;
     final firstCreatorId = state.syncProfile.creatorProfileId;
 
     await state.signOutCloud();
-    await state.continueWithAccountPlaceholder(accountLabel: 'alice@example.com');
+    await state.continueWithAccountPlaceholder(
+      accountLabel: 'alice@example.com',
+    );
 
     expect(state.syncProfile.accountId, firstAccountId);
     expect(state.syncProfile.workspaceId, firstWorkspaceId);
     expect(state.syncProfile.creatorProfileId, firstCreatorId);
   });
 
-  test('continue with account can apply cloud auth continue response', () async {
-    final store = MemoryVaultStore();
-    final cloudClient = CloudAccountClient(
-      baseUrl: 'https://api.hiddenshield.test',
-      client: MockClient((request) async {
-        return http.Response.bytes(
-          utf8.encode(jsonEncode({
-            'accessToken': 'access-token',
-            'refreshToken': 'refresh-token',
-            'account': {'id': 'acct-cloud', 'displayName': 'alice@example.com'},
-            'workspace': {'id': 'ws-cloud', 'name': '个人空间'},
-            'device': {'id': 'device-cloud', 'registered': true},
-            'creatorProfile': {
-              'id': 'creator-cloud',
-              'displayName': 'Alice Creator',
-              'isDefault': true,
-            },
-            'entitlement': {
-              'id': 'ent-cloud',
-              'planName': '免费版',
-              'planCode': 'free',
-              'status': 'free',
-              'features': {'cloud_sync': true},
-            },
-          })),
-          200,
-          headers: const {'content-type': 'application/json; charset=utf-8'},
-        );
-      }),
-    );
-    final state = MobileAppState(
-      vaultStore: store,
-      cloudAccountClient: cloudClient,
-    );
-    await state.load();
-    state.updateCreatorLabel('Alice Creator');
+  test(
+    'continue with account can apply cloud auth continue response',
+    () async {
+      final store = MemoryVaultStore();
+      final cloudClient = CloudAccountClient(
+        baseUrl: 'https://api.hiddenshield.test',
+        client: MockClient((request) async {
+          return http.Response.bytes(
+            utf8.encode(
+              jsonEncode({
+                'accessToken': 'access-token',
+                'refreshToken': 'refresh-token',
+                'account': {
+                  'id': 'acct-cloud',
+                  'displayName': 'alice@example.com',
+                },
+                'workspace': {'id': 'ws-cloud', 'name': '个人空间'},
+                'device': {'id': 'device-cloud', 'registered': true},
+                'creatorProfile': {
+                  'id': 'creator-cloud',
+                  'displayName': 'Alice Creator',
+                  'isDefault': true,
+                },
+                'entitlement': {
+                  'id': 'ent-cloud',
+                  'planName': '免费版',
+                  'planCode': 'free',
+                  'status': 'free',
+                  'features': {'cloud_sync': true},
+                },
+              }),
+            ),
+            200,
+            headers: const {'content-type': 'application/json; charset=utf-8'},
+          );
+        }),
+      );
+      final state = MobileAppState(
+        vaultStore: store,
+        cloudAccountClient: cloudClient,
+      );
+      await state.load();
+      state.updateCreatorLabel('Alice Creator');
 
-    await state.continueWithAccountPlaceholder(accountLabel: 'alice@example.com');
+      await state.continueWithAccountPlaceholder(
+        accountLabel: 'alice@example.com',
+      );
 
-    expect(state.syncProfile.accountId, 'acct-cloud');
-    expect(state.syncProfile.authToken, 'access-token');
-    expect(state.syncProfile.refreshToken, 'refresh-token');
-    expect(state.syncProfile.workspaceId, 'ws-cloud');
-    expect(state.syncProfile.deviceId, 'device-cloud');
-    expect(state.syncProfile.creatorProfileId, 'creator-cloud');
-    expect(state.syncProfile.entitlementId, 'ent-cloud');
-  });
+      expect(state.syncProfile.accountId, 'acct-cloud');
+      expect(state.syncProfile.authToken, 'access-token');
+      expect(state.syncProfile.refreshToken, 'refresh-token');
+      expect(state.syncProfile.workspaceId, 'ws-cloud');
+      expect(state.syncProfile.deviceId, 'device-cloud');
+      expect(state.syncProfile.creatorProfileId, 'creator-cloud');
+      expect(state.syncProfile.entitlementId, 'ent-cloud');
+    },
+  );
 
   test('test desktop connection returns paired status', () async {
     final state = MobileAppState(vaultStore: MemoryVaultStore());
@@ -418,10 +504,7 @@ void main() {
     expect(evidenceRecord.extractedDeviceIdHex, 'device');
     expect(evidenceRecord.extractedFileHashHex, 'hash');
     expect(state.syncProfile.lastError, isNull);
-    expect(
-      state.syncProfile.lastRemotePullCursor,
-      '2026-06-16T12:00:00.000Z',
-    );
+    expect(state.syncProfile.lastRemotePullCursor, '2026-06-16T12:00:00.000Z');
     expect(state.syncProfile.lastSyncAttemptAt, isNotNull);
     expect(state.syncProfile.lastSyncSuccessAt, isNotNull);
     expect(state.syncProfile.lastSyncFailureAt, isNull);

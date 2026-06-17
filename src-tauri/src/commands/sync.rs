@@ -317,6 +317,11 @@ pub async fn flush_desktop_cloud_sync_queue(
         .map_err(|e| format!("failed to resolve app data directory: {e}"))?;
     let profile = load_desktop_cloud_sync_profile(&app_data_dir)
         .ok_or_else(|| "尚未继续使用 HiddenShield 账户".to_string())?;
+    {
+        let conn = state.db.lock().map_err(|e| format!("db lock error: {e}"))?;
+        storage::reset_cloud_sync_queue_backoff(&conn)
+            .map_err(|e| format!("重置云同步重试退避失败: {e}"))?;
+    }
     flush_cloud_queue_with_profile(&state, &profile, input.limit.unwrap_or(50))
 }
 

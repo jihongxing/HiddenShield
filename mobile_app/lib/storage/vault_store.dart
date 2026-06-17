@@ -100,7 +100,7 @@ class SQLiteVaultStore implements VaultStore {
   final Database _db;
 
   static const _databaseName = 'hidden_shield_mobile.db';
-  static const _databaseVersion = 4;
+  static const _databaseVersion = 5;
   static const _recordsTable = 'vault_records';
   static const _syncQueueTable = 'sync_queue';
   static const _syncResolutionsTable = 'mobile_sync_resolutions';
@@ -128,6 +128,9 @@ class SQLiteVaultStore implements VaultStore {
         }
         if (oldVersion < 4) {
           await _createSyncResolutionsTable(db);
+        }
+        if (oldVersion < 5) {
+          await _addSyncQueueNextRetryAtColumn(db);
         }
       },
     );
@@ -182,13 +185,26 @@ CREATE TABLE $_syncQueueTable (
   status TEXT NOT NULL,
   attempts INTEGER NOT NULL,
   created_at INTEGER NOT NULL,
-  last_error TEXT
+  last_error TEXT,
+  next_retry_at INTEGER
 )
 ''');
     await db.execute(
       'CREATE INDEX idx_sync_queue_status_created_at '
       'ON $_syncQueueTable(status, created_at ASC)',
     );
+  }
+
+  static Future<void> _addSyncQueueNextRetryAtColumn(Database db) async {
+    final columns = await db.rawQuery('PRAGMA table_info($_syncQueueTable)');
+    final hasColumn = columns.any(
+      (column) => column['name'] == 'next_retry_at',
+    );
+    if (!hasColumn) {
+      await db.execute(
+        'ALTER TABLE $_syncQueueTable ADD COLUMN next_retry_at INTEGER',
+      );
+    }
   }
 
   static Future<void> _createSyncProfileTable(Database db) async {
@@ -447,6 +463,7 @@ Map<String, Object?> _syncQueueItemToRow(SyncQueueItem item) {
     'attempts': item.attempts,
     'created_at': item.createdAt.millisecondsSinceEpoch,
     'last_error': item.lastError,
+    'next_retry_at': item.nextRetryAt?.millisecondsSinceEpoch,
   };
 }
 
@@ -497,6 +514,7 @@ SyncQueueItem _syncQueueItemFromRow(Map<String, Object?> row) {
     attempts: row['attempts']! as int,
     createdAt: DateTime.fromMillisecondsSinceEpoch(row['created_at']! as int),
     lastError: row['last_error'] as String?,
+    nextRetryAt: _dateTimeFromEpoch(row['next_retry_at']),
   );
 }
 
@@ -517,6 +535,13 @@ MobileSyncResolution _syncResolutionFromRow(Map<String, Object?> row) {
     incomingRevision: row['incoming_revision']! as int,
     insertedRecordId: row['inserted_record_id'] as String?,
   );
+}
+
+DateTime? _dateTimeFromEpoch(Object? value) {
+  if (value is int) {
+    return DateTime.fromMillisecondsSinceEpoch(value);
+  }
+  return null;
 }
 
 WatermarkAssetKind _assetKindFromName(String name) {
