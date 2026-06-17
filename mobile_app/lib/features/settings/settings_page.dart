@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../app/mobile_app_state.dart';
 import '../../bridge/watermark_bridge.dart';
@@ -394,7 +395,26 @@ class _SyncDiagnosticsPanel extends StatelessWidget {
             children: [
               const Icon(Icons.health_and_safety_outlined),
               const SizedBox(width: 12),
-              Text('同步诊断', style: Theme.of(context).textTheme.titleSmall),
+              Expanded(
+                child: Text(
+                  '同步诊断',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+              IconButton(
+                tooltip: '复制诊断',
+                onPressed: () async {
+                  await Clipboard.setData(
+                    ClipboardData(text: _buildSyncDiagnosticsText(appState)),
+                  );
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(const SnackBar(content: Text('同步诊断已复制')));
+                  }
+                },
+                icon: const Icon(Icons.copy_outlined),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -411,7 +431,9 @@ class _SyncDiagnosticsPanel extends StatelessWidget {
           ),
           _DiagnosticRow(
             label: '云服务',
-            value: profile.cloudBaseUrl.isEmpty ? '由系统配置提供' : profile.cloudBaseUrl,
+            value: profile.cloudBaseUrl.isEmpty
+                ? '由系统配置提供'
+                : profile.cloudBaseUrl,
           ),
           _DiagnosticRow(
             label: '连接状态',
@@ -604,6 +626,35 @@ String _formatDateTime(DateTime? value) {
     return '无';
   }
   return value.toLocal().toString().split('.').first;
+}
+
+String _buildSyncDiagnosticsText(MobileAppState appState) {
+  final profile = appState.syncProfile;
+  return [
+    'HiddenShield 移动端同步诊断',
+    '生成时间: ${_formatDateTime(DateTime.now())}',
+    '同步模式: ${syncTransportModeLabel(appState.syncTransportMode)}',
+    '连接状态: ${syncConnectionStatusLabel(profile.status)}',
+    '账户: ${profile.accountLabel ?? '未登录'}',
+    '账户 ID: ${profile.accountId ?? '无'}',
+    '工作区: ${profile.workspaceName ?? '无'}',
+    '工作区 ID: ${profile.workspaceId ?? '无'}',
+    '设备: ${profile.deviceName ?? '无'}',
+    '设备 ID: ${profile.deviceId ?? '无'}',
+    '设备平台: ${profile.devicePlatform ?? '无'}',
+    '创作者档案: ${profile.creatorProfileId ?? '无'}',
+    '权益: ${profile.entitlementLabel} / ${entitlementStatusLabel(profile.entitlementStatus)}',
+    '权益模块: ${_enabledEntitlementSummary(profile.entitlementFeatures)}',
+    '云服务: ${profile.cloudBaseUrl.isEmpty ? '由系统配置提供' : profile.cloudBaseUrl}',
+    '上次游标: ${profile.lastRemotePullCursor ?? '尚未拉取'}',
+    '最近尝试: ${_formatDateTime(profile.lastSyncAttemptAt)}',
+    '最近成功: ${_formatDateTime(profile.lastSyncSuccessAt)}',
+    '最近失败: ${_formatDateTime(profile.lastSyncFailureAt)}',
+    '待同步: ${appState.pendingSyncQueueCount}',
+    '失败队列: ${appState.failedSyncQueueCount}',
+    '最近错误: ${profile.lastError ?? '无'}',
+    '自动解决记录: ${appState.syncResolutions.length}',
+  ].join('\n');
 }
 
 String _entitlementFeatureLabel(String key) {

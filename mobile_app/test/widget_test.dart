@@ -150,6 +150,7 @@ void main() {
     expect(find.text('最近尝试'), findsOneWidget);
     expect(find.text('最近成功'), findsOneWidget);
     expect(find.text('最近失败'), findsOneWidget);
+    expect(find.byTooltip('复制诊断'), findsOneWidget);
     expect(find.textContaining('pairing rejected'), findsWidgets);
     expect(find.text('重试失败'), findsOneWidget);
   });
@@ -160,7 +161,9 @@ void main() {
     final state = MobileAppState(vaultStore: MemoryVaultStore());
     await state.load();
     state.updateCreatorLabel('Alice Creator');
-    await state.continueWithAccountPlaceholder(accountLabel: 'alice@example.com');
+    await state.continueWithAccountPlaceholder(
+      accountLabel: 'alice@example.com',
+    );
 
     await tester.pumpWidget(HiddenShieldApp(appState: state));
     await tester.pumpAndSettle();

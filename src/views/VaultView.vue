@@ -59,6 +59,44 @@ function formatSyncTime(value: string | null): string {
   return date.toLocaleString();
 }
 
+function buildCloudDiagnosticsText(): string {
+  const profile = cloudProfile.value;
+  const queue = cloudQueueStatus.value;
+  return [
+    "HiddenShield 桌面端同步诊断",
+    `生成时间: ${new Date().toLocaleString()}`,
+    `账户: ${profile?.accountLabel ?? "未登录"}`,
+    `账户 ID: ${profile?.accountId ?? "无"}`,
+    `工作区: ${profile?.workspaceName ?? "无"}`,
+    `工作区 ID: ${profile?.workspaceId ?? "无"}`,
+    `设备: ${profile?.deviceName ?? "无"}`,
+    `设备 ID: ${profile?.deviceId ?? "无"}`,
+    `设备平台: ${profile?.devicePlatform ?? "无"}`,
+    `创作者: ${profile?.creatorDisplayName ?? "无"}`,
+    `创作者档案 ID: ${profile?.creatorProfileId ?? "无"}`,
+    `权益: ${profile ? `${profile.entitlementLabel} / ${profile.entitlementStatus}` : "无"}`,
+    `权益代码: ${profile?.entitlementPlanCode ?? "无"}`,
+    `云服务: ${profile?.cloudBaseUrl ?? "无"}`,
+    `上次游标: ${profile?.lastRemoteCursor ?? "尚未拉取"}`,
+    `队列待同步: ${queue.pending}`,
+    `队列失败: ${queue.failed}`,
+    `队列已同步: ${queue.synced}`,
+    `最近尝试: ${formatSyncTime(queue.lastAttemptAt)}`,
+    `最近成功: ${formatSyncTime(queue.lastSuccessAt)}`,
+    `最近失败: ${formatSyncTime(queue.lastFailureAt)}`,
+    `最近错误: ${queue.lastError ?? "无"}`,
+  ].join("\n");
+}
+
+async function copyCloudDiagnostics() {
+  if (!cloudProfile.value) {
+    syncMessage.value = "请先在设置中继续使用 HiddenShield 账户";
+    return;
+  }
+  await navigator.clipboard.writeText(buildCloudDiagnosticsText());
+  syncMessage.value = "同步诊断已复制到剪贴板";
+}
+
 onMounted(async () => {
   await loadVault();
   await loadCloudState();
@@ -199,6 +237,14 @@ async function pullCloudChanges() {
             @click="pullCloudChanges"
           >
             {{ pullingCloud ? "拉取中" : "拉取云变更" }}
+          </button>
+          <button
+            class="ghost-button"
+            type="button"
+            :disabled="!cloudProfile"
+            @click="copyCloudDiagnostics"
+          >
+            复制诊断
           </button>
           <span class="pill">{{ records.length }} 条</span>
         </div>
