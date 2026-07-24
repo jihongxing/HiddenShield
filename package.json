@@ -1,6 +1,6 @@
 {
   "name": "hidden-shield",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "description": "HiddenShield desktop MVP scaffold powered by Vue, Vite and Tauri.",
   "type": "module",

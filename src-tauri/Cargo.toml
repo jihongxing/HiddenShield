@@ -1,6 +1,6 @@
 [package]
 name = "hidden_shield"
-version = "0.1.2"
+version = "0.1.3"
 description = "HiddenShield desktop MVP scaffold"
 authors = ["Codex"]
 license = "CC-BY-NC-4.0"
