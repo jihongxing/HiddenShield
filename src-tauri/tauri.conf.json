@@ -1,6 +1,6 @@
 {
   "productName": "HiddenShield",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "identifier": "com.hiddenshield.desktop",
   "build": {
     "frontendDist": "../dist",
@@ -27,6 +27,7 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": "all",
     "resources": [
       "resources/report-pdf/**/*"

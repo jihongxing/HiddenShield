@@ -52,7 +52,7 @@ Azure Artifact Signing 示例：
 
 客户端默认每 24 小时检查一次已签名更新清单；用户可在“设置 → 应用更新”关闭后台检查或手动检查。检查失败不会阻断当前版本工作。
 
-现有 `0.1.0` 不包含 updater，必须手动安装首个 updater-enabled `0.1.1`；之后的 Windows 正式版本才可应用内更新。
+现有 `0.1.0` 不包含 updater，必须手动安装首个 updater-enabled `0.1.1`；`0.1.2` 起的 Windows 正式版本会生成 `latest.json` 与 `.sig`，可供 `0.1.1` 应用内升级。
 
 ## GitHub Actions 触发方式
 

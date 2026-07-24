@@ -51,6 +51,10 @@ if (!updater) {
   fail("updater plugin must be configured in tauri.conf.json");
 }
 
+if (tauriConfig.bundle?.createUpdaterArtifacts !== true) {
+  fail("bundle.createUpdaterArtifacts must be enabled for updater releases");
+}
+
 if (
   typeof updater.pubkey !== "string" ||
   updater.pubkey.length < 32 ||
