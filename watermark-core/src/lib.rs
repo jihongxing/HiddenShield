@@ -1,5 +1,6 @@
 mod audio;
 mod error;
+#[allow(dead_code)]
 mod image;
 pub mod image_spatial_recovery_v1;
 mod payload;

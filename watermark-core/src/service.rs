@@ -44,13 +44,6 @@ pub enum WatermarkStrength {
 }
 
 impl WatermarkStrength {
-    pub(crate) fn image_alpha(self) -> f64 {
-        match self {
-            Self::Balanced => watermark_image::BALANCED_IMAGE_ALPHA,
-            Self::Forensic => watermark_image::DEFAULT_IMAGE_ALPHA,
-        }
-    }
-
     pub(crate) fn image_v3_alpha(self) -> f64 {
         match self {
             Self::Balanced => watermark_image::BALANCED_IMAGE_V3_ALPHA,

@@ -28,6 +28,7 @@ pub struct CrashReport {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub struct FfmpegCrashReport {
     pub exit_code: i32,
     pub stderr_tail: String,
@@ -442,6 +443,7 @@ pub fn report_crash(app_data_dir: &Path, report: &CrashReport) {
 
 /// Report an FFmpeg crash. Non-blocking. Rate-limited.
 /// PIPL compliance: will not report if user has not acknowledged privacy policy.
+#[allow(dead_code)]
 pub fn report_ffmpeg_crash(app_data_dir: &Path, report: &FfmpegCrashReport) {
     if !is_enabled() || !is_acknowledged(app_data_dir) || !check_rate_limit() {
         return;

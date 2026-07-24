@@ -111,7 +111,7 @@ class _AudioEmbedPageState extends State<AudioEmbedPage> {
                 _AudioPreview(
                   bytes: selectedBytes,
                   fileName: _fileName,
-                  durationSeconds: durationSeconds,
+                  durationSeconds: _selectedMetadata?.durationSeconds,
                 ),
                 const SizedBox(height: 12),
                 FilledButton.icon(
@@ -262,10 +262,7 @@ class _AudioEmbedPageState extends State<AudioEmbedPage> {
     setState(() {
       _selectedBytes = bytes;
       _fileName = file.name;
-      _selectedMetadata = inspectAudioMetadata(
-        bytes,
-        fileName: file.name,
-      );
+      _selectedMetadata = inspectAudioMetadata(bytes, fileName: file.name);
       _result = null;
       _savedRecord = null;
       _preflight = null;

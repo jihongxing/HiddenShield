@@ -101,7 +101,7 @@ class _ChoiceField extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: HsSpacing.md),
       child: DropdownButtonFormField<String>(
-        value: value,
+        initialValue: value,
         decoration: InputDecoration(labelText: label),
         dropdownColor: HsColors.surfaceRaised,
         items: options

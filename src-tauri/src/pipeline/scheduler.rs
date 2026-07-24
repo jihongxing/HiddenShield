@@ -24,6 +24,7 @@ use crate::utils::hash;
 use crate::AppState;
 #[cfg(test)]
 use sha2::{Digest, Sha256};
+#[cfg(test)]
 use watermark_core::PayloadDigestBuildInput;
 use watermark_core::{
     validate_audio_protection_file_size, validate_audio_protection_input, AudioProtectionMode,
@@ -401,6 +402,7 @@ pub fn classify_file(path: &Path) -> FileType {
 
 pub struct PipelineParams {
     pub input_path: PathBuf,
+    #[allow(dead_code)]
     pub platforms: Vec<Platform>,
     pub options: TranscodeOptions,
     pub ffmpeg_paths: Option<FfmpegPaths>,

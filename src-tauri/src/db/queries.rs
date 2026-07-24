@@ -480,6 +480,7 @@ pub fn find_by_watermark_uid(conn: &Connection, uid: &str) -> Option<VaultRecord
 
 /// Find a record by watermark_uid and exact file hash prefix.
 /// Returns `None` if the asset-binding hash prefix does not match.
+#[allow(dead_code)]
 pub fn find_by_uid_and_hash(
     conn: &Connection,
     uid: &str,

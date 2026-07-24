@@ -26,6 +26,7 @@ pub fn is_hdr(color_transfer: Option<&str>, color_primaries: Option<&str>) -> bo
 /// Build the HDR → SDR tonemap filter chain for FFmpeg.
 ///
 /// Returns `Some(filter_string)` when the source is HDR, `None` for SDR.
+#[allow(dead_code)]
 pub fn build_tonemap_filter(hdr: bool) -> Option<String> {
     if !hdr {
         return None;
