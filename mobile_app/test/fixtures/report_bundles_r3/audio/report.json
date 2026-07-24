@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 2,
+  "reportId": "hsr-r3-audio-desktop",
+  "reportType": "formal_report",
+  "exportedAt": "2026-07-14T10:10:00+08:00",
+  "appVersion": "0.1.0",
+  "records": [
+    {
+      "recordId": 302,
+      "fileName": "独立音乐片段.wav",
+      "watermarkUid": "HS-V3-AUD-R3-000302",
+      "creatorDisplayName": "HiddenShield R3 跨端测试",
+      "originalHash": "1af42e0d2cd1d75b0fe72ae82cf5e5ed88f02a2a50ce08f91376a4ce",
+      "resolution": "48 kHz · 24 bit · Stereo",
+      "durationSecs": 48.25,
+      "createdAt": "2026-07-14T10:00:00+08:00",
+      "revision": 1,
+      "parentWatermarkUid": null,
+      "rewriteReason": null,
+      "writeVerificationStatus": "verified",
+      "writeVerificationMessage": "桌面写后读取验证通过",
+      "writeVerificationAt": "2026-07-14T10:01:00+08:00",
+      "payloadRegistry": {
+        "payloadProtocolVersion": 3,
+        "payloadBytesLength": 39,
+        "mediaPayloadRole": "v3_minimal_anchor",
+        "watermarkIdIssueMode": "offline_generated",
+        "watermarkIdRegistryStatus": "pending_registration",
+        "watermarkIdRegistryReceipt": null,
+        "payloadAuthStatus": "verified"
+      },
+      "protectedCopy": {
+        "name": "独立音乐片段.wav.protected",
+        "hash": "e2977a4fe51babc978309ba57fbac02a632bf55d29f0a1b88dc07259",
+        "outputStrategy": "minimal_required_change"
+      },
+      "trustedTime": {
+        "networkTime": "2026-07-14T10:01:30+08:00",
+        "tsaSource": "fixture-tsa",
+        "tsaTokenPresent": true
+      },
+      "rightsDeclaration": {
+        "workSourceDeclaration": "original",
+        "trainingPermissionDeclaration": "prohibited",
+        "creationMethodDeclaration": "human_created",
+        "humanEditLevelDeclaration": "light_edit",
+        "authenticityClaimDeclaration": "declared",
+        "customRightsStatement": null
+      },
+      "videoNotary": {},
+      "videoVisualWatermark": {}
+    }
+  ],
+  "privacy": {
+    "excludesOriginalMedia": true,
+    "excludesWatermarkedMedia": true,
+    "excludesLocalMediaPaths": true,
+    "includedFields": [
+      "file_name",
+      "watermark_uid",
+      "revision",
+      "hashes",
+      "verification_status",
+      "payload_registry",
+      "trusted_time_status",
+      "video_notary_receipt"
+    ]
+  },
+  "disclaimer": "本报告不构成法律意见、司法鉴定意见或诉讼结果承诺。"
+}

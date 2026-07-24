@@ -15,7 +15,7 @@ defineProps<{ warnings: SourceWarning[] }>();
         'source-warnings__item--warning': w.type === 'warning',
       }"
     >
-      <span class="source-warnings__icon">{{ w.type === 'info' ? 'ℹ️' : '⚠️' }}</span>
+      <span class="source-warnings__icon" aria-hidden="true">{{ w.type === 'info' ? 'i' : '!' }}</span>
       <span>{{ w.message }}</span>
     </div>
   </div>

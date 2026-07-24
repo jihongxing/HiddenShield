@@ -42,11 +42,21 @@ dependencies:
     path: rust_builder
   sqflite: ^2.4.2
   path: ^1.9.1
+  path_provider: ^2.1.5
   http: ^1.6.0
   crypto: ^3.0.7
+  cryptography: ^2.7.0
+  web: ^1.1.1
+  share_plus: ^12.0.2
+  flutter_secure_storage: ^10.3.1
+  package_info_plus: ^9.0.1
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^7.2.0
 
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+  integration_test:
     sdk: flutter
 
   # The "flutter_lints" package below contains a set of recommended lints to
@@ -70,6 +80,18 @@ flutter:
   uses-material-design: true
   assets:
     - assets/hiddenshield.system.json
+    - test/fixtures/report_bundles_r3/image/
+    - test/fixtures/report_bundles_r3/audio/
+    - test/fixtures/report_bundles_r3/l2-video/
+    - test/fixtures/rights_evidence_pack_r4/case-fixture-r4-0001/
+    - test/fixtures/rights_evidence_pack_r4/case-fixture-r4-0001/attachments/original/
+    - test/fixtures/rights_evidence_pack_r4/case-fixture-r4-0001/attachments/working-copy/
+    - test/fixtures/rights_evidence_pack_r4/case-fixture-r4-0001/attachments/capture/
+    - test/fixtures/rights_evidence_pack_r4/case-fixture-r4-0001/attachments/external-receipt/
+  fonts:
+    - family: HiddenShieldCjk
+      fonts:
+        - asset: assets/fonts/HsCjkSubset.ttf
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

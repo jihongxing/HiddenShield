@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "policyType": "offline_license_trust_policy",
+  "keys": [
+    {
+      "keyId": "offline-test-disabled",
+      "algorithm": "Ed25519",
+      "publicKeyBase64Url": "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo",
+      "status": "disabled",
+      "purposes": ["license", "revocation"],
+      "notBefore": "2025-01-01T00:00:00Z",
+      "notAfter": "2026-01-01T00:00:00Z"
+    },
+    {
+      "keyId": "offline-test-k0",
+      "algorithm": "Ed25519",
+      "publicKeyBase64Url": "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo",
+      "status": "active",
+      "purposes": ["license", "revocation"],
+      "notBefore": "2026-01-01T00:00:00Z",
+      "notAfter": "2028-01-01T00:00:00Z"
+    },
+    {
+      "keyId": "offline-test-verify-only",
+      "algorithm": "Ed25519",
+      "publicKeyBase64Url": "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo",
+      "status": "verify_only",
+      "purposes": ["license"],
+      "notBefore": "2025-01-01T00:00:00Z",
+      "notAfter": "2027-01-01T00:00:00Z"
+    }
+  ],
+  "licenseSchemaRange": {
+    "minimum": 1,
+    "maximum": 1
+  },
+  "clockPolicy": {
+    "rollbackToleranceSeconds": 300,
+    "futureArtifactToleranceSeconds": 300
+  },
+  "releaseIntegrity": {
+    "requireOsPackageSignature": true,
+    "allowInProcessSelfHashAsAuthority": false
+  }
+}

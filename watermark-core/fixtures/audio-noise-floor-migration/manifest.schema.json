@@ -1,0 +1,234 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hiddenshield.local/schemas/audio-noise-floor-migration-manifest.schema.json",
+  "title": "HiddenShield audio noise-floor migration read-compat manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "migrationPhase",
+    "payloadProtocolVersion",
+    "payloadBytesLength",
+    "audioStrategyVersion",
+    "expectedExtractorPath",
+    "formalThresholds",
+    "rollbackPolicy",
+    "plannedExtractorReadOrder",
+    "plannedReportFields",
+    "fixtures"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "audio_noise_floor_migration_manifest_v1"
+    },
+    "migrationPhase": {
+      "const": "read_compat_legacy_v3"
+    },
+    "payloadProtocolVersion": {
+      "const": 3
+    },
+    "payloadBytesLength": {
+      "const": 39
+    },
+    "audioStrategyVersion": {
+      "const": "v3_recovery_2_8k_legacy"
+    },
+    "expectedExtractorPath": {
+      "const": "WatermarkService::extract -> audio::extract_watermark_wav_readonly_candidate_bytes_with_delta"
+    },
+    "formalThresholds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fieldNoiseMinSnrDb",
+        "extractionConfidenceMin",
+        "thresholdsMustNotDrop"
+      ],
+      "properties": {
+        "fieldNoiseMinSnrDb": {
+          "const": 44.0
+        },
+        "extractionConfidenceMin": {
+          "const": 0.99
+        },
+        "thresholdsMustNotDrop": {
+          "const": true
+        }
+      }
+    },
+    "rollbackPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "writeStrategyFlagRequired",
+        "legacyFallbackRequired",
+        "platformAlgorithmDriftForbidden",
+        "formalThresholdsMustNotDrop"
+      ],
+      "properties": {
+        "writeStrategyFlagRequired": {
+          "const": true
+        },
+        "legacyFallbackRequired": {
+          "const": true
+        },
+        "platformAlgorithmDriftForbidden": {
+          "const": true
+        },
+        "formalThresholdsMustNotDrop": {
+          "const": true
+        }
+      }
+    },
+    "plannedExtractorReadOrder": {
+      "type": "array",
+      "minItems": 4,
+      "prefixItems": [
+        {
+          "const": "v3_noise_floor_migrated_band_v1_candidate"
+        },
+        {
+          "const": "v3_recovery_2_8k_legacy"
+        },
+        {
+          "const": "legacy_v3_readonly_candidate"
+        },
+        {
+          "const": "v2_rollback_legacy"
+        }
+      ],
+      "items": {
+        "type": "string"
+      }
+    },
+    "plannedReportFields": {
+      "type": "array",
+      "minItems": 13,
+      "contains": {
+        "const": "audioStrategyVersion"
+      },
+      "items": {
+        "enum": [
+          "watermarkUid",
+          "payloadProtocolVersion",
+          "payloadBytesLength",
+          "audioStrategyVersion",
+          "extractorPath",
+          "extractorFallbackPath",
+          "candidateFailureCode",
+          "candidateFailureMessage",
+          "candidateFailureMatrix",
+          "candidateScanAttempted",
+          "candidateScanProfiles",
+          "extractionConfidence",
+          "readCompatibilityMode"
+        ]
+      }
+    },
+    "fixtures": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "sampleId",
+          "originEndpoint",
+          "artifactRole",
+          "artifactMode",
+          "audioProfile",
+          "mediaType",
+          "watermarkIdHex32",
+          "expectedWatermarkUid",
+          "payloadProtocolVersion",
+          "payloadBytesLength",
+          "audioStrategyVersion",
+          "expectedReadPaths",
+          "minExtractionConfidence"
+        ],
+        "properties": {
+          "sampleId": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{2,80}$"
+          },
+          "originEndpoint": {
+            "enum": [
+              "watermark_core_legacy",
+              "desktop_legacy",
+              "mobile_legacy",
+              "android_native_legacy"
+            ]
+          },
+          "artifactRole": {
+            "enum": [
+              "legacy_core_reference",
+              "desktop_old_write",
+              "mobile_old_write",
+              "android_native_old_write"
+            ]
+          },
+          "artifactMode": {
+            "enum": [
+              "generated_legacy_v3_wav",
+              "file_backed_legacy_v3_wav"
+            ]
+          },
+          "audioProfile": {
+            "const": "field_noise_noise_floor"
+          },
+          "mediaType": {
+            "const": "audio"
+          },
+          "watermarkIdHex32": {
+            "type": "string",
+            "pattern": "^[0-9A-F]{32}$"
+          },
+          "expectedWatermarkUid": {
+            "type": "string",
+            "pattern": "^HS-[0-9A-F]{8}-[0-9A-F]{8}-[0-9A-F]{8}-[0-9A-F]{8}$"
+          },
+          "payloadProtocolVersion": {
+            "const": 3
+          },
+          "payloadBytesLength": {
+            "const": 39
+          },
+          "audioStrategyVersion": {
+            "const": "v3_recovery_2_8k_legacy"
+          },
+          "expectedReadPaths": {
+            "type": "array",
+            "minItems": 2,
+            "contains": {
+              "const": "current_default_extractor"
+            },
+            "items": {
+              "enum": [
+                "current_default_extractor",
+                "legacy_v3_readonly_candidate"
+              ]
+            }
+          },
+          "minExtractionConfidence": {
+            "const": 0.99
+          },
+          "protectedPath": {
+            "type": "string",
+            "pattern": "^watermark-core/fixtures/audio-noise-floor-migration/protected-old/.+\\.wav$"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "generatedBy": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,152 @@
+{
+  "schemaVersion": "audio_noise_floor_new_candidate_manifest_draft_v1",
+  "draftOnly": true,
+  "currentGate": "watermark:audio-noise-floor-migration-read-compat",
+  "artifactRoot": "watermark-core/fixtures/audio-noise-floor-migration/protected-new-candidate",
+  "mediaMutationAllowedInThisTask": false,
+  "writingImplementationAllowed": false,
+  "formalUiMockReleaseDefaultPathAllowed": false,
+  "payloadProtocolVersion": 3,
+  "payloadBytesLength": 39,
+  "watermarkUidPattern": "^HS-[0-9A-F]{8}-[0-9A-F]{8}-[0-9A-F]{8}-[0-9A-F]{8}$",
+  "candidateStrategyVersion": "v3_noise_floor_migrated_band_v1_candidate",
+  "legacyFallbackPath": "v3_recovery_2_8k_legacy",
+  "readCompatibilityMode": "legacy_v3_read_compat_candidate_interface_fallback",
+  "formalThresholds": {
+    "fieldNoiseMinSnrDb": 44.0,
+    "extractionConfidenceMin": 0.99,
+    "thresholdsMustNotDrop": true
+  },
+  "candidateScanProfiles": [
+    {
+      "id": "noise_floor_low_mid_0_9_4_8k",
+      "frequencyRangeHz": [900, 4800],
+      "window": "v3_39_recovery_packet_frames",
+      "readOnly": true
+    },
+    {
+      "id": "noise_floor_mid_shift_1_2_6_2k",
+      "frequencyRangeHz": [1200, 6200],
+      "window": "v3_39_recovery_packet_frames",
+      "readOnly": true
+    },
+    {
+      "id": "noise_floor_high_spread_3_8_9_6k",
+      "frequencyRangeHz": [3800, 9600],
+      "window": "v3_39_recovery_packet_frames",
+      "readOnly": true
+    }
+  ],
+  "fixtureClasses": [
+    {
+      "classId": "legacy_v3_fixture",
+      "artifactRoot": "watermark-core/fixtures/audio-noise-floor-migration/protected-old",
+      "expectedCandidateFailureCode": "candidate_payload_not_found",
+      "expectedExtractorPath": "v3_recovery_2_8k_legacy",
+      "legacyFallbackAllowed": true,
+      "passRule": "candidate_payload_not_found followed by legacy fallback to the same V3/39 UID with extractionConfidence >= 0.99"
+    },
+    {
+      "classId": "new_candidate_fixture",
+      "artifactRoot": "watermark-core/fixtures/audio-noise-floor-migration/protected-new-candidate",
+      "artifactMode": "planned_file_backed_new_candidate_wav",
+      "expectedCandidateStatus": "candidate_read_succeeded",
+      "expectedExtractorPath": "v3_noise_floor_migrated_band_v1_candidate",
+      "legacyFallbackOnlyAllowed": false,
+      "passRule": "candidate extractor must read the same V3/39 UID with extractionConfidence >= 0.99; legacy-only fallback is blocking"
+    }
+  ],
+  "plannedNewCandidateFixtures": [
+    {
+      "sampleId": "core-new-candidate-field-noise-v1",
+      "originEndpoint": "watermark_core_candidate",
+      "artifactRole": "core_new_candidate_write",
+      "artifactMode": "planned_file_backed_new_candidate_wav",
+      "audioProfile": "field_noise_noise_floor",
+      "expectedReadPaths": [
+        "v3_noise_floor_migrated_band_v1_candidate",
+        "v3_recovery_2_8k_legacy_fallback_observed_only_after_candidate_miss"
+      ],
+      "status": "paused_rc1_no_bytes_until_field_noise_blocker_is_resolved"
+    },
+    {
+      "sampleId": "desktop-new-candidate-field-noise-v1",
+      "originEndpoint": "desktop_candidate",
+      "artifactRole": "desktop_new_candidate_write_wrapper",
+      "artifactMode": "planned_file_backed_new_candidate_wav",
+      "audioProfile": "field_noise_noise_floor",
+      "expectedReadPaths": [
+        "v3_noise_floor_migrated_band_v1_candidate"
+      ],
+      "status": "paused_rc1_no_bytes_until_field_noise_blocker_is_resolved"
+    },
+    {
+      "sampleId": "android-native-new-candidate-field-noise-v1",
+      "originEndpoint": "android_native_candidate",
+      "artifactRole": "android_native_new_candidate_write_wrapper",
+      "artifactMode": "planned_file_backed_new_candidate_wav",
+      "audioProfile": "field_noise_noise_floor",
+      "expectedReadPaths": [
+        "v3_noise_floor_migrated_band_v1_candidate"
+      ],
+      "status": "paused_rc1_no_bytes_until_field_noise_blocker_is_resolved"
+    }
+  ],
+  "readCompatBlockingMatrix": [
+    {
+      "fixtureClass": "legacy_v3_fixture",
+      "candidateOutcome": "candidate_payload_not_found",
+      "legacyFallbackOutcome": "same_uid_confidence_ge_0_99",
+      "disposition": "pass"
+    },
+    {
+      "fixtureClass": "legacy_v3_fixture",
+      "candidateOutcome": "candidate_read_succeeded",
+      "legacyFallbackOutcome": "any",
+      "disposition": "block_legacy_misdetected_as_new_candidate"
+    },
+    {
+      "fixtureClass": "new_candidate_fixture",
+      "candidateOutcome": "candidate_read_succeeded",
+      "legacyFallbackOutcome": "not_required",
+      "disposition": "pass"
+    },
+    {
+      "fixtureClass": "new_candidate_fixture",
+      "candidateOutcome": "candidate_payload_not_found",
+      "legacyFallbackOutcome": "same_uid_or_missing",
+      "disposition": "block_new_candidate_not_read_by_candidate"
+    },
+    {
+      "fixtureClass": "new_candidate_fixture",
+      "candidateOutcome": "candidate_payload_invalid",
+      "legacyFallbackOutcome": "any",
+      "disposition": "block_candidate_payload_invalid"
+    },
+    {
+      "fixtureClass": "any",
+      "candidateOutcome": "candidate_not_implemented_no_frequency_strategy",
+      "legacyFallbackOutcome": "any",
+      "disposition": "block_candidate_scan_regressed_to_stub"
+    },
+    {
+      "fixtureClass": "any",
+      "candidateOutcome": "candidate_input_invalid_or_candidate_audio_too_short",
+      "legacyFallbackOutcome": "any",
+      "disposition": "block_fixture_or_parser_regression"
+    }
+  ],
+  "rc1Decision": "field_noise_release_blocker_known_limitation_writer_experiment_paused",
+  "promotionPrerequisites": [
+    "field_noise_release_blocker_resolved_without_threshold_drop",
+    "explicit_post_rc1_writer_experiment_approval",
+    "implement_writer_in_watermark_core_only_after_reapproval",
+    "create_real_file_backed_new_candidate_fixtures",
+    "extend_manifest_schema_from_draft_to_checked_fixture_class",
+    "extend_read_compat_to_require_candidate_hit_for_new_candidate_fixture",
+    "rerun_watermark_audio_noise_floor_migration_read_compat",
+    "rerun_watermark_audio_noise_floor_migration_contract",
+    "rerun_watermark_quality_gate_release_and_full_without_threshold_drop",
+    "rerun_cross_end_audio_read_matrix_before_any_ui_or_release_default_path"
+  ]
+}

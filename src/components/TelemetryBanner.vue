@@ -88,27 +88,27 @@ function closeDoc() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(4px);
+  background: rgba(3, 8, 17, 0.88);
+  backdrop-filter: none;
 }
 .privacy-dialog {
   max-width: 520px;
   width: 90%;
-  background: #1a1f2e;
-  border: 1px solid #2a3a4a;
-  border-radius: 12px;
+  background: var(--hs-surface);
+  border: 1px solid var(--hs-border);
+  border-radius: var(--hs-radius-card);
   padding: 2rem;
-  color: #e0e8f0;
+  color: var(--hs-text);
 }
 .privacy-dialog h2 {
   margin: 0 0 1rem;
   font-size: 1.3rem;
-  color: #fff;
+  color: var(--hs-text);
 }
 .privacy-dialog__body {
   font-size: 0.9rem;
   line-height: 1.6;
-  color: #b0c0d0;
+  color: var(--hs-text-muted);
 }
 .privacy-dialog__body ul {
   padding-left: 1.2rem;
@@ -120,14 +120,14 @@ function closeDoc() {
 .privacy-dialog__legal {
   margin-top: 1rem;
   font-size: 0.8rem;
-  color: #8090a0;
+  color: var(--hs-text-subtle);
 }
 .legal-link {
   padding: 0;
   border: none;
   background: transparent;
-  color: #6aafff;
-  text-decoration: underline;
+  color: var(--hs-accent);
+  text-decoration: none;
   cursor: pointer;
 }
 .privacy-dialog__actions {
@@ -139,26 +139,26 @@ function closeDoc() {
 .privacy-dialog__actions .primary-button {
   width: 100%;
   padding: 0.7rem;
-  border-radius: 8px;
+  border-radius: var(--hs-radius-card);
   border: none;
-  background: #3a7af0;
-  color: #fff;
+  background: var(--hs-accent);
+  color: #061312;
   font-size: 0.95rem;
   cursor: pointer;
 }
 .privacy-dialog__actions .ghost-button {
   width: 100%;
   padding: 0.6rem;
-  border-radius: 8px;
-  border: 1px solid #3a5a7c;
-  background: transparent;
-  color: #8ab4e0;
+  border-radius: var(--hs-radius-card);
+  border: 1px solid var(--hs-border);
+  background: var(--hs-surface-muted);
+  color: var(--hs-text);
   font-size: 0.85rem;
   cursor: pointer;
 }
 .legal-sheet {
   margin-top: 1rem;
-  border-top: 1px solid #2a3a4a;
+  border-top: 1px solid var(--hs-border);
   padding-top: 1rem;
 }
 .legal-sheet__header {
@@ -170,13 +170,13 @@ function closeDoc() {
 .legal-sheet__header h3 {
   margin: 0;
   font-size: 1rem;
-  color: #fff;
+  color: var(--hs-text);
 }
 .legal-close {
-  border: 1px solid #3a5a7c;
-  background: transparent;
-  color: #8ab4e0;
-  border-radius: 6px;
+  border: 1px solid var(--hs-border);
+  background: var(--hs-surface-muted);
+  color: var(--hs-text);
+  border-radius: var(--hs-radius-card);
   padding: 0.3rem 0.75rem;
   cursor: pointer;
 }
@@ -186,7 +186,7 @@ function closeDoc() {
   overflow: auto;
   font-size: 0.82rem;
   line-height: 1.65;
-  color: #b0c0d0;
+  color: var(--hs-text-muted);
 }
 .legal-sheet__content p {
   margin: 0 0 0.75rem;
@@ -197,6 +197,6 @@ function closeDoc() {
 .legal-section h4 {
   margin: 0 0 0.5rem;
   font-size: 0.88rem;
-  color: #e7eef7;
+  color: var(--hs-text);
 }
 </style>

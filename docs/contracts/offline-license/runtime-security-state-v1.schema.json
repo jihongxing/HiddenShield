@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hiddenshield.local/contracts/offline-license/runtime-security-state-v1.schema.json",
+  "title": "HiddenShield Offline License Runtime Security State v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "highestObservedUtc",
+    "revocationHighWater"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "highestObservedUtc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "revocationHighWater": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["keyId", "sequence", "payloadSha256"],
+        "properties": {
+          "keyId": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9._-]{2,63}$"
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "payloadSha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    }
+  }
+}

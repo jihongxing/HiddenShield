@@ -1,0 +1,99 @@
+{
+  "vectorVersion": 1,
+  "trustedNow": "2026-07-15T12:00:00Z",
+  "highestObservedUtc": "2026-07-15T12:00:00Z",
+  "revocationHighWater": {
+    "keyId": "offline-test-k0",
+    "sequence": 7,
+    "payloadSha256": "6cc44b01685e9aa950b989415a9cb5fe552b0c094e4e321c39c30b84f4378e66"
+  },
+  "cases": [
+    {
+      "id": "active-key-license-accepted",
+      "operation": "verify_license",
+      "keyId": "offline-test-k0",
+      "artifactTime": "2026-07-15T11:59:00Z",
+      "expected": "ok"
+    },
+    {
+      "id": "verify-only-key-license-accepted",
+      "operation": "verify_license",
+      "keyId": "offline-test-verify-only",
+      "artifactTime": "2026-07-15T11:59:00Z",
+      "expected": "ok"
+    },
+    {
+      "id": "disabled-key-rejected",
+      "operation": "verify_license",
+      "keyId": "offline-test-disabled",
+      "artifactTime": "2026-07-15T11:59:00Z",
+      "expected": "offline_license_key_disabled"
+    },
+    {
+      "id": "unknown-key-rejected",
+      "operation": "verify_license",
+      "keyId": "offline-missing",
+      "artifactTime": "2026-07-15T11:59:00Z",
+      "expected": "offline_license_unknown_key"
+    },
+    {
+      "id": "revocation-replay-rejected",
+      "operation": "import_revocation",
+      "keyId": "offline-test-k0",
+      "sequence": 6,
+      "payloadSha256": "c4ec8c90cfe0c46d98e25d4393b8fcaed4e882dfa5573d11e3e067b25f64f790",
+      "artifactTime": "2026-07-15T11:59:00Z",
+      "expected": "offline_license_revocation_replay"
+    },
+    {
+      "id": "revocation-idempotent-accepted",
+      "operation": "import_revocation",
+      "keyId": "offline-test-k0",
+      "sequence": 7,
+      "payloadSha256": "6cc44b01685e9aa950b989415a9cb5fe552b0c094e4e321c39c30b84f4378e66",
+      "artifactTime": "2026-07-15T11:59:00Z",
+      "expected": "ok"
+    },
+    {
+      "id": "revocation-equivocation-rejected",
+      "operation": "import_revocation",
+      "keyId": "offline-test-k0",
+      "sequence": 7,
+      "payloadSha256": "c4ec8c90cfe0c46d98e25d4393b8fcaed4e882dfa5573d11e3e067b25f64f790",
+      "artifactTime": "2026-07-15T11:59:00Z",
+      "expected": "offline_license_revocation_equivocation"
+    },
+    {
+      "id": "revocation-new-sequence-accepted",
+      "operation": "import_revocation",
+      "keyId": "offline-test-k0",
+      "sequence": 8,
+      "payloadSha256": "c4ec8c90cfe0c46d98e25d4393b8fcaed4e882dfa5573d11e3e067b25f64f790",
+      "artifactTime": "2026-07-15T11:59:00Z",
+      "expected": "ok"
+    },
+    {
+      "id": "clock-small-rollback-tolerated",
+      "operation": "verify_license",
+      "keyId": "offline-test-k0",
+      "observedNow": "2026-07-15T11:56:00Z",
+      "artifactTime": "2026-07-15T11:55:00Z",
+      "expected": "ok"
+    },
+    {
+      "id": "clock-large-rollback-rejected",
+      "operation": "verify_license",
+      "keyId": "offline-test-k0",
+      "observedNow": "2026-07-15T11:54:59Z",
+      "artifactTime": "2026-07-15T11:54:00Z",
+      "expected": "offline_license_clock_rollback"
+    },
+    {
+      "id": "future-artifact-rejected",
+      "operation": "verify_license",
+      "keyId": "offline-test-k0",
+      "artifactTime": "2026-07-15T12:05:01Z",
+      "expected": "offline_license_artifact_from_future"
+    }
+  ]
+}

@@ -8,8 +8,8 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'api.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `default_ai_flags`, `fixed_array`, `into_core_format`, `into_core_payload`, `sha256_hex`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
+// These functions are ignored because they are not marked as `pub`: `append_interleaved_from_buffer`, `append_interleaved_samples`, `audio_extension_hint_from_bytes`, `decode_audio_to_wav`, `default_ai_flags`, `from_core`, `into_core_format`, `into_core_payload`, `is_wav_bytes`, `issue_mode_label`, `media_type_label`, `mobile_extract_result_from_decoded`, `normalize_audio_to_wav`, `operation_failed`, `parse_hex_16`, `parse_media_type`, `parse_watermark_uid`, `sha256_hex`, `write_interleaved_wav`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `assert_receiver_is_total_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `eq`, `eq`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`
 // These functions are ignored (category: IgnoreBecauseNotAllowedOwner): `into_mobile_extract_result`
 
 Future<MobileImageResult> embedImageForMobile({
@@ -29,6 +29,18 @@ Future<MobileExtractResult> extractImageForMobile({
 }) =>
     RustLib.instance.api.crateApiExtractImageForMobile(imageBytes: imageBytes);
 
+Future<MobileExtractResult> extractImageReadonlyCandidateForMobile({
+  required List<int> imageBytes,
+}) => RustLib.instance.api.crateApiExtractImageReadonlyCandidateForMobile(
+  imageBytes: imageBytes,
+);
+
+Future<MobileExtractResult?> detectExistingImageForMobile({
+  required List<int> imageBytes,
+}) => RustLib.instance.api.crateApiDetectExistingImageForMobile(
+  imageBytes: imageBytes,
+);
+
 Future<MobileAudioResult> embedAudioWavForMobile({
   required List<int> audioBytes,
   required MobileMediaPayload payload,
@@ -43,6 +55,38 @@ Future<MobileExtractResult> extractAudioWavForMobile({
   required List<int> audioBytes,
 }) => RustLib.instance.api.crateApiExtractAudioWavForMobile(
   audioBytes: audioBytes,
+);
+
+Future<MobileExtractResult> extractAudioWavReadonlyCandidateForMobile({
+  required List<int> audioBytes,
+}) => RustLib.instance.api.crateApiExtractAudioWavReadonlyCandidateForMobile(
+  audioBytes: audioBytes,
+);
+
+Future<MobileV3InternalQaWriteResult> embedV3InternalQaForMobile({
+  required List<int> mediaBytes,
+  required String mediaType,
+  required String watermarkUid,
+}) => RustLib.instance.api.crateApiEmbedV3InternalQaForMobile(
+  mediaBytes: mediaBytes,
+  mediaType: mediaType,
+  watermarkUid: watermarkUid,
+);
+
+Future<MobileExtractResult> decodeV3ReadonlyFixtureForMobile({
+  required List<int> payloadBytes,
+  required String mediaType,
+}) => RustLib.instance.api.crateApiDecodeV3ReadonlyFixtureForMobile(
+  payloadBytes: payloadBytes,
+  mediaType: mediaType,
+);
+
+Future<MobileExtractResult> decodeV3ReadonlyMediaFixtureForMobile({
+  required List<int> mediaBytes,
+  required String mediaType,
+}) => RustLib.instance.api.crateApiDecodeV3ReadonlyMediaFixtureForMobile(
+  mediaBytes: mediaBytes,
+  mediaType: mediaType,
 );
 
 abstract class IntoMobileExtractResult {
@@ -78,12 +122,26 @@ class MobileExtractResult {
   final BigInt timestamp;
   final String deviceIdHex;
   final String fileHashHex;
+  final String? parentWatermarkUid;
+  final int revision;
+  final int payloadProtocolVersion;
+  final int payloadBytesLength;
+  final String watermarkIdIssueMode;
+  final String mediaType;
+  final String payloadAuthStatus;
 
   const MobileExtractResult({
     required this.watermarkUid,
     required this.timestamp,
     required this.deviceIdHex,
     required this.fileHashHex,
+    this.parentWatermarkUid,
+    required this.revision,
+    required this.payloadProtocolVersion,
+    required this.payloadBytesLength,
+    required this.watermarkIdIssueMode,
+    required this.mediaType,
+    required this.payloadAuthStatus,
   });
 
   @override
@@ -91,7 +149,14 @@ class MobileExtractResult {
       watermarkUid.hashCode ^
       timestamp.hashCode ^
       deviceIdHex.hashCode ^
-      fileHashHex.hashCode;
+      fileHashHex.hashCode ^
+      parentWatermarkUid.hashCode ^
+      revision.hashCode ^
+      payloadProtocolVersion.hashCode ^
+      payloadBytesLength.hashCode ^
+      watermarkIdIssueMode.hashCode ^
+      mediaType.hashCode ^
+      payloadAuthStatus.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -101,7 +166,14 @@ class MobileExtractResult {
           watermarkUid == other.watermarkUid &&
           timestamp == other.timestamp &&
           deviceIdHex == other.deviceIdHex &&
-          fileHashHex == other.fileHashHex;
+          fileHashHex == other.fileHashHex &&
+          parentWatermarkUid == other.parentWatermarkUid &&
+          revision == other.revision &&
+          payloadProtocolVersion == other.payloadProtocolVersion &&
+          payloadBytesLength == other.payloadBytesLength &&
+          watermarkIdIssueMode == other.watermarkIdIssueMode &&
+          mediaType == other.mediaType &&
+          payloadAuthStatus == other.payloadAuthStatus;
 }
 
 enum MobileImageOutputFormat { png, jpeg, webP }
@@ -138,34 +210,105 @@ class MobileImageResult {
 }
 
 class MobileMediaPayload {
-  final Uint8List userSeed;
+  final String creatorIdentity;
+  final String deviceIdentity;
+  final Uint8List mediaBytes;
   final BigInt timestamp;
-  final Uint8List deviceId;
-  final Uint8List fileHash;
+  final String? reservedWatermarkUid;
+  final String? registryProofHash;
+  final String? parentWatermarkUid;
+  final int revision;
+  final String? mediaType;
 
   const MobileMediaPayload({
-    required this.userSeed,
+    required this.creatorIdentity,
+    required this.deviceIdentity,
+    required this.mediaBytes,
     required this.timestamp,
-    required this.deviceId,
-    required this.fileHash,
+    this.reservedWatermarkUid,
+    this.registryProofHash,
+    this.parentWatermarkUid,
+    required this.revision,
+    this.mediaType,
   });
 
   @override
   int get hashCode =>
-      userSeed.hashCode ^
+      creatorIdentity.hashCode ^
+      deviceIdentity.hashCode ^
+      mediaBytes.hashCode ^
       timestamp.hashCode ^
-      deviceId.hashCode ^
-      fileHash.hashCode;
+      reservedWatermarkUid.hashCode ^
+      registryProofHash.hashCode ^
+      parentWatermarkUid.hashCode ^
+      revision.hashCode ^
+      mediaType.hashCode;
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is MobileMediaPayload &&
           runtimeType == other.runtimeType &&
-          userSeed == other.userSeed &&
+          creatorIdentity == other.creatorIdentity &&
+          deviceIdentity == other.deviceIdentity &&
+          mediaBytes == other.mediaBytes &&
           timestamp == other.timestamp &&
-          deviceId == other.deviceId &&
-          fileHash == other.fileHash;
+          reservedWatermarkUid == other.reservedWatermarkUid &&
+          registryProofHash == other.registryProofHash &&
+          parentWatermarkUid == other.parentWatermarkUid &&
+          revision == other.revision &&
+          mediaType == other.mediaType;
+}
+
+class MobileV3InternalQaWriteResult {
+  final Uint8List bytes;
+  final String watermarkUid;
+  final String sha256;
+  final String mediaType;
+  final int payloadProtocolVersion;
+  final int payloadBytesLength;
+  final String payloadAuthStatus;
+  final String watermarkIdIssueMode;
+  final String mediaPayloadRole;
+
+  const MobileV3InternalQaWriteResult({
+    required this.bytes,
+    required this.watermarkUid,
+    required this.sha256,
+    required this.mediaType,
+    required this.payloadProtocolVersion,
+    required this.payloadBytesLength,
+    required this.payloadAuthStatus,
+    required this.watermarkIdIssueMode,
+    required this.mediaPayloadRole,
+  });
+
+  @override
+  int get hashCode =>
+      bytes.hashCode ^
+      watermarkUid.hashCode ^
+      sha256.hashCode ^
+      mediaType.hashCode ^
+      payloadProtocolVersion.hashCode ^
+      payloadBytesLength.hashCode ^
+      payloadAuthStatus.hashCode ^
+      watermarkIdIssueMode.hashCode ^
+      mediaPayloadRole.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MobileV3InternalQaWriteResult &&
+          runtimeType == other.runtimeType &&
+          bytes == other.bytes &&
+          watermarkUid == other.watermarkUid &&
+          sha256 == other.sha256 &&
+          mediaType == other.mediaType &&
+          payloadProtocolVersion == other.payloadProtocolVersion &&
+          payloadBytesLength == other.payloadBytesLength &&
+          payloadAuthStatus == other.payloadAuthStatus &&
+          watermarkIdIssueMode == other.watermarkIdIssueMode &&
+          mediaPayloadRole == other.mediaPayloadRole;
 }
 
 @freezed
@@ -174,8 +317,13 @@ sealed class MobileWatermarkError
     implements FrbException {
   const MobileWatermarkError._();
 
-  const factory MobileWatermarkError.invalidPayload(String field0) =
-      MobileWatermarkError_InvalidPayload;
-  const factory MobileWatermarkError.operationFailed(String field0) =
-      MobileWatermarkError_OperationFailed;
+  const factory MobileWatermarkError.invalidPayload({
+    required String code,
+    required String message,
+  }) = MobileWatermarkError_InvalidPayload;
+  const factory MobileWatermarkError.operationFailed({
+    required String code,
+    required String message,
+    String? existingUid,
+  }) = MobileWatermarkError_OperationFailed;
 }

@@ -1,0 +1,1248 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>HiddenShield 维权证据包 · Phase R4</title>
+  <style>
+    :root {
+      --ink: #1b2630;
+      --navy: #183449;
+      --navy-2: #244d64;
+      --copper: #9b6b35;
+      --copper-soft: #eee3d3;
+      --paper: #fbfaf7;
+      --paper-2: #f4f1ea;
+      --canvas: #dfe5e8;
+      --rule: #d3cec3;
+      --rule-strong: #aaa296;
+      --muted: #66727c;
+      --green: #28664d;
+      --green-soft: #e5f0e9;
+      --amber: #8b620f;
+      --amber-soft: #f6edd5;
+      --red: #913c38;
+      --red-soft: #f4e4e1;
+      --sans: "Noto Sans SC Controlled", "Microsoft YaHei UI", "PingFang SC", sans-serif;
+      --serif: "Noto Serif SC Controlled", "Source Han Serif SC", "Songti SC", serif;
+      --mono: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
+      --page-width: 210mm;
+      --page-height: 297mm;
+      --page-x: 17mm;
+      --page-y: 15mm;
+    }
+
+    @font-face {
+      font-family: "Noto Sans SC Controlled";
+      src: url("/__fonts/NotoSansSC-Controlled.ttf") format("truetype");
+      font-weight: 100 900;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "Noto Serif SC Controlled";
+      src: url("/__fonts/NotoSerifSC-Controlled.ttf") format("truetype");
+      font-weight: 100 900;
+      font-display: swap;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      color: var(--ink);
+      background: var(--canvas);
+      font-family: var(--sans);
+    }
+
+    body {
+      min-width: 320px;
+      margin: 0;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .prototype-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 62px;
+      padding: 10px max(18px, calc((100vw - 1040px) / 2));
+      color: #eef5f7;
+      background: #101a22;
+      border-bottom: 1px solid rgba(130, 205, 197, .22);
+    }
+
+    .toolbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .toolbar-mark {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      color: #0b1d1c;
+      font-weight: 900;
+      background: #7ad0c7;
+      border-radius: 7px;
+    }
+
+    .toolbar-title {
+      font-size: 14px;
+      font-weight: 750;
+    }
+
+    .toolbar-subtitle {
+      margin-top: 2px;
+      color: #9eabb2;
+      font-size: 11px;
+    }
+
+    .toolbar-button {
+      height: 36px;
+      padding: 0 15px;
+      color: #eff5f6;
+      cursor: pointer;
+      background: #182731;
+      border: 1px solid rgba(122, 208, 199, .3);
+      border-radius: 6px;
+    }
+
+    .prototype-note {
+      max-width: 980px;
+      margin: 20px auto 4px;
+      padding: 0 16px;
+      color: #4e5b65;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    .report-stack {
+      display: grid;
+      gap: 22px;
+      justify-content: center;
+      padding: 16px 16px 72px;
+    }
+
+    .report-page {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      width: var(--page-width);
+      height: var(--page-height);
+      overflow: hidden;
+      padding: var(--page-y) var(--page-x) 16mm;
+      background: var(--paper);
+      box-shadow: 0 18px 48px rgba(22, 37, 48, .16);
+    }
+
+    .running-head,
+    .page-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 8px;
+      letter-spacing: .04em;
+    }
+
+    .running-head {
+      min-height: 20px;
+      margin-bottom: 7mm;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .page-footer {
+      position: absolute;
+      right: var(--page-x);
+      bottom: 7mm;
+      left: var(--page-x);
+      padding-top: 3mm;
+      border-top: 1px solid var(--rule);
+    }
+
+    .footer-classification {
+      color: var(--copper);
+      font-family: var(--sans);
+      font-weight: 750;
+      letter-spacing: .1em;
+    }
+
+    .page-kicker {
+      color: var(--copper);
+      font-family: var(--mono);
+      font-size: 8px;
+      font-weight: 800;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    .page-title {
+      margin: 2mm 0 2mm;
+      font-family: var(--serif);
+      font-size: 25px;
+      font-weight: 700;
+      letter-spacing: -.03em;
+      line-height: 1.18;
+    }
+
+    .page-lead {
+      max-width: 150mm;
+      margin: 0 0 7mm;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.75;
+    }
+
+    .cover {
+      color: #f7f3ea;
+      background:
+        radial-gradient(circle at 85% 18%, rgba(133, 202, 194, .14), transparent 27%),
+        linear-gradient(145deg, #142b3c 0%, #1b4056 58%, #102737 100%);
+    }
+
+    .cover::before {
+      position: absolute;
+      inset: 10mm;
+      pointer-events: none;
+      content: "";
+      border: 1px solid rgba(238, 227, 211, .22);
+    }
+
+    .cover::after {
+      position: absolute;
+      top: 0;
+      right: 26mm;
+      width: 1px;
+      height: 100%;
+      content: "";
+      background: rgba(238, 227, 211, .12);
+    }
+
+    .cover-brand {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 4mm 0 19mm;
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: .12em;
+    }
+
+    .cover-badge {
+      padding: 6px 9px;
+      color: #d9eee9;
+      border: 1px solid rgba(122, 208, 199, .45);
+      border-radius: 999px;
+    }
+
+    .cover-rule {
+      width: 27mm;
+      height: 3px;
+      margin-bottom: 9mm;
+      background: var(--copper);
+    }
+
+    .cover h1 {
+      max-width: 136mm;
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 38px;
+      font-weight: 700;
+      letter-spacing: -.04em;
+      line-height: 1.14;
+    }
+
+    .cover-subtitle {
+      max-width: 125mm;
+      margin-top: 7mm;
+      color: #cbd8dc;
+      font-size: 13px;
+      line-height: 1.75;
+    }
+
+    .cover-case {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      margin-top: 20mm;
+      border-top: 1px solid rgba(238, 227, 211, .25);
+      border-bottom: 1px solid rgba(238, 227, 211, .25);
+    }
+
+    .cover-case > div {
+      min-height: 27mm;
+      padding: 6mm 0;
+    }
+
+    .cover-case > div:nth-child(even) {
+      padding-left: 8mm;
+      border-left: 1px solid rgba(238, 227, 211, .18);
+    }
+
+    .label {
+      color: var(--muted);
+      font-size: 8px;
+      font-weight: 750;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .cover .label {
+      color: #aebfc5;
+    }
+
+    .cover-value {
+      margin-top: 3mm;
+      font-size: 13px;
+      font-weight: 650;
+      line-height: 1.5;
+    }
+
+    .cover-boundary {
+      margin-top: auto;
+      padding: 5mm 6mm;
+      color: #e9dfd0;
+      font-size: 10px;
+      line-height: 1.7;
+      background: rgba(9, 23, 31, .38);
+      border-left: 3px solid var(--copper);
+    }
+
+    .cover .page-footer {
+      color: #aebdc2;
+      border-color: rgba(238, 227, 211, .18);
+    }
+
+    .summary-grid,
+    .two-column,
+    .three-column {
+      display: grid;
+      gap: 5mm;
+    }
+
+    .summary-grid,
+    .two-column {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .three-column {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .metric {
+      min-height: 28mm;
+      padding: 5mm;
+      background: var(--paper-2);
+      border-top: 2px solid var(--navy);
+    }
+
+    .metric-value {
+      margin: 2mm 0 1mm;
+      color: var(--navy);
+      font-family: var(--serif);
+      font-size: 23px;
+      font-weight: 750;
+    }
+
+    .metric-note {
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.55;
+    }
+
+    .section-block {
+      margin-bottom: 6mm;
+    }
+
+    .section-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 3mm;
+      padding-bottom: 2mm;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .section-heading h2,
+    .section-heading h3 {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 750;
+      letter-spacing: .02em;
+    }
+
+    .section-index {
+      color: var(--copper);
+      font-family: var(--mono);
+      font-size: 8px;
+    }
+
+    .evidence-list {
+      display: grid;
+      gap: 2.5mm;
+    }
+
+    .evidence-row {
+      display: grid;
+      grid-template-columns: 13mm 1fr 35mm 22mm;
+      align-items: center;
+      min-height: 13mm;
+      padding: 2mm 3mm;
+      background: #fff;
+      border: 1px solid var(--rule);
+    }
+
+    .evidence-no {
+      color: var(--copper);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .evidence-name {
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .evidence-desc {
+      margin-top: 1mm;
+      color: var(--muted);
+      font-size: 8px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 22px;
+      padding: 3px 7px;
+      color: var(--amber);
+      font-size: 8px;
+      font-weight: 750;
+      background: var(--amber-soft);
+      border-radius: 999px;
+    }
+
+    .status-pill.green {
+      color: var(--green);
+      background: var(--green-soft);
+    }
+
+    .status-pill.red {
+      color: var(--red);
+      background: var(--red-soft);
+    }
+
+    .ref {
+      color: var(--navy-2);
+      font-family: var(--mono);
+      font-size: 8px;
+      text-align: right;
+    }
+
+    .fact-card {
+      padding: 5mm;
+      background: #fff;
+      border: 1px solid var(--rule);
+    }
+
+    .fact-card.accent {
+      border-top: 3px solid var(--copper);
+    }
+
+    .fact-card h3 {
+      margin: 0 0 4mm;
+      font-family: var(--serif);
+      font-size: 16px;
+    }
+
+    .definition-list {
+      display: grid;
+      grid-template-columns: 38mm 1fr;
+      margin: 0;
+      font-size: 9px;
+      line-height: 1.55;
+    }
+
+    .definition-list dt,
+    .definition-list dd {
+      min-height: 9mm;
+      margin: 0;
+      padding: 2.5mm 0;
+      border-bottom: 1px solid #e5e1d9;
+    }
+
+    .definition-list dt {
+      color: var(--muted);
+    }
+
+    .mono {
+      overflow-wrap: anywhere;
+      font-family: var(--mono);
+      font-size: 7.8px;
+    }
+
+    .callout {
+      padding: 4mm 5mm;
+      color: #4e4435;
+      font-size: 9px;
+      line-height: 1.65;
+      background: var(--copper-soft);
+      border-left: 3px solid var(--copper);
+    }
+
+    .dispute-card {
+      padding: 6mm;
+      background: linear-gradient(135deg, #f0eee8, #faf9f5);
+      border: 1px solid var(--rule);
+    }
+
+    .dispute-title {
+      margin: 2mm 0 3mm;
+      font-family: var(--serif);
+      font-size: 20px;
+    }
+
+    .source-box {
+      margin-top: 5mm;
+      padding: 4mm;
+      background: #fff;
+      border: 1px dashed var(--rule-strong);
+    }
+
+    .timeline {
+      position: relative;
+      display: grid;
+      gap: 0;
+      margin-left: 4mm;
+      padding-left: 9mm;
+      border-left: 1px solid var(--rule-strong);
+    }
+
+    .timeline-item {
+      position: relative;
+      display: grid;
+      grid-template-columns: 35mm 1fr;
+      min-height: 26mm;
+      padding: 0 0 6mm;
+    }
+
+    .timeline-item::before {
+      position: absolute;
+      top: 2mm;
+      left: -11.4mm;
+      width: 4.5mm;
+      height: 4.5mm;
+      content: "";
+      background: var(--paper);
+      border: 1.5px solid var(--copper);
+      border-radius: 50%;
+    }
+
+    .timeline-time {
+      color: var(--navy);
+      font-family: var(--mono);
+      font-size: 8px;
+      font-weight: 750;
+      line-height: 1.5;
+    }
+
+    .timeline-content h3 {
+      margin: 0 0 2mm;
+      font-size: 11px;
+    }
+
+    .timeline-content p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.65;
+    }
+
+    .method-panel {
+      display: grid;
+      grid-template-columns: 48mm 1fr;
+      min-height: 28mm;
+      margin-bottom: 4mm;
+      border: 1px solid var(--rule);
+    }
+
+    .method-key {
+      padding: 4mm;
+      color: #eff4f5;
+      background: var(--navy);
+    }
+
+    .method-key strong {
+      display: block;
+      margin-top: 3mm;
+      font-family: var(--mono);
+      font-size: 9px;
+      overflow-wrap: anywhere;
+    }
+
+    .method-value {
+      padding: 4mm 5mm;
+      background: #fff;
+    }
+
+    .method-value h3 {
+      margin: 0 0 2mm;
+      font-family: var(--serif);
+      font-size: 15px;
+    }
+
+    .method-value p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.7;
+    }
+
+    .separation-band {
+      display: grid;
+      grid-template-columns: 1fr 28mm 1fr;
+      align-items: stretch;
+      margin-top: 7mm;
+    }
+
+    .separation-side {
+      padding: 5mm;
+      background: var(--paper-2);
+      border: 1px solid var(--rule);
+    }
+
+    .separation-side h3 {
+      margin: 0 0 3mm;
+      font-size: 11px;
+    }
+
+    .separation-side p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 8.5px;
+      line-height: 1.65;
+    }
+
+    .separation-mark {
+      display: grid;
+      place-items: center;
+      color: var(--copper);
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 800;
+    }
+
+    .statement {
+      position: relative;
+      min-height: 75mm;
+      padding: 10mm 12mm 8mm;
+      background: #fff;
+      border: 1px solid var(--rule);
+    }
+
+    .statement::before {
+      position: absolute;
+      top: 4mm;
+      left: 5mm;
+      color: var(--copper-soft);
+      content: "“";
+      font-family: Georgia, serif;
+      font-size: 60px;
+      line-height: 1;
+    }
+
+    .statement-text {
+      position: relative;
+      margin: 0;
+      font-family: var(--serif);
+      font-size: 16px;
+      line-height: 2;
+    }
+
+    .signature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8mm;
+      margin-top: 10mm;
+    }
+
+    .signature-line {
+      min-height: 24mm;
+      padding-top: 4mm;
+      border-top: 1px solid var(--rule-strong);
+    }
+
+    .signature-line strong {
+      display: block;
+      margin-bottom: 2mm;
+      font-size: 10px;
+    }
+
+    .signature-line span {
+      color: var(--muted);
+      font-size: 8px;
+    }
+
+    .limitation-list {
+      display: grid;
+      gap: 2.5mm;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .limitation-list li {
+      display: grid;
+      grid-template-columns: 8mm 1fr;
+      min-height: 14mm;
+      padding: 3mm 4mm;
+      color: #514a41;
+      font-size: 9px;
+      line-height: 1.6;
+      background: var(--amber-soft);
+    }
+
+    .limitation-no {
+      color: var(--amber);
+      font-family: var(--mono);
+      font-weight: 800;
+    }
+
+    .attachment-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8px;
+    }
+
+    .attachment-table th {
+      padding: 2.5mm;
+      color: #f4f6f6;
+      text-align: left;
+      background: var(--navy);
+    }
+
+    .attachment-table td {
+      padding: 3mm 2.5mm;
+      vertical-align: top;
+      background: #fff;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .attachment-table .hash {
+      max-width: 58mm;
+      overflow-wrap: anywhere;
+      font-family: var(--mono);
+      font-size: 7px;
+    }
+
+    .prototype-error {
+      display: none;
+      max-width: 760px;
+      margin: 30px auto;
+      padding: 18px;
+      color: #6d2724;
+      background: #fae9e6;
+      border: 1px solid #dca8a2;
+    }
+
+    @media (max-width: 900px) {
+      .report-stack {
+        display: block;
+        padding: 12px 0 48px;
+      }
+
+      .report-page {
+        width: 100%;
+        height: auto;
+        min-height: 100vh;
+        margin-bottom: 16px;
+        padding: 28px 24px 64px;
+      }
+
+      .page-footer {
+        right: 24px;
+        left: 24px;
+      }
+
+      .prototype-toolbar {
+        padding: 10px 14px;
+      }
+
+      .toolbar-subtitle {
+        display: none;
+      }
+    }
+
+    @page {
+      size: A4;
+      margin: 0;
+    }
+
+    @media print {
+      html,
+      body {
+        width: 210mm;
+        margin: 0;
+        background: #fff;
+      }
+
+      .prototype-toolbar,
+      .prototype-note {
+        display: none;
+      }
+
+      .report-stack {
+        display: block;
+        padding: 0;
+      }
+
+      .report-page {
+        width: 210mm;
+        height: 297mm;
+        min-height: 297mm;
+        margin: 0;
+        box-shadow: none;
+        break-after: page;
+        page-break-after: always;
+      }
+
+      .report-page:last-child {
+        break-after: auto;
+        page-break-after: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="prototype-toolbar">
+    <div class="toolbar-brand">
+      <div class="toolbar-mark">HS</div>
+      <div>
+        <div class="toolbar-title">Phase R4 · 维权证据包八页原型</div>
+        <div class="toolbar-subtitle">RightsEvidencePackDocument schema v1 · fixture-driven</div>
+      </div>
+    </div>
+    <button class="toolbar-button" id="print-button" type="button">打印 / 导出 PDF</button>
+  </header>
+
+  <p class="prototype-note">
+    本原型使用确定性合成案件 fixture。它展示案件材料的组织方式，不代表侵权认定、公证、司法鉴定、数字签名或可信时间已经完成。
+  </p>
+
+  <main class="report-stack" id="report-stack" aria-live="polite"></main>
+  <div class="prototype-error" id="prototype-error"></div>
+
+  <script type="module">
+    import { prepare, layout } from "../copyright-evidence-report-r0/pretext.js";
+
+    const fixtureUrl = "../../contracts/rights-evidence-pack-v1.fixture.json";
+    const reportStack = document.querySelector("#report-stack");
+    const errorPanel = document.querySelector("#prototype-error");
+    const prepared = new Map();
+
+    const escapeHtml = (value) => String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
+
+    const formatTime = (value) => new Intl.DateTimeFormat("zh-CN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+      timeZone: "Asia/Shanghai"
+    }).format(new Date(value));
+
+    const formatBytes = (bytes) => `${(bytes / 1024).toFixed(1)} KB`;
+    const shortDigest = (value) => `${value.slice(0, 14)}…${value.slice(-12)}`;
+
+    function head(page, title) {
+      return `
+        <div class="running-head">
+          <span>HIDDENSHIELD · RIGHTS EVIDENCE PACK</span>
+          <span>${escapeHtml(title)}</span>
+        </div>
+      `;
+    }
+
+    function footer(page, packId) {
+      return `
+        <footer class="page-footer">
+          <span class="footer-classification">内部设计合同 · 非法律意见</span>
+          <span>${escapeHtml(packId)} · ${String(page).padStart(2, "0")} / 08</span>
+        </footer>
+      `;
+    }
+
+    function pageFrame(page, title, body, className = "") {
+      return `
+        <section class="report-page ${className}" data-page="${page}" aria-label="${escapeHtml(title)}">
+          ${head(page, title)}
+          ${body}
+          ${footer(page, currentFixture.packId)}
+        </section>
+      `;
+    }
+
+    let currentFixture;
+
+    function render(fixture) {
+      currentFixture = fixture;
+      const fact = fixture.copyrightFacts[0];
+      const disputed = fixture.disputedObjects[0];
+      const sample = fixture.infringementSamples[0];
+      const event = fixture.collectionEvents[0];
+      const finding = fixture.automatedFindings[0];
+      const statement = fixture.humanStatements[0];
+
+      const pages = [
+        `
+          <section class="report-page cover" data-page="1" aria-label="案件封面">
+            <div class="cover-brand">
+              <span>HIDDENSHIELD / PHASE R4</span>
+              <span class="cover-badge">案件材料草案</span>
+            </div>
+            <div class="cover-rule"></div>
+            <div class="page-kicker">Rights Evidence Pack</div>
+            <h1 data-pretext>维权证据包<br>${escapeHtml(fixture.case.title)}</h1>
+            <p class="cover-subtitle" data-pretext>
+              以版权事实报告为谱系起点，组织争议对象、侵权样本、采集记录、自动技术观察、人工陈述与附件目录。
+            </p>
+            <div class="cover-case">
+              <div>
+                <div class="label">案件编号</div>
+                <div class="cover-value mono">${escapeHtml(fixture.case.caseId)}</div>
+              </div>
+              <div>
+                <div class="label">证据包编号</div>
+                <div class="cover-value mono">${escapeHtml(fixture.packId)}</div>
+              </div>
+              <div>
+                <div class="label">声明主体</div>
+                <div class="cover-value">${escapeHtml(fixture.case.claimantDisplayName)}</div>
+              </div>
+              <div>
+                <div class="label">生成时间</div>
+                <div class="cover-value">${formatTime(fixture.generatedAt)} +08:00</div>
+              </div>
+            </div>
+            <div class="cover-boundary" data-pretext>
+              ${escapeHtml(fixture.case.claimantDeclaration)} ${escapeHtml(fixture.case.jurisdictionNote)}
+            </div>
+            ${footer(1, fixture.packId)}
+          </section>
+        `,
+        pageFrame(2, "证据目录", `
+          <div class="page-kicker">Evidence Directory</div>
+          <h1 class="page-title">证据目录与材料状态</h1>
+          <p class="page-lead" data-pretext>目录编号用于 PDF 页面与附件文件之间的稳定交叉引用。状态仅描述材料是否已进入本证据包，不代表第三方可信或法律认可。</p>
+          <div class="summary-grid section-block">
+            <div class="metric">
+              <div class="label">版权事实</div>
+              <div class="metric-value">${fixture.copyrightFacts.length}</div>
+              <div class="metric-note">引用正式报告及来源 root digest</div>
+            </div>
+            <div class="metric">
+              <div class="label">争议样本</div>
+              <div class="metric-value">${fixture.infringementSamples.length}</div>
+              <div class="metric-note">外部来源时间状态为未验证</div>
+            </div>
+            <div class="metric">
+              <div class="label">附件目录</div>
+              <div class="metric-value">${fixture.attachments.length}</div>
+              <div class="metric-note">当前 fixture 不含原始附件字节</div>
+            </div>
+            <div class="metric">
+              <div class="label">签署状态</div>
+              <div class="metric-value" style="font-size:16px">未签署</div>
+              <div class="metric-note">人工陈述尚未数字签名</div>
+            </div>
+          </div>
+          <div class="evidence-list">
+            ${[
+              ["A-01", "版权事实报告", `报告 ${fact.reportId}`, "已引用", "P03"],
+              ["D-01", "争议对象", disputed.title, "主张材料", "P04"],
+              ["S-01", "侵权样本", sample.source.value, "未验证", "P04"],
+              ["C-01", "采集过程", event.description, "本机时间", "P05"],
+              ["F-01", "自动技术观察", finding.method, "非法律结论", "P06"],
+              ["H-01", "人工陈述", statement.authorDisplayName, "未签署", "P07"],
+              ["ATT-01", "附件索引", fixture.attachments[0].originalFileName, "未含原件", "P08"]
+            ].map(([no, name, desc, status, ref]) => `
+              <div class="evidence-row">
+                <div class="evidence-no">${no}</div>
+                <div><div class="evidence-name">${escapeHtml(name)}</div><div class="evidence-desc">${escapeHtml(desc)}</div></div>
+                <div><span class="status-pill">${escapeHtml(status)}</span></div>
+                <div class="ref">${ref}</div>
+              </div>
+            `).join("")}
+          </div>
+        `),
+        pageFrame(3, "版权事实", `
+          <div class="page-kicker">Copyright Facts</div>
+          <h1 class="page-title">版权事实与来源谱系</h1>
+          <p class="page-lead" data-pretext>本页仅投影正式版权报告中已经存在的系统记录，不在案件层重新生成版权编号、重新读取媒体或推导水印结论。</p>
+          <div class="two-column section-block">
+            <article class="fact-card accent">
+              <div class="label">正式报告引用</div>
+              <h3>FormalReportDocument v2</h3>
+              <dl class="definition-list">
+                <dt>报告编号</dt><dd class="mono">${escapeHtml(fact.reportId)}</dd>
+                <dt>记录编号</dt><dd class="mono">${escapeHtml(fact.recordId)}</dd>
+                <dt>媒体类型</dt><dd>${escapeHtml(fact.mediaKind)}</dd>
+                <dt>版权编号</dt><dd class="mono">${escapeHtml(fact.watermarkUid)}</dd>
+              </dl>
+            </article>
+            <article class="fact-card">
+              <div class="label">来源完整性锚点</div>
+              <h3>Manifest root digest</h3>
+              <dl class="definition-list">
+                <dt>摘要算法</dt><dd>SHA-256 chain v1</dd>
+                <dt>Root digest</dt><dd class="mono">${escapeHtml(fact.reportRootDigest)}</dd>
+                <dt>写后验证</dt><dd><span class="status-pill green">${escapeHtml(fact.factSnapshot.writeVerificationStatus)}</span></dd>
+                <dt>可信时间</dt><dd><span class="status-pill">${escapeHtml(fact.factSnapshot.trustedTimeStatus)}</span></dd>
+              </dl>
+            </article>
+          </div>
+          <div class="section-block">
+            <div class="section-heading"><h2>事实快照</h2><span class="section-index">A-01</span></div>
+            <div class="three-column">
+              <div class="metric"><div class="label">Payload 协议</div><div class="metric-value">V${fact.factSnapshot.payloadProtocolVersion}</div><div class="metric-note">来自正式记录，不由案件层修改</div></div>
+              <div class="metric"><div class="label">记录投影</div><div class="metric-value" style="font-size:17px">只读</div><div class="metric-note">禁止生成第二套水印事实</div></div>
+              <div class="metric"><div class="label">媒体原件</div><div class="metric-value" style="font-size:17px">未包含</div><div class="metric-note">本页不导出原始媒体路径或字节</div></div>
+            </div>
+          </div>
+          <div class="callout" data-pretext>
+            谱系含义：该案件包声明其版权事实来源于上述正式报告快照。Root digest 是字节追溯锚点，不是数字签名、公证证明或绝对权属证明。
+          </div>
+        `),
+        pageFrame(4, "争议对象与侵权样本", `
+          <div class="page-kicker">Disputed Object & Sample</div>
+          <h1 class="page-title">争议对象与侵权样本</h1>
+          <p class="page-lead" data-pretext>本页记录提交人主张的争议对象及其外部样本。来源和采集时间尚未获得可信时间、公证或第三方采集证明。</p>
+          <article class="dispute-card section-block">
+            <div class="label">${escapeHtml(disputed.disputedObjectId)} · ${escapeHtml(disputed.objectType)}</div>
+            <h2 class="dispute-title">${escapeHtml(disputed.title)}</h2>
+            <p data-pretext style="margin:0;color:var(--muted);font-size:10px;line-height:1.75">${escapeHtml(disputed.description)}</p>
+            <div style="margin-top:4mm"><span class="status-pill">${escapeHtml(disputed.claimStatus)}</span></div>
+          </article>
+          <div class="section-heading"><h2>外部样本记录</h2><span class="section-index">S-01 / ATT-01</span></div>
+          <div class="source-box">
+            <dl class="definition-list">
+              <dt>来源类型</dt><dd>${escapeHtml(sample.source.kind)}</dd>
+              <dt>来源地址</dt><dd class="mono">${escapeHtml(sample.source.value)}</dd>
+              <dt>采集时间</dt><dd>${formatTime(sample.capturedAt)} +08:00</dd>
+              <dt>时间状态</dt><dd><span class="status-pill">${escapeHtml(sample.captureTimeStatus)}</span></dd>
+              <dt>附件编号</dt><dd class="mono">${escapeHtml(sample.attachmentId)}</dd>
+              <dt>文件大小</dt><dd>${formatBytes(sample.bytes)}</dd>
+              <dt>SHA-256</dt><dd class="mono">${escapeHtml(sample.sha256)}</dd>
+            </dl>
+          </div>
+          <div class="callout" style="margin-top:6mm" data-pretext>${escapeHtml(sample.collectorStatement)}</div>
+        `),
+        pageFrame(5, "采集记录", `
+          <div class="page-kicker">Collection Log</div>
+          <h1 class="page-title">采集过程与操作记录</h1>
+          <p class="page-lead" data-pretext>记录材料进入证据包后的处理事件。当前时间状态为设备声明时间，不等于 RFC 3161 时间戳、电子认证或公证取证时间。</p>
+          <div class="timeline section-block">
+            <article class="timeline-item">
+              <div class="timeline-time">${formatTime(sample.capturedAt)}<br>+08:00</div>
+              <div class="timeline-content">
+                <h3>外部样本被提交</h3>
+                <p data-pretext>提交来源：${escapeHtml(sample.source.value)}。采集时间状态：${escapeHtml(sample.captureTimeStatus)}。</p>
+              </div>
+            </article>
+            <article class="timeline-item">
+              <div class="timeline-time">${formatTime(event.occurredAt)}<br>+08:00</div>
+              <div class="timeline-content">
+                <h3>${escapeHtml(event.eventType)}</h3>
+                <p data-pretext>${escapeHtml(event.description)} 操作主体：${escapeHtml(event.actor)}；时间状态：${escapeHtml(event.timeStatus)}。</p>
+              </div>
+            </article>
+            <article class="timeline-item">
+              <div class="timeline-time">${formatTime(fixture.generatedAt)}<br>+08:00</div>
+              <div class="timeline-content">
+                <h3>案件级文档生成</h3>
+                <p data-pretext>从 schema v1 fixture 生成八页可读原型；未执行数字签名、可信时间加盖或在线存证。</p>
+              </div>
+            </article>
+          </div>
+          <div class="two-column">
+            <div class="fact-card">
+              <div class="label">附件完整性</div>
+              <h3>ATT-01</h3>
+              <p class="mono">${escapeHtml(shortDigest(sample.sha256))}</p>
+              <p style="color:var(--muted);font-size:9px;line-height:1.6">摘要和字节数已进入目录；fixture 未包含原始附件字节。</p>
+            </div>
+            <div class="fact-card">
+              <div class="label">缺失的可信材料</div>
+              <h3>Not available</h3>
+              <p style="color:var(--muted);font-size:9px;line-height:1.7">无网页采集录像、HTTP 响应归档、TSA token、公证书、第三方见证或采集设备证明。</p>
+            </div>
+          </div>
+        `),
+        pageFrame(6, "自动观察", `
+          <div class="page-kicker">Automated Observation</div>
+          <h1 class="page-title">自动技术观察</h1>
+          <p class="page-lead" data-pretext>自动观察只描述指定方法对指定输入产生的技术结果。它与用户陈述、律师意见和法律判断分离。</p>
+          <div class="method-panel">
+            <div class="method-key"><div class="label" style="color:#b8c7cc">方法</div><strong>${escapeHtml(finding.method)}</strong></div>
+            <div class="method-value"><h3>${escapeHtml(finding.findingType)}</h3><p>输入附件：${finding.inputAttachmentIds.map(escapeHtml).join("、")}</p></div>
+          </div>
+          <article class="fact-card accent section-block">
+            <div class="label">观察结果 · ${escapeHtml(finding.status)}</div>
+            <h3 data-pretext>${escapeHtml(finding.observation)}</h3>
+            <div class="callout" data-pretext>${escapeHtml(finding.limitations)}</div>
+          </article>
+          <div class="separation-band">
+            <div class="separation-side">
+              <h3>系统自动观察</h3>
+              <p data-pretext>方法、输入、状态、观察和限制均结构化记录，可复算时仅复算技术过程。</p>
+            </div>
+            <div class="separation-mark">≠</div>
+            <div class="separation-side">
+              <h3>法律判断</h3>
+              <p data-pretext>权属、接触可能性、实质性相似、合理使用和责任承担需由专业人员结合事实与法律判断。</p>
+            </div>
+          </div>
+          <div class="callout" style="margin-top:7mm" data-pretext>
+            当前 fixture 只执行 SHA-256 精确摘要比较，没有执行视觉相似性、网页主体识别、传播范围评估或损失计算。
+          </div>
+        `),
+        pageFrame(7, "人工陈述", `
+          <div class="page-kicker">Human Statement</div>
+          <h1 class="page-title">人工陈述与确认页</h1>
+          <p class="page-lead" data-pretext>人工陈述由声明人独立负责，不因被纳入报告而转化为系统验证事实。当前原型仅保留签署位置，未生成电子签名。</p>
+          <article class="statement">
+            <p class="statement-text" data-pretext>${escapeHtml(statement.statement)}</p>
+          </article>
+          <div class="signature-grid">
+            <div class="signature-line">
+              <strong>陈述人：${escapeHtml(statement.authorDisplayName)}</strong>
+              <span>身份角色：${escapeHtml(statement.authorRole)} · 状态：${escapeHtml(statement.signatureStatus)}</span>
+            </div>
+            <div class="signature-line">
+              <strong>签署日期：未签署</strong>
+              <span>本位置不是数字签名、电子认证或见证签署。</span>
+            </div>
+          </div>
+          <div class="callout" style="margin-top:10mm" data-pretext>
+            建议律师评审时核对：陈述主体身份材料、作品形成过程、首次发表、授权链、争议页面发现经过、损失主张依据以及附件原件保全方式。
+          </div>
+        `),
+        pageFrame(8, "限制说明与附件索引", `
+          <div class="page-kicker">Limitations & Attachments</div>
+          <h1 class="page-title">限制说明与附件索引</h1>
+          <div class="two-column section-block">
+            <div>
+              <div class="section-heading"><h2>限制说明</h2><span class="section-index">L-01</span></div>
+              <ol class="limitation-list">
+                ${fixture.limitations.map((item, index) => `<li><span class="limitation-no">${String(index + 1).padStart(2, "0")}</span><span data-pretext>${escapeHtml(item)}</span></li>`).join("")}
+              </ol>
+            </div>
+            <div>
+              <div class="section-heading"><h2>包级状态</h2><span class="section-index">STATUS</span></div>
+              <dl class="definition-list">
+                <dt>文档状态</dt><dd><span class="status-pill">${escapeHtml(fixture.status)}</span></dd>
+                <dt>数字签名</dt><dd><span class="status-pill red">not_signed</span></dd>
+                <dt>可信时间</dt><dd><span class="status-pill">not_timestamped</span></dd>
+                <dt>在线校验</dt><dd>not_deployed</dd>
+                <dt>司法采纳</dt><dd>not_evaluated</dd>
+              </dl>
+            </div>
+          </div>
+          <div class="section-heading"><h2>附件索引</h2><span class="section-index">ATTACHMENT INDEX</span></div>
+          <table class="attachment-table">
+            <thead><tr><th>编号</th><th>附件</th><th>来源 / 获取方式</th><th>完整性</th></tr></thead>
+            <tbody>
+              ${fixture.attachments.map((attachment) => `
+                <tr id="${escapeHtml(attachment.attachmentId)}">
+                  <td><strong>ATT-${String(attachment.sequence).padStart(2, "0")}</strong><br>${escapeHtml(attachment.role)}</td>
+                  <td>${escapeHtml(attachment.originalFileName)}<br><span class="mono">${escapeHtml(attachment.mediaType)} · ${formatBytes(attachment.bytes)}</span></td>
+                  <td>${escapeHtml(attachment.source)}<br><span class="mono">${escapeHtml(attachment.acquisitionMethod)}</span></td>
+                  <td class="hash">${escapeHtml(attachment.sha256)}<br>原始字节：${attachment.originalBytesIncluded ? "已包含" : "未包含"}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+          <div class="callout" style="margin-top:6mm" data-pretext>
+            附件摘要用于目录内一致性检查。当前 fixture 未包含附件原始字节，因此不能用于恢复或独立检查样本内容。
+          </div>
+        `)
+      ];
+
+      reportStack.innerHTML = pages.join("");
+      prepareText();
+    }
+
+    function prepareText() {
+      prepared.clear();
+      document.querySelectorAll("[data-pretext]").forEach((element) => {
+        const style = getComputedStyle(element);
+        const lineHeight = Number.parseFloat(style.lineHeight);
+        if (!element.textContent.trim() || !Number.isFinite(lineHeight)) return;
+        try {
+          prepared.set(element, {
+            handle: prepare(element.textContent, style.font),
+            lineHeight
+          });
+        } catch {
+          element.style.minHeight = "";
+        }
+      });
+      relayout();
+    }
+
+    function relayout() {
+      for (const [element, entry] of prepared) {
+        if (!element.isConnected || element.clientWidth === 0) continue;
+        try {
+          const result = layout(entry.handle, element.clientWidth, entry.lineHeight);
+          if (Number.isFinite(result.height) && result.height > 0) {
+            element.style.minHeight = `${Math.ceil(result.height)}px`;
+          }
+        } catch {
+          element.style.minHeight = "";
+        }
+      }
+    }
+
+    async function init() {
+      try {
+        const response = await fetch(fixtureUrl);
+        if (!response.ok) throw new Error(`fixture HTTP ${response.status}`);
+        const fixture = await response.json();
+        render(fixture);
+        await document.fonts.ready;
+        prepareText();
+        document.documentElement.dataset.prototypeReady = "true";
+      } catch (error) {
+        errorPanel.style.display = "block";
+        errorPanel.textContent = `无法读取 R4 fixture：${error.message}`;
+        throw error;
+      }
+    }
+
+    document.querySelector("#print-button").addEventListener("click", () => window.print());
+    new ResizeObserver(relayout).observe(document.body);
+    window.addEventListener("beforeprint", relayout);
+    await init();
+  </script>
+</body>
+</html>

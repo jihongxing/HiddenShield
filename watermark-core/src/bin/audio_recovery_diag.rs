@@ -10,6 +10,7 @@ use realfft::RealFftPlanner;
 use sha2::{Digest, Sha256};
 use watermark_core::{
     encode_payload, EmbedOptions, MediaInput, MediaOutput, WatermarkPayload, WatermarkService,
+    PAYLOAD_BYTES,
 };
 
 const FRAME_SIZE: usize = 4096;
@@ -27,7 +28,7 @@ const AUDIO_MARKER_BITS_PER_FRAME: usize = 12;
 const AUDIO_MARKER_BIT_LANES: usize = 3;
 const AUDIO_RECOVERY_PREAMBLE: [u8; 4] = [0xA7, 0x5C, 0x41, 0x52];
 const AUDIO_RECOVERY_CHECKSUM_BYTES: usize = 2;
-const AUDIO_RECOVERY_PACKET_BYTES: usize = 4 + 32 + AUDIO_RECOVERY_CHECKSUM_BYTES;
+const AUDIO_RECOVERY_PACKET_BYTES: usize = 4 + PAYLOAD_BYTES + AUDIO_RECOVERY_CHECKSUM_BYTES;
 const AUDIO_RECOVERY_PACKET_BITS: usize = AUDIO_RECOVERY_PACKET_BYTES * 8;
 const AUDIO_RECOVERY_REDUNDANCY: usize = 3;
 const AUDIO_RECOVERY_BITS_PER_FRAME: usize = 18;
@@ -423,23 +424,37 @@ fn scan_recovery_at(
     };
     let bytes = bits_to_bytes(&bits);
 
+    let payload_start_bit = AUDIO_RECOVERY_PREAMBLE.len() * 8;
+    let payload_end_bit = payload_start_bit + PAYLOAD_BYTES * 8;
+    let checksum_end_bit = payload_end_bit + AUDIO_RECOVERY_CHECKSUM_BYTES * 8;
+
     Ok(RecoveryCandidate {
         phase,
         start_frame,
         total_bit_errors: hamming(&bits, expected_bits),
-        preamble_bit_errors: hamming(&bits[0..32], &expected_bits[0..32]),
-        payload_bit_errors: hamming(&bits[32..288], &expected_bits[32..288]),
-        checksum_bit_errors: hamming(&bits[288..304], &expected_bits[288..304]),
+        preamble_bit_errors: hamming(
+            &bits[0..payload_start_bit],
+            &expected_bits[0..payload_start_bit],
+        ),
+        payload_bit_errors: hamming(
+            &bits[payload_start_bit..payload_end_bit],
+            &expected_bits[payload_start_bit..payload_end_bit],
+        ),
+        checksum_bit_errors: hamming(
+            &bits[payload_end_bit..checksum_end_bit],
+            &expected_bits[payload_end_bit..checksum_end_bit],
+        ),
         preamble_ok: bytes.get(0..4) == Some(AUDIO_RECOVERY_PREAMBLE.as_slice()),
         checksum_ok: bytes
-            .get(4..36)
+            .get(4..4 + PAYLOAD_BYTES)
             .and_then(|payload| payload.try_into().ok())
-            .map(|payload: &[u8; 32]| {
-                bytes.get(36..38) == Some(audio_recovery_checksum(payload).as_slice())
+            .map(|payload: &[u8; PAYLOAD_BYTES]| {
+                bytes.get(4 + PAYLOAD_BYTES..4 + PAYLOAD_BYTES + AUDIO_RECOVERY_CHECKSUM_BYTES)
+                    == Some(audio_recovery_checksum(payload).as_slice())
             })
             .unwrap_or(false),
         payload_decode_ok: bytes
-            .get(4..36)
+            .get(4..4 + PAYLOAD_BYTES)
             .and_then(|payload| payload.try_into().ok())
             .map(|payload| watermark_core::decode_payload(payload).is_ok())
             .unwrap_or(false),
@@ -606,16 +621,21 @@ fn audio_recovery_frames_per_packet() -> usize {
     (AUDIO_RECOVERY_PACKET_BITS * AUDIO_RECOVERY_REDUNDANCY).div_ceil(AUDIO_RECOVERY_BITS_PER_FRAME)
 }
 
-fn encode_audio_recovery_packet(payload_bytes: &[u8; 32]) -> [u8; AUDIO_RECOVERY_PACKET_BYTES] {
+fn encode_audio_recovery_packet(
+    payload_bytes: &[u8; PAYLOAD_BYTES],
+) -> [u8; AUDIO_RECOVERY_PACKET_BYTES] {
     let mut packet = [0u8; AUDIO_RECOVERY_PACKET_BYTES];
     packet[0..4].copy_from_slice(&AUDIO_RECOVERY_PREAMBLE);
-    packet[4..36].copy_from_slice(payload_bytes);
+    packet[4..4 + PAYLOAD_BYTES].copy_from_slice(payload_bytes);
     let checksum = audio_recovery_checksum(payload_bytes);
-    packet[36..38].copy_from_slice(&checksum);
+    packet[4 + PAYLOAD_BYTES..4 + PAYLOAD_BYTES + AUDIO_RECOVERY_CHECKSUM_BYTES]
+        .copy_from_slice(&checksum);
     packet
 }
 
-fn audio_recovery_checksum(payload_bytes: &[u8; 32]) -> [u8; AUDIO_RECOVERY_CHECKSUM_BYTES] {
+fn audio_recovery_checksum(
+    payload_bytes: &[u8; PAYLOAD_BYTES],
+) -> [u8; AUDIO_RECOVERY_CHECKSUM_BYTES] {
     let mut state = 0xA6D3u16;
     for &byte in payload_bytes {
         state = state.rotate_left(5) ^ byte as u16;

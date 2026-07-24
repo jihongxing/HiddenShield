@@ -3,11 +3,11 @@ use std::path::Path;
 use serde::Serialize;
 use tauri::{AppHandle, Manager};
 
+use crate::config;
 use crate::encoder::tonemap;
 use crate::pipeline::ffmpeg;
 use crate::pipeline::scheduler::classify_file;
 use crate::pipeline::scheduler::FileType;
-use crate::utils::fs as ufs;
 use crate::utils::hash;
 use crate::AppState;
 
@@ -41,13 +41,26 @@ pub async fn system_check(
         .app_data_dir()
         .map_err(|e| format!("无法获取应用数据目录: {e}"))?;
 
-    let (ffmpeg_available, ffmpeg_version) = match ffmpeg::detect_ffmpeg().await {
-        Ok(paths) => {
-            state.set_ffmpeg_paths(paths.clone());
-            let version = get_ffmpeg_version(&paths.ffmpeg).await;
-            (true, version)
+    let (ffmpeg_available, ffmpeg_version) = if let Some(paths) = state.get_ffmpeg_paths() {
+        let version = match state.get_ffmpeg_version() {
+            Some(version) => version,
+            None => {
+                let version = get_ffmpeg_version(&paths.ffmpeg).await;
+                state.set_ffmpeg_version(version.clone());
+                version
+            }
+        };
+        (true, version)
+    } else {
+        match ffmpeg::detect_ffmpeg().await {
+            Ok(paths) => {
+                let version = get_ffmpeg_version(&paths.ffmpeg).await;
+                state.set_ffmpeg_paths(paths);
+                state.set_ffmpeg_version(version.clone());
+                (true, version)
+            }
+            Err(_) => (false, "未安装".to_string()),
         }
-        Err(_) => (false, "未安装".to_string()),
     };
 
     // 2. GPU encoder availability (from hw_info cache or detect)
@@ -91,15 +104,26 @@ fn resolve_system_check_output_dir(
     app_data_dir: &Path,
     input_path: Option<&str>,
 ) -> std::path::PathBuf {
-    input_path
-        .filter(|path| !path.trim().is_empty())
-        .map(ufs::safe_output_dir)
-        .unwrap_or_else(|| app_data_dir.parent().unwrap_or(app_data_dir).to_path_buf())
+    if let Some(input_path) = input_path.filter(|path| !path.trim().is_empty()) {
+        return config::resolve_output_dir(app_data_dir, Path::new(input_path));
+    }
+    let preferences = config::load_preferences(app_data_dir);
+    if let Some(path) = preferences
+        .default_output_dir
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        return std::path::PathBuf::from(path);
+    }
+    app_data_dir.parent().unwrap_or(app_data_dir).to_path_buf()
 }
 
 async fn get_ffmpeg_version(ffmpeg: &Path) -> String {
     use tokio::process::Command;
-    let output = Command::new(ffmpeg).args(["-version"]).output().await;
+    let mut command = Command::new(ffmpeg);
+    crate::utils::process::hide_tokio_window(&mut command);
+    let output = command.args(["-version"]).output().await;
 
     match output {
         Ok(o) => {
@@ -200,6 +224,11 @@ pub struct SourceMeta {
     pub height: u32,
     pub fps: f64,
     pub duration_secs: f64,
+    pub duration_confirmed: bool,
+    pub sample_rate: Option<u32>,
+    pub channels: Option<u16>,
+    pub watermark_eligible: Option<bool>,
+    pub file_size_bytes: u64,
     pub file_size_mb: f64,
     pub is_hdr: bool,
     pub color_profile: String,
@@ -220,9 +249,8 @@ pub async fn probe_source(path: String, app_handle: AppHandle) -> Result<SourceM
         .unwrap_or(&path)
         .to_string();
 
-    let file_size_mb = std::fs::metadata(&path)
-        .map(|m| m.len() as f64 / 1024.0 / 1024.0)
-        .unwrap_or(0.0);
+    let file_size_bytes = std::fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
+    let file_size_mb = file_size_bytes as f64 / 1024.0 / 1024.0;
     let file_size_mb = (file_size_mb * 10.0).round() / 10.0;
 
     let sha256 = hash::sha256_of_file(&path).map_err(|e| format!("SHA-256 计算失败: {e}"))?;
@@ -230,9 +258,29 @@ pub async fn probe_source(path: String, app_handle: AppHandle) -> Result<SourceM
     let file_type = classify_file(p);
 
     match file_type {
-        FileType::Video => probe_video(&path, file_name, file_size_mb, sha256, &app_handle).await,
-        FileType::Image => probe_image(&path, file_name, file_size_mb, sha256),
-        FileType::Audio => probe_audio(&path, file_name, file_size_mb, sha256, &app_handle).await,
+        FileType::Video => {
+            probe_video(
+                &path,
+                file_name,
+                file_size_mb,
+                file_size_bytes,
+                sha256,
+                &app_handle,
+            )
+            .await
+        }
+        FileType::Image => probe_image(&path, file_name, file_size_mb, file_size_bytes, sha256),
+        FileType::Audio => {
+            probe_audio(
+                &path,
+                file_name,
+                file_size_mb,
+                file_size_bytes,
+                sha256,
+                &app_handle,
+            )
+            .await
+        }
     }
 }
 
@@ -240,6 +288,7 @@ async fn probe_video(
     path: &str,
     file_name: String,
     file_size_mb: f64,
+    file_size_bytes: u64,
     sha256: String,
     app_handle: &AppHandle,
 ) -> Result<SourceMeta, String> {
@@ -260,11 +309,12 @@ async fn probe_video(
 
     let fps = video_stream.and_then(|s| s.r_frame_rate).unwrap_or(0.0);
 
-    let duration_secs = probe
+    let duration = probe
         .format
         .as_ref()
         .and_then(|f| f.duration)
-        .unwrap_or(0.0);
+        .filter(|duration| duration.is_finite() && *duration > 0.0);
+    let duration_secs = duration.unwrap_or(0.0);
 
     let is_hdr = video_stream
         .map(|s| tonemap::is_hdr(s.color_transfer.as_deref(), s.color_primaries.as_deref()))
@@ -283,6 +333,11 @@ async fn probe_video(
         height,
         fps,
         duration_secs,
+        duration_confirmed: duration.is_some(),
+        sample_rate: None,
+        channels: None,
+        watermark_eligible: None,
+        file_size_bytes,
         file_size_mb,
         is_hdr,
         color_profile,
@@ -295,10 +350,22 @@ fn probe_image(
     path: &str,
     file_name: String,
     file_size_mb: f64,
+    file_size_bytes: u64,
     sha256: String,
 ) -> Result<SourceMeta, String> {
+    let extension = Path::new(path)
+        .extension()
+        .and_then(|value| value.to_str())
+        .unwrap_or_default()
+        .to_ascii_lowercase();
+    if !matches!(extension.as_str(), "png" | "jpg" | "jpeg" | "webp") {
+        return Err("image_format_unsupported: 当前仅支持静态 PNG、JPEG、WebP".to_string());
+    }
     let (width, height) =
         image::image_dimensions(path).map_err(|e| format!("图片读取失败: {e}"))?;
+
+    let watermark_eligible = watermark_core::validate_image_protection_input(width, height).is_ok()
+        && watermark_core::validate_image_protection_file_size(file_size_bytes as usize).is_ok();
 
     Ok(SourceMeta {
         file_name,
@@ -307,6 +374,11 @@ fn probe_image(
         height,
         fps: 0.0,
         duration_secs: 0.0,
+        duration_confirmed: false,
+        sample_rate: None,
+        channels: None,
+        watermark_eligible: Some(watermark_eligible),
+        file_size_bytes,
         file_size_mb,
         is_hdr: false,
         color_profile: "sRGB".to_string(),
@@ -319,6 +391,7 @@ async fn probe_audio(
     path: &str,
     file_name: String,
     file_size_mb: f64,
+    file_size_bytes: u64,
     sha256: String,
     app_handle: &AppHandle,
 ) -> Result<SourceMeta, String> {
@@ -328,11 +401,16 @@ async fn probe_audio(
         .await
         .map_err(|e| format!("ffprobe 失败: {e}"))?;
 
-    let duration_secs = probe
+    let duration = probe
         .format
         .as_ref()
         .and_then(|f| f.duration)
-        .unwrap_or(0.0);
+        .filter(|duration| duration.is_finite() && *duration > 0.0);
+    let duration_secs = duration.unwrap_or(0.0);
+    let audio_stream = probe
+        .streams
+        .iter()
+        .find(|stream| stream.codec_type.as_deref() == Some("audio"));
 
     Ok(SourceMeta {
         file_name,
@@ -341,6 +419,11 @@ async fn probe_audio(
         height: 0,
         fps: 0.0,
         duration_secs,
+        duration_confirmed: duration.is_some(),
+        sample_rate: audio_stream.and_then(|stream| stream.sample_rate),
+        channels: audio_stream.and_then(|stream| stream.channels),
+        watermark_eligible: None,
+        file_size_bytes,
         file_size_mb,
         is_hdr: false,
         color_profile: String::new(),
@@ -461,6 +544,27 @@ mod tests {
             );
             assert_eq!(output, Path::new("/mnt/media/readonly"));
         }
+    }
+
+    #[test]
+    fn system_check_prefers_default_output_dir() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let app_data_dir = temp_dir.path().join("HiddenShield");
+        let preferred_dir = temp_dir.path().join("preferred-output");
+        fs::create_dir_all(&app_data_dir).unwrap();
+        fs::create_dir_all(&preferred_dir).unwrap();
+        crate::config::save_preferences(
+            &app_data_dir,
+            &crate::config::AppPreferences {
+                default_output_dir: Some(preferred_dir.to_string_lossy().to_string()),
+                onboarding_completed: true,
+            },
+        )
+        .unwrap();
+
+        let output =
+            resolve_system_check_output_dir(&app_data_dir, Some("D:\\media\\readonly\\source.mp4"));
+        assert_eq!(output, preferred_dir);
     }
 
     #[test]

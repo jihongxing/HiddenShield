@@ -1,0 +1,22 @@
+{
+  "vectorId": "hsrvl1-ed25519-v1-valid",
+  "description": "签名撤销列表固定向量；测试私钥禁止用于真实撤销列表",
+  "tokenFormat": "HSRVL1.<payload>.<signature>",
+  "signatureAlgorithm": "Ed25519",
+  "signatureDomain": "HiddenShield-Offline-Revocation-List-v1",
+  "publicKeyBase64Url": "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo",
+  "canonicalPayload": "{\"generatedAt\":\"2026-07-15T00:00:00Z\",\"keyId\":\"offline-test-k0\",\"listId\":\"rvl_k0_0001\",\"listType\":\"offline_license_revocations\",\"revokedLicenseIds\":[\"lic_revoked_0001\",\"lic_revoked_0002\"],\"schemaVersion\":1,\"sequence\":1}",
+  "signatureBase64Url": "mUVoIvXCpwKyS2EGRaPCMrZZhXBVLoQsINPYPdw8z0qZ5eScLbVW0K1AVV3KhelYXIrTNUGinLEVyWOaDsbNDw",
+  "token": "HSRVL1.eyJnZW5lcmF0ZWRBdCI6IjIwMjYtMDctMTVUMDA6MDA6MDBaIiwia2V5SWQiOiJvZmZsaW5lLXRlc3QtazAiLCJsaXN0SWQiOiJydmxfazBfMDAwMSIsImxpc3RUeXBlIjoib2ZmbGluZV9saWNlbnNlX3Jldm9jYXRpb25zIiwicmV2b2tlZExpY2Vuc2VJZHMiOlsibGljX3Jldm9rZWRfMDAwMSIsImxpY19yZXZva2VkXzAwMDIiXSwic2NoZW1hVmVyc2lvbiI6MSwic2VxdWVuY2UiOjF9.mUVoIvXCpwKyS2EGRaPCMrZZhXBVLoQsINPYPdw8z0qZ5eScLbVW0K1AVV3KhelYXIrTNUGinLEVyWOaDsbNDw",
+  "expected": {
+    "tokenLength": 386,
+    "schemaVersion": 1,
+    "listId": "rvl_k0_0001",
+    "listType": "offline_license_revocations",
+    "keyId": "offline-test-k0",
+    "generatedAt": "2026-07-15T00:00:00Z",
+    "sequence": 1,
+    "revokedLicenseIds": ["lic_revoked_0001", "lic_revoked_0002"],
+    "signatureValid": true
+  }
+}

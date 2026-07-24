@@ -64,7 +64,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.12.0';
 
   @override
-  int get rustContentHash => 1485132065;
+  int get rustContentHash => -428348159;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -76,6 +76,20 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
 }
 
 abstract class RustLibApi extends BaseApi {
+  Future<MobileExtractResult> crateApiDecodeV3ReadonlyFixtureForMobile({
+    required List<int> payloadBytes,
+    required String mediaType,
+  });
+
+  Future<MobileExtractResult> crateApiDecodeV3ReadonlyMediaFixtureForMobile({
+    required List<int> mediaBytes,
+    required String mediaType,
+  });
+
+  Future<MobileExtractResult?> crateApiDetectExistingImageForMobile({
+    required List<int> imageBytes,
+  });
+
   Future<MobileAudioResult> crateApiEmbedAudioWavForMobile({
     required List<int> audioBytes,
     required MobileMediaPayload payload,
@@ -89,11 +103,26 @@ abstract class RustLibApi extends BaseApi {
     required bool allowRewrite,
   });
 
+  Future<MobileV3InternalQaWriteResult> crateApiEmbedV3InternalQaForMobile({
+    required List<int> mediaBytes,
+    required String mediaType,
+    required String watermarkUid,
+  });
+
   Future<MobileExtractResult> crateApiExtractAudioWavForMobile({
     required List<int> audioBytes,
   });
 
+  Future<MobileExtractResult>
+  crateApiExtractAudioWavReadonlyCandidateForMobile({
+    required List<int> audioBytes,
+  });
+
   Future<MobileExtractResult> crateApiExtractImageForMobile({
+    required List<int> imageBytes,
+  });
+
+  Future<MobileExtractResult> crateApiExtractImageReadonlyCandidateForMobile({
     required List<int> imageBytes,
   });
 }
@@ -105,6 +134,109 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required super.generalizedFrbRustBinding,
     required super.portManager,
   });
+
+  @override
+  Future<MobileExtractResult> crateApiDecodeV3ReadonlyFixtureForMobile({
+    required List<int> payloadBytes,
+    required String mediaType,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_list_prim_u_8_loose(payloadBytes, serializer);
+          sse_encode_String(mediaType, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 2,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_mobile_extract_result,
+          decodeErrorData: sse_decode_mobile_watermark_error,
+        ),
+        constMeta: kCrateApiDecodeV3ReadonlyFixtureForMobileConstMeta,
+        argValues: [payloadBytes, mediaType],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDecodeV3ReadonlyFixtureForMobileConstMeta =>
+      const TaskConstMeta(
+        debugName: "decode_v3_readonly_fixture_for_mobile",
+        argNames: ["payloadBytes", "mediaType"],
+      );
+
+  @override
+  Future<MobileExtractResult> crateApiDecodeV3ReadonlyMediaFixtureForMobile({
+    required List<int> mediaBytes,
+    required String mediaType,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_list_prim_u_8_loose(mediaBytes, serializer);
+          sse_encode_String(mediaType, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 3,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_mobile_extract_result,
+          decodeErrorData: sse_decode_mobile_watermark_error,
+        ),
+        constMeta: kCrateApiDecodeV3ReadonlyMediaFixtureForMobileConstMeta,
+        argValues: [mediaBytes, mediaType],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDecodeV3ReadonlyMediaFixtureForMobileConstMeta =>
+      const TaskConstMeta(
+        debugName: "decode_v3_readonly_media_fixture_for_mobile",
+        argNames: ["mediaBytes", "mediaType"],
+      );
+
+  @override
+  Future<MobileExtractResult?> crateApiDetectExistingImageForMobile({
+    required List<int> imageBytes,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_list_prim_u_8_loose(imageBytes, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 4,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_opt_box_autoadd_mobile_extract_result,
+          decodeErrorData: sse_decode_mobile_watermark_error,
+        ),
+        constMeta: kCrateApiDetectExistingImageForMobileConstMeta,
+        argValues: [imageBytes],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiDetectExistingImageForMobileConstMeta =>
+      const TaskConstMeta(
+        debugName: "detect_existing_image_for_mobile",
+        argNames: ["imageBytes"],
+      );
 
   @override
   Future<MobileAudioResult> crateApiEmbedAudioWavForMobile({
@@ -122,7 +254,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 2,
+            funcId: 5,
             port: port_,
           );
         },
@@ -161,7 +293,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 3,
+            funcId: 6,
             port: port_,
           );
         },
@@ -183,6 +315,43 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<MobileV3InternalQaWriteResult> crateApiEmbedV3InternalQaForMobile({
+    required List<int> mediaBytes,
+    required String mediaType,
+    required String watermarkUid,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_list_prim_u_8_loose(mediaBytes, serializer);
+          sse_encode_String(mediaType, serializer);
+          sse_encode_String(watermarkUid, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 7,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_mobile_v_3_internal_qa_write_result,
+          decodeErrorData: sse_decode_mobile_watermark_error,
+        ),
+        constMeta: kCrateApiEmbedV3InternalQaForMobileConstMeta,
+        argValues: [mediaBytes, mediaType, watermarkUid],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiEmbedV3InternalQaForMobileConstMeta =>
+      const TaskConstMeta(
+        debugName: "embed_v3_internal_qa_for_mobile",
+        argNames: ["mediaBytes", "mediaType", "watermarkUid"],
+      );
+
+  @override
   Future<MobileExtractResult> crateApiExtractAudioWavForMobile({
     required List<int> audioBytes,
   }) {
@@ -194,7 +363,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 4,
+            funcId: 8,
             port: port_,
           );
         },
@@ -216,6 +385,41 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<MobileExtractResult>
+  crateApiExtractAudioWavReadonlyCandidateForMobile({
+    required List<int> audioBytes,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_list_prim_u_8_loose(audioBytes, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 9,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_mobile_extract_result,
+          decodeErrorData: sse_decode_mobile_watermark_error,
+        ),
+        constMeta: kCrateApiExtractAudioWavReadonlyCandidateForMobileConstMeta,
+        argValues: [audioBytes],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta
+  get kCrateApiExtractAudioWavReadonlyCandidateForMobileConstMeta =>
+      const TaskConstMeta(
+        debugName: "extract_audio_wav_readonly_candidate_for_mobile",
+        argNames: ["audioBytes"],
+      );
+
+  @override
   Future<MobileExtractResult> crateApiExtractImageForMobile({
     required List<int> imageBytes,
   }) {
@@ -227,7 +431,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 5,
+            funcId: 10,
             port: port_,
           );
         },
@@ -245,6 +449,39 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   TaskConstMeta get kCrateApiExtractImageForMobileConstMeta =>
       const TaskConstMeta(
         debugName: "extract_image_for_mobile",
+        argNames: ["imageBytes"],
+      );
+
+  @override
+  Future<MobileExtractResult> crateApiExtractImageReadonlyCandidateForMobile({
+    required List<int> imageBytes,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_list_prim_u_8_loose(imageBytes, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 11,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_mobile_extract_result,
+          decodeErrorData: sse_decode_mobile_watermark_error,
+        ),
+        constMeta: kCrateApiExtractImageReadonlyCandidateForMobileConstMeta,
+        argValues: [imageBytes],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiExtractImageReadonlyCandidateForMobileConstMeta =>
+      const TaskConstMeta(
+        debugName: "extract_image_readonly_candidate_for_mobile",
         argNames: ["imageBytes"],
       );
 
@@ -266,6 +503,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   bool dco_decode_bool(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as bool;
+  }
+
+  @protected
+  MobileExtractResult dco_decode_box_autoadd_mobile_extract_result(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_mobile_extract_result(raw);
   }
 
   @protected
@@ -309,13 +554,20 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   MobileExtractResult dco_decode_mobile_extract_result(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 4)
-      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    if (arr.length != 11)
+      throw Exception('unexpected arr length: expect 11 but see ${arr.length}');
     return MobileExtractResult(
       watermarkUid: dco_decode_String(arr[0]),
       timestamp: dco_decode_u_64(arr[1]),
       deviceIdHex: dco_decode_String(arr[2]),
       fileHashHex: dco_decode_String(arr[3]),
+      parentWatermarkUid: dco_decode_opt_String(arr[4]),
+      revision: dco_decode_u_32(arr[5]),
+      payloadProtocolVersion: dco_decode_u_32(arr[6]),
+      payloadBytesLength: dco_decode_u_32(arr[7]),
+      watermarkIdIssueMode: dco_decode_String(arr[8]),
+      mediaType: dco_decode_String(arr[9]),
+      payloadAuthStatus: dco_decode_String(arr[10]),
     );
   }
 
@@ -343,13 +595,39 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   MobileMediaPayload dco_decode_mobile_media_payload(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 4)
-      throw Exception('unexpected arr length: expect 4 but see ${arr.length}');
+    if (arr.length != 9)
+      throw Exception('unexpected arr length: expect 9 but see ${arr.length}');
     return MobileMediaPayload(
-      userSeed: dco_decode_list_prim_u_8_strict(arr[0]),
-      timestamp: dco_decode_u_64(arr[1]),
-      deviceId: dco_decode_list_prim_u_8_strict(arr[2]),
-      fileHash: dco_decode_list_prim_u_8_strict(arr[3]),
+      creatorIdentity: dco_decode_String(arr[0]),
+      deviceIdentity: dco_decode_String(arr[1]),
+      mediaBytes: dco_decode_list_prim_u_8_strict(arr[2]),
+      timestamp: dco_decode_u_64(arr[3]),
+      reservedWatermarkUid: dco_decode_opt_String(arr[4]),
+      registryProofHash: dco_decode_opt_String(arr[5]),
+      parentWatermarkUid: dco_decode_opt_String(arr[6]),
+      revision: dco_decode_u_32(arr[7]),
+      mediaType: dco_decode_opt_String(arr[8]),
+    );
+  }
+
+  @protected
+  MobileV3InternalQaWriteResult dco_decode_mobile_v_3_internal_qa_write_result(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 9)
+      throw Exception('unexpected arr length: expect 9 but see ${arr.length}');
+    return MobileV3InternalQaWriteResult(
+      bytes: dco_decode_list_prim_u_8_strict(arr[0]),
+      watermarkUid: dco_decode_String(arr[1]),
+      sha256: dco_decode_String(arr[2]),
+      mediaType: dco_decode_String(arr[3]),
+      payloadProtocolVersion: dco_decode_u_32(arr[4]),
+      payloadBytesLength: dco_decode_u_32(arr[5]),
+      payloadAuthStatus: dco_decode_String(arr[6]),
+      watermarkIdIssueMode: dco_decode_String(arr[7]),
+      mediaPayloadRole: dco_decode_String(arr[8]),
     );
   }
 
@@ -358,12 +636,41 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     switch (raw[0]) {
       case 0:
-        return MobileWatermarkError_InvalidPayload(dco_decode_String(raw[1]));
+        return MobileWatermarkError_InvalidPayload(
+          code: dco_decode_String(raw[1]),
+          message: dco_decode_String(raw[2]),
+        );
       case 1:
-        return MobileWatermarkError_OperationFailed(dco_decode_String(raw[1]));
+        return MobileWatermarkError_OperationFailed(
+          code: dco_decode_String(raw[1]),
+          message: dco_decode_String(raw[2]),
+          existingUid: dco_decode_opt_String(raw[3]),
+        );
       default:
         throw Exception("unreachable");
     }
+  }
+
+  @protected
+  String? dco_decode_opt_String(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_String(raw);
+  }
+
+  @protected
+  MobileExtractResult? dco_decode_opt_box_autoadd_mobile_extract_result(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null
+        ? null
+        : dco_decode_box_autoadd_mobile_extract_result(raw);
+  }
+
+  @protected
+  int dco_decode_u_32(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as int;
   }
 
   @protected
@@ -395,6 +702,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   bool sse_decode_bool(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getUint8() != 0;
+  }
+
+  @protected
+  MobileExtractResult sse_decode_box_autoadd_mobile_extract_result(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_mobile_extract_result(deserializer));
   }
 
   @protected
@@ -449,11 +764,25 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_timestamp = sse_decode_u_64(deserializer);
     var var_deviceIdHex = sse_decode_String(deserializer);
     var var_fileHashHex = sse_decode_String(deserializer);
+    var var_parentWatermarkUid = sse_decode_opt_String(deserializer);
+    var var_revision = sse_decode_u_32(deserializer);
+    var var_payloadProtocolVersion = sse_decode_u_32(deserializer);
+    var var_payloadBytesLength = sse_decode_u_32(deserializer);
+    var var_watermarkIdIssueMode = sse_decode_String(deserializer);
+    var var_mediaType = sse_decode_String(deserializer);
+    var var_payloadAuthStatus = sse_decode_String(deserializer);
     return MobileExtractResult(
       watermarkUid: var_watermarkUid,
       timestamp: var_timestamp,
       deviceIdHex: var_deviceIdHex,
       fileHashHex: var_fileHashHex,
+      parentWatermarkUid: var_parentWatermarkUid,
+      revision: var_revision,
+      payloadProtocolVersion: var_payloadProtocolVersion,
+      payloadBytesLength: var_payloadBytesLength,
+      watermarkIdIssueMode: var_watermarkIdIssueMode,
+      mediaType: var_mediaType,
+      payloadAuthStatus: var_payloadAuthStatus,
     );
   }
 
@@ -488,15 +817,52 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     SseDeserializer deserializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_userSeed = sse_decode_list_prim_u_8_strict(deserializer);
+    var var_creatorIdentity = sse_decode_String(deserializer);
+    var var_deviceIdentity = sse_decode_String(deserializer);
+    var var_mediaBytes = sse_decode_list_prim_u_8_strict(deserializer);
     var var_timestamp = sse_decode_u_64(deserializer);
-    var var_deviceId = sse_decode_list_prim_u_8_strict(deserializer);
-    var var_fileHash = sse_decode_list_prim_u_8_strict(deserializer);
+    var var_reservedWatermarkUid = sse_decode_opt_String(deserializer);
+    var var_registryProofHash = sse_decode_opt_String(deserializer);
+    var var_parentWatermarkUid = sse_decode_opt_String(deserializer);
+    var var_revision = sse_decode_u_32(deserializer);
+    var var_mediaType = sse_decode_opt_String(deserializer);
     return MobileMediaPayload(
-      userSeed: var_userSeed,
+      creatorIdentity: var_creatorIdentity,
+      deviceIdentity: var_deviceIdentity,
+      mediaBytes: var_mediaBytes,
       timestamp: var_timestamp,
-      deviceId: var_deviceId,
-      fileHash: var_fileHash,
+      reservedWatermarkUid: var_reservedWatermarkUid,
+      registryProofHash: var_registryProofHash,
+      parentWatermarkUid: var_parentWatermarkUid,
+      revision: var_revision,
+      mediaType: var_mediaType,
+    );
+  }
+
+  @protected
+  MobileV3InternalQaWriteResult sse_decode_mobile_v_3_internal_qa_write_result(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_bytes = sse_decode_list_prim_u_8_strict(deserializer);
+    var var_watermarkUid = sse_decode_String(deserializer);
+    var var_sha256 = sse_decode_String(deserializer);
+    var var_mediaType = sse_decode_String(deserializer);
+    var var_payloadProtocolVersion = sse_decode_u_32(deserializer);
+    var var_payloadBytesLength = sse_decode_u_32(deserializer);
+    var var_payloadAuthStatus = sse_decode_String(deserializer);
+    var var_watermarkIdIssueMode = sse_decode_String(deserializer);
+    var var_mediaPayloadRole = sse_decode_String(deserializer);
+    return MobileV3InternalQaWriteResult(
+      bytes: var_bytes,
+      watermarkUid: var_watermarkUid,
+      sha256: var_sha256,
+      mediaType: var_mediaType,
+      payloadProtocolVersion: var_payloadProtocolVersion,
+      payloadBytesLength: var_payloadBytesLength,
+      payloadAuthStatus: var_payloadAuthStatus,
+      watermarkIdIssueMode: var_watermarkIdIssueMode,
+      mediaPayloadRole: var_mediaPayloadRole,
     );
   }
 
@@ -509,14 +875,54 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var tag_ = sse_decode_i_32(deserializer);
     switch (tag_) {
       case 0:
-        var var_field0 = sse_decode_String(deserializer);
-        return MobileWatermarkError_InvalidPayload(var_field0);
+        var var_code = sse_decode_String(deserializer);
+        var var_message = sse_decode_String(deserializer);
+        return MobileWatermarkError_InvalidPayload(
+          code: var_code,
+          message: var_message,
+        );
       case 1:
-        var var_field0 = sse_decode_String(deserializer);
-        return MobileWatermarkError_OperationFailed(var_field0);
+        var var_code = sse_decode_String(deserializer);
+        var var_message = sse_decode_String(deserializer);
+        var var_existingUid = sse_decode_opt_String(deserializer);
+        return MobileWatermarkError_OperationFailed(
+          code: var_code,
+          message: var_message,
+          existingUid: var_existingUid,
+        );
       default:
         throw UnimplementedError('');
     }
+  }
+
+  @protected
+  String? sse_decode_opt_String(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_String(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  MobileExtractResult? sse_decode_opt_box_autoadd_mobile_extract_result(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_mobile_extract_result(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  int sse_decode_u_32(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getUint32();
   }
 
   @protected
@@ -546,6 +952,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   void sse_encode_bool(bool self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putUint8(self ? 1 : 0);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_mobile_extract_result(
+    MobileExtractResult self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_mobile_extract_result(self, serializer);
   }
 
   @protected
@@ -606,6 +1021,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_u_64(self.timestamp, serializer);
     sse_encode_String(self.deviceIdHex, serializer);
     sse_encode_String(self.fileHashHex, serializer);
+    sse_encode_opt_String(self.parentWatermarkUid, serializer);
+    sse_encode_u_32(self.revision, serializer);
+    sse_encode_u_32(self.payloadProtocolVersion, serializer);
+    sse_encode_u_32(self.payloadBytesLength, serializer);
+    sse_encode_String(self.watermarkIdIssueMode, serializer);
+    sse_encode_String(self.mediaType, serializer);
+    sse_encode_String(self.payloadAuthStatus, serializer);
   }
 
   @protected
@@ -635,10 +1057,32 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     SseSerializer serializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_list_prim_u_8_strict(self.userSeed, serializer);
+    sse_encode_String(self.creatorIdentity, serializer);
+    sse_encode_String(self.deviceIdentity, serializer);
+    sse_encode_list_prim_u_8_strict(self.mediaBytes, serializer);
     sse_encode_u_64(self.timestamp, serializer);
-    sse_encode_list_prim_u_8_strict(self.deviceId, serializer);
-    sse_encode_list_prim_u_8_strict(self.fileHash, serializer);
+    sse_encode_opt_String(self.reservedWatermarkUid, serializer);
+    sse_encode_opt_String(self.registryProofHash, serializer);
+    sse_encode_opt_String(self.parentWatermarkUid, serializer);
+    sse_encode_u_32(self.revision, serializer);
+    sse_encode_opt_String(self.mediaType, serializer);
+  }
+
+  @protected
+  void sse_encode_mobile_v_3_internal_qa_write_result(
+    MobileV3InternalQaWriteResult self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_list_prim_u_8_strict(self.bytes, serializer);
+    sse_encode_String(self.watermarkUid, serializer);
+    sse_encode_String(self.sha256, serializer);
+    sse_encode_String(self.mediaType, serializer);
+    sse_encode_u_32(self.payloadProtocolVersion, serializer);
+    sse_encode_u_32(self.payloadBytesLength, serializer);
+    sse_encode_String(self.payloadAuthStatus, serializer);
+    sse_encode_String(self.watermarkIdIssueMode, serializer);
+    sse_encode_String(self.mediaPayloadRole, serializer);
   }
 
   @protected
@@ -648,13 +1092,52 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     switch (self) {
-      case MobileWatermarkError_InvalidPayload(field0: final field0):
+      case MobileWatermarkError_InvalidPayload(
+        code: final code,
+        message: final message,
+      ):
         sse_encode_i_32(0, serializer);
-        sse_encode_String(field0, serializer);
-      case MobileWatermarkError_OperationFailed(field0: final field0):
+        sse_encode_String(code, serializer);
+        sse_encode_String(message, serializer);
+      case MobileWatermarkError_OperationFailed(
+        code: final code,
+        message: final message,
+        existingUid: final existingUid,
+      ):
         sse_encode_i_32(1, serializer);
-        sse_encode_String(field0, serializer);
+        sse_encode_String(code, serializer);
+        sse_encode_String(message, serializer);
+        sse_encode_opt_String(existingUid, serializer);
     }
+  }
+
+  @protected
+  void sse_encode_opt_String(String? self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_String(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_mobile_extract_result(
+    MobileExtractResult? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_mobile_extract_result(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_u_32(int self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putUint32(self);
   }
 
   @protected

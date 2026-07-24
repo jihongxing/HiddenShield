@@ -1,0 +1,4 @@
+HiddenShield synthetic working copy fixture
+Derived from: attachment-original-0001
+Purpose: normalized analysis input
+Boundary: This derived copy does not replace or authenticate the claimed original.

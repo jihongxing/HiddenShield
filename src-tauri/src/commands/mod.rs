@@ -1,8 +1,14 @@
 pub mod billing;
 pub mod identity;
+pub mod local_batch;
+pub mod offline_license;
+pub mod preferences;
 pub mod probe;
+pub mod public_metadata;
+pub mod report;
 pub mod sync;
 pub mod telemetry;
 pub mod transcode;
+pub mod v3_readonly_fixture;
 pub mod vault;
 pub mod verify;

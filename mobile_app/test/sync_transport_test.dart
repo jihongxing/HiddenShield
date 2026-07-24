@@ -30,7 +30,16 @@ void main() {
           'planName': '免费版',
           'planCode': 'free',
           'status': 'free',
-          'features': {'cloud_sync': true, 'batch_processing': false},
+          'features': {
+            'cloud_sync': false,
+            'batch_processing': false,
+            'report_export': false,
+            'cloud_batch_processing': false,
+            'cloud_video_processing': false,
+            'priority_queue': false,
+            'team_workspace': false,
+            'api_access': false,
+          },
         },
       });
     });
@@ -42,6 +51,7 @@ void main() {
     final session = await accountClient.continueWithAccount(
       const ContinueAccountRequest(
         identifier: 'alice@example.com',
+        password: 'correct-password',
         verificationCode: '123456',
         device: ContinueAccountDevice(
           clientDeviceId: 'local-device',
@@ -63,9 +73,10 @@ void main() {
 
     expect(
       capturedUri.toString(),
-      'https://api.hiddenshield.test/v1/auth/continue',
+      'https://api.hiddenshield.test/v1/auth/sessions',
     );
     expect(capturedBody['identifier'], 'alice@example.com');
+    expect(capturedBody['password'], 'correct-password');
     expect(capturedBody['device'], isA<Map<String, Object?>>());
     expect(capturedBody['localCreatorProfile'], isA<Map<String, Object?>>());
     expect(profile.accountId, 'acct-1');
@@ -74,9 +85,61 @@ void main() {
     expect(profile.workspaceId, 'ws-1');
     expect(profile.deviceId, 'device-1');
     expect(profile.creatorProfileId, 'creator-1');
-    expect(profile.entitlementFeatures['cloud_sync'], isTrue);
+    expect(profile.entitlementFeatures['cloud_sync'], isFalse);
+    expect(profile.entitlementFeatures['report_export'], isFalse);
+    expect(profile.entitlementFeatures['api_access'], isFalse);
     expect(profile.entitlementLabel, '免费版');
   });
+
+  test(
+    'CloudAccountClient patches sync preferences and maps manual policy',
+    () async {
+      late Uri capturedUri;
+      late Map<String, String> capturedHeaders;
+      late Map<String, Object?> capturedBody;
+      final accountClient = CloudAccountClient(
+        baseUrl: 'https://api.hiddenshield.test',
+        client: MockClient((request) async {
+          capturedUri = request.url;
+          capturedHeaders = request.headers;
+          capturedBody = jsonDecode(request.body) as Map<String, Object?>;
+          return _jsonResponse({
+            'syncPolicy': 'manual_local_only',
+            'autoSyncEnabled': false,
+            'cloudVaultCursor': 'cursor_12',
+            'entitlement': {
+              'id': 'ent-creator',
+              'planName': 'Creator',
+              'planCode': 'creator',
+              'status': 'active',
+              'features': {'cloud_sync': true},
+            },
+          });
+        }),
+      );
+
+      final response = await accountClient.updateSyncPreferences(
+        accessToken: 'access-token',
+        autoSyncEnabled: false,
+      );
+      final profile = response.applyTo(
+        SyncProfile.localOnly(),
+        now: DateTime.fromMillisecondsSinceEpoch(1000),
+      );
+
+      expect(
+        capturedUri.toString(),
+        'https://api.hiddenshield.test/v1/me/sync-preferences',
+      );
+      expect(capturedHeaders['authorization'], 'Bearer access-token');
+      expect(capturedBody['autoSyncEnabled'], isFalse);
+      expect(capturedBody['reason'], 'user_paused');
+      expect(profile.syncPolicy, 'manual_local_only');
+      expect(profile.mode, SyncTransportMode.localOnly);
+      expect(profile.entitlementFeatures['cloud_sync'], isTrue);
+      expect(profile.lastRemotePullCursor, 'cursor_12');
+    },
+  );
 
   test('CloudSyncTransport posts events batch to the cloud API', () async {
     late Uri capturedUri;
@@ -116,6 +179,13 @@ void main() {
     expect(event['entityType'], 'vaultRecord');
     expect(event['entityId'], 'record-1');
     expect(event['payload'], isA<Map<String, Object?>>());
+    final payload = event['payload']! as Map<String, Object?>;
+    expect(payload['write_verification_status'], 'verified');
+    expect(payload['write_verification_message'], '完成后验证已通过');
+    expect(payload.keys, everyElement(isIn(vaultRecordSyncPayloadKeys)));
+    expect(payload.containsKey('output_ref'), isFalse);
+    expect(payload.containsKey('local_path'), isFalse);
+    expect(payload.containsKey('output_douyin'), isFalse);
   });
 
   test('CloudSyncTransport fetches cloud changes with a cursor', () async {
@@ -142,7 +212,17 @@ void main() {
                 'title': 'cloud.png',
                 'watermark_uid': 'uid-cloud',
                 'revision': 2,
+                'creator_display_name': 'Cloud Creator',
+                'trusted_time_status': '已记录',
+                'trusted_time_source': 'https://freetsa.org/tsr',
+                'trusted_time_at': '2026-06-16T12:00:01.000Z',
+                'third_party_verification_status': '已获取时间戳回执',
+                'third_party_verification_provider': 'https://freetsa.org/tsr',
+                'third_party_verification_path': 'TSA 回执',
                 'sha256': 'hash-cloud',
+                'write_verification_status': 'failed',
+                'write_verification_message': '完成后验证未通过',
+                'write_verification_at': '2026-06-16T12:00:00.000Z',
                 'created_at': '2026-06-16T12:00:00.000Z',
               },
             },
@@ -163,6 +243,22 @@ void main() {
     expect(result.changes.single.id, 'cloud-record-1');
     expect(result.changes.single.watermarkUid, 'uid-cloud');
     expect(result.changes.single.revision, 2);
+    expect(result.changes.single.creatorDisplayName, 'Cloud Creator');
+    expect(result.changes.single.trustedTimeStatus, '已记录');
+    expect(result.changes.single.trustedTimeSource, 'https://freetsa.org/tsr');
+    expect(result.changes.single.trustedTimeAt, '2026-06-16T12:00:01.000Z');
+    expect(result.changes.single.thirdPartyVerificationStatus, '已获取时间戳回执');
+    expect(
+      result.changes.single.thirdPartyVerificationProvider,
+      'https://freetsa.org/tsr',
+    );
+    expect(result.changes.single.thirdPartyVerificationPath, 'TSA 回执');
+    expect(result.changes.single.writeVerificationStatus, 'failed');
+    expect(result.changes.single.writeVerificationMessage, '完成后验证未通过');
+    expect(
+      result.changes.single.writeVerificationAt,
+      '2026-06-16T12:00:00.000Z',
+    );
     expect(result.changes.single.sourceDevice, 'cloud');
   });
 
@@ -236,7 +332,7 @@ void main() {
     ).send(item);
     expect(unauthorized.isSuccess, isFalse);
     expect(unauthorized.error, contains('登录状态已失效'));
-    expect(unauthorized.error, contains('HTTP 401'));
+    expect(unauthorized.error, isNot(contains('HTTP 401')));
 
     final forbidden = await CloudSyncTransport(
       baseUrl: 'https://api.hiddenshield.test',
@@ -249,7 +345,7 @@ void main() {
     ).send(item);
     expect(forbidden.isSuccess, isFalse);
     expect(forbidden.error, contains('工作区或设备与云端账户不匹配'));
-    expect(forbidden.error, contains('HTTP 403'));
+    expect(forbidden.error, isNot(contains('HTTP 403')));
 
     final changes = await CloudSyncTransport(
       baseUrl: 'https://api.hiddenshield.test',
@@ -358,36 +454,36 @@ void main() {
       client: MockClient((request) async {
         capturedUri = request.url;
         capturedHeaders = request.headers;
-        return http.Response(
-          jsonEncode({
-            'ok': true,
-            'nextSince': '2026-06-16T12:00:00.000Z',
-            'changes': [
-              {
-                'id': 'desktop-1',
-                'kind': 'image',
-                'title': 'desktop.png',
-                'watermark_uid': 'uid-desktop',
-                'revision': 2,
-                'sha256': 'hash-desktop',
-                'created_at': '2026-06-16T12:00:00.000Z',
-              },
-              {
-                'id': 'desktop-evidence-1',
-                'kind': 'audio',
-                'title': 'suspect.wav',
-                'watermark_uid': 'uid-evidence',
-                'revision': 3,
-                'source': 'verify',
-                'extracted_timestamp': 123,
-                'extracted_device_id_hex': 'device',
-                'extracted_file_hash_hex': 'hash',
-                'created_at': '2026-06-16T12:00:01.000Z',
-              },
-            ],
-          }),
-          200,
-        );
+        return _jsonResponse({
+          'ok': true,
+          'nextSince': '2026-06-16T12:00:00.000Z',
+          'changes': [
+            {
+              'id': 'desktop-1',
+              'kind': 'image',
+              'title': 'desktop.png',
+              'watermark_uid': 'uid-desktop',
+              'revision': 2,
+              'sha256': 'hash-desktop',
+              'write_verification_status': 'verified',
+              'write_verification_message': '完成后验证已通过',
+              'write_verification_at': '2026-06-16T12:00:00.000Z',
+              'created_at': '2026-06-16T12:00:00.000Z',
+            },
+            {
+              'id': 'desktop-evidence-1',
+              'kind': 'audio',
+              'title': 'suspect.wav',
+              'watermark_uid': 'uid-evidence',
+              'revision': 3,
+              'source': 'verify',
+              'extracted_timestamp': 123,
+              'extracted_device_id_hex': 'device',
+              'extracted_file_hash_hex': 'hash',
+              'created_at': '2026-06-16T12:00:01.000Z',
+            },
+          ],
+        });
       }),
     );
 
@@ -395,7 +491,7 @@ void main() {
       since: '2026-06-16T11:00:00.000Z',
     );
 
-    expect(result.isSuccess, isTrue);
+    expect(result.isSuccess, isTrue, reason: result.error);
     expect(
       capturedUri.toString(),
       'http://127.0.0.1:47219/api/mobile-sync/v1/changes?since=2026-06-16T11%3A00%3A00.000Z',
@@ -404,6 +500,8 @@ void main() {
     expect(result.nextSince, '2026-06-16T12:00:00.000Z');
     expect(result.changes.first.watermarkUid, 'uid-desktop');
     expect(result.changes.first.revision, 2);
+    expect(result.changes.first.writeVerificationStatus, 'verified');
+    expect(result.changes.first.writeVerificationMessage, '完成后验证已通过');
     expect(result.changes.last.source, 'verify');
     expect(result.changes.last.extractedTimestamp, 123);
     expect(result.changes.last.extractedDeviceIdHex, 'device');
@@ -460,6 +558,9 @@ SyncQueueItem _queueItem({String id = 'queue-1'}) {
       'id': 'record-1',
       'kind': 'image',
       'watermark_uid': 'uid-1',
+      'write_verification_status': 'verified',
+      'write_verification_message': '完成后验证已通过',
+      'write_verification_at': '2026-06-16T12:00:00.000Z',
     }),
     status: SyncQueueItemStatus.pending,
     attempts: 0,

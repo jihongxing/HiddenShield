@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "generatedBy": "HiddenShield desktop Chromium worker",
+  "workerLaunchMs": 2483.11,
+  "fixtures": [
+    {
+      "directory": "image",
+      "mediaKind": "image",
+      "reportId": "hsr-r3-image-desktop",
+      "recordId": 301,
+      "watermarkUid": "HS-V3-IMG-R3-000301",
+      "generationMs": 1202.05,
+      "pageCount": 4,
+      "pdfBytes": 753142,
+      "pdfSha256": "a3e0626a0862637258c69fe46e263b1c36546d2482ec9d5acd96aefc3b9124d1"
+    },
+    {
+      "directory": "audio",
+      "mediaKind": "audio",
+      "reportId": "hsr-r3-audio-desktop",
+      "recordId": 302,
+      "watermarkUid": "HS-V3-AUD-R3-000302",
+      "generationMs": 1045.56,
+      "pageCount": 4,
+      "pdfBytes": 745829,
+      "pdfSha256": "f8ea8a01e23717fadbf827acf7c5d9ad065372e3477c805561a81aaee144c345"
+    },
+    {
+      "directory": "l2-video",
+      "mediaKind": "l2_video",
+      "reportId": "hsr-r3-l2-video-desktop",
+      "recordId": 303,
+      "watermarkUid": "HS-V3-VID-R3-000303",
+      "generationMs": 965.2,
+      "pageCount": 4,
+      "pdfBytes": 742223,
+      "pdfSha256": "a572099dace6db3a71a0cd42f2b5cc71c5f97074dec83d99c3b3a22008f4b04b"
+    }
+  ]
+}

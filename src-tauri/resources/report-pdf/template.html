@@ -1,0 +1,1820 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>HiddenShield 版权证据技术报告 · Phase R0</title>
+  <style>
+    :root {
+      --ink: #17202a;
+      --navy: #17324d;
+      --navy-soft: #e8eef3;
+      --copper: #9a6b2f;
+      --copper-soft: #f3eadc;
+      --green: #246b4a;
+      --green-soft: #e7f1eb;
+      --amber: #8b6108;
+      --amber-soft: #f7eed7;
+      --red: #9b2c2c;
+      --red-soft: #f7e5e5;
+      --muted: #66717e;
+      --subtle: #8a9199;
+      --paper: #fbfaf7;
+      --paper-strong: #ffffff;
+      --canvas: #dfe4e7;
+      --rule: #d8d3c8;
+      --rule-strong: #b9b2a4;
+      --font-sans: "Segoe UI Variable", "Microsoft YaHei UI", "PingFang SC", "Noto Sans SC", sans-serif;
+      --font-serif: "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC", "SimSun", serif;
+      --font-mono: "Cascadia Mono", "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+      --page-width: 210mm;
+      --page-height: 297mm;
+      --page-pad-x: 18mm;
+      --page-pad-y: 16mm;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      background: var(--canvas);
+      color: var(--ink);
+      font-family: var(--font-sans);
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+    }
+
+    button,
+    select {
+      font: inherit;
+    }
+
+    .prototype-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 64px;
+      padding: 10px max(16px, calc((100vw - 1080px) / 2));
+      color: #eff6f7;
+      background: #101820;
+      border-bottom: 1px solid rgba(114, 214, 202, 0.25);
+    }
+
+    .toolbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .toolbar-mark {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      color: #061312;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      background: #72d6ca;
+      border-radius: 7px;
+    }
+
+    .toolbar-title {
+      overflow: hidden;
+      font-size: 14px;
+      font-weight: 700;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .toolbar-subtitle {
+      margin-top: 2px;
+      color: #a8b4ba;
+      font-size: 11px;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .toolbar-control,
+    .toolbar-button {
+      height: 38px;
+      color: #eff6f7;
+      background: #18232b;
+      border: 1px solid rgba(114, 214, 202, 0.25);
+      border-radius: 7px;
+    }
+
+    .toolbar-control {
+      min-width: 190px;
+      padding: 0 32px 0 12px;
+    }
+
+    .toolbar-button {
+      padding: 0 16px;
+      cursor: pointer;
+    }
+
+    .toolbar-button:hover {
+      border-color: #72d6ca;
+    }
+
+    .toolbar-button:focus-visible,
+    .toolbar-control:focus-visible,
+    [contenteditable="true"]:focus-visible {
+      outline: 3px solid rgba(114, 214, 202, 0.45);
+      outline-offset: 2px;
+    }
+
+    .prototype-note {
+      max-width: 980px;
+      margin: 24px auto 8px;
+      padding: 0 16px;
+      color: #49545f;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .report-stack {
+      display: grid;
+      gap: 22px;
+      justify-content: center;
+      padding: 16px 16px 72px;
+    }
+
+    .report-page {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      width: var(--page-width);
+      min-height: var(--page-height);
+      overflow: hidden;
+      padding: var(--page-pad-y) var(--page-pad-x) 15mm;
+      background: var(--paper);
+      box-shadow: 0 18px 50px rgba(19, 33, 44, 0.16);
+    }
+
+    .page-kicker {
+      color: var(--copper);
+      font-family: var(--font-mono);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .page-running-head,
+    .page-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 9px;
+      letter-spacing: 0.03em;
+    }
+
+    .page-running-head {
+      min-height: 20px;
+      margin-bottom: 8mm;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .page-footer {
+      position: absolute;
+      right: var(--page-pad-x);
+      bottom: 7mm;
+      left: var(--page-pad-x);
+      padding-top: 3mm;
+      border-top: 1px solid var(--rule);
+      font-family: var(--font-mono);
+    }
+
+    .footer-confidential {
+      color: var(--copper);
+      font-family: var(--font-sans);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+    }
+
+    .cover {
+      color: #f6f2e9;
+      background:
+        linear-gradient(90deg, transparent 0 52%, rgba(255, 255, 255, 0.035) 52% 52.2%, transparent 52.2%),
+        linear-gradient(180deg, #152c43 0%, #17324d 57%, #11283c 100%);
+    }
+
+    .cover::before {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 54mm;
+      height: 100%;
+      content: "";
+      background:
+        repeating-linear-gradient(90deg, transparent 0 7mm, rgba(255, 255, 255, 0.035) 7mm 7.2mm),
+        linear-gradient(180deg, rgba(154, 107, 47, 0.16), transparent 52%);
+    }
+
+    .cover .page-running-head,
+    .cover .page-footer {
+      color: rgba(246, 242, 233, 0.7);
+      border-color: rgba(246, 242, 233, 0.2);
+    }
+
+    .cover .page-kicker {
+      color: #d5a66e;
+    }
+
+    .cover-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 4mm;
+    }
+
+    .cover-emblem {
+      display: grid;
+      width: 12mm;
+      height: 12mm;
+      place-items: center;
+      color: #071614;
+      font-size: 15px;
+      font-weight: 900;
+      background: #72d6ca;
+      border-radius: 2mm;
+    }
+
+    .cover-brand-name {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+
+    .cover-brand-cn {
+      margin-top: 2px;
+      color: rgba(246, 242, 233, 0.65);
+      font-size: 9px;
+      letter-spacing: 0.18em;
+    }
+
+    .cover-main {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      align-content: center;
+      flex: 1;
+      max-width: 150mm;
+      padding: 15mm 0 24mm;
+    }
+
+    .cover-classification {
+      display: inline-flex;
+      align-items: center;
+      width: max-content;
+      margin-bottom: 10mm;
+      padding: 2.5mm 4mm;
+      color: #f0d7b9;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      border: 1px solid rgba(213, 166, 110, 0.55);
+    }
+
+    .cover-title {
+      max-width: 136mm;
+      margin: 0;
+      font-family: var(--font-serif);
+      font-size: 31px;
+      font-weight: 700;
+      line-height: 1.28;
+      letter-spacing: 0.03em;
+    }
+
+    .cover-subtitle {
+      max-width: 126mm;
+      margin: 6mm 0 0;
+      color: rgba(246, 242, 233, 0.76);
+      font-size: 12px;
+      line-height: 1.8;
+    }
+
+    .cover-rule {
+      width: 34mm;
+      height: 2px;
+      margin: 10mm 0 8mm;
+      background: #d5a66e;
+    }
+
+    .cover-work {
+      font-size: 19px;
+      font-weight: 700;
+      line-height: 1.45;
+    }
+
+    .cover-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5mm 12mm;
+      max-width: 132mm;
+      margin-top: 10mm;
+    }
+
+    .cover-meta dt {
+      margin-bottom: 1.5mm;
+      color: rgba(246, 242, 233, 0.55);
+      font-size: 9px;
+      letter-spacing: 0.12em;
+    }
+
+    .cover-meta dd {
+      margin: 0;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      line-height: 1.55;
+    }
+
+    .cover-status-row {
+      display: flex;
+      align-items: center;
+      gap: 5mm;
+      margin-top: 13mm;
+    }
+
+    .status-seal {
+      display: grid;
+      width: 25mm;
+      height: 25mm;
+      place-items: center;
+      color: #dff2e7;
+      text-align: center;
+      border: 1px solid rgba(141, 213, 172, 0.7);
+      border-radius: 50%;
+    }
+
+    .status-seal strong {
+      display: block;
+      font-size: 11px;
+      line-height: 1.35;
+      letter-spacing: 0.08em;
+    }
+
+    .status-seal span {
+      display: block;
+      margin-top: 1mm;
+      color: rgba(223, 242, 231, 0.7);
+      font-family: var(--font-mono);
+      font-size: 7px;
+    }
+
+    .cover-status-copy {
+      max-width: 92mm;
+      color: rgba(246, 242, 233, 0.72);
+      font-size: 10px;
+      line-height: 1.7;
+    }
+
+    .cover-package {
+      position: absolute;
+      right: var(--page-pad-x);
+      bottom: 25mm;
+      z-index: 2;
+      display: grid;
+      width: 39mm;
+      gap: 2.5mm;
+      padding: 4mm;
+      color: rgba(246, 242, 233, 0.82);
+      border: 1px solid rgba(213, 166, 110, 0.48);
+      background: rgba(7, 22, 20, 0.2);
+    }
+
+    .cover-package-label {
+      color: #d5a66e;
+      font-family: var(--font-mono);
+      font-size: 7px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+    }
+
+    .cover-package strong {
+      color: #f6f2e9;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      line-height: 1.5;
+    }
+
+    .cover-package span {
+      color: rgba(246, 242, 233, 0.64);
+      font-size: 7.5px;
+      line-height: 1.65;
+    }
+
+    .cover-boundary {
+      position: absolute;
+      right: 58mm;
+      bottom: 25mm;
+      left: var(--page-pad-x);
+      color: rgba(246, 242, 233, 0.58);
+      font-size: 8px;
+      line-height: 1.7;
+    }
+
+    .section-heading {
+      display: grid;
+      grid-template-columns: 16mm 1fr;
+      align-items: start;
+      gap: 5mm;
+      margin-bottom: 7mm;
+    }
+
+    .section-index {
+      padding-top: 1mm;
+      color: var(--copper);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+    }
+
+    .section-title {
+      margin: 0;
+      color: var(--navy);
+      font-family: var(--font-serif);
+      font-size: 23px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .section-deck {
+      max-width: 132mm;
+      margin: 2mm 0 0;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.7;
+    }
+
+    .summary-hero {
+      display: grid;
+      grid-template-columns: 1.35fr 0.65fr;
+      border-top: 2px solid var(--navy);
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .summary-statement {
+      padding: 7mm 9mm 7mm 0;
+      border-right: 1px solid var(--rule);
+    }
+
+    .summary-label,
+    .small-label {
+      color: var(--copper);
+      font-family: var(--font-mono);
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .summary-statement h3 {
+      margin: 3mm 0 3mm;
+      color: var(--navy);
+      font-family: var(--font-serif);
+      font-size: 19px;
+      line-height: 1.45;
+    }
+
+    .summary-statement p {
+      margin: 0;
+      color: #3f4954;
+      font-size: 10px;
+      line-height: 1.85;
+    }
+
+    .summary-score {
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      padding: 6mm;
+      text-align: center;
+    }
+
+    .score-ring {
+      display: grid;
+      width: 31mm;
+      height: 31mm;
+      place-items: center;
+      color: var(--green);
+      border: 2px solid var(--green);
+      border-radius: 50%;
+      box-shadow: inset 0 0 0 2.5mm var(--green-soft);
+    }
+
+    .score-ring strong {
+      font-size: 19px;
+      line-height: 1;
+    }
+
+    .score-ring span {
+      display: block;
+      margin-top: 1mm;
+      font-size: 7px;
+      letter-spacing: 0.1em;
+    }
+
+    .score-caption {
+      margin-top: 3mm;
+      color: var(--muted);
+      font-size: 8px;
+      line-height: 1.55;
+    }
+
+    .fact-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      margin-top: 7mm;
+      border-top: 1px solid var(--rule-strong);
+      border-left: 1px solid var(--rule);
+    }
+
+    .fact {
+      min-height: 27mm;
+      padding: 4mm;
+      border-right: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .fact dt {
+      color: var(--muted);
+      font-size: 8px;
+      letter-spacing: 0.06em;
+    }
+
+    .fact dd {
+      margin: 2.5mm 0 0;
+      color: var(--navy);
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.55;
+    }
+
+    .fact dd.mono {
+      font-family: var(--font-mono);
+      font-size: 8px;
+      overflow-wrap: anywhere;
+    }
+
+    .evidence-columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7mm;
+      margin-top: 8mm;
+    }
+
+    .evidence-panel {
+      min-height: 58mm;
+      padding-top: 4mm;
+      border-top: 2px solid var(--navy);
+    }
+
+    .evidence-panel.warning {
+      border-top-color: var(--copper);
+    }
+
+    .evidence-panel h4 {
+      margin: 0 0 4mm;
+      color: var(--navy);
+      font-size: 11px;
+    }
+
+    .check-list {
+      display: grid;
+      gap: 3.5mm;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .check-list li {
+      display: grid;
+      grid-template-columns: 6mm 1fr;
+      gap: 2mm;
+      color: #3e4852;
+      font-size: 9px;
+      line-height: 1.6;
+    }
+
+    .check-marker {
+      display: grid;
+      width: 4.5mm;
+      height: 4.5mm;
+      place-items: center;
+      margin-top: 0.3mm;
+      color: var(--paper);
+      font-size: 7px;
+      font-weight: 800;
+      background: var(--green);
+      border-radius: 50%;
+    }
+
+    .warning .check-marker {
+      color: #fff7e5;
+      background: var(--amber);
+    }
+
+    .attribution-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3mm;
+      margin-top: 7mm;
+    }
+
+    .attribution {
+      padding: 3mm;
+      background: #f1efe9;
+      border-left: 2px solid var(--rule-strong);
+    }
+
+    .attribution.system {
+      border-left-color: var(--green);
+    }
+
+    .attribution.user {
+      border-left-color: var(--copper);
+    }
+
+    .attribution.third-party {
+      border-left-color: var(--navy);
+    }
+
+    .attribution strong {
+      display: block;
+      margin-bottom: 1mm;
+      color: var(--navy);
+      font-size: 8px;
+    }
+
+    .attribution span {
+      color: var(--muted);
+      font-size: 7px;
+      line-height: 1.55;
+    }
+
+    .chain-flow {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4mm 5mm;
+      margin-top: 5mm;
+    }
+
+    .chain-flow::before {
+      position: absolute;
+      top: 14mm;
+      right: 8mm;
+      left: 8mm;
+      height: 1px;
+      content: "";
+      background: var(--rule-strong);
+    }
+
+    .chain-step {
+      position: relative;
+      z-index: 1;
+      min-height: 31mm;
+      padding: 4mm 3mm;
+      background: var(--paper);
+      border: 1px solid var(--rule);
+    }
+
+    .chain-step::before {
+      display: grid;
+      width: 6mm;
+      height: 6mm;
+      margin-bottom: 3mm;
+      place-items: center;
+      color: var(--paper);
+      content: attr(data-step);
+      font-family: var(--font-mono);
+      font-size: 7px;
+      font-weight: 800;
+      background: var(--navy);
+      border-radius: 50%;
+    }
+
+    .chain-step.verified::before {
+      background: var(--green);
+    }
+
+    .chain-step.external::before {
+      background: var(--copper);
+    }
+
+    .chain-step h4 {
+      margin: 0 0 1.5mm;
+      color: var(--navy);
+      font-size: 9px;
+      line-height: 1.4;
+    }
+
+    .chain-step p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 7.5px;
+      line-height: 1.55;
+    }
+
+    .chain-detail {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 8mm;
+      margin-top: 9mm;
+    }
+
+    .timeline {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      border-left: 1px solid var(--rule-strong);
+    }
+
+    .timeline li {
+      position: relative;
+      padding: 0 0 6mm 6mm;
+    }
+
+    .timeline li::before {
+      position: absolute;
+      top: 1mm;
+      left: -2.1mm;
+      width: 4mm;
+      height: 4mm;
+      content: "";
+      background: var(--paper);
+      border: 1.2mm solid var(--navy);
+      border-radius: 50%;
+    }
+
+    .timeline time {
+      display: block;
+      margin-bottom: 1mm;
+      color: var(--copper);
+      font-family: var(--font-mono);
+      font-size: 7px;
+    }
+
+    .timeline strong {
+      display: block;
+      color: var(--navy);
+      font-size: 9px;
+    }
+
+    .timeline span {
+      display: block;
+      margin-top: 1mm;
+      color: var(--muted);
+      font-size: 7.5px;
+      line-height: 1.55;
+    }
+
+    .integrity-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    .integrity-table caption {
+      margin-bottom: 3mm;
+      color: var(--navy);
+      font-size: 10px;
+      font-weight: 700;
+      text-align: left;
+    }
+
+    .integrity-table th,
+    .integrity-table td {
+      padding: 2.5mm 2mm;
+      vertical-align: top;
+      border-bottom: 1px solid var(--rule);
+      text-align: left;
+    }
+
+    .integrity-table th {
+      color: var(--muted);
+      font-size: 7px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+    }
+
+    .integrity-table td {
+      color: #39434d;
+      font-size: 7.5px;
+      line-height: 1.5;
+    }
+
+    .integrity-table td:last-child {
+      font-family: var(--font-mono);
+      overflow-wrap: anywhere;
+    }
+
+    .boundary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5mm;
+      margin-top: 5mm;
+    }
+
+    .boundary-column {
+      min-height: 105mm;
+      padding: 5mm;
+      border-top: 3px solid var(--rule-strong);
+      background: #f3f1eb;
+    }
+
+    .boundary-column.verified {
+      border-top-color: var(--green);
+      background: var(--green-soft);
+    }
+
+    .boundary-column.declared {
+      border-top-color: var(--copper);
+      background: var(--copper-soft);
+    }
+
+    .boundary-column.excluded {
+      border-top-color: var(--navy);
+      background: var(--navy-soft);
+    }
+
+    .boundary-column h3 {
+      margin: 0 0 4mm;
+      color: var(--navy);
+      font-family: var(--font-serif);
+      font-size: 13px;
+    }
+
+    .boundary-column ul {
+      display: grid;
+      gap: 4mm;
+      margin: 0;
+      padding: 0 0 0 4mm;
+    }
+
+    .boundary-column li {
+      color: #3e4852;
+      font-size: 8.5px;
+      line-height: 1.65;
+    }
+
+    .usage-note {
+      display: grid;
+      grid-template-columns: 30mm 1fr;
+      gap: 5mm;
+      margin-top: 8mm;
+      padding: 5mm 0;
+      border-top: 1px solid var(--rule-strong);
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .usage-note h3 {
+      margin: 0;
+      color: var(--navy);
+      font-size: 10px;
+    }
+
+    .usage-note p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 8.5px;
+      line-height: 1.75;
+    }
+
+    .next-actions {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 4mm;
+      margin-top: 7mm;
+    }
+
+    .next-action {
+      padding: 4mm;
+      border: 1px solid var(--rule);
+    }
+
+    .next-action strong {
+      display: block;
+      color: var(--navy);
+      font-size: 9px;
+    }
+
+    .next-action span {
+      display: block;
+      margin-top: 1.5mm;
+      color: var(--muted);
+      font-size: 7.5px;
+      line-height: 1.55;
+    }
+
+    .prototype-only {
+      display: initial;
+    }
+
+    [contenteditable="true"] {
+      border-radius: 2px;
+    }
+
+    [contenteditable="true"]:hover {
+      background: rgba(114, 214, 202, 0.08);
+    }
+
+    @media (max-width: 900px) {
+      :root {
+        --page-width: min(210mm, calc(100vw - 24px));
+        --page-height: auto;
+        --page-pad-x: clamp(18px, 5vw, 48px);
+        --page-pad-y: clamp(20px, 5vw, 44px);
+      }
+
+      .prototype-toolbar {
+        position: static;
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .toolbar-actions {
+        width: 100%;
+      }
+
+      .toolbar-control {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .report-page {
+        min-height: 0;
+        padding-bottom: 70px;
+      }
+
+      .cover-main {
+        min-height: 760px;
+      }
+
+      .cover-package {
+        display: none;
+      }
+
+      .cover-boundary {
+        right: var(--page-pad-x);
+      }
+
+      .summary-hero,
+      .chain-detail {
+        grid-template-columns: 1fr;
+      }
+
+      .summary-statement {
+        padding-right: 0;
+        border-right: 0;
+        border-bottom: 1px solid var(--rule);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .toolbar-actions {
+        flex-direction: column;
+      }
+
+      .toolbar-control,
+      .toolbar-button {
+        width: 100%;
+      }
+
+      .cover-meta,
+      .fact-grid,
+      .evidence-columns,
+      .attribution-row,
+      .boundary-grid,
+      .next-actions {
+        grid-template-columns: 1fr;
+      }
+
+      .section-heading {
+        grid-template-columns: 1fr;
+      }
+
+      .chain-flow {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .chain-flow::before {
+        display: none;
+      }
+
+      .page-footer {
+        gap: 8px;
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+
+    @media (prefers-color-scheme: dark) and (screen) {
+      html {
+        background: #11181e;
+      }
+
+      .prototype-note {
+        color: #c3ccd1;
+      }
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .report-page {
+        transition: opacity 160ms ease, transform 160ms ease;
+      }
+
+      .report-stack.is-switching .report-page {
+        opacity: 0.45;
+        transform: translateY(2px);
+      }
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+
+    @media print {
+      html,
+      body {
+        background: #fff;
+      }
+
+      .prototype-toolbar,
+      .prototype-note {
+        display: none !important;
+      }
+
+      .report-stack {
+        display: block;
+        padding: 0;
+      }
+
+      .report-page {
+        width: 209.6mm;
+        height: 296.6mm;
+        min-height: 296.6mm;
+        break-inside: avoid;
+        break-after: page;
+        box-shadow: none;
+      }
+
+      .report-page:last-child {
+        break-after: auto;
+      }
+
+      [contenteditable="true"]:hover {
+        background: transparent;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="prototype-toolbar" aria-label="原型工具栏">
+    <div class="toolbar-brand">
+      <div class="toolbar-mark" aria-hidden="true">HS</div>
+      <div>
+        <div class="toolbar-title">版权证据技术报告 · Phase R0 高保真原型</div>
+        <div class="toolbar-subtitle">四页关键叙事 · 图片 / 音频 / L2 视频共享模板</div>
+      </div>
+    </div>
+    <div class="toolbar-actions">
+      <label>
+        <span class="prototype-only" style="position:absolute;clip:rect(0 0 0 0)">选择报告样本</span>
+        <select class="toolbar-control" id="sample-select" aria-label="选择报告样本">
+          <option value="image">图片记录 · 城市晨雾摄影</option>
+          <option value="audio">音频记录 · 山海之间配乐</option>
+          <option value="video">L2 视频记录 · 海岸线延时摄影</option>
+        </select>
+      </label>
+      <button class="toolbar-button" id="print-button" type="button">打印 / 另存为 PDF</button>
+    </div>
+  </nav>
+
+  <p class="prototype-note" data-pretext contenteditable="true">
+    原型说明：页面中的主要文字可直接点击编辑；样本切换不会改变报告结构。打印时将严格输出四张 A4 页面。二维码为 R0 视觉占位，不代表在线校验能力已上线。
+  </p>
+
+  <main class="report-stack" id="report-stack">
+    <section class="report-page cover" aria-labelledby="cover-title">
+      <div class="page-running-head">
+        <span>HIDDENSHIELD · COPYRIGHT EVIDENCE</span>
+        <span data-bind="templateVersion">TEMPLATE R1.1</span>
+      </div>
+
+      <div class="cover-brand">
+        <div class="cover-emblem" aria-hidden="true">HS</div>
+        <div>
+          <div class="cover-brand-name">HIDDENSHIELD</div>
+          <div class="cover-brand-cn">隐盾 · 数字作品版权保护</div>
+        </div>
+      </div>
+
+      <div class="cover-main">
+        <div class="cover-classification">作品版权保护记录</div>
+        <div class="page-kicker">Copyright Protection Report</div>
+        <h1 class="cover-title" id="cover-title" data-pretext contenteditable="true">HiddenShield 版权保护报告</h1>
+        <p class="cover-subtitle" data-pretext contenteditable="true">
+          本报告汇总作品保护记录、验证结果与相关时间材料，帮助创作者归档、沟通和后续补充材料。
+        </p>
+        <div class="cover-rule"></div>
+        <div class="cover-work" data-bind="workTitle" data-pretext contenteditable="true">城市晨雾摄影作品</div>
+
+        <dl class="cover-meta">
+          <div>
+            <dt>报告编号</dt>
+            <dd data-bind="reportId">HSR-20260714-IMG-7F31A2</dd>
+          </div>
+          <div>
+          <dt>作品保护编号</dt>
+            <dd data-bind="watermarkUid">HS-V3-IMG-7F31A2D9</dd>
+          </div>
+          <div>
+            <dt>权利声明主体</dt>
+            <dd data-bind="creator">林川影像工作室</dd>
+          </div>
+          <div>
+            <dt>报告生成时间</dt>
+            <dd data-bind="exportedAt">2026-07-14 16:20:31 +08:00</dd>
+          </div>
+        </dl>
+
+        <div class="cover-status-row">
+          <div class="status-seal" aria-label="报告状态">
+            <div>
+              <strong data-bind="statusLabel">验证通过</strong>
+              <span data-bind="statusCode">WITH GAPS</span>
+            </div>
+          </div>
+          <p class="cover-status-copy" data-bind="coverStatus" data-pretext contenteditable="true">
+            媒体摘要与写后读取验证一致；版权编号仍处于待登记状态，TSA token 已记录但尚未纳入独立签名校验。
+          </p>
+        </div>
+      </div>
+
+      <div class="cover-package" aria-label="离线报告包说明">
+        <div class="cover-package-label">OFFLINE REPORT PACKAGE</div>
+        <strong>PDF · JSON · Manifest</strong>
+        <span>使用同目录 manifest.json 校验报告包内文件的一致性；该状态不代表数字签名或在线校验。</span>
+      </div>
+
+        <p class="cover-boundary" data-pretext contenteditable="true">
+          本报告由 HiddenShield 根据版权库记录自动生成，不构成法律意见、司法鉴定意见、公证文书或诉讼结果承诺。报告包可使用 manifest.json 离线校验；当前未签名，未提供在线校验服务。
+      </p>
+
+      <footer class="page-footer">
+        <span class="footer-confidential">技术证据报告</span>
+        <span data-bind="reportId">HSR-20260714-IMG-7F31A2</span>
+        <span>01 / 04</span>
+      </footer>
+    </section>
+
+    <section class="report-page" aria-labelledby="summary-title">
+      <div class="page-running-head">
+        <span data-bind="workShort">城市晨雾摄影</span>
+        <span>执行摘要</span>
+      </div>
+
+      <header class="section-heading">
+        <div class="section-index">01</div>
+        <div>
+          <div class="page-kicker">Executive Summary</div>
+          <h2 class="section-title" id="summary-title">执行摘要</h2>
+          <p class="section-deck" data-pretext contenteditable="true">
+            本页将复杂技术记录压缩为可供创作者、平台申诉人员与法律专业人士快速判断的事实摘要。
+          </p>
+        </div>
+      </header>
+
+      <div class="summary-hero">
+        <div class="summary-statement">
+          <div class="summary-label">保护记录摘要</div>
+          <h3 data-bind="summaryHeadline" data-pretext contenteditable="true">作品保护记录已完成验证</h3>
+          <p data-bind="summaryNarrative" data-pretext contenteditable="true">
+            报告展示作品保护结果与可复核信息；原始媒体、保护副本和本地文件路径不会包含在报告中。
+          </p>
+        </div>
+        <div class="summary-score">
+          <div class="score-ring">
+            <div>
+              <strong data-bind="confidence">99</strong>
+              <span>验证状态</span>
+            </div>
+          </div>
+          <div class="score-caption" data-bind="scoreCaption">核心验证通过<br>登记与签名材料待补</div>
+        </div>
+      </div>
+
+      <dl class="fact-grid">
+        <div class="fact">
+          <dt>作品类型</dt>
+          <dd data-bind="mediaType">图片 · PNG</dd>
+        </div>
+        <div class="fact">
+          <dt>作品规格</dt>
+          <dd data-bind="mediaSpec">4032 × 3024 px</dd>
+        </div>
+        <div class="fact">
+          <dt>记录创建时间</dt>
+          <dd data-bind="createdAt">2026-07-12 09:42:18 +08:00</dd>
+        </div>
+        <div class="fact">
+          <dt>保护记录</dt>
+          <dd data-bind="payload">已建立作品保护记录</dd>
+        </div>
+        <div class="fact">
+          <dt>保护版本</dt>
+          <dd data-bind="revision">第 1 个保护版本</dd>
+        </div>
+        <div class="fact">
+          <dt>原始文件校验</dt>
+          <dd data-bind="originalHash">校验摘要已归档</dd>
+        </div>
+      </dl>
+
+      <div class="evidence-columns">
+        <article class="evidence-panel">
+          <h4>已确认的记录</h4>
+          <ul class="check-list" id="verified-list"></ul>
+        </article>
+        <article class="evidence-panel warning">
+          <h4>仍需关注</h4>
+          <ul class="check-list" id="gap-list"></ul>
+        </article>
+      </div>
+
+      <div class="attribution-row" aria-label="事实来源图例">
+        <div class="attribution system">
+          <strong>系统计算</strong>
+          <span>摘要、协议、写后读取验证和报告完整性状态。</span>
+        </div>
+        <div class="attribution user">
+          <strong>用户声明</strong>
+          <span>创作者、作品来源、创作方式和权利边界。</span>
+        </div>
+        <div class="attribution third-party">
+          <strong>第三方材料</strong>
+          <span>TSA、registry、视频存证收据及后续可信签名。</span>
+        </div>
+      </div>
+
+      <footer class="page-footer">
+        <span class="footer-confidential">技术证据报告</span>
+        <span data-bind="reportId">HSR-20260714-IMG-7F31A2</span>
+        <span>02 / 04</span>
+      </footer>
+    </section>
+
+    <section class="report-page" aria-labelledby="chain-title">
+      <div class="page-running-head">
+        <span data-bind="workShort">城市晨雾摄影</span>
+        <span>证据链与生成过程</span>
+      </div>
+
+      <header class="section-heading">
+        <div class="section-index">02</div>
+        <div>
+          <div class="page-kicker">Protection Record</div>
+          <h2 class="section-title" id="chain-title">保护记录与校验说明</h2>
+          <p class="section-deck" data-pretext contenteditable="true">
+            本页说明作品保护记录如何形成，以及哪些信息已经确认、哪些材料仍需由创作者或第三方补充。
+          </p>
+        </div>
+      </header>
+
+      <div class="chain-flow" id="chain-flow"></div>
+
+      <div class="chain-detail">
+        <section>
+          <div class="small-label">Record Timeline</div>
+          <ol class="timeline" id="timeline"></ol>
+        </section>
+
+        <section>
+          <table class="integrity-table">
+            <caption>记录与校验摘要</caption>
+            <thead>
+              <tr>
+                <th style="width:27%">对象</th>
+                <th style="width:25%">状态</th>
+                <th>摘要 / 收据</th>
+              </tr>
+            </thead>
+            <tbody id="integrity-body"></tbody>
+          </table>
+        </section>
+      </div>
+
+      <div class="usage-note">
+        <h3>报告说明</h3>
+        <p data-bind="generatorNote" data-pretext contenteditable="true">
+          本报告基于当前作品保护记录生成。报告包包含报告、记录数据与校验清单，便于归档和离线核对；当前未提供数字签名或在线校验。
+        </p>
+      </div>
+
+      <footer class="page-footer">
+        <span class="footer-confidential">技术证据报告</span>
+        <span data-bind="reportId">HSR-20260714-IMG-7F31A2</span>
+        <span>03 / 04</span>
+      </footer>
+    </section>
+
+    <section class="report-page" aria-labelledby="boundary-title">
+      <div class="page-running-head">
+        <span data-bind="workShort">城市晨雾摄影</span>
+        <span>结论、限制与使用说明</span>
+      </div>
+
+      <header class="section-heading">
+        <div class="section-index">03</div>
+        <div>
+          <div class="page-kicker">Scope & Limitations</div>
+          <h2 class="section-title" id="boundary-title">结论、限制与使用说明</h2>
+          <p class="section-deck" data-pretext contenteditable="true">
+            本页以明确分栏避免将系统记录、用户声明和法律判断混为一谈。
+          </p>
+        </div>
+      </header>
+
+      <div class="boundary-grid">
+        <section class="boundary-column verified">
+          <h3>系统已验证</h3>
+          <ul id="boundary-verified"></ul>
+        </section>
+        <section class="boundary-column declared">
+          <h3>用户声明</h3>
+          <ul id="boundary-declared"></ul>
+        </section>
+        <section class="boundary-column excluded">
+          <h3>本报告不证明</h3>
+          <ul id="boundary-excluded"></ul>
+        </section>
+      </div>
+
+      <div class="usage-note">
+        <h3>建议用途</h3>
+        <p data-pretext contenteditable="true">
+          可将本报告用于个人版权归档、平台原创申诉、商务合作材料整理，以及向律师说明技术记录。进入调解、仲裁或诉讼流程时，应同时保留原始电子数据、保护副本、附件、校验结果和获取过程说明。
+        </p>
+      </div>
+
+      <div class="next-actions">
+        <div class="next-action">
+          <strong data-bind="actionOneTitle">补充登记确认</strong>
+          <span data-bind="actionOneBody">联网后完成版权编号 registry confirm，并将 receipt 纳入报告附件。</span>
+        </div>
+        <div class="next-action">
+          <strong data-bind="actionTwoTitle">保留原始证据材料</strong>
+          <span data-bind="actionTwoBody">原始媒体不包含在报告中，应在独立介质中按原始摘要妥善保管。</span>
+        </div>
+      </div>
+
+      <footer class="page-footer">
+        <span class="footer-confidential">技术证据报告</span>
+        <span data-bind="reportId">HSR-20260714-IMG-7F31A2</span>
+        <span>04 / 04</span>
+      </footer>
+    </section>
+  </main>
+
+  <script type="module">
+    import { prepare, layout } from "./pretext.js";
+
+    const samples = {
+      image: {
+        templateVersion: "TEMPLATE R0.1 · IMAGE",
+        workTitle: "城市晨雾摄影作品",
+        workShort: "城市晨雾摄影",
+        reportId: "HSR-20260714-IMG-7F31A2",
+        watermarkUid: "HS-V3-IMG-7F31A2D9",
+        creator: "林川影像工作室",
+        exportedAt: "2026-07-14 16:20:31 +08:00",
+        statusLabel: "验证通过",
+        statusCode: "WITH GAPS",
+        shortCode: "7F31-A2D9",
+        coverStatus: "媒体摘要与写后读取验证一致；版权编号仍处于待登记状态，TSA token 已记录但尚未纳入独立签名校验。",
+        summaryHeadline: "保护副本中的 V3 最小锚点已完成写后读取验证",
+        summaryNarrative: "HiddenShield 记录的原始图片摘要、保护副本摘要和 V3 最小锚点信息已形成对应关系。报告生成时未导出原始媒体、保护副本或本地文件路径。",
+        confidence: "99",
+        scoreCaption: "核心验证通过\n登记与签名材料待补",
+        mediaType: "图片 · PNG",
+        mediaSpec: "4032 × 3024 px",
+        createdAt: "2026-07-12 09:42:18 +08:00",
+        payload: "V3 · 39 bytes",
+        revision: "初始版本 · Revision 1",
+        originalHash: "8af42e0d2cd1…08f91376a4ce",
+        verified: [
+          "原始图片 SHA-256 已写入版权库记录。",
+          "保护副本 SHA-256 已记录，且写后读取状态为 verified。",
+          "媒体载荷角色为 V3 minimal anchor，不包含扩展权利声明。",
+          "报告隐私策略排除原始媒体、保护副本和本地路径。"
+        ],
+        gaps: [
+          "版权编号签发模式为 offline generated，registry 状态仍为 pending registration。",
+          "TSA token 存在，但 R0 报告尚未执行独立 token 签名校验。",
+          "创作者与作品来源属于用户声明，不等于平台完成身份或权属鉴定。"
+        ],
+        chain: [
+          ["媒体输入", "读取图片尺寸与文件字节，计算原始 SHA-256。", "verified"],
+          ["水印写入", "watermark-core 写入 V3 / 39 bytes 最小锚点。", "verified"],
+          ["写后读取", "从保护副本读取锚点并与版权编号核对。", "verified"],
+          ["版权库记录", "保存摘要、协议、版本链与声明字段。", "verified"],
+          ["网络授时", "记录网络时间与 TSA 请求材料。", "external"],
+          ["报告快照", "从同一报告模型投影四页可读内容。", "verified"],
+          ["Manifest", "计划固化 PDF、JSON 与附件摘要。", ""],
+          ["签名校验", "L2 阶段接入受控签名与撤销状态。", "external"]
+        ],
+        timeline: [
+          ["2026-07-12 09:42:18 +08:00", "建立版权记录", "计算原始图片摘要并生成记录级版权编号。"],
+          ["2026-07-12 09:42:19 +08:00", "生成保护副本", "使用 minimal_required_change 输出策略。"],
+          ["2026-07-12 09:42:21 +08:00", "写后读取验证通过", "读取 V3 最小锚点，payload auth 状态为 verified。"],
+          ["2026-07-14 16:20:31 +08:00", "生成报告快照", "生成端不读取或导出本地媒体路径。"]
+        ],
+        integrity: [
+          ["原始图片", "摘要已记录", "sha256:8af42e0d2cd1…08f91376a4ce"],
+          ["保护副本", "摘要已记录", "sha256:d2977a4fe51b…a1b88dc07259"],
+          ["TSA 材料", "token 存在", "source: tsa.example / nonce recorded"],
+          ["Registry", "待登记", "pending_registration"],
+          ["报告 Manifest", "R0 规划", "将在 R1 生成"]
+        ],
+        generatorNote: "HiddenShield Desktop 0.1.0 · watermark payload V3 / 39 · report schema v2 draft · template R0.1。PDF、JSON 与 Manifest 计划由同一不可变报告模型生成；本原型尚未生成真实签名或在线校验记录。",
+        boundaryVerified: [
+          "报告所列原始图片摘要与版权库记录一致。",
+          "保护副本完成水印写后读取验证。",
+          "报告内容未包含原始媒体、保护副本和本地路径。",
+          "当前记录为初始版本，无父版权编号与改写关系。"
+        ],
+        boundaryDeclared: [
+          "权利声明主体为林川影像工作室。",
+          "作品来源声明为原创拍摄。",
+          "AI 训练许可声明为禁止。",
+          "声明内容由填写者承担真实性责任。"
+        ],
+        boundaryExcluded: [
+          "不证明声明主体拥有排他的法定著作权。",
+          "不证明第三方作品构成侵权。",
+          "不替代公证、司法鉴定或律师法律意见。",
+          "不承诺任何平台、仲裁机构或法院必然采纳。"
+        ],
+        actionOneTitle: "补充登记确认",
+        actionOneBody: "联网后完成版权编号 registry confirm，并将 receipt 纳入报告附件。",
+        actionTwoTitle: "保留原始证据材料",
+        actionTwoBody: "原始图片不包含在报告中，应按报告摘要在独立介质中妥善保管。"
+      },
+      audio: {
+        templateVersion: "TEMPLATE R0.1 · AUDIO",
+        workTitle: "《山海之间》原创配乐",
+        workShort: "山海之间配乐",
+        reportId: "HSR-20260714-AUD-58C0E4",
+        watermarkUid: "HS-V3-AUD-58C0E4B7",
+        creator: "拾音计划 · 周屿",
+        exportedAt: "2026-07-14 16:26:08 +08:00",
+        statusLabel: "验证通过",
+        statusCode: "COMPLETE",
+        shortCode: "58C0-E4B7",
+        coverStatus: "音频保护副本已完成 V3 recovery packet 写入与写后读取验证；网络时间与 registry receipt 均已记录。",
+        summaryHeadline: "音频 recovery packet 与版权记录编号一致",
+        summaryNarrative: "HiddenShield 对 WAV 母带计算原始摘要，在保护副本中写入 V3 最小锚点，并完成写后读取。报告呈现技术验证结果，不包含音频字节或本地路径。",
+        confidence: "100",
+        scoreCaption: "核心验证通过\n时间与登记材料齐全",
+        mediaType: "音频 · WAV",
+        mediaSpec: "48 kHz · 24 bit · 03:42",
+        createdAt: "2026-07-10 21:18:42 +08:00",
+        payload: "V3 · 39 bytes",
+        revision: "改写版本 · Revision 2",
+        originalHash: "53b7dcaf618c…712985cc40d1",
+        verified: [
+          "WAV 母带原始 SHA-256 与版权库记录一致。",
+          "保护副本通过 V3 recovery packet 写后读取验证。",
+          "payload auth、registry receipt 与网络时间均已记录。",
+          "版本链保留父版权编号与本次改写原因。"
+        ],
+        gaps: [
+          "TSA token 的长期验证状态仍取决于后续证书与时间戳校验策略。",
+          "作品创作方式、人工作曲程度和训练许可属于用户声明。",
+          "当前报告不包含听感质量鉴定或音乐相似性法律判断。"
+        ],
+        chain: [
+          ["音频输入", "读取 WAV 采样率、位深、时长并计算摘要。", "verified"],
+          ["水印写入", "watermark-core 写入 V3 audio recovery packet。", "verified"],
+          ["写后读取", "默认 extractor 读取锚点并核对 payload auth。", "verified"],
+          ["版本关系", "记录父版权编号和母带修订原因。", "verified"],
+          ["Registry", "云端 confirm 返回登记 receipt。", "external"],
+          ["可信时间", "记录网络时间与 RFC 3161 token。", "external"],
+          ["报告快照", "生成统一事实模型与四页报告。", "verified"],
+          ["Manifest", "计划覆盖 PDF、JSON 与时间附件。", ""]
+        ],
+        timeline: [
+          ["2026-07-08 20:05:10 +08:00", "建立初始音频记录", "原始编曲版本写入 V3 最小锚点。"],
+          ["2026-07-10 21:18:42 +08:00", "建立修订版本", "因母带响度调整创建 Revision 2。"],
+          ["2026-07-10 21:18:47 +08:00", "写后读取验证通过", "默认 extractor 返回相同版权编号。"],
+          ["2026-07-10 21:18:50 +08:00", "Registry 确认", "登记 receipt 与网络时间写入记录。"],
+          ["2026-07-14 16:26:08 +08:00", "生成报告快照", "报告只投影事实字段，不包含音频文件。"]
+        ],
+        integrity: [
+          ["WAV 母带", "摘要已记录", "sha256:53b7dcaf618c…712985cc40d1"],
+          ["保护副本", "验证通过", "sha256:3349d4f8b25f…5bfddf2bac70"],
+          ["父版本", "关系已记录", "HS-V3-AUD-21AA703C"],
+          ["Registry", "已确认", "receipt: reg_rcpt_7a61d08"],
+          ["TSA 材料", "token 存在", "RFC3161 / tsa.example"]
+        ],
+        generatorNote: "HiddenShield Desktop 0.1.0 · watermark payload V3 / 39 · extractor default V3 recovery · report schema v2 draft · template R0.1。当前原型不对音频质量或音乐权属作法律鉴定。",
+        boundaryVerified: [
+          "WAV 母带与保护副本摘要均已记录。",
+          "保护副本完成音频水印写后读取验证。",
+          "父版权编号与 Revision 2 改写原因已记录。",
+          "Registry receipt 与网络时间材料存在。"
+        ],
+        boundaryDeclared: [
+          "权利声明主体为拾音计划 · 周屿。",
+          "创作方式声明为人工编曲与演奏录制。",
+          "训练许可声明为禁止。",
+          "母带调整原因由用户填写。"
+        ],
+        boundaryExcluded: [
+          "不证明旋律、编曲或录音不存在第三方权利。",
+          "不完成音乐相似度或实质性相似法律判断。",
+          "不替代录音制品权与词曲版权登记。",
+          "不承诺任何争议处理机构必然采纳。"
+        ],
+        actionOneTitle: "归档 TSA 原始附件",
+        actionOneBody: "在 L2 签名证据包中保留 token 原文件与独立校验结果。",
+        actionTwoTitle: "保留母带版本",
+        actionTwoBody: "分别保存初始版本与 Revision 2 母带，避免版本链只剩文字记录。"
+      },
+      video: {
+        templateVersion: "TEMPLATE R0.1 · VIDEO L2",
+        workTitle: "《海岸线一日》延时摄影",
+        workShort: "海岸线延时摄影",
+        reportId: "HSR-20260714-L2V-91D42F",
+        watermarkUid: "HS-V3-VID-91D42F8C",
+        creator: "北纬二十三度影像",
+        exportedAt: "2026-07-14 16:34:12 +08:00",
+        statusLabel: "部分完整",
+        statusCode: "L2 NOTARY",
+        shortCode: "91D4-2F8C",
+        coverStatus: "视频已形成 L2 指纹存证收据与 fingerprint root；L2 用于不可逆存证和相似性证据增强，不等同于视频画面盲水印命中。",
+        summaryHeadline: "L2 视频指纹存证收据已形成，场景指纹根可复核",
+        summaryNarrative: "HiddenShield 对 MP4 视频生成场景采样指纹包并取得存证编号。当前记录还包含视频音轨水印事实，但报告不将 L2 指纹存证表述为画面盲水印。",
+        confidence: "96",
+        scoreCaption: "L2 收据完整\n原视频仍需独立保全",
+        mediaType: "视频 · MP4 / L2",
+        mediaSpec: "3840 × 2160 · 00:58",
+        createdAt: "2026-07-09 06:32:11 +08:00",
+        payload: "音轨 V3 · L2 指纹包",
+        revision: "初始版本 · Revision 1",
+        originalHash: "c93563d09f74…e0b7ff2c1916",
+        verified: [
+          "原始视频 SHA-256 已写入版权库记录。",
+          "L2 notary ID、fingerprint root 与 bundle SHA-256 已记录。",
+          "存证 receipt signature 与 usage ledger ID 已关联。",
+          "视频音轨保护副本完成当前正式音频水印验证。"
+        ],
+        gaps: [
+          "L2 指纹存证不是视频画面盲水印写入或读取结论。",
+          "报告不包含原视频、完整指纹 bundle 或对象存储下载地址。",
+          "视频内容相似性和侵权判断仍需结合疑似侵权样本与人工分析。"
+        ],
+        chain: [
+          ["视频输入", "读取容器、尺寸、时长并计算原视频摘要。", "verified"],
+          ["场景采样", "按 evenly spaced policy 生成 8 个场景指纹。", "verified"],
+          ["指纹根", "构建 fingerprint root 与 bundle SHA-256。", "verified"],
+          ["L2 存证", "云端返回 notary ID 与 receipt signature。", "external"],
+          ["音轨保护", "视频音轨复用 watermark-core 音频水印。", "verified"],
+          ["版权库记录", "保存 L1 / L2 事实与隐私边界。", "verified"],
+          ["报告快照", "只展示收据摘要，不暴露 bundle 路径。", "verified"],
+          ["Manifest", "计划关联报告与 L2 receipt 附件。", ""]
+        ],
+        timeline: [
+          ["2026-07-09 06:32:11 +08:00", "建立视频版权记录", "计算原视频摘要并识别 4K MP4 媒体属性。"],
+          ["2026-07-09 06:32:18 +08:00", "生成场景指纹包", "8 个均匀场景采样，bundle 生成耗时 1.234 秒。"],
+          ["2026-07-09 06:32:20 +08:00", "L2 存证完成", "取得 notary ID vfn_91d42f 与 receipt signature。"],
+          ["2026-07-09 06:32:23 +08:00", "音轨写后验证通过", "音轨 V3 最小锚点与版权编号一致。"],
+          ["2026-07-14 16:34:12 +08:00", "生成报告快照", "报告不包含视频字节、bundle 路径或下载 token。"]
+        ],
+        integrity: [
+          ["原始视频", "摘要已记录", "sha256:c93563d09f74…e0b7ff2c1916"],
+          ["Fingerprint root", "已形成", "sha256:481adf032ada…e0bb82ca1d33"],
+          ["指纹 bundle", "摘要已记录", "sha256:9635f77ed2a4…ac92ea609b1d"],
+          ["L2 receipt", "签名字段存在", "notary: vfn_91d42f"],
+          ["使用账本", "已关联", "usage_ledger: usage_l2_91d42f"]
+        ],
+        generatorNote: "HiddenShield Desktop 0.1.0 · L1 视频音轨水印 + L2 视频指纹存证 · report schema v2 draft · template R0.1。L2 是不可逆指纹存证和相似性证据增强，不是视频画面盲水印。",
+        boundaryVerified: [
+          "原视频摘要、fingerprint root 与 bundle 摘要已记录。",
+          "L2 notary ID、receipt signature 和账本 ID 已关联。",
+          "场景采样策略与 scene count 已记录。",
+          "报告未暴露 bundle 路径、对象地址或下载 token。"
+        ],
+        boundaryDeclared: [
+          "权利声明主体为北纬二十三度影像。",
+          "作品来源声明为原创拍摄与后期剪辑。",
+          "训练许可声明为禁止。",
+          "视频内容说明由用户填写。"
+        ],
+        boundaryExcluded: [
+          "不证明视频画面存在可读取的盲水印。",
+          "不证明疑似视频与原视频构成实质性相似。",
+          "不替代侵权样本取证、网页保全或司法鉴定。",
+          "不承诺 L2 收据必然被争议处理机构采纳。"
+        ],
+        actionOneTitle: "保全原视频与 bundle",
+        actionOneBody: "报告不包含原视频和完整 bundle，应按摘要独立归档并保留获取过程。",
+        actionTwoTitle: "建立案件级比对材料",
+        actionTwoBody: "发现疑似侵权时，另行采集来源、时间、页面与样本摘要，不以本报告替代。"
+      }
+    };
+
+    const prepared = new Map();
+    const reportStack = document.querySelector("#report-stack");
+
+    function bindText(sample) {
+      document.querySelectorAll("[data-bind]").forEach((element) => {
+        const key = element.dataset.bind;
+        if (sample[key] !== undefined) {
+          element.textContent = sample[key];
+        }
+      });
+    }
+
+    function renderList(selector, items, marker = "✓") {
+      const list = document.querySelector(selector);
+      list.replaceChildren(...items.map((item) => {
+        const li = document.createElement("li");
+        const mark = document.createElement("span");
+        mark.className = "check-marker";
+        mark.textContent = marker;
+        const copy = document.createElement("span");
+        copy.textContent = item;
+        copy.dataset.pretext = "";
+        copy.contentEditable = "true";
+        li.append(mark, copy);
+        return li;
+      }));
+    }
+
+    function renderSimpleList(selector, items) {
+      const list = document.querySelector(selector);
+      list.replaceChildren(...items.map((item) => {
+        const li = document.createElement("li");
+        li.textContent = item;
+        li.dataset.pretext = "";
+        li.contentEditable = "true";
+        return li;
+      }));
+    }
+
+    function renderChain(sample) {
+      const flow = document.querySelector("#chain-flow");
+      flow.replaceChildren(...sample.chain.map(([title, body, tone], index) => {
+        const item = document.createElement("article");
+        item.className = `chain-step ${tone}`.trim();
+        item.dataset.step = String(index + 1).padStart(2, "0");
+        const heading = document.createElement("h4");
+        heading.textContent = title;
+        const paragraph = document.createElement("p");
+        paragraph.textContent = body;
+        paragraph.dataset.pretext = "";
+        paragraph.contentEditable = "true";
+        item.append(heading, paragraph);
+        return item;
+      }));
+    }
+
+    function renderTimeline(sample) {
+      const timeline = document.querySelector("#timeline");
+      timeline.replaceChildren(...sample.timeline.map(([time, title, body]) => {
+        const li = document.createElement("li");
+        const timeElement = document.createElement("time");
+        timeElement.textContent = time;
+        const strong = document.createElement("strong");
+        strong.textContent = title;
+        const span = document.createElement("span");
+        span.textContent = body;
+        span.dataset.pretext = "";
+        span.contentEditable = "true";
+        li.append(timeElement, strong, span);
+        return li;
+      }));
+    }
+
+    function renderIntegrity(sample) {
+      const body = document.querySelector("#integrity-body");
+      body.replaceChildren(...sample.integrity.map((row) => {
+        const tr = document.createElement("tr");
+        row.forEach((value) => {
+          const td = document.createElement("td");
+          td.textContent = value;
+          tr.append(td);
+        });
+        return tr;
+      }));
+    }
+
+    function prepareText() {
+      prepared.clear();
+      document.querySelectorAll("[data-pretext]").forEach((element) => {
+        const style = getComputedStyle(element);
+        const lineHeight = Number.parseFloat(style.lineHeight);
+        if (!element.textContent.trim() || !Number.isFinite(lineHeight)) return;
+        try {
+          prepared.set(element, {
+            handle: prepare(element.textContent, style.font),
+            lineHeight
+          });
+        } catch {
+          element.style.height = "auto";
+        }
+      });
+      relayout();
+    }
+
+    function relayout() {
+      for (const [element, entry] of prepared) {
+        if (!element.isConnected || element.clientWidth === 0) continue;
+        try {
+          const result = layout(entry.handle, element.clientWidth, entry.lineHeight);
+          if (Number.isFinite(result.height) && result.height > 0) {
+            element.style.minHeight = `${Math.ceil(result.height)}px`;
+          }
+        } catch {
+          element.style.minHeight = "";
+        }
+      }
+    }
+
+    function wireEditableObservers() {
+      document.querySelectorAll("[contenteditable='true']").forEach((element) => {
+        if (element.dataset.observed === "true") return;
+        element.dataset.observed = "true";
+        new MutationObserver(() => {
+          const style = getComputedStyle(element);
+          try {
+            prepared.set(element, {
+              handle: prepare(element.textContent, style.font),
+              lineHeight: Number.parseFloat(style.lineHeight)
+            });
+            relayout();
+          } catch {
+            element.style.minHeight = "";
+          }
+        }).observe(element, { childList: true, characterData: true, subtree: true });
+      });
+    }
+
+    async function renderSample(key) {
+      const sample = samples[key];
+      reportStack.classList.add("is-switching");
+      bindText(sample);
+      renderList("#verified-list", sample.verified);
+      renderList("#gap-list", sample.gaps, "!");
+      renderChain(sample);
+      renderTimeline(sample);
+      renderIntegrity(sample);
+      renderSimpleList("#boundary-verified", sample.boundaryVerified);
+      renderSimpleList("#boundary-declared", sample.boundaryDeclared);
+      renderSimpleList("#boundary-excluded", sample.boundaryExcluded);
+      await document.fonts.ready;
+      prepareText();
+      wireEditableObservers();
+      requestAnimationFrame(() => reportStack.classList.remove("is-switching"));
+    }
+
+    window.HiddenShieldReportTemplate = {
+      async render(sample) {
+        samples.formal = sample;
+        await renderSample("formal");
+      }
+    };
+
+    document.querySelector("#sample-select").addEventListener("change", (event) => {
+      renderSample(event.target.value);
+    });
+
+    document.querySelector("#print-button").addEventListener("click", () => window.print());
+    new ResizeObserver(() => relayout()).observe(document.body);
+    window.addEventListener("beforeprint", relayout);
+
+    await renderSample("image");
+  </script>
+</body>
+</html>

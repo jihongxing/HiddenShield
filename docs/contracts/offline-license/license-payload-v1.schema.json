@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hiddenshield.local/contracts/offline-license/license-payload-v1.schema.json",
+  "title": "HiddenShield Offline License Payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "expiresAt",
+    "installationId",
+    "issuedAt",
+    "keyId",
+    "licenseId",
+    "notBefore",
+    "productCode",
+    "schemaVersion"
+  ],
+  "properties": {
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "installationId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{43}$"
+    },
+    "issuedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "keyId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{2,63}$"
+    },
+    "licenseId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{2,63}$"
+    },
+    "notBefore": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "productCode": {
+      "const": "creator_offline"
+    },
+    "schemaVersion": {
+      "const": 1
+    }
+  }
+}

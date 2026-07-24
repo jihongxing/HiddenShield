@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>档案 - 安全哨兵</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary-fixed": "#ffddb8",
+                      "outline": "#859490",
+                      "tertiary-fixed": "#ffdcc0",
+                      "secondary-fixed-dim": "#ffb95f",
+                      "tertiary-container": "#ffac5a",
+                      "surface-variant": "#2f3634",
+                      "secondary-container": "#ee9800",
+                      "on-primary-fixed-variant": "#005047",
+                      "error-container": "#93000a",
+                      "inverse-on-surface": "#2b3230",
+                      "primary-fixed-dim": "#3cddc7",
+                      "inverse-surface": "#dde4e1",
+                      "primary-fixed": "#62fae3",
+                      "on-primary": "#003731",
+                      "on-error-container": "#ffdad6",
+                      "surface-container-low": "#161d1b",
+                      "surface-tint": "#3cddc7",
+                      "surface-container-highest": "#2f3634",
+                      "background": "#0e1513",
+                      "secondary": "#ffb95f",
+                      "surface-dim": "#0e1513",
+                      "surface-bright": "#333b39",
+                      "on-primary-container": "#00574d",
+                      "tertiary-fixed-dim": "#ffb875",
+                      "on-tertiary-fixed-variant": "#6b3b00",
+                      "error": "#ffb4ab",
+                      "primary-container": "#2dd4bf",
+                      "on-surface": "#dde4e1",
+                      "surface": "#0e1513",
+                      "on-surface-variant": "#bacac5",
+                      "outline-variant": "#3c4a46",
+                      "surface-container-lowest": "#09100e",
+                      "surface-container-high": "#242b2a",
+                      "inverse-primary": "#006b5f",
+                      "on-tertiary": "#4b2800",
+                      "primary": "#57f1db",
+                      "on-background": "#dde4e1",
+                      "tertiary": "#ffd1aa",
+                      "on-secondary-container": "#5b3800",
+                      "on-primary-fixed": "#00201c",
+                      "surface-container": "#1a211f",
+                      "on-tertiary-fixed": "#2d1600",
+                      "on-secondary-fixed-variant": "#653e00",
+                      "on-error": "#690005",
+                      "on-tertiary-container": "#744000",
+                      "on-secondary-fixed": "#2a1700",
+                      "on-secondary": "#472a00"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "padding-xs": "4px",
+                      "padding-sm": "8px",
+                      "padding-md": "16px",
+                      "padding-lg": "24px",
+                      "gutter": "16px",
+                      "container-margin": "24px",
+                      "unit": "4px"
+              },
+              "fontFamily": {
+                      "headline-sm": ["Inter"],
+                      "body-sm": ["Inter"],
+                      "headline-lg": ["Inter"],
+                      "body-md": ["Inter"],
+                      "label-md": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "label-sm": ["Inter"],
+                      "label-lg": ["Inter"],
+                      "body-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "headline-sm": ["16px", {"lineHeight": "24px", "fontWeight": "600"}],
+                      "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                      "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "label-md": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                      "headline-md": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "label-sm": ["11px", {"lineHeight": "12px", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                      "label-lg": ["14px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1;
+        }
+        
+        /* Hide scrollbar for clean UI */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+        
+        /* Bottom Sheet Animation */
+        .bottom-sheet { transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .bottom-sheet.open { transform: translateY(0); }
+        .backdrop { opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .backdrop.open { opacity: 1; pointer-events: auto; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen flex flex-col md:hidden">
+<!-- TopAppBar -->
+<header class="bg-background text-primary w-full top-0 border-b border-outline-variant transition-colors duration-200 flex justify-between items-center px-container-margin py-padding-md w-full z-10 sticky">
+<button aria-label="Menu" class="hover:bg-surface-container rounded-full p-2 text-primary">
+<span class="material-symbols-outlined">security</span>
+</button>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">安全哨兵</h1>
+<button aria-label="Profile" class="hover:bg-surface-container rounded-full p-2 text-primary">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 overflow-y-auto pb-24">
+<!-- Search Section -->
+<div class="px-container-margin py-padding-md sticky top-0 bg-background/95 z-0 backdrop-blur-sm">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-[#0F172A] border border-[#334155] rounded-xl pl-10 pr-4 py-3 font-body-md text-body-md text-on-background placeholder:text-on-surface-variant focus:outline-none focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all" placeholder="搜索档案、哈希或元数据" type="text"/>
+</div>
+<div class="flex gap-2 mt-4 overflow-x-auto pb-2">
+<button class="whitespace-nowrap px-4 py-1.5 rounded-full bg-surface-container border border-outline-variant font-label-md text-label-md text-on-background">全部</button>
+<button class="whitespace-nowrap px-4 py-1.5 rounded-full bg-background border border-outline-variant font-label-md text-label-md text-on-surface-variant">加密文件</button>
+<button class="whitespace-nowrap px-4 py-1.5 rounded-full bg-background border border-outline-variant font-label-md text-label-md text-on-surface-variant">系统日志</button>
+<button class="whitespace-nowrap px-4 py-1.5 rounded-full bg-background border border-outline-variant font-label-md text-label-md text-on-surface-variant">配置</button>
+</div>
+</div>
+<!-- Records List -->
+<div class="px-container-margin flex flex-col gap-unit">
+<!-- Record Item 1 -->
+<button class="w-full text-left bg-[#1E293B] border border-[#334155] rounded-xl p-4 flex items-center gap-4 hover:bg-[#2D3748] transition-colors" onclick="openSheet('rec_77492A')">
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center shrink-0 text-primary-container">
+<span class="material-symbols-outlined icon-fill">description</span>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-headline-sm text-headline-sm text-on-background truncate">Project_Quantum_Keys.dat</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">ID: rec_77492A • 14:32</p>
+</div>
+<div class="flex flex-col items-end gap-1 shrink-0">
+<div class="flex items-center gap-1 bg-primary-container/10 border-l-2 border-primary-container px-2 py-0.5">
+<span class="font-label-sm text-label-sm text-primary-container">已保护</span>
+</div>
+</div>
+</button>
+<!-- Record Item 2 -->
+<button class="w-full text-left bg-[#1E293B] border border-[#334155] rounded-xl p-4 flex items-center gap-4 hover:bg-[#2D3748] transition-colors">
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center shrink-0 text-primary-container">
+<span class="material-symbols-outlined icon-fill">folder_zip</span>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-headline-sm text-headline-sm text-on-background truncate">Q3_Audit_Logs_Archive.zip</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">ID: rec_3391XF • 09:15</p>
+</div>
+<div class="flex flex-col items-end gap-1 shrink-0">
+<div class="flex items-center gap-1 bg-primary-container/10 border-l-2 border-primary-container px-2 py-0.5">
+<span class="font-label-sm text-label-sm text-primary-container">已保护</span>
+</div>
+</div>
+</button>
+<!-- Record Item 3 (Warning) -->
+<button class="w-full text-left bg-[#1E293B] border border-[#334155] rounded-xl p-4 flex items-center gap-4 hover:bg-[#2D3748] transition-colors">
+<div class="w-12 h-12 rounded-lg bg-error-container/20 flex items-center justify-center shrink-0 text-error">
+<span class="material-symbols-outlined icon-fill">lock</span>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-headline-sm text-headline-sm text-on-background truncate">Root_Cert_Backup_Old.pem</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">ID: rec_9922ER • 昨日</p>
+</div>
+<div class="flex flex-col items-end gap-1 shrink-0">
+<div class="flex items-center gap-1 bg-secondary-container/10 border-l-2 border-secondary-container px-2 py-0.5">
+<span class="font-label-sm text-label-sm text-secondary-container">锁定</span>
+</div>
+</div>
+</button>
+<!-- Record Item 4 -->
+<button class="w-full text-left bg-[#1E293B] border border-[#334155] rounded-xl p-4 flex items-center gap-4 hover:bg-[#2D3748] transition-colors">
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center shrink-0 text-primary-container">
+<span class="material-symbols-outlined icon-fill">image</span>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-headline-sm text-headline-sm text-on-background truncate">Biometric_Scan_Ref.png</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">ID: rec_1105BB • 10/24</p>
+</div>
+<div class="flex flex-col items-end gap-1 shrink-0">
+<div class="flex items-center gap-1 bg-primary-container/10 border-l-2 border-primary-container px-2 py-0.5">
+<span class="font-label-sm text-label-sm text-primary-container">已保护</span>
+</div>
+</div>
+</button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 border-t border-outline-variant bg-surface-container-high flex justify-around items-center py-padding-sm w-full">
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-sm text-label-sm mt-1">工作台</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">pending_actions</span>
+<span class="font-label-sm text-label-sm mt-1">处理</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">verified_user</span>
+<span class="font-label-sm text-label-sm mt-1">验证</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined icon-fill">folder_open</span>
+<span class="font-label-sm text-label-sm mt-1">档案</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-sm text-label-sm mt-1">设置</span>
+</a>
+</nav>
+<!-- Bottom Sheet Overlay -->
+<div class="backdrop fixed inset-0 bg-black/60 z-[60]" id="sheetBackdrop" onclick="closeSheet()"></div>
+<!-- Bottom Sheet Content -->
+<div class="bottom-sheet fixed bottom-0 left-0 w-full bg-[#1E293B] border-t border-[#334155] rounded-t-2xl z-[70] shadow-[0px_-4px_12px_rgba(0,0,0,0.5)] max-h-[751px] flex flex-col" id="detailSheet">
+<div class="w-full flex justify-center pt-3 pb-1" onclick="closeSheet()">
+<div class="w-12 h-1 bg-[#334155] rounded-full"></div>
+</div>
+<div class="px-container-margin py-padding-md border-b border-[#334155] flex justify-between items-start">
+<div>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-background">Project_Quantum_Keys.dat</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">ID: rec_77492A • SHA-256</p>
+</div>
+<button class="bg-[#2DD4BF] text-[#0F172A] p-2 rounded-lg font-label-md text-label-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">download</span>
+</button>
+</div>
+<div class="overflow-y-auto px-container-margin py-padding-md flex-1">
+<!-- Tabs -->
+<div class="flex gap-4 border-b border-[#334155] mb-4">
+<button class="pb-2 border-b-2 border-primary-container font-label-lg text-label-lg text-primary-container">元数据</button>
+<button class="pb-2 border-b-2 border-transparent font-label-lg text-label-lg text-on-surface-variant">历史记录</button>
+</div>
+<!-- Metadata Content -->
+<div class="space-y-4">
+<div class="bg-[#0F172A] border border-[#334155] rounded-xl p-4">
+<div class="grid grid-cols-2 gap-4">
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-1">文件大小</p>
+<p class="font-body-md text-body-md text-on-background">2.4 MB</p>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-1">加密算法</p>
+<p class="font-body-md text-body-md text-on-background">AES-256-GCM</p>
+</div>
+<div class="col-span-2">
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-1">所有者</p>
+<p class="font-body-md text-body-md text-on-background">Admin_Sys_01</p>
+</div>
+<div class="col-span-2">
+<p class="font-label-sm text-label-sm text-on-surface-variant mb-1">哈希指纹</p>
+<p class="font-body-sm text-body-sm text-on-background break-all font-mono opacity-80">e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</p>
+</div>
+</div>
+</div>
+<div class="pt-2">
+<h4 class="font-label-md text-label-md text-on-surface-variant mb-3 uppercase tracking-wider">最近活动</h4>
+<div class="relative pl-4 border-l border-[#334155] space-y-4">
+<div class="relative">
+<div class="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-primary-container"></div>
+<p class="font-body-sm text-body-sm text-on-background">完整性校验通过</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">今天 14:32</p>
+</div>
+<div class="relative">
+<div class="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-[#334155]"></div>
+<p class="font-body-sm text-body-sm text-on-background opacity-70">系统自动备份完成</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">昨天 02:00</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+        function openSheet(id) {
+            document.getElementById('detailSheet').classList.add('open');
+            document.getElementById('sheetBackdrop').classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSheet() {</script></body></html>

@@ -1,8 +1,10 @@
 const endpoint = (process.env.HIDDENSHIELD_CLOUD_URL ?? 'http://127.0.0.1:43188').replace(/\/$/, '');
-const identifier = process.env.HIDDENSHIELD_CLOUD_IDENTIFIER ?? 'alice@example.com';
-const deviceId = process.env.HIDDENSHIELD_CLOUD_DEVICE_ID ?? `contract-device-${Date.now()}`;
-const recordId = `contract-record-${Date.now()}`;
-const queueId = `contract-event-${Date.now()}`;
+const runId = Date.now();
+const identifier = process.env.HIDDENSHIELD_CLOUD_IDENTIFIER ?? `cloud-sync-contract-${runId}@example.com`;
+const password = process.env.HIDDENSHIELD_CLOUD_PASSWORD ?? 'contract-password';
+const deviceId = process.env.HIDDENSHIELD_CLOUD_DEVICE_ID ?? `contract-device-${runId}`;
+const recordId = `contract-record-${runId}`;
+const queueId = `contract-event-${runId}`;
 
 console.log(`HiddenShield cloud sync contract check: ${endpoint}`);
 
@@ -11,8 +13,9 @@ console.log(`health: ${health.status} ${JSON.stringify(health.body)}`);
 assert(health.status === 200, 'health endpoint must return 200');
 assert(Boolean(health.body.cloudSync), 'health endpoint must expose cloudSync');
 
-const session = await request('POST', '/v1/auth/continue', {
+const session = await request('POST', '/v1/auth/sessions', {
   identifier,
+  password,
   verificationCode: '000000',
   device: {
     clientDeviceId: deviceId,
@@ -26,16 +29,154 @@ const session = await request('POST', '/v1/auth/continue', {
     seedEnvelopeVersion: 1,
   },
 });
-console.log(`auth/continue: ${session.status} account=${session.body.account?.id}`);
-assert(session.status === 200, 'auth/continue must return 200');
-assert(Boolean(session.body.accessToken), 'auth/continue must return accessToken');
-assert(Boolean(session.body.account?.id), 'auth/continue must return account.id');
-assert(Boolean(session.body.workspace?.id), 'auth/continue must return workspace.id');
-assert(Boolean(session.body.device?.id), 'auth/continue must return device.id');
-assert(Boolean(session.body.creatorProfile?.id), 'auth/continue must return creatorProfile.id');
-assert(Boolean(session.body.entitlement?.features?.cloud_sync), 'entitlement must enable cloud_sync');
+console.log(`auth/sessions: ${session.status} account=${session.body.account?.id}`);
+assert(session.status === 200, 'auth/sessions must return 200');
+assert(Boolean(session.body.accessToken), 'auth/sessions must return accessToken');
+assert(Boolean(session.body.account?.id), 'auth/sessions must return account.id');
+assert(Boolean(session.body.workspace?.id), 'auth/sessions must return workspace.id');
+assert(Boolean(session.body.device?.id), 'auth/sessions must return device.id');
+assert(Boolean(session.body.creatorProfile?.id), 'auth/sessions must return creatorProfile.id');
+assert(
+  session.body.entitlement?.features?.cloud_sync === false,
+  'free entitlement must disable cloud_sync',
+);
+assert(
+  session.body.syncPolicy === 'blocked_by_entitlement',
+  'free auth session must return syncPolicy=blocked_by_entitlement',
+);
+assertEntitlementFeatures(session.body.entitlement?.features);
 
 const token = session.body.accessToken;
+const freeSync = await request(
+  'POST',
+  '/v1/sync/events:batch',
+  {
+    deviceId,
+    workspaceId: session.body.workspace.id,
+    events: [
+      {
+        clientEventId: `${queueId}-free-blocked`,
+        operation: 'upsertVaultRecord',
+        entityType: 'vaultRecord',
+        entityId: `${recordId}-free-blocked`,
+        payload: { id: `${recordId}-free-blocked`, watermark_uid: 'free-blocked' },
+      },
+    ],
+  },
+  token,
+);
+assert(freeSync.status === 403, 'free cloud sync push must return 403');
+
+const freeResume = await request(
+  'PATCH',
+  '/v1/me/sync-preferences',
+  { autoSyncEnabled: true, reason: 'user_resumed' },
+  token,
+);
+assert(freeResume.status === 403, 'free auto cloud sync resume must return 403');
+
+const payment = await request(
+  'POST',
+  '/v1/billing/payment-sessions',
+  {
+    accountId: session.body.account.id,
+    workspaceId: session.body.workspace.id,
+    planCode: 'creator',
+    billingCycle: 'monthly',
+    preferredProvider: 'fixture',
+  },
+  token,
+);
+assert(payment.status === 200, 'fixture creator payment session must return 200');
+const fixtureEvent = await request('POST', '/v1/billing/webhooks/fixture', {
+  providerEventId: `fixture-cloud-sync-${Date.now()}`,
+  providerOrderId: payment.body.providerOrderId,
+  providerTransactionId: `fixture-txn-${Date.now()}`,
+  accountId: session.body.account.id,
+  workspaceId: session.body.workspace.id,
+  planCode: 'creator',
+  billingCycle: 'monthly',
+  amountCents: 1900,
+  currency: 'CNY',
+  eventType: 'payment.succeeded',
+  occurredAt: new Date().toISOString(),
+  rawPayloadJson: {
+    provider: 'fixture',
+    eventType: 'payment.succeeded',
+    providerOrderId: payment.body.providerOrderId,
+  },
+});
+assert(fixtureEvent.status === 200, 'fixture creator payment event must return 200');
+
+const creatorSession = await request('POST', '/v1/auth/sessions', {
+  identifier,
+  password,
+  verificationCode: '000000',
+  device: {
+    clientDeviceId: deviceId,
+    name: 'Contract Test Device',
+    platform: 'contract',
+    appVersion: 'contract-test',
+  },
+  localCreatorProfile: {
+    displayName: 'Contract Creator',
+    creatorSeedRef: 'contract-seed-ref',
+    seedEnvelopeVersion: 1,
+  },
+});
+assert(creatorSession.status === 200, 'creator auth/sessions must return 200');
+assert(
+  creatorSession.body.entitlement?.features?.cloud_sync === true,
+  'creator entitlement must enable cloud_sync',
+);
+assert(
+  creatorSession.body.syncPolicy === 'auto_cloud_vault',
+  'creator auth session must return syncPolicy=auto_cloud_vault',
+);
+
+const paused = await request(
+  'PATCH',
+  '/v1/me/sync-preferences',
+  { autoSyncEnabled: false, reason: 'user_paused' },
+  creatorSession.body.accessToken,
+);
+assert(paused.status === 200, 'creator pause auto cloud sync must return 200');
+assert(paused.body.autoSyncEnabled === false, 'pause response must disable autoSyncEnabled');
+assert(paused.body.syncPolicy === 'manual_local_only', 'pause response must return syncPolicy=manual_local_only');
+assert(paused.body.entitlement?.features?.cloud_sync === true, 'pause response must preserve cloud_sync entitlement');
+
+const pausedSession = await request('POST', '/v1/auth/sessions', {
+  identifier,
+  password,
+  verificationCode: '000000',
+  device: {
+    clientDeviceId: deviceId,
+    name: 'Contract Test Device',
+    platform: 'contract',
+    appVersion: 'contract-test',
+  },
+  localCreatorProfile: {
+    displayName: 'Contract Creator',
+    creatorSeedRef: 'contract-seed-ref',
+    seedEnvelopeVersion: 1,
+  },
+});
+assert(pausedSession.status === 200, 'paused creator auth/sessions must return 200');
+assert(
+  pausedSession.body.syncPolicy === 'manual_local_only',
+  'paused device auth session must preserve syncPolicy=manual_local_only',
+);
+
+const resumed = await request(
+  'PATCH',
+  '/v1/me/sync-preferences',
+  { autoSyncEnabled: true, reason: 'user_resumed' },
+  pausedSession.body.accessToken,
+);
+assert(resumed.status === 200, 'creator resume auto cloud sync must return 200');
+assert(resumed.body.autoSyncEnabled === true, 'resume response must enable autoSyncEnabled');
+assert(resumed.body.syncPolicy === 'auto_cloud_vault', 'resume response must return syncPolicy=auto_cloud_vault');
+
 const batch = await request(
   'POST',
   '/v1/sync/events:batch',
@@ -61,7 +202,7 @@ const batch = await request(
       },
     ],
   },
-  token,
+  creatorSession.body.accessToken,
 );
 console.log(`events:batch: ${batch.status} accepted=${batch.body.accepted}`);
 assert(batch.status === 200, 'events:batch must return 200');
@@ -160,6 +301,25 @@ assert(emptyChanges.status === 200, 'changes after cursor must return 200');
 assert((emptyChanges.body.changes?.length ?? 0) === 0, 'changes after nextCursor must be empty');
 
 console.log('Cloud sync contract OK');
+
+function assertEntitlementFeatures(features) {
+  const expected = {
+    cloud_sync: false,
+    batch_processing: false,
+    report_export: false,
+    cloud_batch_processing: false,
+    cloud_video_processing: false,
+    priority_queue: false,
+    team_workspace: false,
+    api_access: false,
+  };
+  for (const [key, value] of Object.entries(expected)) {
+    assert(
+      features?.[key] === value,
+      `entitlement.features.${key} must be ${value}`,
+    );
+  }
+}
 
 async function request(method, path, body, token) {
   const headers = {};

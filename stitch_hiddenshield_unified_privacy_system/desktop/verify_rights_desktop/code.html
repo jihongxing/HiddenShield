@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>HiddenShield - Verify Workspace</title>
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-high": "#242b2a",
+                    "on-tertiary-container": "#744000",
+                    "tertiary": "#ffd1aa",
+                    "on-secondary-fixed": "#2a1700",
+                    "on-background": "#dde4e1",
+                    "inverse-surface": "#dde4e1",
+                    "secondary-container": "#ee9800",
+                    "primary-fixed-dim": "#3cddc7",
+                    "primary": "#57f1db",
+                    "surface-container-highest": "#2f3634",
+                    "on-tertiary-fixed": "#2d1600",
+                    "on-surface": "#dde4e1",
+                    "on-secondary-container": "#5b3800",
+                    "on-tertiary": "#4b2800",
+                    "surface-variant": "#2f3634",
+                    "secondary-fixed-dim": "#ffb95f",
+                    "on-error-container": "#ffdad6",
+                    "inverse-on-surface": "#2b3230",
+                    "on-primary-fixed": "#00201c",
+                    "on-secondary": "#472a00",
+                    "surface-container": "#1a211f",
+                    "secondary": "#ffb95f",
+                    "on-primary-container": "#00574d",
+                    "surface-tint": "#3cddc7",
+                    "on-tertiary-fixed-variant": "#6b3b00",
+                    "tertiary-container": "#ffac5a",
+                    "on-primary": "#003731",
+                    "error": "#ffb4ab",
+                    "primary-container": "#2dd4bf",
+                    "inverse-primary": "#006b5f",
+                    "outline": "#859490",
+                    "surface-container-low": "#161d1b",
+                    "secondary-fixed": "#ffddb8",
+                    "on-primary-fixed-variant": "#005047",
+                    "background": "#0e1513",
+                    "surface-bright": "#333b39",
+                    "surface-dim": "#0e1513",
+                    "primary-fixed": "#62fae3",
+                    "tertiary-fixed-dim": "#ffb875",
+                    "error-container": "#93000a",
+                    "on-surface-variant": "#bacac5",
+                    "outline-variant": "#3c4a46",
+                    "on-error": "#690005",
+                    "surface-container-lowest": "#09100e",
+                    "surface": "#0e1513",
+                    "tertiary-fixed": "#ffdcc0",
+                    "on-secondary-fixed-variant": "#653e00"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "gutter": "16px",
+                    "padding-xs": "4px",
+                    "container-margin": "24px",
+                    "padding-md": "16px",
+                    "padding-lg": "24px",
+                    "unit": "4px",
+                    "padding-sm": "8px"
+            },
+            "fontFamily": {
+                    "label-md": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "label-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "headline-sm": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "headline-md": ["Inter"]
+            },
+            "fontSize": {
+                    "label-md": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "label-sm": ["11px", {"lineHeight": "12px", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                    "label-lg": ["14px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "headline-sm": ["16px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md h-screen w-full flex overflow-hidden selection:bg-primary-container selection:text-on-primary-container">
+<!-- SideNavBar (Shared Component JSON) -->
+<nav class="hidden lg:flex flex-col h-full w-64 left-0 top-0 bg-surface-container dark:bg-surface-container border-r border-outline-variant transition-all duration-150 ease-in-out shrink-0 z-10">
+<!-- Header -->
+<div class="flex items-center gap-3 px-padding-lg py-padding-lg border-b border-outline-variant/50">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest border border-outline-variant overflow-hidden shrink-0 flex items-center justify-center">
+<img class="w-full h-full object-cover" data-alt="A highly detailed, professional headshot of an enterprise security administrator in a minimalist, dimly lit control room setting. Cool teal lighting highlights the edges, conveying a high-tech, modern, and secure atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuApFqAPvc6VC_4WlFYdYu9CMb4iGlBCOe9z23SIiQ477NsqrolpwP5He4tGfiHzelsYBqerHFpENZiD-BzVyYDJYMuj5rsdqk3pEcVXMafh4wcn3wJYiOvLvgjLUGpjXlJIQn7lF0vbFOqU_DfEBKTFXieIVzp2LSCHHFaiPCsdJfkAeWp1tQS3vbR-6n7TZgbpxRQLXq756XhBWp9LrRy0zHLe52mvaK5A6MNIxegiGozVPxs7VHWSsopAJkfP9m88UVtDuPgCQ-IQ"/>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm font-black text-primary truncate">HiddenShield</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider truncate">Enterprise Protection</span>
+</div>
+</div>
+<!-- Navigation Tabs -->
+<div class="flex-1 overflow-y-auto py-padding-md flex flex-col gap-1">
+<a class="flex items-center gap-3 text-on-surface-variant hover:text-on-surface px-4 py-3 hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="dashboard">dashboard</span>
+<span class="font-label-lg text-label-lg">Workbench</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:text-on-surface px-4 py-3 hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="settings_suggest">settings_suggest</span>
+<span class="font-label-lg text-label-lg">Process</span>
+</a>
+<!-- Active Tab: Verify -->
+<a class="flex items-center gap-3 text-primary font-bold border-l-2 border-primary bg-surface-container-highest px-4 py-3 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="verified_user" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<span class="font-label-lg text-label-lg">Verify</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:text-on-surface px-4 py-3 hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="enhanced_encryption">enhanced_encryption</span>
+<span class="font-label-lg text-label-lg">Vault</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:text-on-surface px-4 py-3 hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="view_list">view_list</span>
+<span class="font-label-lg text-label-lg">Batch Queue</span>
+</a>
+</div>
+<!-- Footer / Settings -->
+<div class="p-padding-md border-t border-outline-variant/50 flex flex-col gap-3">
+<button class="w-full flex items-center justify-center gap-2 bg-primary-container text-on-primary-container rounded-lg px-4 py-2 hover:bg-primary-fixed transition-colors font-label-lg text-label-lg">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                New Security Audit
+            </button>
+<a class="flex items-center gap-3 text-on-surface-variant hover:text-on-surface px-4 py-3 hover:bg-surface-container-high transition-colors rounded" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="settings">settings</span>
+<span class="font-label-lg text-label-lg">Settings</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-full overflow-y-auto relative">
+<!-- Top Gradient Hint (Minimalist detail) -->
+<div class="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none z-0"></div>
+<div class="flex-1 p-container-margin z-10 max-w-[1400px] w-full mx-auto flex flex-col gap-container-margin">
+<!-- Page Header -->
+<header class="flex justify-between items-end mb-2">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Verification Workspace</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Authenticate files against the encrypted ledger.</p>
+</div>
+</header>
+<!-- Grid Layout -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-gutter items-start">
+<!-- Left Column: Input / Upload -->
+<div class="xl:col-span-4 flex flex-col gap-gutter">
+<div class="bg-surface rounded-xl border border-outline-variant p-padding-lg h-[400px] flex flex-col items-center justify-center relative group overflow-hidden hover:bg-surface-container transition-colors cursor-pointer border-dashed border-2">
+<div class="absolute inset-0 bg-gradient-to-br from-transparent to-surface-container-high opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<div class="relative z-10 flex flex-col items-center text-center px-4">
+<div class="w-16 h-16 rounded-full bg-surface-container-highest border border-outline-variant flex items-center justify-center mb-4 group-hover:border-primary group-hover:text-primary transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined text-[32px]">upload_file</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-2">Drop Sample File</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant max-w-[200px]">Drag &amp; drop your payload here, or click to browse the local vault.</p>
+<div class="mt-8 flex items-center gap-2 text-primary font-label-sm text-label-sm uppercase tracking-widest bg-primary/10 px-3 py-1.5 rounded-full border border-primary/20">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                                Scanner Ready
+                            </div>
+</div>
+</div>
+<!-- Empty State Instructions (Subtle Card) -->
+<div class="bg-surface-container-low rounded-lg border border-outline-variant/50 p-padding-md">
+<h4 class="font-label-lg text-label-lg text-on-surface flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">info</span>
+                            Verification Protocol
+                        </h4>
+<ol class="font-body-sm text-body-sm text-on-surface-variant space-y-2 list-decimal list-inside opacity-80">
+<li>Select a target file from your local machine.</li>
+<li>System computes SHA-256 and BLAKE3 hashes.</li>
+<li>Hashes are checked against the immutable ledger.</li>
+</ol>
+</div>
+</div>
+<!-- Right Column: Results & Evidence (Simulating a "Verified" state for UI density) -->
+<div class="xl:col-span-8 flex flex-col gap-gutter">
+<!-- Result Header Panel -->
+<div class="bg-surface rounded-xl border border-outline-variant p-padding-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative overflow-hidden">
+<!-- Decorative background element -->
+<div class="absolute -right-20 -top-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
+<div class="flex items-center gap-4 relative z-10">
+<div class="w-12 h-12 rounded bg-surface-container-highest border border-outline-variant flex items-center justify-center text-on-surface">
+<span class="material-symbols-outlined">description</span>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-mono">payload_binary_v4.1.dll</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">14.2 MB • Uploaded Session #992</p>
+</div>
+</div>
+<!-- Status Chip (VERIFIED) -->
+<div class="relative z-10 bg-primary/10 text-primary border-l-2 border-primary px-4 py-2 rounded font-headline-sm text-headline-sm flex items-center gap-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                            VERIFIED
+                        </div>
+</div>
+<!-- Evidence Grid (Bento) -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- Metric: Confidence -->
+<div class="bg-surface rounded-xl border border-outline-variant p-padding-lg flex flex-col justify-between hover:bg-surface-container-low transition-colors">
+<div class="flex items-center justify-between mb-4">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Confidence Score</span>
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">analytics</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-lg text-headline-lg text-primary text-4xl">99.9</span>
+<span class="font-body-lg text-body-lg text-primary/70">%</span>
+</div>
+<div class="w-full bg-surface-container-highest h-1 rounded-full mt-4 overflow-hidden">
+<div class="bg-primary h-full w-full rounded-full"></div>
+</div>
+</div>
+<!-- Metric: Record ID -->
+<div class="bg-surface rounded-xl border border-outline-variant p-padding-lg flex flex-col justify-between hover:bg-surface-container-low transition-colors">
+<div class="flex items-center justify-between mb-4">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Matched Ledger ID</span>
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">database</span>
+</div>
+<div class="font-mono font-headline-sm text-headline-sm text-on-surface truncate">
+                                HS-8839-AX-9021
+                            </div>
+<div class="font-body-sm text-body-sm text-on-surface-variant mt-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">link</span>
+                                Block #1492001
+                            </div>
+</div>
+<!-- Metric: Timestamp -->
+<div class="bg-surface rounded-xl border border-outline-variant p-padding-lg flex flex-col justify-between hover:bg-surface-container-low transition-colors">
+<div class="flex items-center justify-between mb-4">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Verification Time</span>
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">schedule</span>
+</div>
+<div class="font-headline-sm text-headline-sm text-on-surface">
+                                2023-10-27
+                            </div>
+<div class="font-mono text-on-surface-variant text-sm mt-1">
+                                14:32:01.442 UTC
+                            </div>
+</div>
+<!-- Metric: Metadata -->
+<div class="bg-surface rounded-xl border border-outline-variant p-padding-lg flex flex-col justify-between hover:bg-surface-container-low transition-colors">
+<div class="flex items-center justify-between mb-4">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Hash Comparison</span>
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">memory</span>
+</div>
+<div class="space-y-2">
+<div class="flex flex-col">
+<span class="font-label-sm text-[10px] text-on-surface-variant uppercase">Local SHA-256</span>
+<span class="font-mono text-xs text-on-surface truncate opacity-80">e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</span>
+</div>
+<div class="flex flex-col border-t border-outline-variant/30 pt-2">
+<span class="font-label-sm text-[10px] text-primary uppercase flex items-center gap-1"><span class="material-symbols-outlined text-[10px]">check</span> Ledger Match</span>
+<span class="font-mono text-xs text-on-surface truncate">e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Next Steps / Actions -->
+<div class="bg-surface rounded-xl border border-outline-variant p-padding-md flex flex-wrap gap-4 items-center justify-end mt-2">
+<button class="px-6 py-2 rounded bg-transparent border border-outline-variant text-on-surface hover:bg-surface-container-high transition-colors font-label-lg text-label-lg flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">download</span>
+                            Evidence Report
+                        </button>
+<button class="px-6 py-2 rounded bg-primary-container text-on-primary-container hover:bg-primary-fixed transition-colors font-label-lg text-label-lg flex items-center gap-2 shadow-sm">
+<span class="material-symbols-outlined text-[18px]">security</span>
+                            Start Protection Task
+                        </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

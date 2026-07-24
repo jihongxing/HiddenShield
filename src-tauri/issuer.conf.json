@@ -1,0 +1,39 @@
+{
+  "productName": "HiddenShield 授权签发台",
+  "version": "0.1.0",
+  "identifier": "com.hiddenshield.license-issuer",
+  "build": {
+    "frontendDist": "../dist-issuer",
+    "devUrl": "http://localhost:1421",
+    "beforeDevCommand": "vite --config vite.issuer.config.ts",
+    "beforeBuildCommand": "vue-tsc --noEmit && vite build --config vite.issuer.config.ts"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "HiddenShield 授权签发台",
+        "label": "issuer",
+        "width": 1040,
+        "height": 800,
+        "minWidth": 900,
+        "minHeight": 680,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' asset: data: blob:; img-src 'self' asset: data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:;"
+    }
+  },
+  "bundle": {
+    "active": false,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}

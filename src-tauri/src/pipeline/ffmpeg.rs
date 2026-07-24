@@ -5,6 +5,7 @@ use serde::Deserialize;
 use tokio::process::{Child, Command};
 
 use super::error::PipelineError;
+use crate::utils::process::hide_tokio_window;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -36,6 +37,14 @@ pub struct FfprobeStream {
     pub codec_name: Option<String>,
     pub width: Option<u32>,
     pub height: Option<u32>,
+    #[serde(default, deserialize_with = "deserialize_opt_string_u32")]
+    pub sample_rate: Option<u32>,
+    pub channels: Option<u16>,
+    pub sample_fmt: Option<String>,
+    #[serde(default, deserialize_with = "deserialize_opt_string_u32")]
+    pub bits_per_sample: Option<u32>,
+    #[serde(default, deserialize_with = "deserialize_opt_string_u32")]
+    pub bits_per_raw_sample: Option<u32>,
     #[serde(default, deserialize_with = "deserialize_string_f64")]
     pub r_frame_rate: Option<f64>,
     pub pix_fmt: Option<String>,
@@ -79,7 +88,9 @@ pub async fn detect_ffmpeg() -> Result<FfmpegPaths, PipelineError> {
 
 /// Run ffprobe on `input` and parse the JSON output.
 pub async fn ffprobe_source(ffprobe: &Path, input: &str) -> Result<FfprobeOutput, PipelineError> {
-    let output = Command::new(ffprobe)
+    let mut command = Command::new(ffprobe);
+    hide_tokio_window(&mut command);
+    let output = command
         .args([
             "-v",
             "quiet",
@@ -116,7 +127,9 @@ pub async fn ffprobe_source(ffprobe: &Path, input: &str) -> Result<FfprobeOutput
 /// Uses `kill_on_drop(true)` to ensure child processes are terminated
 /// if the parent Tauri process crashes or is force-closed.
 pub async fn spawn_ffmpeg(ffmpeg: &Path, args: &[String]) -> Result<FfmpegChild, PipelineError> {
-    let child = Command::new(ffmpeg)
+    let mut command = Command::new(ffmpeg);
+    hide_tokio_window(&mut command);
+    let child = command
         .args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::null()) // 关键：防止 stdout 管道填满导致子进程死锁
@@ -168,7 +181,9 @@ async fn which_binary(name: &str) -> Option<PathBuf> {
     } else {
         "which"
     };
-    let output = Command::new(cmd)
+    let mut command = Command::new(cmd);
+    hide_tokio_window(&mut command);
+    let output = command
         .arg(name)
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
@@ -195,7 +210,9 @@ async fn which_binary(name: &str) -> Option<PathBuf> {
 }
 
 async fn validate_binary(path: &Path, binary_name: &str) -> Result<(), PipelineError> {
-    let output = Command::new(path)
+    let mut command = Command::new(path);
+    hide_tokio_window(&mut command);
+    let output = command
         .arg("-version")
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -311,6 +328,21 @@ where
     match s {
         None => Ok(None),
         Some(s) => Ok(s.parse::<u64>().ok()),
+    }
+}
+
+fn deserialize_opt_string_u32<'de, D>(deserializer: D) -> Result<Option<u32>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let value: Option<serde_json::Value> = Option::deserialize(deserializer)?;
+    match value {
+        Some(serde_json::Value::String(s)) if !s.is_empty() => s
+            .parse()
+            .map(Some)
+            .map_err(|e: std::num::ParseIntError| serde::de::Error::custom(e.to_string())),
+        Some(serde_json::Value::Number(n)) => Ok(n.as_u64().and_then(|v| u32::try_from(v).ok())),
+        _ => Ok(None),
     }
 }
 

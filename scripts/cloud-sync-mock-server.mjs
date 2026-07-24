@@ -22,7 +22,7 @@ const server = createServer(async (request, response) => {
       });
     }
 
-    if (request.method === 'POST' && url.pathname === '/v1/auth/continue') {
+    if (request.method === 'POST' && url.pathname === '/v1/auth/sessions') {
       return handleAuthContinue(request, response);
     }
 
@@ -47,7 +47,7 @@ server.on('error', (error) => {
 
 server.listen(port, host, () => {
   console.log(`HiddenShield cloud sync mock listening on http://${host}:${port}`);
-  console.log('Endpoints: /v1/health, /v1/auth/continue, /v1/sync/events:batch, /v1/sync/changes');
+  console.log('Endpoints: /v1/health, /v1/auth/sessions, /v1/sync/events:batch, /v1/sync/changes');
 });
 
 async function handleAuthContinue(request, response) {

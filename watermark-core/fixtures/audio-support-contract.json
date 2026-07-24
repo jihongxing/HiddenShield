@@ -1,0 +1,45 @@
+{
+  "contractVersion": "audio-support-v1",
+  "minimumSampleRate": 8000,
+  "maximumSampleRate": 48000,
+  "supportedChannels": [1, 2],
+  "minimumProtectionSeconds": 30,
+  "preserveSourceSpec": true,
+  "desktopOutput": {
+    "container": "wav",
+    "supportedPcmCodecs": ["pcm_s16le", "pcm_s24le", "pcm_s32le", "pcm_f32le"],
+    "preserves": ["sampleRate", "channels"],
+    "bitDepthCandidate": "16/24/32-bit integer and 32-bit float",
+    "rejects": ["64-bit float"],
+    "futureCompatibilityOption": "flac"
+  },
+  "userFacingRange": "8–48 kHz + mono/stereo",
+  "desktopImageReferenceMatrix": {
+    "formats": ["png", "jpeg", "webp"],
+    "successfulReference": {
+      "width": 1920,
+      "height": 1080
+    },
+    "knownFailureReference": {
+      "width": 320,
+      "height": 240
+    },
+    "notAPublicMinimum": true
+  },
+  "errorCodes": {
+    "durationUnknown": "audio_duration_unknown",
+    "tooShort": "audio_too_short",
+    "specUnknown": "audio_spec_unknown",
+    "sampleRateTooLow": "audio_sample_rate_too_low",
+    "sampleRateTooHigh": "audio_sample_rate_too_high",
+    "channelsUnsupported": "audio_channels_unsupported"
+  },
+  "releaseCases": [
+    { "id": "wav-8000-mono-30s", "sampleRate": 8000, "channels": 1, "durationSeconds": 30, "expected": "pass" },
+    { "id": "wav-48000-stereo-30s", "sampleRate": 48000, "channels": 2, "durationSeconds": 30, "expected": "pass" },
+    { "id": "wav-7999-mono-30s", "sampleRate": 7999, "channels": 1, "durationSeconds": 30, "expected": "audio_sample_rate_too_low" },
+    { "id": "wav-48001-mono-30s", "sampleRate": 48001, "channels": 1, "durationSeconds": 30, "expected": "audio_sample_rate_too_high" },
+    { "id": "wav-48000-5ch-30s", "sampleRate": 48000, "channels": 5, "durationSeconds": 30, "expected": "audio_channels_unsupported" },
+    { "id": "wav-48000-mono-29s", "sampleRate": 48000, "channels": 1, "durationSeconds": 29, "expected": "audio_too_short" }
+  ]
+}

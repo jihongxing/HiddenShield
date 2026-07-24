@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>HiddenShield - Help</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@500;600&amp;family=Inter:wght@400;500&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary-container": "#00ced1",
+                      "error": "#ffb4ab",
+                      "outline-variant": "#3b4949",
+                      "on-surface-variant": "#bac9c9",
+                      "surface": "#0b1326",
+                      "on-surface": "#dae2fd",
+                      "surface-dim": "#0b1326",
+                      "secondary": "#ffb77b",
+                      "tertiary-fixed-dim": "#bcc7de",
+                      "on-tertiary-fixed-variant": "#3c475a",
+                      "on-primary-container": "#005354",
+                      "surface-bright": "#31394d",
+                      "primary-fixed": "#5af8fb",
+                      "on-error-container": "#ffdad6",
+                      "on-primary": "#003738",
+                      "inverse-surface": "#dae2fd",
+                      "primary-fixed-dim": "#2ddbde",
+                      "background": "#0b1326",
+                      "surface-container-highest": "#2d3449",
+                      "surface-tint": "#2ddbde",
+                      "surface-container-low": "#131b2e",
+                      "tertiary-container": "#afbad1",
+                      "tertiary-fixed": "#d8e3fb",
+                      "secondary-fixed-dim": "#ffb77b",
+                      "outline": "#859493",
+                      "secondary-fixed": "#ffdcc2",
+                      "inverse-on-surface": "#283044",
+                      "secondary-container": "#7a4100",
+                      "error-container": "#93000a",
+                      "on-primary-fixed-variant": "#004f51",
+                      "surface-variant": "#2d3449",
+                      "on-error": "#690005",
+                      "on-secondary-fixed-variant": "#6d3a00",
+                      "on-tertiary-fixed": "#111c2d",
+                      "on-secondary": "#4d2700",
+                      "on-tertiary-container": "#3f4a5e",
+                      "on-secondary-fixed": "#2e1500",
+                      "tertiary": "#cad6ee",
+                      "on-background": "#dae2fd",
+                      "surface-container": "#171f33",
+                      "on-secondary-container": "#ffb270",
+                      "on-primary-fixed": "#002020",
+                      "primary": "#47eaed",
+                      "surface-container-high": "#222a3d",
+                      "surface-container-lowest": "#060e20",
+                      "on-tertiary": "#263143",
+                      "inverse-primary": "#00696b"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin-desktop": "32px",
+                      "margin-mobile": "16px",
+                      "container-max": "1440px",
+                      "gutter": "16px",
+                      "unit": "4px"
+              },
+              "fontFamily": {
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Geist"
+                      ],
+                      "label-mono": [
+                              "JetBrains Mono"
+                      ],
+                      "nav-label": [
+                              "Inter"
+                      ],
+                      "headline-lg-mobile": [
+                              "Geist"
+                      ],
+                      "headline-lg": [
+                              "Geist"
+                      ]
+              },
+              "fontSize": {
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "label-mono": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "nav-label": [
+                              "13px",
+                              {
+                                      "lineHeight": "18px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body-sm antialiased min-h-screen flex flex-col items-center">
+<!-- Top Navigation Anchor (Web) -->
+<nav class="hidden md:flex justify-between items-center h-16 px-margin-desktop w-full sticky top-0 z-50 bg-surface border-b border-outline-variant">
+<div class="font-headline-md text-headline-md font-bold text-primary tracking-tight">HiddenShield</div>
+<div class="flex items-center gap-6">
+<a class="text-on-surface-variant hover:bg-surface-container-highest transition-colors px-2 py-1 rounded" href="#">工作台</a>
+<a class="text-on-surface-variant hover:bg-surface-container-highest transition-colors px-2 py-1 rounded" href="#">处理</a>
+<a class="text-on-surface-variant hover:bg-surface-container-highest transition-colors px-2 py-1 rounded" href="#">验证</a>
+<a class="text-on-surface-variant hover:bg-surface-container-highest transition-colors px-2 py-1 rounded" href="#">档案</a>
+<a class="text-on-surface-variant hover:bg-surface-container-highest transition-colors px-2 py-1 rounded" href="#">批量队列</a>
+<a class="text-primary border-b-2 border-primary hover:bg-surface-container-highest transition-colors px-2 py-1" href="#">帮助</a>
+<a class="text-on-surface-variant hover:bg-surface-container-highest transition-colors px-2 py-1 rounded" href="#">设置</a>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary cursor-pointer hover:bg-surface-container-highest rounded-full p-1 transition-colors" data-icon="sync">sync</span>
+<span class="material-symbols-outlined text-primary cursor-pointer hover:bg-surface-container-highest rounded-full p-1 transition-colors" data-icon="notifications">notifications</span>
+<div class="w-8 h-8 rounded-full bg-surface-container-highest border border-outline-variant overflow-hidden flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">person</span>
+</div>
+</div>
+</nav>
+<!-- Main Content Canvas (Mobile Focused) -->
+<main class="w-full max-w-md mx-auto flex-1 flex flex-col p-margin-mobile gap-6 relative z-10 pb-24 md:pb-8 pt-8">
+<header class="mb-4">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-primary mb-2 tracking-tight">帮助与支持</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">系统状态正常。在此处查找功能说明与支持信息。</p>
+</header>
+<!-- Bento Grid Stack -->
+<div class="flex flex-col gap-4">
+<!-- Card 1: Capability Boundary -->
+<div class="bg-surface-container border border-outline-variant rounded-lg p-5 flex flex-col gap-3 relative overflow-hidden group hover:border-primary/50 transition-colors">
+<div class="absolute -right-6 -top-6 text-primary/5">
+<span class="material-symbols-outlined text-9xl">memory</span>
+</div>
+<div class="flex items-center gap-3 relative z-10">
+<div class="w-10 h-10 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-weight="fill">radar</span>
+</div>
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface">能力边界</h2>
+<span class="font-label-mono text-label-mono text-on-surface-variant uppercase tracking-wider">v3.2.0</span>
+</div>
+</div>
+<div class="relative z-10 pt-2 border-t border-outline-variant/50">
+<ul class="space-y-2 text-on-surface-variant">
+<li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span> 实时验证速率：500 req/s</li>
+<li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary"></span> 批量队列深度：10,000 条</li>
+<li class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-primary/30"></span> 深度分析模组 (待激活)</li>
+</ul>
+</div>
+</div>
+<!-- Card 2: Billing & Plans -->
+<div class="bg-surface-container border border-[#334155] rounded-lg p-5 flex flex-col gap-3 relative overflow-hidden">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-high border border-[#475569] flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined">payments</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface">订阅说明</h2>
+</div>
+<span class="bg-secondary/10 text-secondary border border-secondary/30 px-2 py-0.5 rounded text-[10px] font-label-mono tracking-widest uppercase">Active</span>
+</div>
+<div class="pt-2 border-t border-outline-variant/50">
+<div class="flex justify-between items-end mb-2">
+<span class="text-on-surface-variant">当月额度消耗</span>
+<span class="font-label-mono text-label-mono text-primary">6,420 / 10k</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[64%]"></div>
+</div>
+</div>
+</div>
+<!-- Card 3: Sync Guide -->
+<div class="bg-surface-container border border-outline-variant rounded-lg p-5 flex flex-col gap-3">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">cloud_sync</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface">同步指南</h2>
+</div>
+<div class="pt-2 border-t border-outline-variant/50 flex flex-col gap-2">
+<p class="text-on-surface-variant">所有终端设备默认开启端到端加密同步。确保主节点处于在线状态。</p>
+<button class="w-full mt-2 bg-transparent border border-primary text-primary hover:bg-primary/5 transition-colors rounded h-10 font-nav-label flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">refresh</span> 强制同步状态
+                    </button>
+</div>
+</div>
+<!-- Card 4: Support -->
+<div class="bg-[#1E293B] border border-[#475569] rounded-lg p-5 flex flex-col gap-3 shadow-[0_8px_24px_rgba(0,0,0,0.5)]">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest border border-outline-variant flex items-center justify-center text-on-surface">
+<span class="material-symbols-outlined" data-weight="fill">support_agent</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface">客户支持</h2>
+</div>
+<div class="pt-2 border-t border-[#334155]">
+<p class="text-on-surface-variant mb-4">如遇技术阻碍，请提交加密工单至支持核心。</p>
+<button class="w-full bg-primary text-[#000000] hover:bg-primary-fixed-dim transition-colors rounded h-12 font-nav-label font-bold flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">send</span> 开启安全会话
+                    </button>
+</div>
+</div>
+</div>
+</main>
+<!-- Mobile Bottom Navigation (Visible only on mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full bg-surface border-t border-surface-container-highest z-50 flex justify-around items-center h-16 pb-safe">
+<a class="flex flex-col items-center justify-center w-full h-full text-on-surface-variant hover:bg-surface-container-highest transition-colors" href="#">
+<span class="material-symbols-outlined mb-1 text-xl">dashboard</span>
+<span class="font-label-mono text-[10px]">工作台</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full text-on-surface-variant hover:bg-surface-container-highest transition-colors" href="#">
+<span class="material-symbols-outlined mb-1 text-xl">terminal</span>
+<span class="font-label-mono text-[10px]">处理</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full text-primary relative" href="#">
+<span class="absolute top-0 w-1/2 h-0.5 bg-primary rounded-b"></span>
+<span class="material-symbols-outlined mb-1 text-xl" data-weight="fill">help</span>
+<span class="font-label-mono text-[10px] font-bold">帮助</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full text-on-surface-variant hover:bg-surface-container-highest transition-colors" href="#">
+<span class="material-symbols-outlined mb-1 text-xl">settings</span>
+<span class="font-label-mono text-[10px]">设置</span>
+</a>
+</nav>
+<style>
+        /* Ambient Background Grid Effect */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background-image: linear-gradient(to right, rgba(59, 73, 73, 0.05) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(59, 73, 73, 0.05) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+    </style>
+</body></html>

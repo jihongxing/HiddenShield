@@ -1,12 +1,14 @@
 [package]
 name = "hidden_shield"
-version = "0.1.0"
+version = "0.1.1"
 description = "HiddenShield desktop MVP scaffold"
 authors = ["Codex"]
 license = "CC-BY-NC-4.0"
 repository = ""
 edition = "2021"
 rust-version = "1.77.2"
+default-run = "hidden_shield"
+autobins = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -14,18 +16,82 @@ rust-version = "1.77.2"
 name = "hidden_shield_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
+[[bin]]
+name = "hidden_shield"
+path = "src/main.rs"
+
+[[bin]]
+name = "license_issuer_app"
+path = "src/bin/license_issuer_app.rs"
+
+[[example]]
+name = "public_metadata_embed_qa"
+path = "examples/public_metadata_embed_qa.rs"
+required-features = ["internal-qa"]
+
+[[example]]
+name = "v3_readonly_fixture_qa"
+path = "examples/v3_readonly_fixture_qa.rs"
+required-features = ["internal-qa"]
+
+[[example]]
+name = "v3_readonly_candidate_runtime_qa"
+path = "examples/v3_readonly_candidate_runtime_qa.rs"
+required-features = ["internal-qa"]
+
+[[example]]
+name = "v3_internal_qa_write_runtime_qa"
+path = "examples/v3_internal_qa_write_runtime_qa.rs"
+required-features = ["internal-qa"]
+
+[[example]]
+name = "audio_noise_floor_migration_desktop_fixture"
+path = "examples/audio_noise_floor_migration_desktop_fixture.rs"
+required-features = ["internal-qa"]
+
+[[example]]
+name = "report_mobile_handoff_runtime_qa"
+path = "examples/report_mobile_handoff_runtime_qa.rs"
+required-features = ["runtime-qa"]
+
+[[example]]
+name = "rights_evidence_pack_runtime_qa"
+path = "examples/rights_evidence_pack_runtime_qa.rs"
+required-features = ["runtime-qa"]
+
+[[example]]
+name = "offline_license_issuer"
+path = "examples/offline_license_issuer.rs"
+
+[[example]]
+name = "desktop_offline_release_gate"
+path = "examples/desktop_offline_release_gate.rs"
+required-features = ["runtime-qa"]
+
+[features]
+default = []
+internal-qa = []
+runtime-qa = ["tauri/test"]
+
 [build-dependencies]
 tauri-build = { version = "2.5.6", features = [] }
 
 [dependencies]
+argon2 = "0.5"
+base64 = "0.22"
 chrono = { version = "0.4", features = ["serde"] }
+chacha20poly1305 = "0.10"
+c2pa = { version = "0.89.0", default-features = false, features = ["rust_native_crypto"] }
 cms = "0.2.3"
 const-oid = "0.9"
 der = "0.7"
+ed25519-dalek = "2"
 futures-util = "0.3"
+getrandom = "0.2"
 crc32fast = "1.4"
 hostname = "0.4"
 hex = "0.4"
+hound = "3.5"
 image = "0.25"
 libc = "0.2"
 log = "0.4"
@@ -46,11 +112,23 @@ obfstr = "0.4"
 tauri = { version = "2.10.3", features = [] }
 tauri-plugin-dialog = "2"
 tauri-plugin-log = "2"
+tauri-plugin-process = "2"
+tauri-plugin-updater = "2"
 thiserror = "1"
 tokio = { version = "1", features = ["full"] }
 watermark-core = { path = "../watermark-core" }
 x509-cert = "0.2.5"
 x509-verify = { version = "0.4.6", features = ["ecdsa", "ed25519", "rsa", "sha1", "sha2", "x509"] }
+zeroize = "1"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+keyring = { version = "3.6.3", default-features = false, features = ["windows-native"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3.6.3", default-features = false, features = ["apple-native"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+keyring = { version = "3.6.3", default-features = false, features = ["linux-native"] }
 
 [dev-dependencies]
 proptest = "1.4"

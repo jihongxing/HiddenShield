@@ -4,6 +4,8 @@ use std::process::Stdio;
 use serde::{Deserialize, Serialize};
 use tokio::process::Command;
 
+use crate::utils::process::hide_tokio_window;
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -80,7 +82,9 @@ fn platform_candidates() -> Vec<&'static str> {
 
 /// Test whether a specific encoder is usable by running a minimal ffmpeg encode.
 async fn test_encoder(ffmpeg: &Path, encoder: &str) -> bool {
-    let result = Command::new(ffmpeg)
+    let mut command = Command::new(ffmpeg);
+    hide_tokio_window(&mut command);
+    let result = command
         .args([
             "-hide_banner",
             "-loglevel",

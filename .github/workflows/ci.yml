@@ -63,6 +63,18 @@ jobs:
       - name: Build frontend
         run: npm run build
 
+      - name: Run dual consistency contract
+        run: npm run dual:contract
+
+      - name: Run watermark architecture contract
+        run: npm run watermark:architecture-contract
+
+      - name: Run watermark cross-end contract
+        run: npm run watermark:cross-end-contract
+
+      - name: Run watermark video phase contract
+        run: npm run watermark:video-phase-contract
+
       - name: Verify desktop audio duration rule
         run: npm run desktop:audio-rule
 
@@ -79,6 +91,9 @@ jobs:
         with:
           channel: ${{ matrix.flutter }}
           cache: true
+
+      - name: Run offline license CI
+        run: npm run license:ci
 
       - name: Flutter analyze
         run: flutter analyze

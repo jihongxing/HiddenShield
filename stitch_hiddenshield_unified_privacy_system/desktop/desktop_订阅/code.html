@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>HiddenShield - Subscription &amp; Workspace Control Center</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-container": "#ffac5a",
+                      "on-secondary-container": "#5b3800",
+                      "on-background": "#dde4e1",
+                      "surface-container-low": "#161d1b",
+                      "primary-container": "#2dd4bf",
+                      "on-secondary-fixed-variant": "#653e00",
+                      "surface-dim": "#0e1513",
+                      "surface-tint": "#3cddc7",
+                      "on-tertiary": "#4b2800",
+                      "surface-container-highest": "#2f3634",
+                      "on-error-container": "#ffdad6",
+                      "tertiary-fixed": "#ffdcc0",
+                      "on-tertiary-container": "#744000",
+                      "on-tertiary-fixed": "#2d1600",
+                      "secondary-fixed-dim": "#ffb95f",
+                      "surface-container-lowest": "#09100e",
+                      "on-primary-fixed": "#00201c",
+                      "inverse-primary": "#006b5f",
+                      "tertiary": "#ffd1aa",
+                      "on-tertiary-fixed-variant": "#6b3b00",
+                      "on-surface-variant": "#bacac5",
+                      "primary": "#57f1db",
+                      "on-primary": "#003731",
+                      "background": "#0e1513",
+                      "inverse-surface": "#dde4e1",
+                      "secondary": "#ffb95f",
+                      "primary-fixed": "#62fae3",
+                      "on-surface": "#dde4e1",
+                      "surface-bright": "#333b39",
+                      "outline": "#859490",
+                      "secondary-fixed": "#ffddb8",
+                      "inverse-on-surface": "#2b3230",
+                      "surface-container-high": "#242b2a",
+                      "primary-fixed-dim": "#3cddc7",
+                      "on-secondary": "#472a00",
+                      "secondary-container": "#ee9800",
+                      "tertiary-fixed-dim": "#ffb875",
+                      "surface-variant": "#2f3634",
+                      "error-container": "#93000a",
+                      "error": "#ffb4ab",
+                      "on-primary-container": "#00574d",
+                      "on-error": "#690005",
+                      "outline-variant": "#3c4a46",
+                      "on-secondary-fixed": "#2a1700",
+                      "surface-container": "#1a211f",
+                      "on-primary-fixed-variant": "#005047",
+                      "surface": "#0e1513"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "padding-xs": "4px",
+                      "padding-sm": "8px",
+                      "padding-lg": "24px",
+                      "unit": "4px",
+                      "padding-md": "16px",
+                      "container-margin": "24px"
+              },
+              "fontFamily": {
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "headline-sm": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "label-lg": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-sm": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-sm": [
+                              "11px",
+                              {
+                                      "lineHeight": "12px",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "label-lg": [
+                              "14px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-sm": [
+                              "13px",
+                              {
+                                      "lineHeight": "18px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .fill-icon { font-variation-settings: 'FILL' 1; }
+        /* Scrollbar styling for density */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0e1513; }
+        ::-webkit-scrollbar-thumb { background: #2f3634; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3c4a46; }
+    </style>
+</head>
+<body class="bg-background text-on-background h-screen overflow-hidden flex selection:bg-primary selection:text-on-primary">
+<!-- Top App Bar (Mobile Only for Navigation) -->
+<header class="md:hidden flex justify-between items-center w-full px-container-margin py-padding-sm bg-surface border-b border-outline-variant fixed top-0 z-50">
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:bg-surface-container-high transition-colors p-2 rounded-full">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<div class="font-headline-md text-headline-md font-bold text-primary">HiddenShield</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="text-on-surface-variant hover:bg-surface-container-high transition-colors p-2 rounded-full">
+<span class="material-symbols-outlined">sync</span>
+</button>
+<button class="text-on-surface-variant hover:bg-surface-container-high transition-colors p-2 rounded-full">
+<span class="material-symbols-outlined">workspace_premium</span>
+</button>
+<img alt="User Profile" class="w-8 h-8 rounded-full object-cover border border-outline-variant" data-alt="A small, circular avatar portrait of an enterprise security administrator in a minimalist, dimly lit server room. Professional, high-contrast, cybersecurity aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCWA0MVFj__5fUm3hJLJTfIj2hNPvtgZ87s_d6S_OtLfCeg0DUU7OzdxJdbACuLUiJ2X0kLPZbdSsqSRFjKwAh47omUEZf_wbA8IJf0ihYfPViCn3sULki_E5LYwYcuYN--6X_QZ3KGyzoDbrsTaqdHEanm1UA8QJdRwAxI2NhpBzX-nGyBk2FrKwf9BCG83yJgQLONUX9OUxjCxurCDjh75g5QH3DaohGMqBW4_ZcIPvtY11ZlhkQr7lboy7bzkTZADGX4QiRvdhqP"/>
+</div>
+</header>
+<!-- SideNavBar (Desktop) -->
+<nav class="hidden md:flex flex-col h-screen w-64 left-0 top-0 bg-surface-container border-r border-outline-variant flex-shrink-0 z-40 transition-all duration-150 ease-in-out">
+<div class="px-container-margin py-6 border-b border-outline-variant">
+<div class="flex items-center gap-3 mb-4">
+<img alt="HiddenShield Admin" class="w-10 h-10 rounded-lg object-cover" data-alt="A small, stylized security badge or emblem representing an enterprise protection system. Metallic silver and teal accents, minimalist and modern." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPFQJKXteQ-aqnCS6d0uZOZKfqRPRP0AhCDF0jFIX3QouErukycoU-iqSjQ7d_669p7ebKfzeyuqBkD3VXDlrGn86u4GErWDEMTnog23z28Ly3V847bFzgmu5Py09PmTdEa1eDCNcKiEbrisJvQtUa10wy_A65eGM9E3VTFxVxslAtVtjp6dOEZhkV0JRJTgZsGxQoyOOhM2V7CavbS_Wz-ng6ZmTkQhtEbhg53PO3C_jTEnVpuLjwqSOoM4_ju4_jI1v3X0Fu2QMK"/>
+<div>
+<h1 class="font-headline-sm text-headline-sm font-black text-primary tracking-tight">HiddenShield</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Enterprise Protection</p>
+</div>
+</div>
+<button class="w-full bg-primary-container text-on-primary-container font-label-md text-label-md py-2 px-4 rounded hover:bg-primary-fixed-dim transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                New Security Audit
+            </button>
+</div>
+<div class="flex-1 overflow-y-auto py-4">
+<ul class="space-y-1">
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors font-label-lg text-label-lg" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                        Workbench
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors font-label-lg text-label-lg" href="#">
+<span class="material-symbols-outlined">settings_suggest</span>
+                        Process
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors font-label-lg text-label-lg" href="#">
+<span class="material-symbols-outlined">verified_user</span>
+                        Verify
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors font-label-lg text-label-lg" href="#">
+<span class="material-symbols-outlined">enhanced_encryption</span>
+                        Vault
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors font-label-lg text-label-lg" href="#">
+<span class="material-symbols-outlined">view_list</span>
+                        Batch Queue
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-primary font-bold border-l-2 border-primary bg-surface-container-highest transition-colors font-label-lg text-label-lg" href="#">
+<span class="material-symbols-outlined fill-icon">settings</span>
+                        Settings
+                    </a>
+</li>
+</ul>
+</div>
+<div class="p-4 border-t border-outline-variant">
+<div class="flex items-center gap-3">
+<img alt="User Profile" class="w-8 h-8 rounded-full object-cover" data-alt="A small avatar of a security professional working in a dark control room, illuminated by teal screens." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFsECeBnL8QMZ7S95A3Fwa353I94-37-KXfPVsgv_RitktVPzQeolKFbKsXvCripIreqiER1JrJOEkpzX67i1BtxztS0U9D9b1TBUltzSsYNOKcEdj9R0h4PA74jEmW3zVbP5eVqOz0PB1zENfIzrHEGUuZf4wV2dYx_2SSdIt7g3EEzKe1u2ZaUxe7lQdWb7LOjoQXXJg2D-sd1F05R4wdsfhADZncCWk4VbdW1fIh8JnEWEOQPpbzfnj90Wrnk5sxQrGuz6N4RFP"/>
+<div class="flex-1 min-w-0">
+<p class="font-label-md text-label-md text-on-surface truncate">Admin User</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant truncate">admin@hiddenshield.io</p>
+</div>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-screen overflow-hidden bg-background relative pt-16 md:pt-0">
+<!-- Top App Bar Content (Desktop) -->
+<header class="hidden md:flex justify-between items-center w-full px-container-margin py-padding-md bg-surface border-b border-outline-variant z-10 sticky top-0">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">订阅与工作空间设置</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">管理您的服务层级、资源配额及团队权限。</p>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="bg-surface-container-lowest border border-outline-variant rounded-full py-1.5 pl-10 pr-4 text-body-sm font-body-sm text-on-surface focus:outline-none focus:border-primary w-64 transition-colors" placeholder="搜索设置..." type="text"/>
+</div>
+<button class="bg-surface-container border border-outline-variant text-on-surface font-label-md text-label-md py-1.5 px-4 rounded hover:bg-surface-container-high transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">help</span>
+                    支持
+                </button>
+</div>
+</header>
+<!-- Scrollable Dashboard -->
+<div class="flex-1 overflow-y-auto p-padding-lg md:p-container-margin">
+<div class="max-w-[1600px] mx-auto grid grid-cols-1 xl:grid-cols-12 gap-gutter">
+<!-- Left Column (Overview & Workspace) -->
+<div class="xl:col-span-8 space-y-gutter">
+<!-- Subscription Overview -->
+<section class="bg-[#1E293B] border border-outline-variant rounded-xl p-6 relative overflow-hidden">
+<!-- Abstract Background Decoration -->
+<div class="absolute -right-20 -top-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative z-10">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<span class="material-symbols-outlined text-tertiary-container text-3xl">workspace_premium</span>
+<h3 class="font-headline-lg text-headline-lg text-on-surface">Studio 计划</h3>
+<span class="bg-tertiary-container/20 text-tertiary border border-tertiary/30 px-2 py-0.5 rounded font-label-sm text-label-sm">生效中</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-md">专为高级数据分析和加密流程设计的专业团队方案。</p>
+</div>
+<div class="text-left md:text-right w-full md:w-auto bg-surface-container-lowest/50 p-4 rounded-lg border border-outline-variant/50">
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">下一个账单日</p>
+<p class="font-headline-md text-headline-md text-on-surface">2023-12-01</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">将扣款 $299.00 / 月</p>
+<div class="mt-4 flex gap-2 justify-start md:justify-end">
+<button class="bg-surface-container border border-outline-variant text-on-surface font-label-md text-label-md py-1.5 px-3 rounded hover:bg-surface-container-high transition-colors">更改计划</button>
+<button class="bg-transparent border border-error/50 text-error font-label-md text-label-md py-1.5 px-3 rounded hover:bg-error/10 transition-colors">取消订阅</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Workspace Management -->
+<section class="bg-[#1E293B] border border-outline-variant rounded-xl flex flex-col">
+<div class="p-6 border-b border-outline-variant flex justify-between items-center">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">工作空间成员</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">管理有权访问此环境的用户。(已用 3/10 席位)</p>
+</div>
+<button class="bg-primary text-on-primary font-label-md text-label-md py-2 px-4 rounded hover:bg-primary-fixed-dim transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">person_add</span>
+                                邀请成员
+                            </button>
+</div>
+<div class="p-0 overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-outline-variant bg-surface-container-lowest/30">
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">用户</th>
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">角色</th>
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">最后登录</th>
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider text-right">操作</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/50">
+<tr class="hover:bg-surface-container/30 transition-colors">
+<td class="py-3 px-6">
+<div class="flex items-center gap-3">
+<img alt="User Avatar" class="w-8 h-8 rounded-full object-cover" data-alt="A portrait photo of a corporate security officer, male, serious expression, dark background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuArUzPegIWgBHvnwZyo_8nJ3gyT-tmcwDEo9hl72jvZHisk2m9DPuRxizJeLYgiFtw21x40ft7ZKtLHO43ZUNgYT-6lJ662tBmZz8pOi5zTWYsYoUVbpf2jdy8obE6DLaKHTuPFot2n20PFqcgYGhNQj-III0g-eDaUyWw5FHjZ4IhxOrwdAvrLyxPBsAHn9cEA1nDZvvmcBEnZFpJi1fxEp_Rjm2W3gWz2IqZXgG3n9WxB8-4SfzvMxezkKXSZNAzeLiE2q9sp2aru"/>
+<div>
+<p class="font-label-md text-label-md text-on-surface">张伟 (您)</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">zhangwei@example.com</p>
+</div>
+</div>
+</td>
+<td class="py-3 px-6">
+<span class="bg-primary-container/10 text-primary border border-primary/20 px-2 py-0.5 rounded font-label-sm text-label-sm">所有者</span>
+</td>
+<td class="py-3 px-6 font-body-sm text-body-sm text-on-surface-variant">当前在线</td>
+<td class="py-3 px-6 text-right">
+<button class="text-on-surface-variant hover:text-on-surface p-1 rounded transition-colors"><span class="material-symbols-outlined text-[20px]">more_vert</span></button>
+</td>
+</tr>
+<tr class="hover:bg-surface-container/30 transition-colors">
+<td class="py-3 px-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-secondary-container/20 border border-secondary-container text-secondary flex items-center justify-center font-label-md text-label-md">LW</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface">李娜</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">lina@example.com</p>
+</div>
+</div>
+</td>
+<td class="py-3 px-6">
+<span class="bg-surface-container-highest text-on-surface-variant border border-outline-variant px-2 py-0.5 rounded font-label-sm text-label-sm">管理员</span>
+</td>
+<td class="py-3 px-6 font-body-sm text-body-sm text-on-surface-variant">2小时前</td>
+<td class="py-3 px-6 text-right">
+<button class="text-on-surface-variant hover:text-on-surface p-1 rounded transition-colors"><span class="material-symbols-outlined text-[20px]">more_vert</span></button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- Entitlement Grid (Dense) -->
+<section class="bg-[#1E293B] border border-outline-variant rounded-xl flex flex-col">
+<div class="p-6 border-b border-outline-variant">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">功能配额与层级比较</h3>
+</div>
+<div class="p-0 overflow-x-auto">
+<table class="w-full text-left border-collapse min-w-[600px]">
+<thead>
+<tr class="border-b border-outline-variant bg-surface-container-lowest/30">
+<th class="py-3 px-6 font-label-md text-label-md text-on-surface-variant w-1/3">功能模块</th>
+<th class="py-3 px-4 font-label-md text-label-md text-on-surface-variant text-center">Free</th>
+<th class="py-3 px-4 font-label-md text-label-md text-tertiary text-center border-b-2 border-tertiary">Studio (当前)</th>
+<th class="py-3 px-4 font-label-md text-label-md text-on-surface-variant text-center">Enterprise</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/50 font-body-sm text-body-sm text-on-surface">
+<tr class="hover:bg-surface-container/30">
+<td class="py-3 px-6 text-on-surface-variant">加密保险库容量</td>
+<td class="py-3 px-4 text-center">5 GB</td>
+<td class="py-3 px-4 text-center font-bold">500 GB</td>
+<td class="py-3 px-4 text-center">无限</td>
+</tr>
+<tr class="hover:bg-surface-container/30">
+<td class="py-3 px-6 text-on-surface-variant">批处理队列并发数</td>
+<td class="py-3 px-4 text-center">1</td>
+<td class="py-3 px-4 text-center font-bold">10</td>
+<td class="py-3 px-4 text-center">自定义</td>
+</tr>
+<tr class="hover:bg-surface-container/30">
+<td class="py-3 px-6 text-on-surface-variant">高级审查日志</td>
+<td class="py-3 px-4 text-center text-on-surface-variant/50"><span class="material-symbols-outlined text-[16px]">close</span></td>
+<td class="py-3 px-4 text-center text-primary"><span class="material-symbols-outlined text-[16px]">check</span></td>
+<td class="py-3 px-4 text-center text-on-surface-variant"><span class="material-symbols-outlined text-[16px]">check</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+<!-- Right Column (Monitors, Billing, Context) -->
+<div class="xl:col-span-4 space-y-gutter">
+<!-- Resource Monitors -->
+<section class="bg-[#1E293B] border border-outline-variant rounded-xl p-6">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-6">资源使用情况</h3>
+<div class="space-y-6">
+<!-- Vault Capacity Gauge -->
+<div>
+<div class="flex justify-between items-end mb-2">
+<span class="font-label-md text-label-md text-on-surface-variant">保险库容量</span>
+<span class="font-label-sm text-label-sm text-on-surface"><span class="text-primary font-bold">124</span> / 500 GB</span>
+</div>
+<div class="w-full bg-[#0F172A] rounded-full h-2 inset-shadow border border-outline-variant/30">
+<div class="bg-primary h-2 rounded-full" style="width: 25%"></div>
+</div>
+</div>
+<!-- API Quota Gauge -->
+<div>
+<div class="flex justify-between items-end mb-2">
+<span class="font-label-md text-label-md text-on-surface-variant">API 调用配额 (本月)</span>
+<span class="font-label-sm text-label-sm text-on-surface"><span class="text-tertiary-container font-bold">84,201</span> / 100k</span>
+</div>
+<div class="w-full bg-[#0F172A] rounded-full h-2 inset-shadow border border-outline-variant/30">
+<div class="bg-tertiary-container h-2 rounded-full" style="width: 84%"></div>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-2 text-right">用量接近阈值，建议监控</p>
+</div>
+</div>
+</section>
+<!-- Capability Boundary Notes -->
+<section class="bg-surface-container-low border border-outline-variant/50 rounded-xl p-5 border-l-4 border-l-secondary-container">
+<div class="flex gap-3">
+<span class="material-symbols-outlined text-secondary-container text-[20px] mt-0.5">info</span>
+<div>
+<h4 class="font-label-md text-label-md text-on-surface mb-1">系统限制说明</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                                    "批处理队列" 当前受限于 <strong>10 个并发项</strong>。这是 Studio 计划的硬性限制，旨在保证共享基础设施的稳定性。如需处理大规模并发任务，请升级至 Enterprise 以解锁独立计算资源。
+                                </p>
+</div>
+</div>
+</section>
+<!-- Billing History -->
+<section class="bg-[#1E293B] border border-outline-variant rounded-xl p-6">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">最近账单</h3>
+<button class="text-primary font-label-sm text-label-sm hover:underline">查看全部</button>
+</div>
+<ul class="space-y-3">
+<li class="flex items-center justify-between p-3 bg-[#0F172A] rounded-lg border border-outline-variant/50">
+<div>
+<p class="font-label-md text-label-md text-on-surface">INV-2023-11</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">2023-11-01 · $299.00</p>
+</div>
+<div class="flex items-center gap-3">
+<span class="bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded font-label-sm text-label-sm flex items-center gap-1">
+<div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                                        已支付
+                                    </span>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors" title="下载凭证">
+<span class="material-symbols-outlined text-[18px]">download</span>
+</button>
+</div>
+</li>
+<li class="flex items-center justify-between p-3 bg-[#0F172A] rounded-lg border border-outline-variant/50">
+<div>
+<p class="font-label-md text-label-md text-on-surface">INV-2023-10</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">2023-10-01 · $299.00</p>
+</div>
+<div class="flex items-center gap-3">
+<span class="bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded font-label-sm text-label-sm flex items-center gap-1">
+<div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                                        已支付
+                                    </span>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors" title="下载凭证">
+<span class="material-symbols-outlined text-[18px]">download</span>
+</button>
+</div>
+</li>
+</ul>
+</section>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center px-padding-md pb-safe bg-surface-container-highest border-t border-outline-variant shadow-lg z-50">
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-2 py-1 active:bg-surface-variant scale-95 duration-75" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-sm text-label-sm mt-1">Workbench</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-2 py-1 active:bg-surface-variant scale-95 duration-75" href="#">
+<span class="material-symbols-outlined">settings_suggest</span>
+<span class="font-label-sm text-label-sm mt-1">Process</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-2 py-1 active:bg-surface-variant scale-95 duration-75" href="#">
+<span class="material-symbols-outlined">verified_user</span>
+<span class="font-label-sm text-label-sm mt-1">Verify</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-2 py-1 active:bg-surface-variant scale-95 duration-75" href="#">
+<span class="material-symbols-outlined">enhanced_encryption</span>
+<span class="font-label-sm text-label-sm mt-1">Vault</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 active:bg-surface-variant scale-95 duration-75" href="#">
+<span class="material-symbols-outlined fill-icon">settings</span>
+<span class="font-label-sm text-label-sm mt-1 font-bold">Settings</span>
+</a>
+</nav>
+</body></html>

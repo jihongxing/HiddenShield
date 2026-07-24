@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Manager, State};
 
 use crate::encoder::hw_detect;
+use crate::entitlements;
 use crate::pipeline::ffmpeg;
 use crate::pipeline::progress;
 use crate::pipeline::scheduler::{self, PipelineParams};
@@ -35,12 +36,12 @@ pub enum EncodingMode {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AIContentOptions {
-    pub is_ai_generated: bool,
-    pub training_permission: String,
-    pub generation_method: String,
-    pub modification_level: String,
-    pub authenticity_claim: String,
-    pub custom_metadata: Option<String>,
+    pub work_source_declaration: String,
+    pub training_permission_declaration: String,
+    pub creation_method_declaration: String,
+    pub human_edit_level_declaration: String,
+    pub authenticity_claim_declaration: String,
+    pub custom_rights_statement: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -164,15 +165,12 @@ pub async fn start_pipeline(
     if input_path.trim().is_empty() {
         return Err("input path cannot be empty".to_string());
     }
+    ensure_local_batch_execution_entitled(&state, &input_path)?;
 
-    // For video files, at least one platform is required.
-    // For image/audio files, platforms can be empty (watermark-only workflow).
+    // Platform-specific transcode presets are no longer part of the formal
+    // HiddenShield write flow. Video now creates one L1 audio-track protected copy.
     let file_type = scheduler::classify_file(std::path::Path::new(&input_path));
     let is_media_only = file_type != scheduler::FileType::Video;
-
-    if platforms.is_empty() && !is_media_only {
-        return Err("at least one platform must be selected".to_string());
-    }
 
     let input_size_bytes = std::fs::metadata(&input_path)
         .map(|meta| meta.len())
@@ -214,8 +212,7 @@ pub async fn start_pipeline(
         format!("已创建{}水印嵌入任务", type_label)
     } else {
         format!(
-            "已为 {} 个平台创建压制任务（{}）",
-            platforms.len(),
+            "已创建视频音轨保护副本任务（{}）",
             hw_info
                 .as_ref()
                 .map(|info| info.preferred_encoder.as_str())
@@ -269,7 +266,9 @@ pub async fn start_pipeline(
                         },
                         input_size_bytes,
                         None,
-                        e.to_string(),
+                        e.watermark_code()
+                            .map(ToString::to_string)
+                            .unwrap_or_else(|| e.to_string()),
                         Some(pipeline_id_clone.clone()),
                     );
                 }
@@ -277,7 +276,7 @@ pub async fn start_pipeline(
                     "pipeline-progress",
                     PipelineProgressPayload {
                         pipeline_id: pipeline_id_clone,
-                        stage: pipeline_failure_stage(&e.to_string()),
+                        stage: pipeline_failure_stage(&e),
                         percent: 0,
                         platform_percents: progress::PlatformPercents::new(),
                     },
@@ -292,10 +291,147 @@ pub async fn start_pipeline(
     })
 }
 
-fn pipeline_failure_stage(error: &str) -> String {
-    if error.contains("audio_protection_min_duration") {
-        return "失败：音频时长不足 30 秒，暂不支持生成版权保护副本".to_string();
+fn ensure_local_batch_execution_entitled(state: &AppState, input_path: &str) -> Result<(), String> {
+    let conn = state
+        .db
+        .lock()
+        .map_err(|error| format!("db lock error: {error}"))?;
+    let is_running_batch_item: bool = conn
+        .query_row(
+            "SELECT EXISTS(
+                SELECT 1 FROM local_batch_items
+                WHERE input_ref = ?1 AND status IN ('queued', 'running')
+            )",
+            [input_path],
+            |row| row.get(0),
+        )
+        .map_err(|error| format!("读取本地批量队列失败: {error}"))?;
+    if !is_running_batch_item {
+        return Ok(());
     }
+    let entitlement = entitlements::resolve_effective_entitlement(
+        &conn,
+        state.installation_secret_store.as_ref(),
+    )
+    .map_err(|error| format!("读取权益状态失败: {error}"))?;
+    if entitlement.features.get("batch_processing") == Some(&true) {
+        return Ok(());
+    }
+    Err("本地批量处理从 Creator 开放".to_string())
+}
+
+#[cfg(test)]
+mod entitlement_tests {
+    use rusqlite::Connection;
+
+    use super::*;
+    use crate::db::billing::{self, EntitlementState, EntitlementStatus};
+    use crate::db::offline_license::MemoryInstallationSecretStore;
+    use crate::db::schema;
+
+    #[test]
+    fn queued_local_batch_execution_is_denied_without_effective_entitlement() {
+        let conn = Connection::open_in_memory().unwrap();
+        schema::run_migrations(&conn).unwrap();
+        conn.execute(
+            "INSERT INTO local_batch_jobs (
+                id, status, created_at, updated_at, entitlement_plan_code, entitlement_status
+             ) VALUES ('batch-k2', 'queued', '2026-07-15T00:00:00Z',
+                       '2026-07-15T00:00:00Z', 'free', 'free')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO local_batch_items (
+                id, job_id, input_ref, file_name, media_kind, status, attempts,
+                created_at, updated_at
+             ) VALUES ('item-k2', 'batch-k2', 'C:/media/k2.png', 'k2.png',
+                       'image', 'queued', 0, '2026-07-15T00:00:00Z',
+                       '2026-07-15T00:00:00Z')",
+            [],
+        )
+        .unwrap();
+        let store = MemoryInstallationSecretStore::with_secret(vec![7u8; 32]);
+        let state = AppState::new_with_installation_secret_store(conn, store);
+
+        assert_eq!(
+            ensure_local_batch_execution_entitled(&state, "C:/media/k2.png").unwrap_err(),
+            "本地批量处理从 Creator 开放"
+        );
+
+        let mut entitlement = EntitlementState::default();
+        entitlement.status = EntitlementStatus::Active;
+        entitlement.plan_code = "creator".to_string();
+        entitlement
+            .features
+            .insert("batch_processing".to_string(), true);
+        let conn = state.db.lock().unwrap();
+        billing::save_entitlement_state(&conn, &entitlement).unwrap();
+        drop(conn);
+
+        ensure_local_batch_execution_entitled(&state, "C:/media/k2.png").unwrap();
+    }
+}
+
+fn pipeline_failure_stage(error: &crate::pipeline::error::PipelineError) -> String {
+    if error.watermark_code() == Some("audio_duration_unknown")
+        || error
+            .to_string()
+            .contains("audio_protection_duration_unknown")
+    {
+        return "失败：无法确认音频时长，未生成保护副本。请更换可识别时长的完整音频文件后重试"
+            .to_string();
+    }
+    if error.watermark_code() == Some("audio_too_short")
+        || error.to_string().contains("audio_protection_min_duration")
+    {
+        return "失败：音频时长不足 30 秒，未生成保护副本。请选择 30 秒以上的完整音频作品后重试"
+            .to_string();
+    }
+    if error.watermark_code() == Some("audio_sample_rate_too_low")
+        || error.watermark_code() == Some("audio_sample_rate_too_high")
+    {
+        return "失败：当前仅支持 8–48 kHz 音频采样率，未生成保护副本。请保持原始规格并更换常见采样率音频后重试"
+            .to_string();
+    }
+    if error.watermark_code() == Some("audio_channels_unsupported") {
+        return "失败：当前仅支持 mono 或 stereo 音频，未生成保护副本。请保持原始规格并选择单声道或立体声音频后重试"
+            .to_string();
+    }
+    if error.watermark_code() == Some("audio_spec_unknown") {
+        return "失败：无法确认音频采样率或声道，未生成保护副本。请选择可识别规格的完整音频文件后重试"
+            .to_string();
+    }
+    if error.watermark_code() == Some("image_capacity_insufficient") {
+        return "失败：当前图片可用水印容量不足，未生成保护副本。请选择像素更多或裁剪更少的原图后重试"
+            .to_string();
+    }
+    if error.watermark_code() == Some("image_pixel_limit_exceeded") {
+        return "失败：图片超过 100 MP 上限，未生成保护副本。请选择像素不超过 100 MP 的静态图片后重试"
+            .to_string();
+    }
+    if error.watermark_code() == Some("image_file_size_limit_exceeded") {
+        return "失败：图片超过 512 MiB 上限，未生成保护副本。请选择文件不超过 512 MiB 的静态图片后重试"
+            .to_string();
+    }
+    if error.watermark_code() == Some("image_format_unsupported") {
+        return "失败：当前仅支持静态 PNG、JPEG、WebP，未生成保护副本。请转换为正式支持格式后重试"
+            .to_string();
+    }
+    if error.watermark_code() == Some("already_watermarked") {
+        if let Some(uid) = error.existing_watermark_uid() {
+            return format!("失败：检测到已有版权记录 {uid}。如需生成新版，请开启“作为新版写入”。");
+        }
+        return "失败：检测到已有版权记录。如需生成新版，请开启“作为新版写入”。".to_string();
+    }
+    if error.watermark_code() == Some("missing_creator_identity") {
+        return "失败：请先完成创作者身份设置，再生成保护副本。".to_string();
+    }
+    if error.watermark_code() == Some("embed_failed") {
+        return "失败：保护副本未生成。请确认文件可读取后重试；如果持续失败，请复制诊断信息反馈。"
+            .to_string();
+    }
+    let error = error.to_string();
     format!("失败：{error}")
 }
 

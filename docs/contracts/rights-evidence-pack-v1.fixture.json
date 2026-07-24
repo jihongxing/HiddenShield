@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "documentType": "rights_evidence_pack",
+  "packId": "hsep-fixture-r4-0001",
+  "status": "draft",
+  "generatedAt": "2026-07-14T12:00:00.000Z",
+  "case": {
+    "caseId": "case-fixture-r4-0001",
+    "title": "合成图片传播争议材料整理",
+    "purpose": "rights_enforcement_support",
+    "claimantDisplayName": "示例创作者",
+    "claimantDeclaration": "本材料中的权利主张与外部来源由提交人陈述，尚未经司法机关确认。",
+    "jurisdictionNote": "未指定受理机构；本证据包不构成法律意见。"
+  },
+  "copyrightFacts": [
+    {
+      "reportId": "hsr-fixture-formal-report-0001",
+      "reportRootDigest": "41332b38336edbe365787ec96928dbc93ac34f8740359f674280c10574d17e45",
+      "recordId": "fixture-record-image-0001",
+      "watermarkUid": "HS-12345678-90ABCDEF-12345678-90ABCDEF",
+      "mediaKind": "image",
+      "factSnapshot": {
+        "writeVerificationStatus": "verified",
+        "trustedTimeStatus": "unavailable",
+        "payloadProtocolVersion": 3
+      }
+    }
+  ],
+  "disputedObjects": [
+    {
+      "disputedObjectId": "disputed-object-0001",
+      "title": "被投诉页面中的图片展示",
+      "objectType": "web_page",
+      "description": "用户主张该页面展示的图片与其版权记录相关。",
+      "claimStatus": "claimant_asserted"
+    }
+  ],
+  "infringementSamples": [
+    {
+      "sampleId": "sample-0001",
+      "disputedObjectId": "disputed-object-0001",
+      "source": {
+        "kind": "url",
+        "value": "https://evidence.example.invalid/posts/fixture-0001"
+      },
+      "capturedAt": "2026-07-14T11:30:00.000Z",
+      "captureTimeStatus": "unverified",
+      "sha256": "005e3d31f5b43c3ddcaa60eb9eaa50952f249c997c031dca9d9134f339590343",
+      "bytes": 245760,
+      "attachmentId": "attachment-0001",
+      "collectorStatement": "该附件由测试 fixture 提供，仅用于验证案件级目录和引用结构。"
+    }
+  ],
+  "collectionEvents": [
+    {
+      "eventId": "collection-event-0001",
+      "eventType": "file_imported",
+      "occurredAt": "2026-07-14T11:31:00.000Z",
+      "timeStatus": "device_claimed",
+      "actor": "fixture_operator",
+      "attachmentIds": [
+        "attachment-0001"
+      ],
+      "description": "导入合成网页截图并计算 SHA-256。"
+    }
+  ],
+  "attachments": [
+    {
+      "attachmentId": "attachment-0001",
+      "sequence": 1,
+      "role": "infringement_sample",
+      "originalFileName": "fixture-web-capture.png",
+      "mediaType": "image/png",
+      "sha256": "005e3d31f5b43c3ddcaa60eb9eaa50952f249c997c031dca9d9134f339590343",
+      "bytes": 245760,
+      "source": "https://evidence.example.invalid/posts/fixture-0001",
+      "acquisitionMethod": "fixture_import",
+      "originalBytesIncluded": false
+    }
+  ],
+  "automatedFindings": [
+    {
+      "findingId": "finding-0001",
+      "findingType": "hash_comparison",
+      "method": "sha256_exact_match",
+      "inputAttachmentIds": [
+        "attachment-0001"
+      ],
+      "status": "not_matched",
+      "observation": "侵权样本附件摘要与版权记录中的原文件摘要不同。",
+      "limitations": "摘要不同不能判断视觉内容是否相似，也不能据此认定或排除侵权。"
+    }
+  ],
+  "humanStatements": [
+    {
+      "statementId": "statement-0001",
+      "authorDisplayName": "示例创作者",
+      "authorRole": "claimant",
+      "statement": "我主张争议页面中的图片来源于我的作品，需由专业人员结合附件和法律规则进一步审查。",
+      "signatureStatus": "not_signed",
+      "signedAt": null
+    }
+  ],
+  "limitations": [
+    "本证据包是技术辅助材料，不构成法律意见。",
+    "外部来源与采集时间尚未经可信时间、公证或司法鉴定确认。",
+    "自动观察不等于侵权、权属或司法采纳结论。",
+    "fixture 不包含真实案件或真实个人信息。"
+  ]
+}

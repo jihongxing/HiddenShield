@@ -1,135 +1,121 @@
-//! User identity management for watermark payload.
+//! Creator identity source data for watermark payloads.
 //!
-//! Manages two persistent identity components:
-//! - `user_seed`: 8 bytes derived from user-provided creator identity (name/alias)
-//! - `device_id`: 4 bytes derived from hardware fingerprint (hostname + MAC-like info)
-//!
-//! Stored in `AppData/HiddenShield/identity.json`.
+//! The desktop app stores source identity fields only. Runtime watermark
+//! identity bytes are derived by `watermark-core`; this module does not
+//! implement seed, device, payload, or copyright ID algorithms.
 
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 use std::path::Path;
+use watermark_core::{IdentityBuildInput, WatermarkIdentity};
 
-/// Persistent identity stored on disk.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Identity {
-    /// User-provided creator seed (SHA-256 hex of their input).
-    pub user_seed_hex: String,
-    /// Device fingerprint (SHA-256 hex of hardware info).
-    pub device_id_hex: String,
+    pub creator_display_name: String,
+    pub device_identity: String,
 }
 
-/// Runtime identity bytes ready for watermark embedding.
-#[derive(Debug, Clone)]
-pub struct IdentityBytes {
-    /// 8 bytes: SHA-256 prefix of user's creator identity.
-    pub user_seed: [u8; 8],
-    /// 4 bytes: SHA-256 prefix of device hardware fingerprint.
-    pub device_id: [u8; 4],
-}
+pub type IdentityBytes = WatermarkIdentity;
 
-/// Load identity from disk. Returns None if not yet initialized.
 pub fn load_identity(app_data_dir: &Path) -> Option<Identity> {
     let path = app_data_dir.join("identity.json");
     let content = std::fs::read_to_string(&path).ok()?;
-    serde_json::from_str(&content).ok()
+    let identity: Identity = serde_json::from_str(&content).ok()?;
+    normalize_identity(identity)
 }
 
-/// Save identity to disk.
 pub fn save_identity(app_data_dir: &Path, identity: &Identity) -> Result<(), String> {
+    let identity = normalize_identity(identity.clone())
+        .ok_or_else(|| "creator identity and device identity are required".to_string())?;
+    std::fs::create_dir_all(app_data_dir).map_err(|e| format!("create app data dir: {e}"))?;
     let path = app_data_dir.join("identity.json");
     let json =
-        serde_json::to_string_pretty(identity).map_err(|e| format!("serialize identity: {e}"))?;
+        serde_json::to_string_pretty(&identity).map_err(|e| format!("serialize identity: {e}"))?;
     std::fs::write(&path, json).map_err(|e| format!("write identity: {e}"))?;
     Ok(())
 }
 
-/// Compute user_seed (8 bytes) from a user-provided string (name, alias, phone, etc).
-pub fn compute_user_seed(creator_input: &str) -> [u8; 8] {
-    let mut hasher = Sha256::new();
-    hasher.update(b"HS_USER_SEED_V1:");
-    hasher.update(creator_input.as_bytes());
-    let hash = hasher.finalize();
-    let mut seed = [0u8; 8];
-    seed.copy_from_slice(&hash[..8]);
-    seed
+pub fn current_device_identity() -> String {
+    let hostname = hostname::get()
+        .ok()
+        .and_then(|value| value.into_string().ok())
+        .unwrap_or_else(|| "unknown-host".to_string());
+    let user = std::env::var("USERNAME")
+        .or_else(|_| std::env::var("USER"))
+        .unwrap_or_else(|_| "unknown-user".to_string());
+    let computer_name = std::env::var("COMPUTERNAME").unwrap_or_default();
+    format!(
+        "desktop|{}|{}|{}|{}|{}",
+        std::env::consts::OS,
+        std::env::consts::ARCH,
+        hostname.trim(),
+        user.trim(),
+        computer_name.trim()
+    )
 }
 
-/// Compute device_id (4 bytes) from hardware fingerprint.
-pub fn compute_device_id() -> [u8; 4] {
-    let mut hasher = Sha256::new();
-    hasher.update(b"HS_DEVICE_V1:");
-
-    // Hostname
-    if let Ok(name) = hostname::get() {
-        hasher.update(name.to_string_lossy().as_bytes());
-    }
-
-    // Additional machine entropy: username + OS info
-    if let Ok(user) = std::env::var("USERNAME").or_else(|_| std::env::var("USER")) {
-        hasher.update(user.as_bytes());
-    }
-    hasher.update(std::env::consts::OS.as_bytes());
-    hasher.update(std::env::consts::ARCH.as_bytes());
-
-    // Windows: COMPUTERNAME for extra uniqueness
-    if let Ok(cn) = std::env::var("COMPUTERNAME") {
-        hasher.update(cn.as_bytes());
-    }
-
-    let hash = hasher.finalize();
-    let mut id = [0u8; 4];
-    id.copy_from_slice(&hash[..4]);
-    id
-}
-
-/// Initialize identity on first launch with user-provided creator string.
 pub fn initialize_identity(
     app_data_dir: &Path,
     creator_input: &str,
 ) -> Result<IdentityBytes, String> {
-    let user_seed = compute_user_seed(creator_input);
-    let device_id = compute_device_id();
-
     let identity = Identity {
-        user_seed_hex: hex::encode(user_seed),
-        device_id_hex: hex::encode(device_id),
+        creator_display_name: creator_input.trim().to_string(),
+        device_identity: current_device_identity(),
     };
     save_identity(app_data_dir, &identity)?;
-
-    Ok(IdentityBytes {
-        user_seed,
-        device_id,
-    })
+    identity_bytes(&identity)
 }
 
-/// Get identity bytes (load from disk or return None if not initialized).
 pub fn get_identity_bytes(app_data_dir: &Path) -> Option<IdentityBytes> {
     let identity = load_identity(app_data_dir)?;
-    let user_seed = hex_to_8bytes(&identity.user_seed_hex)?;
-    let device_id = hex_to_4bytes(&identity.device_id_hex)?;
-    Some(IdentityBytes {
-        user_seed,
-        device_id,
+    identity_bytes(&identity).ok()
+}
+
+pub fn identity_bytes(identity: &Identity) -> Result<IdentityBytes, String> {
+    WatermarkIdentity::from_identity(IdentityBuildInput {
+        creator_identity: &identity.creator_display_name,
+        device_identity: &identity.device_identity,
+    })
+    .map_err(|error| error.to_string())
+}
+
+fn normalize_identity(identity: Identity) -> Option<Identity> {
+    let creator_display_name = identity.creator_display_name.trim().to_string();
+    let device_identity = identity.device_identity.trim().to_string();
+    if creator_display_name.is_empty() || device_identity.is_empty() {
+        return None;
+    }
+    Some(Identity {
+        creator_display_name,
+        device_identity,
     })
 }
 
-fn hex_to_8bytes(hex_str: &str) -> Option<[u8; 8]> {
-    let bytes = hex::decode(hex_str).ok()?;
-    if bytes.len() < 8 {
-        return None;
-    }
-    let mut arr = [0u8; 8];
-    arr.copy_from_slice(&bytes[..8]);
-    Some(arr)
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-fn hex_to_4bytes(hex_str: &str) -> Option<[u8; 4]> {
-    let bytes = hex::decode(hex_str).ok()?;
-    if bytes.len() < 4 {
-        return None;
+    #[test]
+    fn legacy_seed_identity_is_not_loaded() {
+        let parsed: Result<Identity, _> = serde_json::from_str(
+            r#"{"user_seed_hex":"abcd","device_id_hex":"1234","creator_display_name":"旧身份"}"#,
+        );
+        assert!(parsed.is_err());
     }
-    let mut arr = [0u8; 4];
-    arr.copy_from_slice(&bytes[..4]);
-    Some(arr)
+
+    #[test]
+    fn identity_bytes_are_derived_by_watermark_core() {
+        let identity = Identity {
+            creator_display_name: "creator".to_string(),
+            device_identity: "desktop-device".to_string(),
+        };
+        let bytes = identity_bytes(&identity).unwrap();
+        assert_eq!(
+            bytes,
+            WatermarkIdentity::from_identity(IdentityBuildInput {
+                creator_identity: "creator",
+                device_identity: "desktop-device",
+            })
+            .unwrap()
+        );
+    }
 }

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>订阅与方案 - HiddenShield</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-container": "#ffac5a",
+                      "on-secondary-container": "#5b3800",
+                      "on-background": "#dde4e1",
+                      "surface-container-low": "#161d1b",
+                      "primary-container": "#2dd4bf",
+                      "on-secondary-fixed-variant": "#653e00",
+                      "surface-dim": "#0e1513",
+                      "surface-tint": "#3cddc7",
+                      "on-tertiary": "#4b2800",
+                      "surface-container-highest": "#2f3634",
+                      "on-error-container": "#ffdad6",
+                      "tertiary-fixed": "#ffdcc0",
+                      "on-tertiary-container": "#744000",
+                      "on-tertiary-fixed": "#2d1600",
+                      "secondary-fixed-dim": "#ffb95f",
+                      "surface-container-lowest": "#09100e",
+                      "on-primary-fixed": "#00201c",
+                      "inverse-primary": "#006b5f",
+                      "tertiary": "#ffd1aa",
+                      "on-tertiary-fixed-variant": "#6b3b00",
+                      "on-surface-variant": "#bacac5",
+                      "primary": "#57f1db",
+                      "on-primary": "#003731",
+                      "background": "#0e1513",
+                      "inverse-surface": "#dde4e1",
+                      "secondary": "#ffb95f",
+                      "primary-fixed": "#62fae3",
+                      "on-surface": "#dde4e1",
+                      "surface-bright": "#333b39",
+                      "outline": "#859490",
+                      "secondary-fixed": "#ffddb8",
+                      "inverse-on-surface": "#2b3230",
+                      "surface-container-high": "#242b2a",
+                      "primary-fixed-dim": "#3cddc7",
+                      "on-secondary": "#472a00",
+                      "secondary-container": "#ee9800",
+                      "tertiary-fixed-dim": "#ffb875",
+                      "surface-variant": "#2f3634",
+                      "error-container": "#93000a",
+                      "error": "#ffb4ab",
+                      "on-primary-container": "#00574d",
+                      "on-error": "#690005",
+                      "outline-variant": "#3c4a46",
+                      "on-secondary-fixed": "#2a1700",
+                      "surface-container": "#1a211f",
+                      "on-primary-fixed-variant": "#005047",
+                      "surface": "#0e1513"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "padding-xs": "4px",
+                      "padding-sm": "8px",
+                      "padding-lg": "24px",
+                      "unit": "4px",
+                      "padding-md": "16px",
+                      "container-margin": "24px"
+              },
+              "fontFamily": {
+                      "body-lg": ["Inter"],
+                      "headline-sm": ["Inter"],
+                      "headline-lg": ["Inter"],
+                      "label-sm": ["Inter"],
+                      "label-md": ["Inter"],
+                      "label-lg": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "body-sm": ["Inter"],
+                      "body-md": ["Inter"]
+              },
+              "fontSize": {
+                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "headline-sm": ["16px", {"lineHeight": "24px", "fontWeight": "600"}],
+                      "headline-lg": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "label-sm": ["11px", {"lineHeight": "12px", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                      "label-md": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                      "label-lg": ["14px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "headline-md": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                      "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-lg antialiased min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="w-full top-0 bg-background border-b border-outline-variant flex justify-between items-center px-container-margin py-padding-md sticky z-50">
+<button class="text-on-surface-variant hover:bg-surface-container transition-colors duration-200 p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">订阅与方案</h1>
+<div class="w-10"></div> <!-- Spacer for balance -->
+</header>
+<!-- Main Content -->
+<main class="flex-1 overflow-y-auto px-container-margin py-padding-lg space-y-6 flex flex-col md:max-w-2xl md:mx-auto w-full pb-32">
+<!-- Current Plan Usage Header -->
+<section class="bg-surface-container border border-outline-variant rounded-xl p-padding-md space-y-4">
+<div class="flex justify-between items-center">
+<div>
+<h2 class="font-label-lg text-label-lg text-on-surface-variant">当前方案</h2>
+<p class="font-headline-sm text-headline-sm text-primary">创作者版</p>
+</div>
+<div class="bg-primary/10 border-l-2 border-primary px-3 py-1 rounded-sm">
+<span class="font-label-md text-label-md text-primary">Active</span>
+</div>
+</div>
+<!-- Usage Bars -->
+<div class="space-y-3">
+<!-- Protection Credits -->
+<div class="space-y-1">
+<div class="flex justify-between font-label-md text-label-md">
+<span class="text-on-surface-variant">保护额度 (Protection Credits)</span>
+<span class="text-on-surface">45 / 100</span>
+</div>
+<div class="h-1 bg-surface-bright rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 45%;"></div>
+</div>
+</div>
+<!-- Vault Storage -->
+<div class="space-y-1">
+<div class="flex justify-between font-label-md text-label-md">
+<span class="text-on-surface-variant">安全存储 (Vault Storage)</span>
+<span class="text-on-surface">1.2GB / 5GB</span>
+</div>
+<div class="h-1 bg-surface-bright rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 24%;"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Plans Grid -->
+<div class="space-y-4">
+<!-- Free Plan -->
+<article class="bg-surface border border-outline-variant rounded-xl p-padding-md space-y-4 opacity-70">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">免费版</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">基础资产保护体验</p>
+</div>
+<span class="font-headline-md text-headline-md text-on-surface">¥0<span class="font-label-sm text-label-sm text-on-surface-variant">/月</span></span>
+</div>
+<ul class="space-y-2 font-body-sm text-body-sm">
+<li class="flex items-center text-on-surface-variant">
+<span class="material-symbols-outlined text-on-surface-variant mr-2" style="font-size: 16px;">check</span>
+                        每月 5 次保护额度
+                    </li>
+<li class="flex items-center text-on-surface-variant">
+<span class="material-symbols-outlined text-on-surface-variant mr-2" style="font-size: 16px;">check</span>
+                        100MB 存储空间
+                    </li>
+<li class="flex items-center text-secondary-fixed-dim/70">
+<span class="material-symbols-outlined text-secondary-fixed-dim/70 mr-2" style="font-size: 16px;">lock</span>
+                        无高级分析报告
+                    </li>
+</ul>
+</article>
+<!-- Creator Plan (Current) -->
+<article class="bg-surface border-2 border-primary rounded-xl p-padding-md space-y-4 relative overflow-hidden">
+<div class="absolute top-0 right-0 bg-primary text-on-primary font-label-sm text-label-sm px-3 py-1 rounded-bl-lg">
+                    当前使用
+                </div>
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-primary">创作者版</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">适合独立创作者</p>
+</div>
+<span class="font-headline-md text-headline-md text-on-surface">¥49<span class="font-label-sm text-label-sm text-on-surface-variant">/月</span></span>
+</div>
+<ul class="space-y-2 font-body-sm text-body-sm">
+<li class="flex items-center text-on-surface">
+<span class="material-symbols-outlined text-primary mr-2" style="font-size: 16px;">check</span>
+                        每月 100 次保护额度
+                    </li>
+<li class="flex items-center text-on-surface">
+<span class="material-symbols-outlined text-primary mr-2" style="font-size: 16px;">check</span>
+                        5GB 安全存储空间
+                    </li>
+<li class="flex items-center text-on-surface">
+<span class="material-symbols-outlined text-primary mr-2" style="font-size: 16px;">check</span>
+                        基础侵权监测
+                    </li>
+<li class="flex items-center text-secondary-fixed-dim">
+<span class="material-symbols-outlined text-secondary-fixed-dim mr-2" style="font-size: 16px;">lock</span>
+                        批量处理功能锁定
+                    </li>
+</ul>
+</article>
+<!-- Studio Plan -->
+<article class="bg-surface-container border border-outline-variant rounded-xl p-padding-md space-y-4">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">工作室版</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">高效能团队首选</p>
+</div>
+<span class="font-headline-md text-headline-md text-on-surface">¥199<span class="font-label-sm text-label-sm text-on-surface-variant">/月</span></span>
+</div>
+<ul class="space-y-2 font-body-sm text-body-sm">
+<li class="flex items-center text-on-surface">
+<span class="material-symbols-outlined text-primary mr-2" style="font-size: 16px;">check</span>
+                        每月 1000 次保护额度
+                    </li>
+<li class="flex items-center text-on-surface">
+<span class="material-symbols-outlined text-primary mr-2" style="font-size: 16px;">check</span>
+                        50GB 安全存储空间
+                    </li>
+<li class="flex items-center text-primary font-medium bg-primary/10 px-2 py-1 -mx-2 rounded-md">
+<span class="material-symbols-outlined text-primary mr-2" style="font-size: 16px;">block</span>
+                        批量处理 (Batch Processing)
+                    </li>
+<li class="flex items-center text-primary font-medium bg-primary/10 px-2 py-1 -mx-2 rounded-md">
+<span class="material-symbols-outlined text-primary mr-2" style="font-size: 16px;">block</span>
+                        高级分析报告 (Advanced Reports)
+                    </li>
+</ul>
+<button class="w-full bg-primary text-on-primary font-label-lg text-label-lg py-2 rounded flex items-center justify-center hover:bg-primary-fixed transition-colors">
+                    立即升级
+                </button>
+</article>
+<!-- Single Purchase Callout -->
+<div class="bg-surface-bright border border-outline-variant border-dashed rounded-xl p-padding-md flex justify-between items-center">
+<div>
+<h4 class="font-label-lg text-label-lg text-on-surface">单次报告购买</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">需要一次高级分析？</p>
+</div>
+<button class="border border-outline-variant text-on-surface font-label-md text-label-md px-3 py-1 rounded hover:bg-surface-container transition-colors">
+                    ¥9.9/次
+                </button>
+</div>
+<!-- Enterprise Plan -->
+<article class="bg-surface border border-outline-variant rounded-xl p-padding-md space-y-4">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">企业版</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">定制化安全解决方案</p>
+</div>
+</div>
+<ul class="space-y-2 font-body-sm text-body-sm">
+<li class="flex items-center text-on-surface">
+<span class="material-symbols-outlined text-primary mr-2" style="font-size: 16px;">check</span>
+                        无限保护额度
+                    </li>
+<li class="flex items-center text-on-surface">
+<span class="material-symbols-outlined text-primary mr-2" style="font-size: 16px;">check</span>
+                        专属私有部署节点
+                    </li>
+<li class="flex items-center text-on-surface">
+<span class="material-symbols-outlined text-primary mr-2" style="font-size: 16px;">check</span>
+                        24/7 优先支持响应
+                    </li>
+</ul>
+<button class="w-full border border-outline-variant text-on-surface font-label-lg text-label-lg py-2 rounded flex items-center justify-center hover:bg-surface-container transition-colors">
+                    联系销售 (Contact Sales)
+                </button>
+</article>
+</div>
+</main>
+</body></html>

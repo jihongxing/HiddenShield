@@ -1,12 +1,24 @@
 # Dependencies
 node_modules/
 dist/
+dist-issuer/
 
 # Rust build artifacts
 src-tauri/target/
 feedback-backend/target/
+feedback-backend/cloud.sqlite*
 watermark-core/target/
+tools/*/target/
 src-tauri/gen/schemas/
+tmp/
+tmp-tsa/
+output/
+.dev-logs/
+
+# Generated QA materials and reports stay local.
+# Previously tracked files remain in history, but new runtime outputs are not committed.
+/artifacts/
+/tmp-ui-qa/
 
 # IDE
 .vscode/
@@ -38,3 +50,4 @@ tsa_tokens/
 # Package lock (keep package-lock.json for reproducible builds)
 yarn.lock
 pnpm-lock.yaml
+.gstack/

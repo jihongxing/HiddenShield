@@ -8,6 +8,7 @@ pub struct IdentityStatus {
     pub initialized: bool,
     pub watermark_uid_preview: Option<String>,
     pub device_id_hex: Option<String>,
+    pub creator_display_name: Option<String>,
 }
 
 /// Check if the user has set up their creator identity.
@@ -20,25 +21,19 @@ pub async fn get_identity_status(app_handle: AppHandle) -> Result<IdentityStatus
 
     match identity::get_identity_bytes(&app_data_dir) {
         Some(id) => {
-            let uid_preview = format!(
-                "HS-{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}",
-                id.user_seed[0],
-                id.user_seed[1],
-                id.user_seed[2],
-                id.user_seed[3],
-                id.device_id[0],
-                id.device_id[1],
-            );
+            let identity = identity::load_identity(&app_data_dir);
             Ok(IdentityStatus {
                 initialized: true,
-                watermark_uid_preview: Some(uid_preview),
-                device_id_hex: Some(hex::encode(id.device_id)),
+                watermark_uid_preview: Some(id.watermark_uid_preview()),
+                device_id_hex: Some(hex::encode(id.watermark_id)),
+                creator_display_name: identity.map(|value| value.creator_display_name),
             })
         }
         None => Ok(IdentityStatus {
             initialized: false,
             watermark_uid_preview: None,
             device_id_hex: None,
+            creator_display_name: None,
         }),
     }
 }
@@ -62,19 +57,10 @@ pub async fn setup_identity(
 
     let id = identity::initialize_identity(&app_data_dir, creator_input.trim())?;
 
-    let uid_preview = format!(
-        "HS-{:02X}{:02X}-{:02X}{:02X}-{:02X}{:02X}",
-        id.user_seed[0],
-        id.user_seed[1],
-        id.user_seed[2],
-        id.user_seed[3],
-        id.device_id[0],
-        id.device_id[1],
-    );
-
     Ok(IdentityStatus {
         initialized: true,
-        watermark_uid_preview: Some(uid_preview),
-        device_id_hex: Some(hex::encode(id.device_id)),
+        watermark_uid_preview: Some(id.watermark_uid_preview()),
+        device_id_hex: Some(hex::encode(id.watermark_id)),
+        creator_display_name: Some(creator_input.trim().to_string()),
     })
 }

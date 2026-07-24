@@ -2,16 +2,16 @@ enum WatermarkAssetKind { image, audio, video }
 
 class WatermarkPayloadSeed {
   const WatermarkPayloadSeed({
-    required this.userSeed,
+    required this.creatorIdentity,
+    required this.deviceIdentity,
+    required this.mediaBytes,
     required this.timestamp,
-    required this.deviceId,
-    required this.fileHash,
   });
 
-  final List<int> userSeed;
+  final String creatorIdentity;
+  final String deviceIdentity;
+  final List<int> mediaBytes;
   final int timestamp;
-  final List<int> deviceId;
-  final List<int> fileHash;
 }
 
 class WatermarkWriteRequest {
@@ -21,6 +21,9 @@ class WatermarkWriteRequest {
     required this.seed,
     this.allowRewrite = false,
     this.rewriteReason,
+    this.parentWatermarkUid,
+    this.revision = 1,
+    this.registryDraft,
   });
 
   final WatermarkAssetKind kind;
@@ -28,6 +31,33 @@ class WatermarkWriteRequest {
   final WatermarkPayloadSeed seed;
   final bool allowRewrite;
   final String? rewriteReason;
+  final String? parentWatermarkUid;
+  final int revision;
+  final WatermarkRegistryDraft? registryDraft;
+}
+
+class WatermarkRegistryDraft {
+  const WatermarkRegistryDraft({
+    required this.watermarkUid,
+    required this.watermarkIdIssueMode,
+    required this.registryStatus,
+    required this.registryReceipt,
+    required this.registryProofHash,
+    required this.payloadProtocolVersion,
+    required this.payloadBytesLength,
+    this.parentWatermarkUid,
+    required this.revision,
+  });
+
+  final String watermarkUid;
+  final String watermarkIdIssueMode;
+  final String registryStatus;
+  final String registryReceipt;
+  final String registryProofHash;
+  final int payloadProtocolVersion;
+  final int payloadBytesLength;
+  final String? parentWatermarkUid;
+  final int revision;
 }
 
 class WatermarkWriteResult {
@@ -38,6 +68,13 @@ class WatermarkWriteResult {
     required this.revision,
     required this.sha256,
     required this.verification,
+    required this.seed,
+    required this.processTimeMs,
+    this.isProductionWatermark = true,
+    this.outputFileName,
+    this.outputLocationLabel,
+    this.outputActionLabel,
+    this.registryDraft,
   });
 
   final WatermarkAssetKind kind;
@@ -46,6 +83,35 @@ class WatermarkWriteResult {
   final int revision;
   final String sha256;
   final WatermarkWriteVerification verification;
+  final WatermarkPayloadSeed seed;
+  final int processTimeMs;
+  final bool isProductionWatermark;
+  final String? outputFileName;
+  final String? outputLocationLabel;
+  final String? outputActionLabel;
+  final WatermarkRegistryDraft? registryDraft;
+
+  WatermarkWriteResult copyWithOutputArtifact({
+    required String outputFileName,
+    required String outputLocationLabel,
+    required String outputActionLabel,
+  }) {
+    return WatermarkWriteResult(
+      kind: kind,
+      bytes: bytes,
+      watermarkUid: watermarkUid,
+      revision: revision,
+      sha256: sha256,
+      verification: verification,
+      seed: seed,
+      processTimeMs: processTimeMs,
+      isProductionWatermark: isProductionWatermark,
+      outputFileName: outputFileName,
+      outputLocationLabel: outputLocationLabel,
+      outputActionLabel: outputActionLabel,
+      registryDraft: registryDraft,
+    );
+  }
 }
 
 class WatermarkWriteVerification {
@@ -56,6 +122,8 @@ class WatermarkWriteVerification {
     required this.message,
     this.fileHashHex,
     this.deviceIdHex,
+    this.payloadProtocolVersion = 2,
+    this.payloadBytesLength = 119,
   });
 
   final bool verified;
@@ -64,6 +132,8 @@ class WatermarkWriteVerification {
   final String message;
   final String? fileHashHex;
   final String? deviceIdHex;
+  final int payloadProtocolVersion;
+  final int payloadBytesLength;
 }
 
 class WatermarkReadRequest {
@@ -81,6 +151,12 @@ class WatermarkReadResult {
     required this.timestamp,
     required this.deviceIdHex,
     required this.fileHashHex,
+    this.payloadProtocolVersion = 2,
+    this.payloadBytesLength = 119,
+    this.watermarkIdIssueMode = 'offline_generated',
+    this.payloadAuthStatus = 'verified',
+    this.mediaType,
+    this.isProductionWatermark = true,
     this.parentWatermarkUid,
     this.rewriteReason,
   });
@@ -93,6 +169,12 @@ class WatermarkReadResult {
   final int timestamp;
   final String deviceIdHex;
   final String fileHashHex;
+  final int payloadProtocolVersion;
+  final int payloadBytesLength;
+  final String watermarkIdIssueMode;
+  final String payloadAuthStatus;
+  final String? mediaType;
+  final bool isProductionWatermark;
 }
 
 class BridgeCapabilities {

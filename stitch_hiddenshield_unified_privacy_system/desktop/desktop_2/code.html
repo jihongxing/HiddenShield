@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>HiddenShield - Help Center</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&amp;family=Geist:wght@500;600&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-container": "#00ced1",
+                    "error": "#ffb4ab",
+                    "outline-variant": "#3b4949",
+                    "on-surface-variant": "#bac9c9",
+                    "surface": "#0b1326",
+                    "on-surface": "#dae2fd",
+                    "surface-dim": "#0b1326",
+                    "secondary": "#ffb77b",
+                    "tertiary-fixed-dim": "#bcc7de",
+                    "on-tertiary-fixed-variant": "#3c475a",
+                    "on-primary-container": "#005354",
+                    "surface-bright": "#31394d",
+                    "primary-fixed": "#5af8fb",
+                    "on-error-container": "#ffdad6",
+                    "on-primary": "#003738",
+                    "inverse-surface": "#dae2fd",
+                    "primary-fixed-dim": "#2ddbde",
+                    "background": "#0b1326",
+                    "surface-container-highest": "#2d3449",
+                    "surface-tint": "#2ddbde",
+                    "surface-container-low": "#131b2e",
+                    "tertiary-container": "#afbad1",
+                    "tertiary-fixed": "#d8e3fb",
+                    "secondary-fixed-dim": "#ffb77b",
+                    "outline": "#859493",
+                    "secondary-fixed": "#ffdcc2",
+                    "inverse-on-surface": "#283044",
+                    "secondary-container": "#7a4100",
+                    "error-container": "#93000a",
+                    "on-primary-fixed-variant": "#004f51",
+                    "surface-variant": "#2d3449",
+                    "on-error": "#690005",
+                    "on-secondary-fixed-variant": "#6d3a00",
+                    "on-tertiary-fixed": "#111c2d",
+                    "on-secondary": "#4d2700",
+                    "on-tertiary-container": "#3f4a5e",
+                    "on-secondary-fixed": "#2e1500",
+                    "tertiary": "#cad6ee",
+                    "on-background": "#dae2fd",
+                    "surface-container": "#171f33",
+                    "on-secondary-container": "#ffb270",
+                    "on-primary-fixed": "#002020",
+                    "primary": "#47eaed",
+                    "surface-container-high": "#222a3d",
+                    "surface-container-lowest": "#060e20",
+                    "on-tertiary": "#263143",
+                    "inverse-primary": "#00696b"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-desktop": "32px",
+                    "margin-mobile": "16px",
+                    "container-max": "1440px",
+                    "gutter": "16px",
+                    "unit": "4px"
+            },
+            "fontFamily": {
+                    "body-md": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "headline-md": ["Geist"],
+                    "label-mono": ["JetBrains Mono"],
+                    "nav-label": ["Inter"],
+                    "headline-lg-mobile": ["Geist"],
+                    "headline-lg": ["Geist"]
+            },
+            "fontSize": {
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "500"}],
+                    "label-mono": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "nav-label": ["13px", {"lineHeight": "18px", "fontWeight": "500"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md text-body-md antialiased selection:bg-primary-container selection:text-on-primary-container min-h-screen flex">
+<!-- JSON Component: SideNavBar -->
+<nav class="hidden md:flex flex-col bg-surface-container border-r border-outline-variant fixed left-0 top-0 h-screen w-[240px] py-4 z-40 flat no shadows">
+<div class="px-6 mb-8 flex flex-col gap-1">
+<h1 class="font-headline-md text-headline-md text-primary font-bold tracking-tight">HiddenShield</h1>
+<p class="font-label-mono text-label-mono text-on-surface-variant uppercase">Elite Technical Environment</p>
+</div>
+<ul class="flex-1 flex flex-col gap-1 w-full font-nav-label text-nav-label">
+<li>
+<a class="text-on-surface-variant flex items-center px-4 py-3 hover:bg-surface-container-high transition-all mx-2 rounded-DEFAULT" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]">dashboard</span>
+                    工作台
+                </a>
+</li>
+<li>
+<a class="text-on-surface-variant flex items-center px-4 py-3 hover:bg-surface-container-high transition-all mx-2 rounded-DEFAULT" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]">terminal</span>
+                    处理
+                </a>
+</li>
+<li>
+<a class="text-on-surface-variant flex items-center px-4 py-3 hover:bg-surface-container-high transition-all mx-2 rounded-DEFAULT" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]">verified_user</span>
+                    验证
+                </a>
+</li>
+<li>
+<a class="text-on-surface-variant flex items-center px-4 py-3 hover:bg-surface-container-high transition-all mx-2 rounded-DEFAULT" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]">inventory_2</span>
+                    档案
+                </a>
+</li>
+<li>
+<a class="text-on-surface-variant flex items-center px-4 py-3 hover:bg-surface-container-high transition-all mx-2 rounded-DEFAULT" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]">reorder</span>
+                    批量队列
+                </a>
+</li>
+<!-- Active Tab -->
+<li>
+<a class="bg-surface-container-highest text-primary border-l-2 border-primary flex items-center px-4 py-3 translate-x-1 transition-transform" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]" style="font-variation-settings: 'FILL' 1;">help</span>
+                    帮助
+                </a>
+</li>
+<li>
+<a class="text-on-surface-variant flex items-center px-4 py-3 hover:bg-surface-container-high transition-all mx-2 rounded-DEFAULT" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]">settings</span>
+                    设置
+                </a>
+</li>
+</ul>
+<div class="px-4 mt-auto">
+<div class="flex items-center gap-3 p-3 border border-outline-variant rounded-DEFAULT bg-surface">
+<span class="material-symbols-outlined text-primary">account_circle</span>
+<div class="flex flex-col">
+<span class="font-label-mono text-label-mono text-on-surface">System Identity</span>
+<span class="text-[10px] text-on-surface-variant">OP-774A</span>
+</div>
+</div>
+</div>
+</nav>
+<!-- Main Canvas -->
+<main class="flex-1 ml-0 md:ml-[240px] flex flex-col min-h-screen">
+<!-- Header Area -->
+<header class="h-24 px-margin-desktop flex items-center justify-between border-b border-outline-variant bg-surface sticky top-0 z-30">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface flex items-center gap-3">
+<span class="material-symbols-outlined text-[32px] text-primary">support_agent</span>
+                    帮助与能力中心
+                </h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">HiddenShield 系统文档与运行状态协议。</p>
+</div>
+</header>
+<!-- Bento Grid Content -->
+<div class="p-margin-desktop flex-1">
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-8 max-w-container-max mx-auto">
+<!-- 1. Capability Boundary -->
+<section class="xl:col-span-2 flex flex-col gap-4">
+<h3 class="font-label-mono text-label-mono text-on-surface-variant uppercase tracking-wider flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">memory</span> 能力边界
+                    </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Active -->
+<div class="bg-surface-container-low border-l-2 border-primary border border-outline-variant rounded-DEFAULT p-6 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
+<span class="material-symbols-outlined text-[100px]">verified</span>
+</div>
+<div class="flex items-center gap-2 mb-4">
+<div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+<span class="font-label-mono text-label-mono text-primary uppercase">运行中 (Active Now)</span>
+</div>
+<h4 class="font-headline-md text-headline-md text-on-surface mb-2">数字水印与验证架构</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-4 h-10 line-clamp-2">高强度隐形水印注入，毫秒级跨平台溯源验证。支持图像、PDF及专有二进制格式。</p>
+<ul class="flex flex-col gap-2 font-body-sm text-body-sm border-t border-outline-variant pt-4 mt-auto">
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-[14px] text-primary">check</span> 实时流式注入</li>
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-[14px] text-primary">check</span> 容错抗损耗解码</li>
+</ul>
+</div>
+<!-- In Beta -->
+<div class="bg-surface-container-low border border-secondary rounded-DEFAULT p-6 relative overflow-hidden flex flex-col">
+<div class="absolute inset-0 bg-background/20 pointer-events-none"></div>
+<div class="flex items-center gap-2 mb-4 relative z-10">
+<span class="material-symbols-outlined text-[16px] text-secondary">science</span>
+<span class="font-label-mono text-label-mono text-secondary uppercase">内部测试 (Internal Beta)</span>
+</div>
+<h4 class="font-headline-md text-headline-md text-on-surface mb-2 relative z-10">高级 AI 伪造取证</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-4 flex-1 relative z-10">基于深层神经网络的异常像素级检测，专攻对抗性生成网络伪造内容。</p>
+<div class="mt-auto relative z-10">
+<button class="w-full py-2 border border-secondary text-secondary font-label-mono text-label-mono rounded-DEFAULT bg-secondary/10 hover:bg-secondary/20 transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[16px]">lock</span> 申请访问权限
+                                </button>
+</div>
+</div>
+<!-- Planned -->
+<div class="md:col-span-2 bg-[#131b2e] border border-[#334155] rounded-DEFAULT p-4 flex items-center justify-between opacity-70 grayscale">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[24px] text-on-surface-variant">lan</span>
+<div>
+<h4 class="font-headline-md text-headline-md text-on-surface text-sm">区块链分布式账本 v2</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-xs">去中心化溯源记录，防篡改审计日志。</p>
+</div>
+</div>
+<span class="font-label-mono text-label-mono text-on-surface-variant border border-outline-variant px-2 py-1 rounded-DEFAULT text-xs">计划中 (Planned Q4)</span>
+</div>
+</div>
+</section>
+<!-- 4. Support -->
+<section class="xl:col-span-1 flex flex-col gap-4">
+<h3 class="font-label-mono text-label-mono text-on-surface-variant uppercase tracking-wider flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">engineering</span> 内部支持
+                    </h3>
+<div class="bg-surface-container border border-outline-variant rounded-DEFAULT p-6 h-full flex flex-col">
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-6">如遇核心协议故障或鉴权异常，请立即提交内部支持请求。响应级别：P0。</p>
+<form class="flex flex-col gap-4 flex-1">
+<div class="flex flex-col gap-1">
+<label class="font-body-sm text-body-sm text-on-surface-variant">事件代码 (Event Code)</label>
+<input class="bg-background border border-outline-variant rounded-DEFAULT px-3 py-2 text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 font-label-mono text-label-mono transition-colors" placeholder="e.g. ERR-992-AUTH" type="text"/>
+</div>
+<div class="flex flex-col gap-1 flex-1">
+<label class="font-body-sm text-body-sm text-on-surface-variant">环境诊断 (Diagnostics)</label>
+<textarea class="bg-background border border-outline-variant rounded-DEFAULT px-3 py-2 text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 font-body-sm text-body-sm transition-colors resize-none flex-1" placeholder="描述系统行为偏离..."></textarea>
+</div>
+<button class="w-full bg-primary text-on-primary font-label-mono text-label-mono py-3 rounded-DEFAULT hover:bg-primary-fixed transition-colors flex items-center justify-center gap-2 mt-auto shadow-[0_0_15px_rgba(71,234,237,0.15)]" type="button">
+<span class="material-symbols-outlined text-[18px]">send</span> 建立安全连接
+                            </button>
+</form>
+</div>
+</section>
+<!-- 2. Subscription & Billing -->
+<section class="xl:col-span-2 flex flex-col gap-4">
+<h3 class="font-label-mono text-label-mono text-on-surface-variant uppercase tracking-wider flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">account_balance</span> 订阅与计费规则
+                    </h3>
+<div class="bg-surface-container-low border border-outline-variant rounded-DEFAULT overflow-hidden">
+<table class="w-full text-left font-body-sm text-body-sm">
+<thead class="bg-surface border-b border-outline-variant text-on-surface-variant font-label-mono text-label-mono">
+<tr>
+<th class="py-3 px-4 font-medium">计费模块</th>
+<th class="py-3 px-4 font-medium">规则描述</th>
+<th class="py-3 px-4 font-medium text-right">当前状态</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-[#1E293B]">
+<tr class="hover:bg-surface-container-high transition-colors">
+<td class="py-3 px-4 font-medium text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-primary">shield</span> 防护额度 (Protection Credits)
+                                    </td>
+<td class="py-3 px-4 text-on-surface-variant">按数据处理量（GB）计费，支持多层级并发注入。</td>
+<td class="py-3 px-4 text-right font-label-mono text-label-mono text-primary">9,420 Cr 剩余</td>
+</tr>
+<tr class="hover:bg-surface-container-high transition-colors">
+<td class="py-3 px-4 font-medium text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-primary">dns</span> 安全存储 (Vault Storage)
+                                    </td>
+<td class="py-3 px-4 text-on-surface-variant">AES-256 静态加密隔离区，用于存放敏感原件与凭证。</td>
+<td class="py-3 px-4 text-right font-label-mono text-label-mono text-on-surface">45% 已用</td>
+</tr>
+<tr class="hover:bg-surface-container-high transition-colors">
+<td class="py-3 px-4 font-medium text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-primary">receipt_long</span> 单份报告 (Single-Report)
+                                    </td>
+<td class="py-3 px-4 text-on-surface-variant">按次提取完整溯源取证报告，含不可篡改的加密签名。</td>
+<td class="py-3 px-4 text-right font-label-mono text-label-mono text-on-surface">按需计费</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- 3. Workspace & Sync -->
+<section class="xl:col-span-1 flex flex-col gap-4">
+<h3 class="font-label-mono text-label-mono text-on-surface-variant uppercase tracking-wider flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">sync</span> 工作区同步
+                    </h3>
+<div class="bg-surface-container border border-outline-variant rounded-DEFAULT p-6 flex flex-col items-center justify-center text-center relative h-full">
+<!-- Simulated Syncing Indicator -->
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50"></div>
+<div class="relative mb-6">
+<span class="material-symbols-outlined text-[48px] text-primary-container opacity-80">public</span>
+<span class="material-symbols-outlined text-[24px] text-primary absolute -bottom-2 -right-2 bg-surface-container rounded-full border-2 border-surface-container">cached</span>
+</div>
+<h4 class="font-headline-md text-headline-md text-on-surface mb-2">全局安全节点同步</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-6">
+                            所有配置、黑名单特征库与活动队列均通过端到端加密通道，实时同步至授权终端设备。
+                        </p>
+<div class="flex items-center gap-2 font-label-mono text-label-mono text-xs bg-surface-container-low border border-outline-variant px-3 py-1.5 rounded-full">
+<div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                            上次同步: 14:02:44 PST
+                        </div>
+</div>
+</section>
+</div>
+</div>
+</main>
+</body></html>

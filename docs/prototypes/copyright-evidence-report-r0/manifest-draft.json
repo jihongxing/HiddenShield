@@ -1,0 +1,70 @@
+{
+  "manifestVersion": 1,
+  "status": "phase_r0_contract_draft",
+  "reportId": "HSR-20260714-IMG-7F31A2",
+  "generatedAt": "2026-07-14T08:20:31Z",
+  "templateVersion": "R0.1",
+  "schemaVersion": 2,
+  "files": [
+    {
+      "path": "report.pdf",
+      "role": "human_readable_primary_report",
+      "bytes": null,
+      "sha256": null,
+      "required": true
+    },
+    {
+      "path": "report.json",
+      "role": "machine_readable_report_snapshot",
+      "bytes": null,
+      "sha256": null,
+      "required": true
+    },
+    {
+      "path": "manifest.json",
+      "role": "evidence_package_inventory",
+      "bytes": null,
+      "sha256": null,
+      "required": true
+    },
+    {
+      "path": "attachments/tsa-token.tsr",
+      "role": "trusted_time_material",
+      "bytes": null,
+      "sha256": null,
+      "required": false
+    },
+    {
+      "path": "attachments/registry-receipt.json",
+      "role": "watermark_id_registry_receipt",
+      "bytes": null,
+      "sha256": null,
+      "required": false
+    },
+    {
+      "path": "attachments/video-notary-receipt.json",
+      "role": "l2_video_notary_receipt",
+      "bytes": null,
+      "sha256": null,
+      "required": false
+    }
+  ],
+  "signature": {
+    "status": "not_implemented",
+    "algorithm": null,
+    "certificateSubject": null,
+    "signedAt": null
+  },
+  "timestamp": {
+    "status": "not_implemented",
+    "source": null,
+    "verifiedAt": null
+  },
+  "privacy": {
+    "excludesOriginalMedia": true,
+    "excludesProtectedMedia": true,
+    "excludesLocalMediaPaths": true,
+    "excludesObjectStorageUrls": true,
+    "excludesDownloadTokens": true
+  }
+}

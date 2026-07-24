@@ -1,0 +1,4 @@
+HiddenShield synthetic original fixture
+Case: case-fixture-r4-0001
+Role: original
+Statement: This file represents claimant-supplied source material for contract testing only.

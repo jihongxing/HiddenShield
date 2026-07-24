@@ -1,0 +1,80 @@
+{
+  "status": "passed",
+  "schemaVersion": 1,
+  "documentType": "rights_evidence_pack",
+  "fixturePath": "docs/contracts/rights-evidence-pack-v1.fixture.json",
+  "htmlPath": "docs/prototypes/rights-evidence-pack-r4/finalized.html",
+  "pdfPath": "docs/prototypes/rights-evidence-pack-r4/finalized.pdf",
+  "previewPaths": [
+    "docs/prototypes/rights-evidence-pack-r4/cover-preview.png",
+    "docs/prototypes/rights-evidence-pack-r4/attachment-preview.png"
+  ],
+  "pageCount": 8,
+  "pdfBytes": 244274,
+  "pdfSha256": "8c7c0cb02894504b2234f6f07b9a66545915a71aad59b7d684bf1a0a694e59ca",
+  "overflow": [
+    {
+      "page": 1,
+      "clientHeight": 1123,
+      "scrollHeight": 1123,
+      "overflow": false
+    },
+    {
+      "page": 2,
+      "clientHeight": 1123,
+      "scrollHeight": 1123,
+      "overflow": false
+    },
+    {
+      "page": 3,
+      "clientHeight": 1123,
+      "scrollHeight": 1123,
+      "overflow": false
+    },
+    {
+      "page": 4,
+      "clientHeight": 1123,
+      "scrollHeight": 1123,
+      "overflow": false
+    },
+    {
+      "page": 5,
+      "clientHeight": 1123,
+      "scrollHeight": 1123,
+      "overflow": false
+    },
+    {
+      "page": 6,
+      "clientHeight": 1123,
+      "scrollHeight": 1123,
+      "overflow": false
+    },
+    {
+      "page": 7,
+      "clientHeight": 1123,
+      "scrollHeight": 1123,
+      "overflow": false
+    },
+    {
+      "page": 8,
+      "clientHeight": 1123,
+      "scrollHeight": 1123,
+      "overflow": false
+    }
+  ],
+  "controlledFonts": [
+    "NotoSansSC-Controlled.ttf",
+    "NotoSerifSC-Controlled.ttf"
+  ],
+  "fontState": {
+    "sansLoaded": true,
+    "serifLoaded": true,
+    "bodyFont": "\"Noto Sans SC Controlled\", \"Microsoft YaHei UI\", \"PingFang SC\", sans-serif",
+    "titleFont": "\"Noto Serif SC Controlled\", \"Source Han Serif SC\", \"Songti SC\", serif"
+  },
+  "capabilityBoundary": {
+    "signatureStatus": "not_signed",
+    "trustedTimeStatus": "not_timestamped",
+    "legalConclusionStatus": "not_evaluated"
+  }
+}

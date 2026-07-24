@@ -1,6 +1,7 @@
 const endpoint = (process.env.HIDDENSHIELD_CLOUD_URL ?? 'http://127.0.0.1:43188').replace(/\/$/, '');
 const runId = process.env.HIDDENSHIELD_CLOUD_E2E_RUN_ID ?? `${Date.now()}`;
 const identifier = process.env.HIDDENSHIELD_CLOUD_IDENTIFIER ?? `e2e-${runId}@example.com`;
+const password = process.env.HIDDENSHIELD_CLOUD_PASSWORD ?? 'e2e-password';
 const creatorDisplayName = process.env.HIDDENSHIELD_CLOUD_CREATOR ?? 'E2E Creator';
 
 const desktopDeviceId = `desktop-e2e-${runId}`;
@@ -45,18 +46,47 @@ assert(
     'desktop and mobile must register as separate devices',
 );
 assert(
-  desktopSession.entitlement.features?.cloud_sync === true &&
-    mobileSession.entitlement.features?.cloud_sync === true,
-  'cloud_sync entitlement must be enabled on both clients',
+  desktopSession.entitlement.features?.cloud_sync === false &&
+    mobileSession.entitlement.features?.cloud_sync === false,
+  'free cloud_sync entitlement must be disabled on both clients',
+);
+const freeChanges = await request(
+  'GET',
+  `/v1/sync/changes?workspaceId=${encodeURIComponent(desktopSession.workspace.id)}`,
+  null,
+  desktopSession.accessToken,
+);
+assert(freeChanges.status === 403, 'free changes must be blocked before Creator upgrade');
+
+await upgradeToCreator(desktopSession);
+const creatorDesktopSession = await continueAccount({
+  deviceId: desktopDeviceId,
+  name: 'E2E Desktop',
+  platform: 'windows',
+});
+const creatorMobileSession = await continueAccount({
+  deviceId: mobileDeviceId,
+  name: 'E2E Mobile',
+  platform: 'android',
+});
+assert(
+  creatorDesktopSession.entitlement.features?.cloud_sync === true &&
+    creatorMobileSession.entitlement.features?.cloud_sync === true,
+  'creator cloud_sync entitlement must be enabled on both clients',
+);
+assert(
+  creatorDesktopSession.syncPolicy === 'auto_cloud_vault' &&
+    creatorMobileSession.syncPolicy === 'auto_cloud_vault',
+  'creator devices must default to auto_cloud_vault',
 );
 
-const desktopBaseline = await changes(desktopSession);
-const mobileBaseline = await changes(mobileSession);
+const desktopBaseline = await changes(creatorDesktopSession);
+const mobileBaseline = await changes(creatorMobileSession);
 console.log(`baseline cursors: desktop=${desktopBaseline.nextCursor} mobile=${mobileBaseline.nextCursor}`);
 
-await assertRejectedSyncBoundaries(desktopSession);
+await assertRejectedSyncBoundaries(creatorDesktopSession);
 
-await pushBatch(desktopSession, desktopDeviceId, [
+await pushBatch(creatorDesktopSession, desktopDeviceId, [
   {
     clientEventId: desktopEventId,
     operation: 'upsertVaultRecord',
@@ -78,7 +108,7 @@ await pushBatch(desktopSession, desktopDeviceId, [
 ]);
 
 const mobilePullAfterDesktop = await changes(
-  mobileSession,
+  creatorMobileSession,
   mobileBaseline.nextCursor,
 );
 const desktopRecord = findChange(mobilePullAfterDesktop, desktopRecordId);
@@ -91,7 +121,7 @@ assert(
 );
 assertNoLocalMediaFields(desktopRecord.entity, 'desktop pulled record');
 
-await pushBatch(mobileSession, mobileDeviceId, [
+await pushBatch(creatorMobileSession, mobileDeviceId, [
   {
     clientEventId: mobileEventId,
     operation: 'upsertEvidenceRecord',
@@ -115,7 +145,7 @@ await pushBatch(mobileSession, mobileDeviceId, [
 ]);
 
 const desktopPullAfterMobile = await changes(
-  desktopSession,
+  creatorDesktopSession,
   desktopBaseline.nextCursor,
 );
 const mobileRecord = findChange(desktopPullAfterMobile, mobileRecordId);
@@ -135,8 +165,9 @@ assertNoLocalMediaFields(mobileRecord.entity, 'mobile pulled evidence record');
 console.log('Cloud sync E2E OK');
 
 async function continueAccount({ deviceId, name, platform }) {
-  const response = await request('POST', '/v1/auth/continue', {
+  const response = await request('POST', '/v1/auth/sessions', {
     identifier,
+    password,
     verificationCode: '000000',
     device: {
       clientDeviceId: deviceId,
@@ -150,14 +181,49 @@ async function continueAccount({ deviceId, name, platform }) {
       seedEnvelopeVersion: 1,
     },
   });
-  assert(response.status === 200, `${name} auth/continue must return 200`);
-  assert(Boolean(response.body.accessToken), `${name} auth/continue must return accessToken`);
-  assert(Boolean(response.body.account?.id), `${name} auth/continue must return account.id`);
-  assert(Boolean(response.body.workspace?.id), `${name} auth/continue must return workspace.id`);
-  assert(Boolean(response.body.device?.id), `${name} auth/continue must return device.id`);
-  assert(Boolean(response.body.creatorProfile?.id), `${name} auth/continue must return creatorProfile.id`);
+  assert(response.status === 200, `${name} auth/sessions must return 200`);
+  assert(Boolean(response.body.accessToken), `${name} auth/sessions must return accessToken`);
+  assert(Boolean(response.body.account?.id), `${name} auth/sessions must return account.id`);
+  assert(Boolean(response.body.workspace?.id), `${name} auth/sessions must return workspace.id`);
+  assert(Boolean(response.body.device?.id), `${name} auth/sessions must return device.id`);
+  assert(Boolean(response.body.creatorProfile?.id), `${name} auth/sessions must return creatorProfile.id`);
   console.log(`${name}: account=${response.body.account.id} device=${response.body.device.id}`);
   return response.body;
+}
+
+async function upgradeToCreator(session) {
+  const payment = await request(
+    'POST',
+    '/v1/billing/payment-sessions',
+    {
+      accountId: session.account.id,
+      workspaceId: session.workspace.id,
+      planCode: 'creator',
+      billingCycle: 'monthly',
+      preferredProvider: 'fixture',
+    },
+    session.accessToken,
+  );
+  assert(payment.status === 200, 'fixture creator payment session must return 200');
+  const event = await request('POST', '/v1/billing/webhooks/fixture', {
+    providerEventId: `fixture-e2e-${runId}`,
+    providerOrderId: payment.body.providerOrderId,
+    providerTransactionId: `fixture-e2e-txn-${runId}`,
+    accountId: session.account.id,
+    workspaceId: session.workspace.id,
+    planCode: 'creator',
+    billingCycle: 'monthly',
+    amountCents: 1900,
+    currency: 'CNY',
+    eventType: 'payment.succeeded',
+    occurredAt: new Date().toISOString(),
+    rawPayloadJson: {
+      provider: 'fixture',
+      eventType: 'payment.succeeded',
+      providerOrderId: payment.body.providerOrderId,
+    },
+  });
+  assert(event.status === 200, 'fixture creator billing event must return 200');
 }
 
 async function pushBatch(session, deviceId, events) {

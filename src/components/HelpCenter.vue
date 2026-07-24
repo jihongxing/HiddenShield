@@ -5,46 +5,50 @@ const copyMsg = ref("");
 
 async function copyWechat() {
   await navigator.clipboard.writeText("Zoro998877");
-  copyMsg.value = "微信号已复制，快去添加吧 👋";
+  copyMsg.value = "微信号已复制";
   setTimeout(() => { copyMsg.value = ""; }, 3000);
 }
 
 const faqs = [
   {
-    q: "FFmpeg 检测失败怎么办？",
-    a: "隐盾会自动检测系统 PATH 中的 FFmpeg，如果未找到会尝试自动下载。如果下载失败，请手动安装 FFmpeg 并确保 ffmpeg 和 ffprobe 在系统 PATH 中。",
+    q: "第一次使用需要做什么？",
+    a: "登录账户、填写创作者身份，并确认默认输出位置。账户用于同步版权库和权益，创作者身份用于版权记录展示，默认输出位置用于保存保护副本。",
   },
   {
-    q: "图片处理后格式变成了 PNG？",
-    a: "这是为了提高后续取证成功率。PNG 会尽量保留作品细节，给微信、微博等平台再次压缩留下更多余量。",
+    q: "图片写入后的保护副本为什么默认是 PNG？",
+    a: "PNG 更适合作为保护副本，能减少再次压缩前的细节损失，提高后续验证成功率。原图不会被覆盖。",
   },
   {
-    q: "维权取证时提示「未检测到有效水印」？",
-    a: "可能原因：1) 文件不是由隐盾处理过的；2) 文件经过了极端压缩或裁剪；3) 使用的是旧版本嵌入的水印（载荷结构不兼容）。建议用新版本重新处理原文件。",
+    q: "图片被裁切、旋转或压缩后还能验证吗？",
+    a: "桌面版支持轴对齐、宽高各为原图 1/4 的裁切区域，以及 90/180/270 度旋转、85% 缩放、JPEG/WebP quality 75/60 的独立恢复。多个扰动叠加、任意角度旋转、更低质量压缩或更大比例缩小不在当前承诺内。",
   },
   {
-    q: "视频压制时提示 FFmpeg 超时？",
-    a: "大文件或复杂编码（如 HDR 4K）在初始化阶段可能需要较长时间。隐盾已设置 90 秒冷启动超时。如果仍然超时，尝试切换为「高质量 CPU」编码模式。",
+    q: "音频为什么要求 30 秒以上？",
+    a: "短片段可承载的信息太少，容易让版权保护和验证结果变得不稳定。隐盾只对 30 秒以上、可确认时长的音频生成保护副本。",
   },
   {
-    q: "可信时间戳获取失败？",
-    a: "时间戳依赖网络连接到第三方 TSA 服务器。如果网络受限（公司防火墙/代理），时间戳会静默跳过，不影响水印嵌入。存证报告中会标注是否获取成功。",
+    q: "验证时提示未找到版权记录怎么办？",
+    a: "可能是样本没有经过隐盾保护、文件被严重裁剪或压缩，或当前设备版权库没有对应记录。登录同一账户并开启云同步后，可以先更新云端记录再验证。",
   },
   {
-    q: "换了电脑后版权编号变了？",
-    a: "版权编号会结合创作者身份和当前设备生成。换电脑后编号可能不同；登录同一账户并同步创作者身份后，仍可保持跨端记录一致。",
+    q: "云同步会上传我的原始文件吗？",
+    a: "默认不会。云同步只同步账户、权益、创作者档案、版权记录元数据、验证记录和同步状态摘要，不同步原始媒体、保护副本或本地文件路径。",
   },
   {
-    q: "免费版和订阅版有什么区别？",
-    a: "当前免费版先覆盖核心处理能力。后续订阅版会以无限次使用、多平台并行、PDF 报告导出和批量处理为主，正式上线时会在产品内单独说明。",
+    q: "当前版本支持哪些媒体？",
+    a: "当前桌面版本只开放图片和音频；全部视频能力与移动端开发均已暂停，不属于当前发布范围。",
   },
   {
-    q: "遇到问题怎么发送反馈？",
-    a: "打开“设置”，点击“发送反馈”即可发送必要的匿名信息。它只包含功能名、错误码、耗时、文件大小范围和脱敏摘要，不会带上原始素材。",
+    q: "未付费和年度授权有什么区别？",
+    a: "未付费用户可使用单文件图片、音频处理、验证和本地版权库；图片 / 音频年费用户可使用批量处理。正式报告始终按记录单独购买，未来视频服务独立收费。",
   },
   {
-    q: "订阅入口在哪里？",
-    a: "右上角“订阅方案”或设置页里的“查看订阅方案”都能打开同一入口。目前先展示计划和权益说明，正式支付会后续开放。",
+    q: "正式报告可以直接作为法律意见吗？",
+    a: "不可以。正式报告、时间回执和指纹存证是技术辅助材料，不构成法律意见、司法鉴定意见或诉讼结果承诺。",
+  },
+  {
+    q: "遇到问题怎么反馈？",
+    a: "在设置中发送匿名反馈，或通过本页联系方式联系作者。匿名反馈不包含原始媒体、保护副本、文件名、本地路径或完整作品指纹。",
   },
 ];
 
@@ -60,14 +64,13 @@ function toggleFaq(index: number) {
     <!-- About -->
     <section class="help__section">
       <h3>关于隐盾</h3>
-      <p>隐盾 (HiddenShield) 是一款本地优先的版权保护工具。它可以为视频、图片、音频生成保护副本和版权记录，在需要维权时检测疑似侵权文件并生成取证报告。</p>
+      <p>HiddenShield 是一款本地优先的版权保护工具。当前为桌面端图片和音频工作流生成保护副本、版权记录和验证摘要。</p>
       <div class="help__features">
-        <span>🎬 多平台视频压制</span>
-        <span>🖼️ 图片版权保护</span>
-        <span>🎵 音频版权保护</span>
-        <span>🔐 可信时间记录</span>
-        <span>📋 一键生成存证报告</span>
-        <span>🔒 本地优先，按需联网</span>
+        <span>图片写入</span>
+        <span>音频写入</span>
+        <span>版权库</span>
+        <span>验证摘要</span>
+        <span>本地优先</span>
       </div>
     </section>
 
@@ -79,21 +82,21 @@ function toggleFaq(index: number) {
           <span class="help__step-num">1</span>
           <div>
             <strong>导入文件</strong>
-            <p>在工作台拖入或点击选择视频/图片/音频文件</p>
+            <p>在工作台选择图片或音频文件。</p>
           </div>
         </div>
         <div class="help__step">
           <span class="help__step-num">2</span>
           <div>
-            <strong>处理 & 存证</strong>
-            <p>选择目标平台（视频）后点击开始，系统自动生成保护副本、记录可信时间并存入版权库</p>
+            <strong>生成保护副本</strong>
+            <p>确认设置后开始处理，完成前会自动验证保护副本。</p>
           </div>
         </div>
         <div class="help__step">
           <span class="help__step-num">3</span>
           <div>
-            <strong>维权取证</strong>
-            <p>在取证页面拖入疑似侵权文件，自动检测版权编号并匹配版权库，一键复制存证报告</p>
+            <strong>验证与留档</strong>
+            <p>在验证页导入样本，匹配版权库并生成可复制的验证摘要。</p>
           </div>
         </div>
       </div>
@@ -123,14 +126,14 @@ function toggleFaq(index: number) {
     <!-- Contact -->
     <section class="help__section help__contact">
       <h3>仍有问题？</h3>
-      <p>以上没有解决你的问题，请直接联系作者：</p>
+      <p>以上没有解决你的问题，可以直接联系作者：</p>
       <div class="help__contact-items">
         <div class="help__contact-item">
-          <span>💬 微信：Zoro998877</span>
+          <span>微信：Zoro998877</span>
           <button class="help__contact-btn" type="button" @click="copyWechat">复制</button>
         </div>
         <div class="help__contact-item">
-          <span>📧 邮箱：jhx800@163.com</span>
+          <span>邮箱：jhx800@163.com</span>
           <a class="help__contact-btn" href="mailto:jhx800@163.com?subject=隐盾问题反馈">发邮件</a>
         </div>
       </div>
@@ -148,22 +151,22 @@ function toggleFaq(index: number) {
 
 .help__section {
   padding: 20px 24px;
-  background: var(--panel, rgba(255,255,255,0.74));
-  border: 1px solid var(--line, rgba(15,24,34,0.1));
-  border-radius: 16px;
+  background: var(--hs-surface);
+  border: 1px solid var(--hs-border);
+  border-radius: var(--hs-radius-card);
 }
 
 .help__section h3 {
   margin: 0 0 12px;
   font-size: 15px;
-  color: var(--brand, #c65b20);
+  color: var(--hs-accent);
 }
 
 .help__section p {
   margin: 0;
   font-size: 13px;
   line-height: 1.7;
-  color: rgba(15, 24, 34, 0.72);
+  color: var(--hs-text-muted);
 }
 
 .help__features {
@@ -176,10 +179,10 @@ function toggleFaq(index: number) {
 .help__features span {
   padding: 4px 10px;
   font-size: 12px;
-  background: rgba(198, 91, 32, 0.08);
-  border: 1px solid rgba(198, 91, 32, 0.15);
-  border-radius: 6px;
-  color: var(--brand-ink, #672e11);
+  background: var(--hs-chip);
+  border: 1px solid var(--hs-border);
+  border-radius: var(--hs-radius-pill);
+  color: var(--hs-text-muted);
 }
 
 /* Steps */
@@ -204,9 +207,9 @@ function toggleFaq(index: number) {
   justify-content: center;
   font-size: 13px;
   font-weight: 700;
-  color: #fff;
-  background: var(--brand, #c65b20);
-  border-radius: 50%;
+  color: #061312;
+  background: var(--hs-accent);
+  border-radius: var(--hs-radius-card);
 }
 
 .help__step strong {
@@ -227,14 +230,14 @@ function toggleFaq(index: number) {
 }
 
 .help__faq {
-  border: 1px solid var(--line, rgba(15,24,34,0.08));
-  border-radius: 10px;
+  border: 1px solid var(--hs-border);
+  border-radius: var(--hs-radius-card);
   overflow: hidden;
   transition: border-color 0.2s;
 }
 
 .help__faq--open {
-  border-color: rgba(198, 91, 32, 0.3);
+  border-color: rgba(114, 214, 202, 0.28);
 }
 
 .help__faq-q {
@@ -253,12 +256,12 @@ function toggleFaq(index: number) {
 }
 
 .help__faq-q:hover {
-  background: rgba(198, 91, 32, 0.04);
+  background: var(--hs-surface-muted);
 }
 
 .help__faq-arrow {
   font-size: 16px;
-  color: rgba(15, 24, 34, 0.4);
+  color: var(--hs-text-subtle);
 }
 
 .help__faq-a {
@@ -283,8 +286,9 @@ function toggleFaq(index: number) {
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  background: rgba(15, 24, 34, 0.03);
-  border-radius: 10px;
+  background: var(--hs-surface-raised);
+  border: 1px solid var(--hs-border);
+  border-radius: var(--hs-radius-card);
   font-size: 13px;
 }
 
@@ -292,10 +296,10 @@ function toggleFaq(index: number) {
   padding: 4px 12px;
   font-size: 12px;
   font-weight: 500;
-  color: #fff;
-  background: var(--brand, #c65b20);
+  color: #061312;
+  background: var(--hs-accent);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--hs-radius-card);
   cursor: pointer;
   text-decoration: none;
   transition: opacity 0.2s;
@@ -308,6 +312,6 @@ function toggleFaq(index: number) {
 .help__toast {
   margin-top: 8px;
   font-size: 12px;
-  color: var(--teal, #0f6e66);
+  color: var(--hs-accent);
 }
 </style>

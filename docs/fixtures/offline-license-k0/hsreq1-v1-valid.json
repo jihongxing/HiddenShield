@@ -1,0 +1,22 @@
+{
+  "vectorId": "hsreq1-v1-valid",
+  "description": "离线激活请求固定向量；checksum 只检测传输错误，不证明请求可信",
+  "tokenFormat": "HSREQ1.<payload>.<checksum>",
+  "checksumAlgorithm": "SHA-256 truncated to 96 bits",
+  "checksumDomain": "HiddenShield-Offline-Activation-Request-v1",
+  "canonicalPayload": "{\"appVersion\":\"0.1.0\",\"createdAt\":\"2026-07-15T00:00:00Z\",\"installationId\":\"K0Ej_7SgY2R7uAqj8sW6A8vWmKX5n9X8mC1zP4qT6uY\",\"nonce\":\"AAECAwQFBgcICQoLDA0ODw\",\"platform\":\"windows\",\"requestId\":\"req_k0_0001\",\"requestedProductCode\":\"creator_offline\",\"schemaVersion\":1}",
+  "checksumBase64Url": "7yTPNCVPWMmeF-pk",
+  "token": "HSREQ1.eyJhcHBWZXJzaW9uIjoiMC4xLjAiLCJjcmVhdGVkQXQiOiIyMDI2LTA3LTE1VDAwOjAwOjAwWiIsImluc3RhbGxhdGlvbklkIjoiSzBFal83U2dZMlI3dUFxajhzVzZBOHZXbUtYNW45WDhtQzF6UDRxVDZ1WSIsIm5vbmNlIjoiQUFFQ0F3UUZCZ2NJQ1FvTERBME9EdyIsInBsYXRmb3JtIjoid2luZG93cyIsInJlcXVlc3RJZCI6InJlcV9rMF8wMDAxIiwicmVxdWVzdGVkUHJvZHVjdENvZGUiOiJjcmVhdG9yX29mZmxpbmUiLCJzY2hlbWFWZXJzaW9uIjoxfQ.7yTPNCVPWMmeF-pk",
+  "expected": {
+    "tokenLength": 370,
+    "schemaVersion": 1,
+    "requestId": "req_k0_0001",
+    "requestedProductCode": "creator_offline",
+    "installationId": "K0Ej_7SgY2R7uAqj8sW6A8vWmKX5n9X8mC1zP4qT6uY",
+    "platform": "windows",
+    "appVersion": "0.1.0",
+    "createdAt": "2026-07-15T00:00:00Z",
+    "nonce": "AAECAwQFBgcICQoLDA0ODw",
+    "checksumValid": true
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "vectorId": "installation-identity-v1",
+  "derivationDomain": "HiddenShield-Installation-v1",
+  "testOnlySecretBase64Url": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8",
+  "saltBase64Url": "oKGio6SlpqeoqaqrrK2urw",
+  "expectedInstallationId": "YNQLz9qP8UFpzooK3GPChRAovzTQqDlktjD_K4Vrj3Y"
+}

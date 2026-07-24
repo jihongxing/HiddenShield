@@ -1,6 +1,7 @@
 use tauri::{AppHandle, Manager};
 
 use crate::db::billing::{self, EntitlementState, UsageLedgerSummary};
+use crate::entitlements;
 use crate::telemetry;
 use crate::AppState;
 
@@ -8,8 +9,11 @@ use crate::AppState;
 pub async fn get_entitlement_state(app_handle: AppHandle) -> Result<EntitlementState, String> {
     let state = app_handle.state::<AppState>();
     let conn = state.db.lock().map_err(|e| format!("db lock error: {e}"))?;
-    let entitlement =
-        billing::get_entitlement_state(&conn).map_err(|e| format!("读取权益状态失败: {e}"))?;
+    let entitlement = entitlements::resolve_effective_entitlement(
+        &conn,
+        state.installation_secret_store.as_ref(),
+    )
+    .map_err(|e| format!("读取权益状态失败: {e}"))?;
     if let Ok(app_data_dir) = app_handle.path().app_data_dir() {
         telemetry::anonymous::record_entitlement_snapshot(
             &app_data_dir,
@@ -21,6 +25,7 @@ pub async fn get_entitlement_state(app_handle: AppHandle) -> Result<EntitlementS
 }
 
 #[tauri::command]
+#[cfg(any(test, feature = "internal-qa"))]
 pub async fn set_entitlement_state(
     app_handle: AppHandle,
     entitlement_state: EntitlementState,
@@ -43,7 +48,14 @@ pub async fn set_entitlement_state(
 pub async fn get_usage_ledger_summary(app_handle: AppHandle) -> Result<UsageLedgerSummary, String> {
     let state = app_handle.state::<AppState>();
     let conn = state.db.lock().map_err(|e| format!("db lock error: {e}"))?;
-    billing::get_usage_summary(&conn).map_err(|e| format!("读取用量账本失败: {e}"))
+    let mut summary =
+        billing::get_usage_summary(&conn).map_err(|e| format!("读取用量账本失败: {e}"))?;
+    summary.entitlement = entitlements::resolve_effective_entitlement(
+        &conn,
+        state.installation_secret_store.as_ref(),
+    )
+    .map_err(|e| format!("读取权益状态失败: {e}"))?;
+    Ok(summary)
 }
 
 /// Convenience command for future testing or admin tooling.
@@ -57,8 +69,11 @@ pub async fn record_usage_event(
 ) -> Result<UsageLedgerSummary, String> {
     let state = app_handle.state::<AppState>();
     let conn = state.db.lock().map_err(|e| format!("db lock error: {e}"))?;
-    let entitlement =
-        billing::get_entitlement_state(&conn).map_err(|e| format!("读取权益状态失败: {e}"))?;
+    let entitlement = entitlements::resolve_effective_entitlement(
+        &conn,
+        state.installation_secret_store.as_ref(),
+    )
+    .map_err(|e| format!("读取权益状态失败: {e}"))?;
     let entry = billing::UsageLedgerEntry::success(
         feature_name,
         media_type,

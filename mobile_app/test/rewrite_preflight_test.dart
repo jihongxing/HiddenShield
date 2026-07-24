@@ -7,6 +7,13 @@ import 'package:hidden_shield_mobile/features/workspace/rewrite_preflight.dart';
 import 'package:hidden_shield_mobile/storage/vault_store.dart';
 
 void main() {
+  const testSeed = WatermarkPayloadSeed(
+    creatorIdentity: '\u0001\u0002\u0003\u0004',
+    deviceIdentity: '\u0009\u000A',
+    mediaBytes: [1, 2, 3, 4],
+    timestamp: 1000,
+  );
+
   test('plain preview bytes are classified as first write', () async {
     final state = MobileAppState(vaultStore: MemoryVaultStore());
     await state.load();
@@ -21,6 +28,9 @@ void main() {
     expect(result.hasWatermark, isFalse);
     expect(result.nextRevision, 1);
     expect(result.reasonCode, 'no_valid_watermark');
+    expect(preflightSummaryLabel(result), '未检测到已有隐盾水印');
+    expect(preflightActionLabel(result), '将按首次写入处理');
+    expect(preflightEvidenceLines(result), contains('如果继续生成保护副本，会创建新的版权记录。'));
   });
 
   test('watermarked preview bytes are classified as rewrite target', () async {
@@ -31,14 +41,12 @@ void main() {
       const WatermarkWriteRequest(
         kind: WatermarkAssetKind.audio,
         bytes: [1, 2, 3, 4],
-        seed: WatermarkPayloadSeed(
-          userSeed: [1, 2, 3, 4, 5, 6, 7, 8],
-          timestamp: 1000,
-          deviceId: [9, 10, 11, 12],
-          fileHash: [13, 14],
-        ),
+        seed: testSeed,
       ),
     );
+
+    expect(written.watermarkUid, 'PREVIEW-01020304090A');
+    expect(written.watermarkUid.startsWith('HS-'), isFalse);
 
     final result = await inspectMobileRewriteTarget(
       bridge: bridge,
@@ -52,6 +60,54 @@ void main() {
     expect(result.detectedRevision, 1);
     expect(result.nextRevision, 2);
     expect(result.reasonCode, 'rewrite_detected');
+    expect(result.shouldBlockInitialWrite(allowRewrite: false), isTrue);
+    expect(result.shouldBlockInitialWrite(allowRewrite: true), isFalse);
+    expect(preflightSummaryLabel(result), '已检测到已有版权记录');
+    expect(preflightActionLabel(result), '继续写入将记录为第 2 次写入');
+    expect(
+      preflightEvidenceLines(result),
+      contains('上一版编号：PREVIEW-01020304090A'),
+    );
+    expect(
+      existingWatermarkRewriteBlockedMessage(result.watermarkUid),
+      '检测到已有版权记录 PREVIEW-01020304090A。如需生成新版，请开启“作为新版写入”。',
+    );
+  });
+
+  test('watermarked preview bytes are rejected before second write', () async {
+    const bridge = PreviewWatermarkBridge();
+    final written = await bridge.write(
+      const WatermarkWriteRequest(
+        kind: WatermarkAssetKind.image,
+        bytes: [1, 2, 3, 4],
+        seed: testSeed,
+      ),
+    );
+
+    await expectLater(
+      bridge.write(
+        WatermarkWriteRequest(
+          kind: WatermarkAssetKind.image,
+          bytes: written.bytes,
+          seed: written.seed,
+        ),
+      ),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.toString(),
+          'message',
+          contains(
+            'watermark already exists in source media: PREVIEW-01020304090A',
+          ),
+        ),
+      ),
+    );
+    expect(
+      mobileWatermarkWriteErrorMessage(
+        'watermark already exists in source media: PREVIEW-01020304090A',
+      ),
+      '检测到已有版权记录 PREVIEW-01020304090A。如需生成新版，请开启“作为新版写入”。',
+    );
   });
 
   test('local vault revision is used when parent uid already exists', () async {
@@ -66,6 +122,8 @@ void main() {
         watermarkUid: 'uid-existing',
         revision: 1,
         sha256: 'hash',
+        seed: testSeed,
+        processTimeMs: 1234,
         verification: WatermarkWriteVerification(
           verified: true,
           watermarkUid: 'verified-uid',
@@ -90,6 +148,7 @@ void main() {
     expect(result.detectedRevision, 3);
     expect(result.nextRevision, 4);
     expect(result.rewriteReason, 'authorized rewrite');
+    expect(preflightActionLabel(result), '继续写入将记录为第 4 次写入');
   });
 }
 

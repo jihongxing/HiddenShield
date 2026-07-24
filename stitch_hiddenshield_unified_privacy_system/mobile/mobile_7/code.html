@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>HiddenShield - Report Purchase</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                            "tertiary-container": "#ffac5a",
+                            "on-secondary-container": "#5b3800",
+                            "on-background": "#dde4e1",
+                            "surface-container-low": "#161d1b",
+                            "primary-container": "#2dd4bf",
+                            "on-secondary-fixed-variant": "#653e00",
+                            "surface-dim": "#0e1513",
+                            "surface-tint": "#3cddc7",
+                            "on-tertiary": "#4b2800",
+                            "surface-container-highest": "#2f3634",
+                            "on-error-container": "#ffdad6",
+                            "tertiary-fixed": "#ffdcc0",
+                            "on-tertiary-container": "#744000",
+                            "on-tertiary-fixed": "#2d1600",
+                            "secondary-fixed-dim": "#ffb95f",
+                            "surface-container-lowest": "#09100e",
+                            "on-primary-fixed": "#00201c",
+                            "inverse-primary": "#006b5f",
+                            "tertiary": "#ffd1aa",
+                            "on-tertiary-fixed-variant": "#6b3b00",
+                            "on-surface-variant": "#bacac5",
+                            "primary": "#57f1db",
+                            "on-primary": "#003731",
+                            "background": "#0e1513",
+                            "inverse-surface": "#dde4e1",
+                            "secondary": "#ffb95f",
+                            "primary-fixed": "#62fae3",
+                            "on-surface": "#dde4e1",
+                            "surface-bright": "#333b39",
+                            "outline": "#859490",
+                            "secondary-fixed": "#ffddb8",
+                            "inverse-on-surface": "#2b3230",
+                            "surface-container-high": "#242b2a",
+                            "primary-fixed-dim": "#3cddc7",
+                            "on-secondary": "#472a00",
+                            "secondary-container": "#ee9800",
+                            "tertiary-fixed-dim": "#ffb875",
+                            "surface-variant": "#2f3634",
+                            "error-container": "#93000a",
+                            "error": "#ffb4ab",
+                            "on-primary-container": "#00574d",
+                            "on-error": "#690005",
+                            "outline-variant": "#3c4a46",
+                            "on-secondary-fixed": "#2a1700",
+                            "surface-container": "#1a211f",
+                            "on-primary-fixed-variant": "#005047",
+                            "surface": "#0e1513"
+                    },
+                    "borderRadius": {
+                            "DEFAULT": "0.125rem",
+                            "lg": "0.25rem",
+                            "xl": "0.5rem",
+                            "full": "0.75rem"
+                    },
+                    "spacing": {
+                            "gutter": "16px",
+                            "padding-xs": "4px",
+                            "padding-sm": "8px",
+                            "padding-lg": "24px",
+                            "unit": "4px",
+                            "padding-md": "16px",
+                            "container-margin": "24px"
+                    },
+                    "fontFamily": {
+                            "body-lg": ["Inter"],
+                            "headline-sm": ["Inter"],
+                            "headline-lg": ["Inter"],
+                            "label-sm": ["Inter"],
+                            "label-md": ["Inter"],
+                            "label-lg": ["Inter"],
+                            "headline-md": ["Inter"],
+                            "body-sm": ["Inter"],
+                            "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                            "headline-sm": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+                            "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                            "label-sm": ["11px", { "lineHeight": "12px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                            "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                            "label-lg": ["14px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                            "headline-md": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                            "body-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col antialiased selection:bg-primary-container selection:text-on-primary-container pb-12">
+<!-- TopAppBar -->
+<header class="w-full top-0 border-b border-outline-variant bg-background flex justify-between items-center px-container-margin py-padding-md z-40 sticky">
+<div class="flex items-center gap-3">
+<span aria-hidden="true" class="material-symbols-outlined text-primary text-2xl" data-icon="security">security</span>
+<span class="font-headline-md text-headline-md font-bold text-primary tracking-tight">安全哨兵</span>
+</div>
+<span aria-hidden="true" class="material-symbols-outlined text-on-surface-variant text-2xl" data-icon="account_circle">account_circle</span>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 w-full max-w-md mx-auto flex flex-col gap-padding-lg px-container-margin py-padding-lg">
+<!-- Screen Title & Context Action -->
+<div class="flex items-center justify-between w-full">
+<h1 class="font-headline-lg text-headline-lg text-on-surface">报告详情与导出</h1>
+<button class="w-8 h-8 flex items-center justify-center rounded bg-surface-container-high text-on-surface hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="close">close</span>
+</button>
+</div>
+<!-- Top Detail View: Record Summary -->
+<section class="bg-surface-container border border-outline-variant rounded-xl p-padding-md flex flex-col gap-gutter">
+<div class="flex justify-between items-start">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Record ID: TRK-8992-B</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface mt-1">深度网络暴露面扫描</h2>
+</div>
+<div class="bg-surface-container-high rounded px-2 py-1 flex items-center gap-1 border border-outline-variant">
+<span class="material-symbols-outlined text-sm text-on-surface-variant" data-icon="calendar_today">calendar_today</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">2023.10.24</span>
+</div>
+</div>
+<div class="h-px w-full bg-outline-variant/50"></div>
+<div class="grid grid-cols-2 gap-gutter">
+<div class="flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant">目标节点</span>
+<span class="font-body-sm text-body-sm text-on-surface">192.168.x.x (内部网关)</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant">高危发现</span>
+<span class="font-body-sm text-body-sm text-on-surface">3 项加密漏洞</span>
+</div>
+</div>
+</section>
+<!-- STATE 1: LOCKED STATE (Copper/Amber Accents) -->
+<section class="flex flex-col gap-padding-md relative">
+<div class="absolute -left-3 top-0 bottom-0 w-1 bg-secondary rounded-r opacity-80"></div>
+<!-- Locked Status Chip -->
+<div class="inline-flex w-max items-center gap-2 bg-secondary/10 border-l-2 border-secondary px-3 py-1.5">
+<span class="material-symbols-outlined text-secondary text-sm fill" data-icon="lock">lock</span>
+<span class="font-label-md text-label-md text-secondary tracking-wide">Report Status: Locked</span>
+</div>
+<!-- Explanation -->
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+                此高级别证据报告包含完整的漏洞利用链路与修复建议代码。查看完整内容需要 <strong class="text-on-surface font-medium">Creator 计划</strong> 订阅，或使用单次购买积分。
+            </p>
+<!-- Purchase Card -->
+<div class="bg-surface-container-low border border-secondary/30 rounded-xl p-padding-md flex items-center justify-between group hover:bg-surface-container-highest transition-colors cursor-pointer relative overflow-hidden">
+<!-- Subtle copper glow accent -->
+<div class="absolute top-0 right-0 w-32 h-32 bg-secondary/5 rounded-full blur-xl -mr-10 -mt-10 pointer-events-none"></div>
+<div class="flex flex-col gap-1 z-10">
+<span class="font-headline-sm text-headline-sm text-on-surface">购买单次报告</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">解锁此单项追踪记录的永久导出权限</span>
+</div>
+<div class="flex flex-col items-end z-10">
+<span class="font-headline-md text-headline-md text-secondary">¥19.00</span>
+<button class="mt-2 bg-secondary text-on-secondary px-4 py-1.5 rounded font-label-md text-label-md shadow-sm hover:opacity-90 transition-opacity">
+                        立即支付
+                    </button>
+</div>
+</div>
+<!-- Alternative Action -->
+<button class="w-full bg-transparent border border-outline-variant text-on-surface rounded py-2 font-label-md text-label-md hover:bg-surface-container transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="upgrade">upgrade</span>
+                升级至 Creator 计划 (省 40%)
+            </button>
+</section>
+<!-- Divider -->
+<div class="w-full flex items-center gap-4 my-2 opacity-50">
+<div class="flex-1 h-px bg-outline-variant"></div>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">State Preview</span>
+<div class="flex-1 h-px bg-outline-variant"></div>
+</div>
+<!-- STATE 2: SUCCESS STATE (Teal/Primary Accents) -->
+<section class="flex flex-col gap-padding-md relative">
+<div class="absolute -left-3 top-0 bottom-0 w-1 bg-primary rounded-r opacity-80"></div>
+<!-- Success Status Chip -->
+<div class="inline-flex w-max items-center gap-2 bg-primary-container/10 border-l-2 border-primary px-3 py-1.5">
+<span class="material-symbols-outlined text-primary text-sm fill" data-icon="check_circle">check_circle</span>
+<span class="font-label-md text-label-md text-primary tracking-wide">Report Purchased</span>
+</div>
+<div class="flex flex-col gap-1">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">报告已成功解锁</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-primary inline-block"></span>
+                    Valid for 30 days (Expires 2023.11.24)
+                </p>
+</div>
+<!-- Action Area -->
+<div class="flex flex-col gap-3 mt-2">
+<button class="w-full bg-primary text-on-primary rounded-lg py-3 font-headline-sm text-headline-sm flex items-center justify-center gap-2 hover:bg-primary-fixed transition-colors shadow-[0_2px_8px_rgba(45,212,191,0.2)]">
+<span class="material-symbols-outlined" data-icon="picture_as_pdf">picture_as_pdf</span>
+                    导出 PDF
+                </button>
+<button class="w-full bg-surface-container border border-outline-variant text-on-surface rounded-lg py-2 font-label-md text-label-md hover:bg-surface-variant transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm" data-icon="code">code</span>
+                    查看原始 JSON 数据
+                </button>
+</div>
+<!-- Billing Link -->
+<div class="flex justify-center mt-2">
+<a class="font-label-md text-label-md text-primary underline hover:text-primary-fixed transition-colors flex items-center gap-1" href="#">
+<span class="material-symbols-outlined text-xs" data-icon="receipt_long">receipt_long</span>
+                    查看账单历史
+                </a>
+</div>
+</section>
+</main>
+</body></html>

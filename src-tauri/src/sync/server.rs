@@ -29,7 +29,16 @@ pub fn start_sync_server(app_handle: AppHandle) {
     thread::spawn(move || {
         let db_path = app_data_dir.join("vault.db");
         if let Err(err) = run_sync_server(db_path, app_data_dir, ("0.0.0.0", listen_port), None) {
-            log::warn!("sync server stopped: {err}");
+            if err.contains("address already in use")
+                || err.contains("只允许使用一次")
+                || err.contains("os error 10048")
+            {
+                log::info!(
+                    "desktop LAN sync stub skipped: port {listen_port} is already in use; cloud backend sync is unaffected"
+                );
+            } else {
+                log::warn!("sync server stopped: {err}");
+            }
         }
     });
 }

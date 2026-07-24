@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hiddenshield.local/contracts/offline-license/hsreq1-token-v1.schema.json",
+  "title": "HiddenShield HSREQ1 Activation Request Token v1",
+  "type": "string",
+  "minLength": 300,
+  "maxLength": 450,
+  "pattern": "^HSREQ1\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]{16}$"
+}

@@ -1,0 +1,8 @@
+{
+  "provider": "azure_artifact_signing",
+  "endpoint": "https://REGION.codesigning.azure.net",
+  "codeSigningAccountName": "REPLACE_WITH_ACCOUNT_NAME",
+  "certificateProfileName": "REPLACE_WITH_PROFILE_NAME",
+  "timestampUrl": "http://timestamp.acs.microsoft.com",
+  "authentication": "Azure Default Credential; no certificate private key is stored in this file"
+}

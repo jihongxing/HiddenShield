@@ -1,16 +1,18 @@
 import { spawn } from 'node:child_process';
 import { mkdtemp, rm } from 'node:fs/promises';
+import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const cloudUrl = (process.env.HIDDENSHIELD_CLOUD_URL ?? 'http://127.0.0.1:43188').replace(/\/$/, '');
+const cloudUrl = (process.env.HIDDENSHIELD_CLOUD_URL ?? await localBackendUrl()).replace(/\/$/, '');
 const cloudUri = new URL(cloudUrl);
 const bindAddr = `${cloudUri.hostname}:${cloudUri.port || '80'}`;
 const tempDir = await mkdtemp(join(tmpdir(), 'hiddenshield-cloud-ci-'));
 const dbPath = join(tempDir, 'cloud-ci.sqlite');
+const targetDir = join(tempDir, 'target');
 let backend;
 
 try {
@@ -21,6 +23,8 @@ try {
     'run',
     '--manifest-path',
     'feedback-backend/Cargo.toml',
+    '--bin',
+    'hiddenshield-feedback-backend',
     '--',
     '--bind-addr',
     bindAddr,
@@ -28,7 +32,10 @@ try {
     dbPath,
   ], {
     cwd: rootDir,
-    env: process.env,
+    env: {
+      ...process.env,
+      CARGO_TARGET_DIR: targetDir,
+    },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 
@@ -49,7 +56,7 @@ try {
 
 async function waitForCloud() {
   const startedAt = Date.now();
-  while (Date.now() - startedAt < 60_000) {
+  while (Date.now() - startedAt < 300_000) {
     if (backend.exitCode != null) {
       throw new Error(`cloud backend exited early with code ${backend.exitCode}`);
     }
@@ -64,7 +71,7 @@ async function waitForCloud() {
     }
     await delay(500);
   }
-  throw new Error(`cloud backend did not become healthy within 60s: ${cloudUrl}`);
+  throw new Error(`cloud backend did not become healthy within 300s: ${cloudUrl}`);
 }
 
 async function runNodeScript(scriptPath) {
@@ -134,4 +141,27 @@ function command(name) {
     return 'node.exe';
   }
   return name;
+}
+
+async function localBackendUrl() {
+  const port = await findAvailablePort();
+  return `http://127.0.0.1:${port}`;
+}
+
+async function findAvailablePort() {
+  return await new Promise((resolvePromise, reject) => {
+    const server = createServer();
+    server.unref();
+    server.on('error', reject);
+    server.listen(0, '127.0.0.1', () => {
+      const address = server.address();
+      server.close(() => {
+        if (!address || typeof address === 'string') {
+          reject(new Error('failed to allocate an available local port'));
+          return;
+        }
+        resolvePromise(address.port);
+      });
+    });
+  });
 }

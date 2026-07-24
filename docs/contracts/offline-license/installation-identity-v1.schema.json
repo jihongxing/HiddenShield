@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hiddenshield.local/contracts/offline-license/installation-identity-v1.schema.json",
+  "title": "HiddenShield Installation Identity Metadata v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["createdAt", "installationId", "platform", "saltBase64Url", "schemaVersion"],
+  "properties": {
+    "createdAt": { "type": "string", "format": "date-time" },
+    "installationId": { "type": "string", "pattern": "^[A-Za-z0-9_-]{43}$" },
+    "platform": { "enum": ["windows", "macos", "linux", "android", "ios"] },
+    "saltBase64Url": { "type": "string", "pattern": "^[A-Za-z0-9_-]{22}$" },
+    "schemaVersion": { "const": 1 }
+  }
+}

@@ -8,7 +8,7 @@ defineProps<{
 
 function handleClick() {
   trackClick("upgrade_subscription_click");
-  alert("订阅权益即将上线，敬请期待！🙌");
+  alert("请在年度授权页面查看当前基础权益。");
 }
 </script>
 
@@ -20,8 +20,8 @@ function handleClick() {
     :disabled="disabled"
     @click="handleClick"
   >
-    <span class="pro-badge__icon">⚡</span>
+    <span class="pro-badge__icon" aria-hidden="true">PRO</span>
     <span class="pro-badge__label">{{ label }}</span>
-    <span class="pro-badge__tag">订阅</span>
+    <span class="pro-badge__tag">年费</span>
   </button>
 </template>

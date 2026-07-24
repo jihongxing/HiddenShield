@@ -38,7 +38,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.12.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 1485132065;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -428348159;
 
 // Section: executor
 
@@ -46,6 +46,113 @@ flutter_rust_bridge::frb_generated_default_handler!();
 
 // Section: wire_funcs
 
+fn wire__crate__api__decode_v3_readonly_fixture_for_mobile_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "decode_v3_readonly_fixture_for_mobile",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_payload_bytes = <Vec<u8>>::sse_decode(&mut deserializer);
+            let api_media_type = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, crate::api::MobileWatermarkError>((move || {
+                    let output_ok = crate::api::decode_v3_readonly_fixture_for_mobile(
+                        api_payload_bytes,
+                        api_media_type,
+                    )?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__decode_v3_readonly_media_fixture_for_mobile_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "decode_v3_readonly_media_fixture_for_mobile",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_media_bytes = <Vec<u8>>::sse_decode(&mut deserializer);
+            let api_media_type = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, crate::api::MobileWatermarkError>((move || {
+                    let output_ok = crate::api::decode_v3_readonly_media_fixture_for_mobile(
+                        api_media_bytes,
+                        api_media_type,
+                    )?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__detect_existing_image_for_mobile_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "detect_existing_image_for_mobile",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_image_bytes = <Vec<u8>>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, crate::api::MobileWatermarkError>((move || {
+                    let output_ok = crate::api::detect_existing_image_for_mobile(api_image_bytes)?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
 fn wire__crate__api__embed_audio_wav_for_mobile_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -127,6 +234,45 @@ fn wire__crate__api__embed_image_for_mobile_impl(
         },
     )
 }
+fn wire__crate__api__embed_v3_internal_qa_for_mobile_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "embed_v3_internal_qa_for_mobile",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_media_bytes = <Vec<u8>>::sse_decode(&mut deserializer);
+            let api_media_type = <String>::sse_decode(&mut deserializer);
+            let api_watermark_uid = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, crate::api::MobileWatermarkError>((move || {
+                    let output_ok = crate::api::embed_v3_internal_qa_for_mobile(
+                        api_media_bytes,
+                        api_media_type,
+                        api_watermark_uid,
+                    )?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
 fn wire__crate__api__extract_audio_wav_for_mobile_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -160,6 +306,41 @@ fn wire__crate__api__extract_audio_wav_for_mobile_impl(
         },
     )
 }
+fn wire__crate__api__extract_audio_wav_readonly_candidate_for_mobile_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "extract_audio_wav_readonly_candidate_for_mobile",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_audio_bytes = <Vec<u8>>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, crate::api::MobileWatermarkError>((move || {
+                    let output_ok = crate::api::extract_audio_wav_readonly_candidate_for_mobile(
+                        api_audio_bytes,
+                    )?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
 fn wire__crate__api__extract_image_for_mobile_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -187,6 +368,40 @@ fn wire__crate__api__extract_image_for_mobile_impl(
             move |context| {
                 transform_result_sse::<_, crate::api::MobileWatermarkError>((move || {
                     let output_ok = crate::api::extract_image_for_mobile(api_image_bytes)?;
+                    Ok(output_ok)
+                })())
+            }
+        },
+    )
+}
+fn wire__crate__api__extract_image_readonly_candidate_for_mobile_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "extract_image_readonly_candidate_for_mobile",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_image_bytes = <Vec<u8>>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, crate::api::MobileWatermarkError>((move || {
+                    let output_ok =
+                        crate::api::extract_image_readonly_candidate_for_mobile(api_image_bytes)?;
                     Ok(output_ok)
                 })())
             }
@@ -251,11 +466,25 @@ impl SseDecode for crate::api::MobileExtractResult {
         let mut var_timestamp = <u64>::sse_decode(deserializer);
         let mut var_deviceIdHex = <String>::sse_decode(deserializer);
         let mut var_fileHashHex = <String>::sse_decode(deserializer);
+        let mut var_parentWatermarkUid = <Option<String>>::sse_decode(deserializer);
+        let mut var_revision = <u32>::sse_decode(deserializer);
+        let mut var_payloadProtocolVersion = <u32>::sse_decode(deserializer);
+        let mut var_payloadBytesLength = <u32>::sse_decode(deserializer);
+        let mut var_watermarkIdIssueMode = <String>::sse_decode(deserializer);
+        let mut var_mediaType = <String>::sse_decode(deserializer);
+        let mut var_payloadAuthStatus = <String>::sse_decode(deserializer);
         return crate::api::MobileExtractResult {
             watermark_uid: var_watermarkUid,
             timestamp: var_timestamp,
             device_id_hex: var_deviceIdHex,
             file_hash_hex: var_fileHashHex,
+            parent_watermark_uid: var_parentWatermarkUid,
+            revision: var_revision,
+            payload_protocol_version: var_payloadProtocolVersion,
+            payload_bytes_length: var_payloadBytesLength,
+            watermark_id_issue_mode: var_watermarkIdIssueMode,
+            media_type: var_mediaType,
+            payload_auth_status: var_payloadAuthStatus,
         };
     }
 }
@@ -292,15 +521,51 @@ impl SseDecode for crate::api::MobileImageResult {
 impl SseDecode for crate::api::MobileMediaPayload {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut var_userSeed = <Vec<u8>>::sse_decode(deserializer);
+        let mut var_creatorIdentity = <String>::sse_decode(deserializer);
+        let mut var_deviceIdentity = <String>::sse_decode(deserializer);
+        let mut var_mediaBytes = <Vec<u8>>::sse_decode(deserializer);
         let mut var_timestamp = <u64>::sse_decode(deserializer);
-        let mut var_deviceId = <Vec<u8>>::sse_decode(deserializer);
-        let mut var_fileHash = <Vec<u8>>::sse_decode(deserializer);
+        let mut var_reservedWatermarkUid = <Option<String>>::sse_decode(deserializer);
+        let mut var_registryProofHash = <Option<String>>::sse_decode(deserializer);
+        let mut var_parentWatermarkUid = <Option<String>>::sse_decode(deserializer);
+        let mut var_revision = <u32>::sse_decode(deserializer);
+        let mut var_mediaType = <Option<String>>::sse_decode(deserializer);
         return crate::api::MobileMediaPayload {
-            user_seed: var_userSeed,
+            creator_identity: var_creatorIdentity,
+            device_identity: var_deviceIdentity,
+            media_bytes: var_mediaBytes,
             timestamp: var_timestamp,
-            device_id: var_deviceId,
-            file_hash: var_fileHash,
+            reserved_watermark_uid: var_reservedWatermarkUid,
+            registry_proof_hash: var_registryProofHash,
+            parent_watermark_uid: var_parentWatermarkUid,
+            revision: var_revision,
+            media_type: var_mediaType,
+        };
+    }
+}
+
+impl SseDecode for crate::api::MobileV3InternalQaWriteResult {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_bytes = <Vec<u8>>::sse_decode(deserializer);
+        let mut var_watermarkUid = <String>::sse_decode(deserializer);
+        let mut var_sha256 = <String>::sse_decode(deserializer);
+        let mut var_mediaType = <String>::sse_decode(deserializer);
+        let mut var_payloadProtocolVersion = <u32>::sse_decode(deserializer);
+        let mut var_payloadBytesLength = <u32>::sse_decode(deserializer);
+        let mut var_payloadAuthStatus = <String>::sse_decode(deserializer);
+        let mut var_watermarkIdIssueMode = <String>::sse_decode(deserializer);
+        let mut var_mediaPayloadRole = <String>::sse_decode(deserializer);
+        return crate::api::MobileV3InternalQaWriteResult {
+            bytes: var_bytes,
+            watermark_uid: var_watermarkUid,
+            sha256: var_sha256,
+            media_type: var_mediaType,
+            payload_protocol_version: var_payloadProtocolVersion,
+            payload_bytes_length: var_payloadBytesLength,
+            payload_auth_status: var_payloadAuthStatus,
+            watermark_id_issue_mode: var_watermarkIdIssueMode,
+            media_payload_role: var_mediaPayloadRole,
         };
     }
 }
@@ -311,17 +576,56 @@ impl SseDecode for crate::api::MobileWatermarkError {
         let mut tag_ = <i32>::sse_decode(deserializer);
         match tag_ {
             0 => {
-                let mut var_field0 = <String>::sse_decode(deserializer);
-                return crate::api::MobileWatermarkError::InvalidPayload(var_field0);
+                let mut var_code = <String>::sse_decode(deserializer);
+                let mut var_message = <String>::sse_decode(deserializer);
+                return crate::api::MobileWatermarkError::InvalidPayload {
+                    code: var_code,
+                    message: var_message,
+                };
             }
             1 => {
-                let mut var_field0 = <String>::sse_decode(deserializer);
-                return crate::api::MobileWatermarkError::OperationFailed(var_field0);
+                let mut var_code = <String>::sse_decode(deserializer);
+                let mut var_message = <String>::sse_decode(deserializer);
+                let mut var_existingUid = <Option<String>>::sse_decode(deserializer);
+                return crate::api::MobileWatermarkError::OperationFailed {
+                    code: var_code,
+                    message: var_message,
+                    existing_uid: var_existingUid,
+                };
             }
             _ => {
                 unimplemented!("");
             }
         }
+    }
+}
+
+impl SseDecode for Option<String> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<String>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<crate::api::MobileExtractResult> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<crate::api::MobileExtractResult>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for u32 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        deserializer.cursor.read_u32::<NativeEndian>().unwrap()
     }
 }
 
@@ -353,10 +657,46 @@ fn pde_ffi_dispatcher_primary_impl(
 ) {
     // Codec=Pde (Serialization + dispatch), see doc to use other codecs
     match func_id {
-        2 => wire__crate__api__embed_audio_wav_for_mobile_impl(port, ptr, rust_vec_len, data_len),
-        3 => wire__crate__api__embed_image_for_mobile_impl(port, ptr, rust_vec_len, data_len),
-        4 => wire__crate__api__extract_audio_wav_for_mobile_impl(port, ptr, rust_vec_len, data_len),
-        5 => wire__crate__api__extract_image_for_mobile_impl(port, ptr, rust_vec_len, data_len),
+        2 => wire__crate__api__decode_v3_readonly_fixture_for_mobile_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        3 => wire__crate__api__decode_v3_readonly_media_fixture_for_mobile_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        4 => wire__crate__api__detect_existing_image_for_mobile_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        5 => wire__crate__api__embed_audio_wav_for_mobile_impl(port, ptr, rust_vec_len, data_len),
+        6 => wire__crate__api__embed_image_for_mobile_impl(port, ptr, rust_vec_len, data_len),
+        7 => wire__crate__api__embed_v3_internal_qa_for_mobile_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        8 => wire__crate__api__extract_audio_wav_for_mobile_impl(port, ptr, rust_vec_len, data_len),
+        9 => wire__crate__api__extract_audio_wav_readonly_candidate_for_mobile_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
+        10 => wire__crate__api__extract_image_for_mobile_impl(port, ptr, rust_vec_len, data_len),
+        11 => wire__crate__api__extract_image_readonly_candidate_for_mobile_impl(
+            port,
+            ptr,
+            rust_vec_len,
+            data_len,
+        ),
         _ => unreachable!(),
     }
 }
@@ -402,6 +742,13 @@ impl flutter_rust_bridge::IntoDart for crate::api::MobileExtractResult {
             self.timestamp.into_into_dart().into_dart(),
             self.device_id_hex.into_into_dart().into_dart(),
             self.file_hash_hex.into_into_dart().into_dart(),
+            self.parent_watermark_uid.into_into_dart().into_dart(),
+            self.revision.into_into_dart().into_dart(),
+            self.payload_protocol_version.into_into_dart().into_dart(),
+            self.payload_bytes_length.into_into_dart().into_dart(),
+            self.watermark_id_issue_mode.into_into_dart().into_dart(),
+            self.media_type.into_into_dart().into_dart(),
+            self.payload_auth_status.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -463,10 +810,15 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::MobileImageResult>
 impl flutter_rust_bridge::IntoDart for crate::api::MobileMediaPayload {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
-            self.user_seed.into_into_dart().into_dart(),
+            self.creator_identity.into_into_dart().into_dart(),
+            self.device_identity.into_into_dart().into_dart(),
+            self.media_bytes.into_into_dart().into_dart(),
             self.timestamp.into_into_dart().into_dart(),
-            self.device_id.into_into_dart().into_dart(),
-            self.file_hash.into_into_dart().into_dart(),
+            self.reserved_watermark_uid.into_into_dart().into_dart(),
+            self.registry_proof_hash.into_into_dart().into_dart(),
+            self.parent_watermark_uid.into_into_dart().into_dart(),
+            self.revision.into_into_dart().into_dart(),
+            self.media_type.into_into_dart().into_dart(),
         ]
         .into_dart()
     }
@@ -483,15 +835,54 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::MobileMediaPayload>
     }
 }
 // Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::MobileV3InternalQaWriteResult {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.bytes.into_into_dart().into_dart(),
+            self.watermark_uid.into_into_dart().into_dart(),
+            self.sha256.into_into_dart().into_dart(),
+            self.media_type.into_into_dart().into_dart(),
+            self.payload_protocol_version.into_into_dart().into_dart(),
+            self.payload_bytes_length.into_into_dart().into_dart(),
+            self.payload_auth_status.into_into_dart().into_dart(),
+            self.watermark_id_issue_mode.into_into_dart().into_dart(),
+            self.media_payload_role.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::MobileV3InternalQaWriteResult
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::MobileV3InternalQaWriteResult>
+    for crate::api::MobileV3InternalQaWriteResult
+{
+    fn into_into_dart(self) -> crate::api::MobileV3InternalQaWriteResult {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
 impl flutter_rust_bridge::IntoDart for crate::api::MobileWatermarkError {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         match self {
-            crate::api::MobileWatermarkError::InvalidPayload(field0) => {
-                [0.into_dart(), field0.into_into_dart().into_dart()].into_dart()
-            }
-            crate::api::MobileWatermarkError::OperationFailed(field0) => {
-                [1.into_dart(), field0.into_into_dart().into_dart()].into_dart()
-            }
+            crate::api::MobileWatermarkError::InvalidPayload { code, message } => [
+                0.into_dart(),
+                code.into_into_dart().into_dart(),
+                message.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
+            crate::api::MobileWatermarkError::OperationFailed {
+                code,
+                message,
+                existing_uid,
+            } => [
+                1.into_dart(),
+                code.into_into_dart().into_dart(),
+                message.into_into_dart().into_dart(),
+                existing_uid.into_into_dart().into_dart(),
+            ]
+            .into_dart(),
             _ => {
                 unimplemented!("");
             }
@@ -557,6 +948,13 @@ impl SseEncode for crate::api::MobileExtractResult {
         <u64>::sse_encode(self.timestamp, serializer);
         <String>::sse_encode(self.device_id_hex, serializer);
         <String>::sse_encode(self.file_hash_hex, serializer);
+        <Option<String>>::sse_encode(self.parent_watermark_uid, serializer);
+        <u32>::sse_encode(self.revision, serializer);
+        <u32>::sse_encode(self.payload_protocol_version, serializer);
+        <u32>::sse_encode(self.payload_bytes_length, serializer);
+        <String>::sse_encode(self.watermark_id_issue_mode, serializer);
+        <String>::sse_encode(self.media_type, serializer);
+        <String>::sse_encode(self.payload_auth_status, serializer);
     }
 }
 
@@ -590,10 +988,30 @@ impl SseEncode for crate::api::MobileImageResult {
 impl SseEncode for crate::api::MobileMediaPayload {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <Vec<u8>>::sse_encode(self.user_seed, serializer);
+        <String>::sse_encode(self.creator_identity, serializer);
+        <String>::sse_encode(self.device_identity, serializer);
+        <Vec<u8>>::sse_encode(self.media_bytes, serializer);
         <u64>::sse_encode(self.timestamp, serializer);
-        <Vec<u8>>::sse_encode(self.device_id, serializer);
-        <Vec<u8>>::sse_encode(self.file_hash, serializer);
+        <Option<String>>::sse_encode(self.reserved_watermark_uid, serializer);
+        <Option<String>>::sse_encode(self.registry_proof_hash, serializer);
+        <Option<String>>::sse_encode(self.parent_watermark_uid, serializer);
+        <u32>::sse_encode(self.revision, serializer);
+        <Option<String>>::sse_encode(self.media_type, serializer);
+    }
+}
+
+impl SseEncode for crate::api::MobileV3InternalQaWriteResult {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <Vec<u8>>::sse_encode(self.bytes, serializer);
+        <String>::sse_encode(self.watermark_uid, serializer);
+        <String>::sse_encode(self.sha256, serializer);
+        <String>::sse_encode(self.media_type, serializer);
+        <u32>::sse_encode(self.payload_protocol_version, serializer);
+        <u32>::sse_encode(self.payload_bytes_length, serializer);
+        <String>::sse_encode(self.payload_auth_status, serializer);
+        <String>::sse_encode(self.watermark_id_issue_mode, serializer);
+        <String>::sse_encode(self.media_payload_role, serializer);
     }
 }
 
@@ -601,18 +1019,52 @@ impl SseEncode for crate::api::MobileWatermarkError {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         match self {
-            crate::api::MobileWatermarkError::InvalidPayload(field0) => {
+            crate::api::MobileWatermarkError::InvalidPayload { code, message } => {
                 <i32>::sse_encode(0, serializer);
-                <String>::sse_encode(field0, serializer);
+                <String>::sse_encode(code, serializer);
+                <String>::sse_encode(message, serializer);
             }
-            crate::api::MobileWatermarkError::OperationFailed(field0) => {
+            crate::api::MobileWatermarkError::OperationFailed {
+                code,
+                message,
+                existing_uid,
+            } => {
                 <i32>::sse_encode(1, serializer);
-                <String>::sse_encode(field0, serializer);
+                <String>::sse_encode(code, serializer);
+                <String>::sse_encode(message, serializer);
+                <Option<String>>::sse_encode(existing_uid, serializer);
             }
             _ => {
                 unimplemented!("");
             }
         }
+    }
+}
+
+impl SseEncode for Option<String> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <String>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<crate::api::MobileExtractResult> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::MobileExtractResult>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for u32 {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        serializer.cursor.write_u32::<NativeEndian>(self).unwrap();
     }
 }
 

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "policyType": "offline_license_trust_policy",
+  "keys": [
+    {
+      "keyId": "offline-production-2026-07-17-v1",
+      "algorithm": "Ed25519",
+      "publicKeyBase64Url": "idGJrKyJC86KSMGA5rCDRNN9ZG2Vj7ii7RSNUdLHK1U",
+      "status": "active",
+      "purposes": ["license", "revocation"],
+      "notBefore": "2026-07-17T19:30:00Z",
+      "notAfter": "2029-07-17T19:30:00Z"
+    }
+  ],
+  "licenseSchemaRange": {
+    "minimum": 1,
+    "maximum": 1
+  },
+  "clockPolicy": {
+    "rollbackToleranceSeconds": 300,
+    "futureArtifactToleranceSeconds": 300
+  },
+  "releaseIntegrity": {
+    "requireOsPackageSignature": true,
+    "allowInProcessSelfHashAsAuthority": false
+  }
+}

@@ -15,11 +15,15 @@ class RustWatermarkBridge extends WatermarkBridge {
     return Future.value(
       const BridgeStatus(
         label: '本地处理已就绪',
-        detail: '图片和 WAV 音频可直接在本机处理，视频继续由桌面端负责。',
+        detail: '图片和常见音频可直接在本机处理；视频音轨可在移动端验证，视频保护副本写入由桌面端负责。',
         capabilities: BridgeCapabilities(
-          supportedKinds: [WatermarkAssetKind.image, WatermarkAssetKind.audio],
+          supportedKinds: [
+            WatermarkAssetKind.image,
+            WatermarkAssetKind.audio,
+            WatermarkAssetKind.video,
+          ],
           supportsDesktopSync: false,
-          supportsLocalVideo: false,
+          supportsLocalVideo: true,
         ),
       ),
     );
@@ -34,27 +38,71 @@ class RustWatermarkBridge extends WatermarkBridge {
       WatermarkAssetKind.audio => await rust_api.extractAudioWavForMobile(
         audioBytes: request.bytes,
       ),
-      WatermarkAssetKind.video => throw UnsupportedError(
-        'Mobile local video watermarking is disabled.',
+      WatermarkAssetKind.video => await rust_api.extractAudioWavForMobile(
+        audioBytes: request.bytes,
       ),
     };
-    return WatermarkReadResult(
-      kind: request.kind,
-      watermarkUid: result.watermarkUid,
-      revision: 1,
-      timestamp: result.timestamp.toInt(),
-      deviceIdHex: result.deviceIdHex,
-      fileHashHex: result.fileHashHex,
-    );
+    return _readResultFromRust(request.kind, result);
+  }
+
+  @override
+  Future<WatermarkReadResult?> readReadonlyCandidate(
+    WatermarkReadRequest request,
+  ) async {
+    final result = switch (request.kind) {
+      WatermarkAssetKind.image =>
+        await rust_api.extractImageReadonlyCandidateForMobile(
+          imageBytes: request.bytes,
+        ),
+      WatermarkAssetKind.audio =>
+        await rust_api.extractAudioWavReadonlyCandidateForMobile(
+          audioBytes: request.bytes,
+        ),
+      WatermarkAssetKind.video =>
+        await rust_api.extractAudioWavReadonlyCandidateForMobile(
+          audioBytes: request.bytes,
+        ),
+    };
+    return _readResultFromRust(request.kind, result);
+  }
+
+  @override
+  Future<WatermarkReadResult?> detectExisting(
+    WatermarkReadRequest request,
+  ) async {
+    final result = switch (request.kind) {
+      WatermarkAssetKind.image => await rust_api.detectExistingImageForMobile(
+        imageBytes: request.bytes,
+      ),
+      WatermarkAssetKind.audio => await rust_api.extractAudioWavForMobile(
+        audioBytes: request.bytes,
+      ),
+      WatermarkAssetKind.video => await rust_api.extractAudioWavForMobile(
+        audioBytes: request.bytes,
+      ),
+    };
+    if (result == null) {
+      return null;
+    }
+    return _readResultFromRust(request.kind, result);
   }
 
   @override
   Future<WatermarkWriteResult> write(WatermarkWriteRequest request) async {
     final payload = rust_api.MobileMediaPayload(
-      userSeed: Uint8List.fromList(request.seed.userSeed),
+      creatorIdentity: request.seed.creatorIdentity,
+      deviceIdentity: request.seed.deviceIdentity,
+      mediaBytes: Uint8List.fromList(request.seed.mediaBytes),
       timestamp: BigInt.from(request.seed.timestamp),
-      deviceId: Uint8List.fromList(request.seed.deviceId),
-      fileHash: Uint8List.fromList(request.seed.fileHash),
+      reservedWatermarkUid: request.registryDraft?.watermarkUid,
+      registryProofHash: request.registryDraft?.registryProofHash,
+      parentWatermarkUid: request.parentWatermarkUid,
+      revision: request.revision,
+      mediaType: switch (request.kind) {
+        WatermarkAssetKind.image => 'image',
+        WatermarkAssetKind.audio => 'audio',
+        WatermarkAssetKind.video => 'video_audio_track',
+      },
     );
     return switch (request.kind) {
       WatermarkAssetKind.image => _writeImage(request, payload),
@@ -69,13 +117,14 @@ class RustWatermarkBridge extends WatermarkBridge {
     WatermarkWriteRequest request,
     rust_api.MobileMediaPayload payload,
   ) async {
+    final startedAt = DateTime.now();
     final result = await rust_api.embedImageForMobile(
       imageBytes: request.bytes,
       payload: payload,
       outputFormat: rust_api.MobileImageOutputFormat.png,
       allowRewrite: request.allowRewrite,
     );
-    final revision = request.allowRewrite ? 2 : 1;
+    final revision = request.revision;
     final verification = await _verifyWriteResult(
       kind: WatermarkAssetKind.image,
       bytes: result.bytes,
@@ -89,6 +138,8 @@ class RustWatermarkBridge extends WatermarkBridge {
       revision: revision,
       sha256: result.sha256,
       verification: verification,
+      seed: request.seed,
+      processTimeMs: DateTime.now().difference(startedAt).inMilliseconds,
     );
   }
 
@@ -96,12 +147,13 @@ class RustWatermarkBridge extends WatermarkBridge {
     WatermarkWriteRequest request,
     rust_api.MobileMediaPayload payload,
   ) async {
+    final startedAt = DateTime.now();
     final result = await rust_api.embedAudioWavForMobile(
       audioBytes: request.bytes,
       payload: payload,
       allowRewrite: request.allowRewrite,
     );
-    final revision = request.allowRewrite ? 2 : 1;
+    final revision = request.revision;
     final verification = await _verifyWriteResult(
       kind: WatermarkAssetKind.audio,
       bytes: result.bytes,
@@ -115,6 +167,8 @@ class RustWatermarkBridge extends WatermarkBridge {
       revision: revision,
       sha256: result.sha256,
       verification: verification,
+      seed: request.seed,
+      processTimeMs: DateTime.now().difference(startedAt).inMilliseconds,
     );
   }
 
@@ -124,7 +178,9 @@ class RustWatermarkBridge extends WatermarkBridge {
     required String watermarkUid,
     required int revision,
   }) async {
-    final extracted = await read(WatermarkReadRequest(kind: kind, bytes: bytes));
+    final extracted = await read(
+      WatermarkReadRequest(kind: kind, bytes: bytes),
+    );
     if (extracted == null) {
       throw StateError('写入后回读失败，保护副本暂不可取证。');
     }
@@ -140,6 +196,28 @@ class RustWatermarkBridge extends WatermarkBridge {
       message: '已回读验证版权编号，保护副本可取证。',
       fileHashHex: extracted.fileHashHex,
       deviceIdHex: extracted.deviceIdHex,
+      payloadProtocolVersion: extracted.payloadProtocolVersion,
+      payloadBytesLength: extracted.payloadBytesLength,
+    );
+  }
+
+  WatermarkReadResult _readResultFromRust(
+    WatermarkAssetKind kind,
+    rust_api.MobileExtractResult result,
+  ) {
+    return WatermarkReadResult(
+      kind: kind,
+      watermarkUid: result.watermarkUid,
+      revision: result.revision,
+      timestamp: result.timestamp.toInt(),
+      deviceIdHex: result.deviceIdHex,
+      fileHashHex: result.fileHashHex,
+      parentWatermarkUid: result.parentWatermarkUid,
+      payloadProtocolVersion: result.payloadProtocolVersion,
+      payloadBytesLength: result.payloadBytesLength,
+      watermarkIdIssueMode: result.watermarkIdIssueMode,
+      payloadAuthStatus: result.payloadAuthStatus,
+      mediaType: result.mediaType,
     );
   }
 }

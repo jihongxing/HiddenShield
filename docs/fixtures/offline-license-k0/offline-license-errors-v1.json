@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 1,
+  "vectorSetId": "offline-license-errors-v1",
+  "cases": [
+    {
+      "caseId": "license_invalid_format",
+      "source": "license",
+      "mutation": { "kind": "replace_prefix", "value": "HSLIC2" },
+      "expectedError": "offline_license_invalid_format"
+    },
+    {
+      "caseId": "license_unknown_schema",
+      "source": "license",
+      "mutation": { "kind": "replace_payload", "from": "\"schemaVersion\":1", "to": "\"schemaVersion\":2" },
+      "expectedError": "offline_license_unknown_schema"
+    },
+    {
+      "caseId": "license_unknown_key",
+      "source": "license",
+      "mutation": { "kind": "replace_public_key", "value": "AA" },
+      "expectedError": "offline_license_unknown_key"
+    },
+    {
+      "caseId": "license_signature_invalid",
+      "source": "license",
+      "mutation": { "kind": "replace_payload", "from": "2027-07-15", "to": "2028-07-15" },
+      "expectedError": "offline_license_signature_invalid"
+    },
+    {
+      "caseId": "license_feature_profile_invalid",
+      "source": "license",
+      "mutation": { "kind": "replace_payload", "from": "creator_offline", "to": "studio_offline" },
+      "expectedError": "offline_license_feature_profile_invalid"
+    },
+    {
+      "caseId": "license_non_canonical_payload",
+      "source": "license",
+      "mutation": { "kind": "replace_payload", "from": "{", "to": "{ " },
+      "expectedError": "offline_license_non_canonical_payload"
+    },
+    {
+      "caseId": "request_invalid_format",
+      "source": "activation_request",
+      "mutation": { "kind": "replace_prefix", "value": "HSREQ2" },
+      "expectedError": "offline_license_request_invalid_format"
+    },
+    {
+      "caseId": "request_unknown_schema",
+      "source": "activation_request",
+      "mutation": { "kind": "replace_payload", "from": "\"schemaVersion\":1", "to": "\"schemaVersion\":2" },
+      "expectedError": "offline_license_request_unknown_schema"
+    },
+    {
+      "caseId": "request_checksum_mismatch",
+      "source": "activation_request",
+      "mutation": { "kind": "replace_trailer", "value": "AAAAAAAAAAAAAAAA" },
+      "expectedError": "offline_license_request_checksum_mismatch"
+    },
+    {
+      "caseId": "request_product_invalid",
+      "source": "activation_request",
+      "mutation": { "kind": "replace_payload", "from": "creator_offline", "to": "studio_offline" },
+      "expectedError": "offline_license_request_product_invalid"
+    },
+    {
+      "caseId": "revocation_invalid_format",
+      "source": "revocation_list",
+      "mutation": { "kind": "replace_prefix", "value": "HSRVL2" },
+      "expectedError": "offline_license_revocation_invalid_format"
+    },
+    {
+      "caseId": "revocation_unknown_schema",
+      "source": "revocation_list",
+      "mutation": { "kind": "replace_payload", "from": "\"schemaVersion\":1", "to": "\"schemaVersion\":2" },
+      "expectedError": "offline_license_revocation_unknown_schema"
+    },
+    {
+      "caseId": "revocation_unknown_key",
+      "source": "revocation_list",
+      "mutation": { "kind": "replace_public_key", "value": "AA" },
+      "expectedError": "offline_license_unknown_key"
+    },
+    {
+      "caseId": "revocation_signature_invalid",
+      "source": "revocation_list",
+      "mutation": { "kind": "replace_payload", "from": "2026-07-15", "to": "2027-07-15" },
+      "expectedError": "offline_license_revocation_signature_invalid"
+    },
+    {
+      "caseId": "revocation_list_invalid",
+      "source": "revocation_list",
+      "mutation": {
+        "kind": "replace_payload",
+        "from": "[\"lic_revoked_0001\",\"lic_revoked_0002\"]",
+        "to": "[\"lic_revoked_0002\",\"lic_revoked_0001\"]"
+      },
+      "expectedError": "offline_license_revocation_list_invalid"
+    },
+    {
+      "caseId": "revocation_sequence_invalid",
+      "source": "revocation_list",
+      "mutation": { "kind": "replace_payload", "from": "\"sequence\":1", "to": "\"sequence\":0" },
+      "expectedError": "offline_license_revocation_sequence_invalid"
+    }
+  ]
+}

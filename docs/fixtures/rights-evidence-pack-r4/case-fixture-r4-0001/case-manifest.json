@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "manifestType": "rights_evidence_pack_manifest",
+  "packId": "hsep-fixture-r4-0001",
+  "caseId": "case-fixture-r4-0001",
+  "generatedAt": "2026-07-14T12:00:00.000Z",
+  "directoryContract": {
+    "caseDocument": "case.json",
+    "manifest": "case-manifest.json",
+    "attachmentRoot": "attachments/",
+    "allowedTopLevelEntries": [
+      "case.json",
+      "case-manifest.json",
+      "attachments"
+    ]
+  },
+  "caseFile": {
+    "path": "case.json",
+    "bytes": 7445,
+    "sha256": "84f25d699ec0f5c659e8bfe4f1b286e1e4add306a4ae2c8285e3f4ca0befb420"
+  },
+  "attachmentRoles": {
+    "original": {
+      "immutable": true,
+      "requiresDerivedFrom": false,
+      "meaning": "Claimed source material; role does not prove authorship or ownership."
+    },
+    "working_copy": {
+      "immutable": true,
+      "requiresDerivedFrom": true,
+      "meaning": "Derived analysis material that never replaces its source attachment."
+    },
+    "capture": {
+      "immutable": true,
+      "requiresDerivedFrom": false,
+      "meaning": "External disputed-object capture; role does not imply trusted collection."
+    },
+    "external_receipt": {
+      "immutable": true,
+      "requiresDerivedFrom": false,
+      "meaning": "Externally issued artifact; issuer, signature, and time remain independently evaluated."
+    }
+  },
+  "files": [
+    {
+      "attachmentId": "attachment-original-0001",
+      "path": "attachments/original/ATT-01-original-work.txt",
+      "role": "original",
+      "bytes": 175,
+      "sha256": "2bb58533990ebe41a59d4607a8683f318b153dbe082acbf245102be8dd514a43"
+    },
+    {
+      "attachmentId": "attachment-working-copy-0002",
+      "path": "attachments/working-copy/ATT-02-analysis-copy.txt",
+      "role": "working_copy",
+      "bytes": 201,
+      "sha256": "8a3dfd3cfa3aec4c242cf76a3117919ff1ababcfc75c6810c079f5c65a880e1a"
+    },
+    {
+      "attachmentId": "attachment-capture-0003",
+      "path": "attachments/capture/ATT-03-disputed-page-capture.txt",
+      "role": "capture",
+      "bytes": 246,
+      "sha256": "314c78781c8dd474899a5ef1f749e80118313e011bc37da2326a06fb37729027"
+    },
+    {
+      "attachmentId": "attachment-external-receipt-0004",
+      "path": "attachments/external-receipt/ATT-04-platform-receipt.json",
+      "role": "external_receipt",
+      "bytes": 299,
+      "sha256": "34147e772040aff38f92d4e76ad3da3a82123c785b17986a8e79461a09d7e312"
+    }
+  ],
+  "eventChain": {
+    "algorithm": "sha256_append_chain_v1",
+    "genesis": "HiddenShield-Rights-Evidence-Pack-Event-Chain-v1",
+    "entries": [
+      {
+        "sequence": 1,
+        "eventId": "collection-event-0001",
+        "eventDigest": "b5c1833fe5c8bd71be7efd0b8cba00745f558ebda92f670424fa5b8509ef33ea",
+        "previousChainDigest": "9d21fc840e8cfaf4711185e726b33cfde836d1d0648210dae216dc6e322ff0fe",
+        "chainDigest": "5ee0e90ce9bcfcdd10ff17e11d32a0d3b3984ce6b30295a0daa2b222a9dd52d5"
+      },
+      {
+        "sequence": 2,
+        "eventId": "collection-event-0002",
+        "eventDigest": "a0375a6427796a6269c3a0c9471014d72f061c7231587cef4de6b30ac018bc5d",
+        "previousChainDigest": "5ee0e90ce9bcfcdd10ff17e11d32a0d3b3984ce6b30295a0daa2b222a9dd52d5",
+        "chainDigest": "267b2b4d3134d879501273a5dafb981e09c47e8cfa6a290f0a8b09758a76ae43"
+      },
+      {
+        "sequence": 3,
+        "eventId": "collection-event-0003",
+        "eventDigest": "ecbe1d38bfecb1ee3e291196bc2a8239179feb6de12f866c84efbea4425645f9",
+        "previousChainDigest": "267b2b4d3134d879501273a5dafb981e09c47e8cfa6a290f0a8b09758a76ae43",
+        "chainDigest": "9456d4c30ac6c9900cc1c557014d2a63756299fd063a7dfbec92511bc8bc57c4"
+      },
+      {
+        "sequence": 4,
+        "eventId": "collection-event-0004",
+        "eventDigest": "761ded360a38ca0bfdbe0f94309e4fdf03981e9a760ac5f00a5ff2c711cb2620",
+        "previousChainDigest": "9456d4c30ac6c9900cc1c557014d2a63756299fd063a7dfbec92511bc8bc57c4",
+        "chainDigest": "94caa1faf5afa39626fe8dd5021c879c66d5772c3ad8649fe3933696f0b171b7"
+      }
+    ],
+    "rootDigest": "94caa1faf5afa39626fe8dd5021c879c66d5772c3ad8649fe3933696f0b171b7"
+  },
+  "attachmentChain": {
+    "algorithm": "sha256_append_chain_v1",
+    "genesis": "HiddenShield-Rights-Evidence-Pack-Attachment-Chain-v1",
+    "entries": [
+      {
+        "sequence": 1,
+        "attachmentId": "attachment-original-0001",
+        "path": "attachments/original/ATT-01-original-work.txt",
+        "role": "original",
+        "fileBytes": 175,
+        "fileSha256": "2bb58533990ebe41a59d4607a8683f318b153dbe082acbf245102be8dd514a43",
+        "previousChainDigest": "759183c5ada611e82c22ee7459e41d778c6870e5a59ebfbd3fc1373357030d1e",
+        "chainDigest": "03796fb13adb4ea837f8b4f3f95dfe0bb24a49c7052dbe36eb72f826fd2a3b43"
+      },
+      {
+        "sequence": 2,
+        "attachmentId": "attachment-working-copy-0002",
+        "path": "attachments/working-copy/ATT-02-analysis-copy.txt",
+        "role": "working_copy",
+        "fileBytes": 201,
+        "fileSha256": "8a3dfd3cfa3aec4c242cf76a3117919ff1ababcfc75c6810c079f5c65a880e1a",
+        "previousChainDigest": "03796fb13adb4ea837f8b4f3f95dfe0bb24a49c7052dbe36eb72f826fd2a3b43",
+        "chainDigest": "aada8d1bbcfca4357416581ff3088479769afd668cfc6d852aa5424c9f1bbfed"
+      },
+      {
+        "sequence": 3,
+        "attachmentId": "attachment-capture-0003",
+        "path": "attachments/capture/ATT-03-disputed-page-capture.txt",
+        "role": "capture",
+        "fileBytes": 246,
+        "fileSha256": "314c78781c8dd474899a5ef1f749e80118313e011bc37da2326a06fb37729027",
+        "previousChainDigest": "aada8d1bbcfca4357416581ff3088479769afd668cfc6d852aa5424c9f1bbfed",
+        "chainDigest": "a968944a04a9b9d625416f07e0c7e7faff4c0d0f7c9b8398aa7af30d468686b5"
+      },
+      {
+        "sequence": 4,
+        "attachmentId": "attachment-external-receipt-0004",
+        "path": "attachments/external-receipt/ATT-04-platform-receipt.json",
+        "role": "external_receipt",
+        "fileBytes": 299,
+        "fileSha256": "34147e772040aff38f92d4e76ad3da3a82123c785b17986a8e79461a09d7e312",
+        "previousChainDigest": "a968944a04a9b9d625416f07e0c7e7faff4c0d0f7c9b8398aa7af30d468686b5",
+        "chainDigest": "3f979e4c8fb605173402a39ee8de985f9db1f097d54a407dd48aac60a2699a90"
+      }
+    ],
+    "rootDigest": "3f979e4c8fb605173402a39ee8de985f9db1f097d54a407dd48aac60a2699a90"
+  },
+  "integrity": {
+    "algorithm": "sha256_case_event_attachment_roots_v1",
+    "rootDigest": "4b755ee5bc18384898174cb2046ea44e99983767d4c228760569bcf18ad64a33"
+  },
+  "signature": {
+    "status": "not_signed"
+  },
+  "trustedTime": {
+    "status": "not_timestamped"
+  }
+}

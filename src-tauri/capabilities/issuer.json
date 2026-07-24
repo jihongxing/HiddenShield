@@ -1,0 +1,11 @@
+{
+  "identifier": "issuer",
+  "description": "授权签发台所需的最小权限",
+  "windows": ["issuer"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-close",
+    "dialog:default",
+    "dialog:allow-open"
+  ]
+}

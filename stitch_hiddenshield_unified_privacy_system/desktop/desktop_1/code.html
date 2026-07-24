@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>HiddenShield - Report TRK-8992-B</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Geist:wght@500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary-container": "#00ced1",
+                      "error": "#ffb4ab",
+                      "outline-variant": "#3b4949",
+                      "on-surface-variant": "#bac9c9",
+                      "surface": "#0b1326",
+                      "on-surface": "#dae2fd",
+                      "surface-dim": "#0b1326",
+                      "secondary": "#ffb77b",
+                      "tertiary-fixed-dim": "#bcc7de",
+                      "on-tertiary-fixed-variant": "#3c475a",
+                      "on-primary-container": "#005354",
+                      "surface-bright": "#31394d",
+                      "primary-fixed": "#5af8fb",
+                      "on-error-container": "#ffdad6",
+                      "on-primary": "#003738",
+                      "inverse-surface": "#dae2fd",
+                      "primary-fixed-dim": "#2ddbde",
+                      "background": "#0b1326",
+                      "surface-container-highest": "#2d3449",
+                      "surface-tint": "#2ddbde",
+                      "surface-container-low": "#131b2e",
+                      "tertiary-container": "#afbad1",
+                      "tertiary-fixed": "#d8e3fb",
+                      "secondary-fixed-dim": "#ffb77b",
+                      "outline": "#859493",
+                      "secondary-fixed": "#ffdcc2",
+                      "inverse-on-surface": "#283044",
+                      "secondary-container": "#7a4100",
+                      "error-container": "#93000a",
+                      "on-primary-fixed-variant": "#004f51",
+                      "surface-variant": "#2d3449",
+                      "on-error": "#690005",
+                      "on-secondary-fixed-variant": "#6d3a00",
+                      "on-tertiary-fixed": "#111c2d",
+                      "on-secondary": "#4d2700",
+                      "on-tertiary-container": "#3f4a5e",
+                      "on-secondary-fixed": "#2e1500",
+                      "tertiary": "#cad6ee",
+                      "on-background": "#dae2fd",
+                      "surface-container": "#171f33",
+                      "on-secondary-container": "#ffb270",
+                      "on-primary-fixed": "#002020",
+                      "primary": "#47eaed",
+                      "surface-container-high": "#222a3d",
+                      "surface-container-lowest": "#060e20",
+                      "on-tertiary": "#263143",
+                      "inverse-primary": "#00696b"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin-desktop": "32px",
+                      "margin-mobile": "16px",
+                      "container-max": "1440px",
+                      "gutter": "16px",
+                      "unit": "4px"
+              },
+              "fontFamily": {
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Geist"
+                      ],
+                      "label-mono": [
+                              "JetBrains Mono"
+                      ],
+                      "nav-label": [
+                              "Inter"
+                      ],
+                      "headline-lg-mobile": [
+                              "Geist"
+                      ],
+                      "headline-lg": [
+                              "Geist"
+                      ]
+              },
+              "fontSize": {
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "label-mono": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "nav-label": [
+                              "13px",
+                              {
+                                      "lineHeight": "18px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        /* Obsidian Cipher Theme specific overrides/additions if needed */
+        body {
+            background-color: #0F172A; /* Base Level 0 */
+            color: #dae2fd;
+        }
+        .gated-content {
+            filter: grayscale(20%);
+            border: 1px solid #B87333; /* Copper inner border */
+        }
+        .text-copper {
+            color: #B87333;
+        }
+        .border-copper {
+            border-color: #B87333;
+        }
+        .bg-copper-10 {
+            background-color: rgba(184, 115, 51, 0.1);
+        }
+        .level-1-card {
+            background-color: #1E293B;
+            border: 1px solid #334155;
+        }
+    </style>
+</head>
+<body class="font-body-md text-body-md h-screen overflow-hidden flex bg-surface">
+<!-- SideNavBar (Shared Component) -->
+<nav class="hidden md:flex flex-col h-full py-4 bg-surface-container dark:bg-surface-container fixed left-0 top-0 h-screen w-[240px] border-r border-outline-variant dark:border-outline-variant z-40">
+<!-- Header -->
+<div class="px-6 mb-8 mt-2 flex flex-col gap-1">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-on-primary font-bold overflow-hidden">
+<img alt="System Identity" class="w-full h-full object-cover" data-alt="A highly detailed geometric, tech-industrial logo in a minimalist teal and black style. Sharp edges, high contrast, suitable for an elite technical environment brand identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDkaOSdiKBBuuQdfwTUL78vbcP2B5iRE1ejTXeLnIardpQB0BTdOYQnZk-YC069rQQ7IfLrPRkXx00LpQ6-DrVIVG4wujBdJVXUelTxFIqTsFTNIccpq6Cv-LaoRVQl2OoMjjdI-MGy6BacF1MIS3WHyprjtVgW4T6sjrrA8RQvwVJfp6BXhuTtdAaljJ40GG4eD0VxaRBCePogCz8TeDqnuRDtu0YYaTzziSYMcHAjQtFqGzcCmhWcEuyknMIMpMIH56i64h3Xrwgp"/>
+</div>
+<span class="font-headline-md text-headline-md text-primary">HiddenShield</span>
+</div>
+<span class="font-label-mono text-label-mono text-on-surface-variant opacity-70">Elite Technical Environment</span>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 overflow-y-auto">
+<ul class="space-y-1">
+<li>
+<a class="text-on-surface-variant flex items-center px-4 py-3 hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-all font-nav-label text-nav-label" href="#">
+<span class="material-symbols-outlined mr-3" style="font-variation-settings: 'FILL' 0;">dashboard</span>
+                        工作台
+                    </a>
+</li>
+<li>
+<a class="bg-surface-container-highest text-primary border-l-2 border-primary flex items-center px-4 py-3 font-nav-label text-nav-label" href="#">
+<span class="material-symbols-outlined mr-3" style="font-variation-settings: 'FILL' 1;">terminal</span>
+                        处理
+                    </a>
+</li>
+<li>
+<a class="text-on-surface-variant flex items-center px-4 py-3 hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-all font-nav-label text-nav-label" href="#">
+<span class="material-symbols-outlined mr-3" style="font-variation-settings: 'FILL' 0;">verified_user</span>
+                        验证
+                    </a>
+</li>
+<li>
+<a class="text-on-surface-variant flex items-center px-4 py-3 hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-all font-nav-label text-nav-label" href="#">
+<span class="material-symbols-outlined mr-3" style="font-variation-settings: 'FILL' 0;">inventory_2</span>
+                        档案
+                    </a>
+</li>
+<li>
+<a class="text-on-surface-variant flex items-center px-4 py-3 hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-all font-nav-label text-nav-label" href="#">
+<span class="material-symbols-outlined mr-3" style="font-variation-settings: 'FILL' 0;">reorder</span>
+                        批量队列
+                    </a>
+</li>
+<li>
+<a class="text-on-surface-variant flex items-center px-4 py-3 hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-all font-nav-label text-nav-label" href="#">
+<span class="material-symbols-outlined mr-3" style="font-variation-settings: 'FILL' 0;">help</span>
+                        帮助
+                    </a>
+</li>
+<li>
+<a class="text-on-surface-variant flex items-center px-4 py-3 hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-all font-nav-label text-nav-label" href="#">
+<span class="material-symbols-outlined mr-3" style="font-variation-settings: 'FILL' 0;">settings</span>
+                        设置
+                    </a>
+</li>
+</ul>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col md:ml-[240px] h-full overflow-hidden bg-background">
+<!-- TopNavBar (Shared Component - Mobile Only for this layout to match requirement of suppressing nav if not top level, but '处理' implies a top level list, however 'Report Purchase' is specific. Let's use it as a header for context) -->
+<header class="flex justify-between items-center h-16 px-margin-desktop w-full sticky top-0 z-30 bg-surface dark:bg-surface border-b border-outline-variant dark:border-outline-variant md:hidden">
+<div class="font-headline-md text-headline-md font-bold text-primary dark:text-primary">HiddenShield</div>
+<div class="flex items-center gap-4 text-primary dark:text-primary">
+<button class="hover:bg-surface-container-highest dark:hover:bg-surface-container-highest transition-colors p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">sync</span>
+</button>
+<button class="hover:bg-surface-container-highest dark:hover:bg-surface-container-highest transition-colors p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A striking portrait of a cyber-security analyst in a dimly lit control room. The lighting is dominated by deep blues and teal monitors reflecting off their face. High contrast, cinematic, sharp focus on the person's intense expression." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDMISzOJJs0aqvgmUoXLejE6855JqxcN0Y2kz2JWtG-UMPBNE4yjoEY7sQFDZLNVqWBMnkYSrIC3OnctOKwY0a1E7EWIV7YxxJqgJAB4sUPzKFkBXWhSCK9XD4vkKIQORhub_JpC2KKRWD038Ii0SnzMDOL9MfniPs66WayVDY9V0GrHu_QhIBQmafucbhASETF04TuFKwvuoCNW-Izlq76UESs924lYQ20NciJ8nzxQtSheQixSteIf0DotBOtjAPmrOjORGKtMTim"/>
+</div>
+</div>
+</header>
+<div class="flex-1 overflow-y-auto p-margin-mobile md:p-margin-desktop">
+<div class="max-w-[1440px] mx-auto h-full flex flex-col xl:flex-row gap-[32px]">
+<!-- Left Main Area: Report Metadata -->
+<div class="flex-1 flex flex-col gap-gutter">
+<!-- Report Header -->
+<div class="flex items-center gap-4 mb-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors flex items-center">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface m-0">报告详情: TRK-8992-B</h1>
+<span class="px-2 py-1 bg-surface-container-high rounded-sm border border-outline-variant font-label-mono text-label-mono text-on-surface-variant">Deep Network Scan</span>
+</div>
+<!-- Density Metadata Card (Gated Visual) -->
+<div class="level-1-card rounded-lg p-6 relative overflow-hidden gated-content flex-1 min-h-[400px]">
+<!-- Gated Overlay -->
+<div class="absolute inset-0 bg-background/80 z-10 flex flex-col items-center justify-center backdrop-blur-sm">
+<span class="material-symbols-outlined text-6xl text-on-surface-variant mb-4" style="font-variation-settings: 'FILL' 0;">lock</span>
+<div class="text-center font-label-mono text-label-mono text-copper border border-copper px-4 py-2 bg-copper-10 rounded-sm inline-block">
+                                Access Required
+                            </div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-4 max-w-sm text-center">
+                                此高级报告包含敏感网络拓扑数据，需要提升权限才能查看。
+                            </p>
+</div>
+<!-- Underlying 'blurred' content -->
+<div class="space-y-6 opacity-30 select-none">
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 pb-6 border-b border-outline-variant">
+<div>
+<span class="font-label-mono text-label-mono text-on-surface-variant block mb-1">目标</span>
+<span class="font-body-md text-body-md text-on-surface">192.168.1.0/24</span>
+</div>
+<div>
+<span class="font-label-mono text-label-mono text-on-surface-variant block mb-1">扫描时间</span>
+<span class="font-body-md text-body-md text-on-surface">2023-10-27 14:32:00</span>
+</div>
+<div>
+<span class="font-label-mono text-label-mono text-on-surface-variant block mb-1">漏洞总数</span>
+<span class="font-body-md text-body-md text-error font-bold">14 严重</span>
+</div>
+<div>
+<span class="font-label-mono text-label-mono text-on-surface-variant block mb-1">执行者</span>
+<span class="font-body-md text-body-md text-on-surface">System Auto</span>
+</div>
+</div>
+<!-- Fake chart/data visualization area -->
+<div class="h-48 w-full rounded-md border border-outline-variant bg-surface-container flex items-end p-4 gap-2">
+<div class="w-1/6 bg-primary h-1/4 rounded-t-sm"></div>
+<div class="w-1/6 bg-primary h-2/4 rounded-t-sm"></div>
+<div class="w-1/6 bg-primary h-3/4 rounded-t-sm"></div>
+<div class="w-1/6 bg-error h-full rounded-t-sm"></div>
+<div class="w-1/6 bg-primary h-1/2 rounded-t-sm"></div>
+<div class="w-1/6 bg-primary h-1/3 rounded-t-sm"></div>
+</div>
+<!-- High Density Table Outline -->
+<div class="border border-outline-variant rounded-sm">
+<div class="h-10 border-b border-outline-variant bg-surface-container-low"></div>
+<div class="h-10 border-b border-outline-variant flex items-center px-4"><div class="w-3/4 h-3 bg-surface-container-high rounded-sm"></div></div>
+<div class="h-10 border-b border-outline-variant flex items-center px-4"><div class="w-1/2 h-3 bg-surface-container-high rounded-sm"></div></div>
+<div class="h-10 flex items-center px-4"><div class="w-2/3 h-3 bg-surface-container-high rounded-sm"></div></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Sidebar: Purchase & Export Actions -->
+<div class="w-full xl:w-[380px] flex flex-col gap-6">
+<!-- Status Card -->
+<div class="level-1-card rounded-lg p-6 border-copper relative overflow-hidden">
+<!-- Simulated 'hardware glow' effect for warning -->
+<div class="absolute -top-4 -right-4 w-16 h-16 bg-copper-10 rounded-full blur-xl pointer-events-none"></div>
+<div class="flex items-center gap-3 mb-4">
+<span class="material-symbols-outlined text-copper">lock</span>
+<h2 class="font-headline-md text-headline-md m-0 text-on-surface">报告状态: 已锁定</h2>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-6">
+                            Requires Creator plan or single-report purchase
+                        </p>
+<!-- Single Purchase Card -->
+<div class="bg-surface-container border border-outline-variant rounded-md p-4 mb-4 hover:border-primary transition-colors cursor-pointer group">
+<div class="flex justify-between items-start mb-2">
+<div>
+<span class="block font-body-md text-body-md font-semibold text-on-surface">单次报告购买</span>
+<span class="font-label-mono text-label-mono text-on-surface-variant">一次性解锁此报告</span>
+</div>
+<span class="font-headline-md text-headline-md text-primary">¥19.00</span>
+</div>
+<button class="w-full mt-4 bg-primary text-[#000000] font-body-md text-body-md font-medium py-2 rounded-sm hover:brightness-110 transition-all flex justify-center items-center gap-2 group-hover:shadow-[0_0_12px_rgba(71,234,237,0.3)]">
+<span class="material-symbols-outlined text-[20px]">shopping_cart</span>
+                                立即支付 (Pay Now)
+                            </button>
+</div>
+<!-- Upgrade Option -->
+<button class="w-full bg-transparent border border-primary text-primary font-body-md text-body-md font-medium py-2 rounded-sm hover:bg-primary/10 transition-colors flex justify-center items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">star</span>
+                            升级到 Creator 计划 (省40%)
+                        </button>
+</div>
+<!-- Hidden Success State (For demonstration in UI flow, usually controlled by JS. We'll show it commented out or visually distinct if we were to toggle)
+                    <div class="level-1-card rounded-lg p-6 border-primary relative overflow-hidden">
+                        <div class="absolute -top-4 -left-4 w-16 h-16 bg-primary/10 rounded-full blur-xl pointer-events-none"></div>
+                        <div class="flex items-center gap-3 mb-4">
+                            <span class="material-symbols-outlined text-primary">check_circle</span>
+                            <h2 class="font-headline-md text-headline-md m-0 text-on-surface">付款确认 (Payment Confirmed)</h2>
+                        </div>
+                        <div class="flex flex-col gap-3">
+                            <button class="w-full bg-primary text-[#000000] font-body-md text-body-md font-medium py-2 rounded-sm hover:brightness-110 transition-all flex justify-center items-center gap-2">
+                                <span class="material-symbols-outlined text-[20px]">picture_as_pdf</span>
+                                导出 PDF
+                            </button>
+                            <button class="w-full bg-transparent border border-primary text-primary font-body-md text-body-md font-medium py-2 rounded-sm hover:bg-primary/10 transition-colors flex justify-center items-center gap-2">
+                                <span class="material-symbols-outlined text-[20px]">data_object</span>
+                                查看 JSON
+                            </button>
+                        </div>
+                    </div>
+                    -->
+<!-- Billing Summary / History -->
+<div class="level-1-card rounded-lg p-5 flex flex-col">
+<h3 class="font-nav-label text-nav-label text-on-surface-variant uppercase tracking-wider mb-4 border-b border-outline-variant pb-2">账单摘要</h3>
+<div class="flex flex-col gap-3">
+<!-- Placeholder History Item -->
+<div class="flex justify-between items-center py-2">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">receipt_long</span>
+</div>
+<div>
+<span class="block font-body-sm text-body-sm text-on-surface">TRK-8991-A 解锁</span>
+<span class="font-label-mono text-label-mono text-on-surface-variant text-[10px]">2023-10-25</span>
+</div>
+</div>
+<span class="font-label-mono text-label-mono text-on-surface-variant">-¥19.00</span>
+</div>
+<!-- Separator -->
+<div class="h-px w-full bg-[#1E293B]"></div>
+<!-- Placeholder History Item -->
+<div class="flex justify-between items-center py-2">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">receipt_long</span>
+</div>
+<div>
+<span class="block font-body-sm text-body-sm text-on-surface">TRK-8990-C 解锁</span>
+<span class="font-label-mono text-label-mono text-on-surface-variant text-[10px]">2023-10-20</span>
+</div>
+</div>
+<span class="font-label-mono text-label-mono text-on-surface-variant">-¥19.00</span>
+</div>
+</div>
+<button class="mt-4 text-primary font-body-sm text-body-sm hover:underline text-left self-start">查看全部记录</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../bridge/local_preview_watermark_bridge.dart';
 import '../bridge/watermark_bridge.dart';
+import '../features/onboarding/onboarding_page.dart';
 import 'mobile_app_state.dart';
 import 'mobile_shell.dart';
 import 'theme.dart';
@@ -29,7 +30,15 @@ class _HiddenShieldAppState extends State<HiddenShieldApp> {
       debugShowCheckedModeBanner: false,
       title: 'HiddenShield',
       theme: buildHiddenShieldTheme(),
-      home: MobileShell(bridge: widget.bridge, appState: _appState),
+      home: AnimatedBuilder(
+        animation: _appState,
+        builder: (context, _) {
+          if (!_appState.onboardingCompleted) {
+            return OnboardingPage(appState: _appState);
+          }
+          return MobileShell(bridge: widget.bridge, appState: _appState);
+        },
+      ),
     );
   }
 }

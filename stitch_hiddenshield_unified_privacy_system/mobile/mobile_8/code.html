@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>账户与工作空间 - HiddenShield</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-container": "#ffac5a",
+                        "on-secondary-container": "#5b3800",
+                        "on-background": "#dde4e1",
+                        "surface-container-low": "#161d1b",
+                        "primary-container": "#2dd4bf",
+                        "on-secondary-fixed-variant": "#653e00",
+                        "surface-dim": "#0e1513",
+                        "surface-tint": "#3cddc7",
+                        "on-tertiary": "#4b2800",
+                        "surface-container-highest": "#2f3634",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-fixed": "#ffdcc0",
+                        "on-tertiary-container": "#744000",
+                        "on-tertiary-fixed": "#2d1600",
+                        "secondary-fixed-dim": "#ffb95f",
+                        "surface-container-lowest": "#09100e",
+                        "on-primary-fixed": "#00201c",
+                        "inverse-primary": "#006b5f",
+                        "tertiary": "#ffd1aa",
+                        "on-tertiary-fixed-variant": "#6b3b00",
+                        "on-surface-variant": "#bacac5",
+                        "primary": "#57f1db",
+                        "on-primary": "#003731",
+                        "background": "#0e1513",
+                        "inverse-surface": "#dde4e1",
+                        "secondary": "#ffb95f",
+                        "primary-fixed": "#62fae3",
+                        "on-surface": "#dde4e1",
+                        "surface-bright": "#333b39",
+                        "outline": "#859490",
+                        "secondary-fixed": "#ffddb8",
+                        "inverse-on-surface": "#2b3230",
+                        "surface-container-high": "#242b2a",
+                        "primary-fixed-dim": "#3cddc7",
+                        "on-secondary": "#472a00",
+                        "secondary-container": "#ee9800",
+                        "tertiary-fixed-dim": "#ffb875",
+                        "surface-variant": "#2f3634",
+                        "error-container": "#93000a",
+                        "error": "#ffb4ab",
+                        "on-primary-container": "#00574d",
+                        "on-error": "#690005",
+                        "outline-variant": "#3c4a46",
+                        "on-secondary-fixed": "#2a1700",
+                        "surface-container": "#1a211f",
+                        "on-primary-fixed-variant": "#005047",
+                        "surface": "#0e1513"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "padding-xs": "4px",
+                        "padding-sm": "8px",
+                        "padding-lg": "24px",
+                        "unit": "4px",
+                        "padding-md": "16px",
+                        "container-margin": "24px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "label-md": ["Inter"],
+                        "label-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-sm": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "label-sm": ["11px", { "lineHeight": "12px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "label-lg": ["14px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "body-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background antialiased pb-24 pt-20">
+<!-- TopAppBar from JSON -->
+<header class="fixed w-full top-0 z-50 border-b border-outline-variant dark:border-outline-variant bg-background dark:bg-background flex justify-between items-center px-container-margin py-padding-md">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary dark:text-primary">security</span>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary">安全哨兵</h1>
+</div>
+<button class="hover:bg-surface-container dark:hover:bg-surface-container transition-colors duration-200 p-1 rounded-full text-primary dark:text-primary">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</header>
+<main class="px-container-margin flex flex-col gap-gutter">
+<div class="pt-4 pb-2">
+<h2 class="font-headline-lg text-headline-lg text-on-surface">账户与工作空间</h2>
+</div>
+<!-- Account Info Section -->
+<section class="bg-surface-container border border-outline-variant rounded-xl p-padding-md flex items-center gap-4 hover:bg-surface-variant transition-colors duration-200">
+<div class="w-16 h-16 rounded-full overflow-hidden border-2 border-outline-variant shrink-0">
+<img alt="Avatar" class="w-full h-full object-cover" data-alt="A hyper-realistic, dark and cinematic portrait of an anonymous cybersecurity administrator in shadow, wearing a dark matte tactical headset. The lighting is extremely low-key, featuring strong rim lights in electric teal to highlight silhouettes against an obsidian black background. Corporate espionage and high-tech thriller aesthetic, minimalist but high-fidelity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVZKGrwjc6g5Ont3g2-j-jtfXuJx57ZXvzuycNs9QfPE7m16hLo-i3euKqW9VNQg0M79tFFl-g5w5dyi2zJUdUt4m3emiy8nkjwH6TrJUAgauandFQYarLGpRFM6YFrvzdhuYrCdC4Wwc6Y01E6VqStmRUbqM989vY4GE1KfbapEvJZ58ner3ktfylcyO-9KxGs0q6hJ2IcPXswIMjC6CiR3dfqYamjOuXvHIcHVt3yN0nLJLhuKq2ySgODaZLV5mMKcrybek1C_eS"/>
+</div>
+<div class="flex-1">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Admin_Sys_01</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">admin.sys01@hiddenshield.net</p>
+<div class="mt-2 inline-flex items-center border border-outline-variant rounded bg-background px-2 py-1 gap-1">
+<span class="material-symbols-outlined text-[14px] text-primary">verified</span>
+<span class="font-label-sm text-label-sm text-on-surface">已验证节点</span>
+</div>
+</div>
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">edit</span>
+</button>
+</section>
+<!-- Workspace Info Section -->
+<section class="bg-surface-container border border-outline-variant rounded-xl p-padding-md flex flex-col gap-3">
+<div class="flex justify-between items-center border-b border-outline-variant pb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant">domain</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">工作空间信息</h3>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">ID: WS-8839</span>
+</div>
+<div class="flex justify-between items-center mt-1">
+<div>
+<p class="font-body-md text-body-md text-on-surface">Global Security Ops</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">活跃成员: 14 / 50</p>
+</div>
+<button class="bg-primary-container text-on-primary-container font-label-md text-label-md px-4 py-2 rounded-lg hover:bg-primary transition-colors">
+                    管理
+                </button>
+</div>
+</section>
+<!-- Sync Status Section -->
+<section class="bg-surface-container border border-outline-variant rounded-xl p-padding-md flex flex-col gap-3">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-on-surface-variant">sync</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">同步状态</h3>
+</div>
+<div class="flex justify-between items-center bg-background rounded-lg p-3 border border-outline-variant">
+<div>
+<div class="flex items-center gap-2">
+<span class="font-body-md text-body-md text-on-surface">加密存储库</span>
+<!-- Status Chip (Ready/Teal) -->
+<div class="border-l-2 border-primary bg-primary/10 text-primary font-label-sm text-label-sm px-2 py-0.5 flex items-center gap-1">
+                            状态: 最优
+                        </div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">上次同步: 2 分钟前</p>
+</div>
+<button class="border border-outline-variant text-on-surface font-label-md text-label-md px-3 py-1.5 rounded-lg hover:bg-surface-variant transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">refresh</span>
+                    手动同步
+                </button>
+</div>
+</section>
+<!-- Device Info & Export -->
+<div class="grid grid-cols-1 gap-gutter">
+<!-- Device Info -->
+<section class="bg-surface-container border border-outline-variant rounded-xl p-padding-md flex flex-col gap-2">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-on-surface-variant">devices</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">设备授权</h3>
+</div>
+<div class="flex justify-between items-center">
+<p class="font-body-md text-body-md text-on-surface">当前: iPhone 15 Pro</p>
+<span class="font-label-md text-label-md text-primary">活跃</span>
+</div>
+<div class="flex justify-between items-center mt-2 pt-2 border-t border-outline-variant">
+<p class="font-body-sm text-body-sm text-on-surface-variant">已授权设备 (2/5)</p>
+<a class="font-label-md text-label-md text-primary hover:underline" href="#">查看全部</a>
+</div>
+</section>
+<!-- Export/Storage -->
+<section class="bg-surface-container border border-outline-variant rounded-xl p-padding-md flex flex-col gap-3">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-on-surface-variant">folder_special</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">导出与存储</h3>
+</div>
+<div class="flex justify-between items-center bg-background rounded-lg px-3 py-2 border border-outline-variant">
+<span class="font-body-md text-body-md text-on-surface">默认导出格式</span>
+<select class="bg-transparent text-primary font-label-md text-label-md border-none focus:ring-0 p-0 text-right cursor-pointer">
+<option class="bg-surface-container text-on-surface" value="json">加密 JSON</option>
+<option class="bg-surface-container text-on-surface" value="pdf">安全 PDF</option>
+</select>
+</div>
+<div class="flex justify-between items-center bg-background rounded-lg px-3 py-2 border border-outline-variant">
+<span class="font-body-md text-body-md text-on-surface">云端节点链接</span>
+<a class="material-symbols-outlined text-primary hover:text-primary-fixed transition-colors" href="#">link</a>
+</div>
+</section>
+</div>
+<!-- Capability Boundary -->
+<section class="bg-surface-container-high border border-outline-variant rounded-xl p-padding-md mt-2 relative overflow-hidden">
+<!-- Subtle architectural background pattern -->
+<div class="absolute inset-0 opacity-5 pointer-events-none" style="background-image: repeating-linear-gradient(45deg, #859490 0, #859490 1px, transparent 0, transparent 50%); background-size: 8px 8px;"></div>
+<div class="relative z-10">
+<h3 class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary-container">policy</span>
+                    能力边界 (Plan Limits)
+                </h3>
+<ul class="mt-3 space-y-2">
+<li class="flex flex-col gap-1">
+<div class="flex justify-between font-label-md text-label-md text-on-surface-variant">
+<span>安全存储保险库</span>
+<span>12GB / 50GB</span>
+</div>
+<div class="w-full bg-background h-1 rounded-full overflow-hidden">
+<div class="bg-tertiary-container h-full w-1/4"></div>
+</div>
+</li>
+<li class="flex flex-col gap-1 pt-2">
+<div class="flex justify-between font-label-md text-label-md text-on-surface-variant">
+<span>并发批处理任务</span>
+<span>1 / 5 活跃</span>
+</div>
+<div class="w-full bg-background h-1 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-1/5"></div>
+</div>
+</li>
+</ul>
+</div>
+</section>
+<!-- Privacy -->
+<section class="bg-surface-container border border-outline-variant rounded-xl p-padding-md flex flex-col gap-3 mt-2">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-on-surface-variant">visibility_off</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">隐私设置</h3>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-outline-variant">
+<div>
+<p class="font-body-md text-body-md text-on-surface">匿名遥测数据</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">帮助我们改进系统稳定性</p>
+</div>
+<!-- Custom Toggle -->
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-background border border-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-on-surface-variant peer-checked:after:bg-background after:border-outline-variant after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container peer-checked:border-primary-container"></div>
+</label>
+</div>
+<div class="flex justify-between items-center py-2">
+<p class="font-body-md text-body-md text-on-surface">隐私政策协议</p>
+<a class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors" href="#">arrow_forward_ios</a>
+</div>
+</section>
+</main>
+<!-- BottomNavBar from JSON -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center py-padding-sm bg-surface-container-high dark:bg-surface-container-high border-t border-outline-variant dark:border-outline-variant z-50">
+<!-- Item 1: 工作台 -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 hover:text-primary dark:hover:text-primary hover:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-sm text-label-sm mt-1">工作台</span>
+</button>
+<!-- Item 2: 处理 -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 hover:text-primary dark:hover:text-primary hover:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined">pending_actions</span>
+<span class="font-label-sm text-label-sm mt-1">处理</span>
+</button>
+<!-- Item 3: 验证 -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 hover:text-primary dark:hover:text-primary hover:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined">verified_user</span>
+<span class="font-label-sm text-label-sm mt-1">验证</span>
+</button>
+<!-- Item 4: 档案 -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 hover:text-primary dark:hover:text-primary hover:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined">folder_open</span>
+<span class="font-label-sm text-label-sm mt-1">档案</span>
+</button>
+<!-- Item 5: 设置 (ACTIVE) -->
+<button class="flex flex-col items-center justify-center bg-primary-container dark:bg-primary-container text-on-primary-container dark:text-on-primary-container rounded-full px-4 py-1 hover:text-primary dark:hover:text-primary scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-sm text-label-sm mt-1">设置</span>
+</button>
+</nav>
+</body></html>

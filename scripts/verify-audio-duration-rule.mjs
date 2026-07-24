@@ -24,6 +24,10 @@ const baseMeta = {
   height: 0,
   fps: 0,
   durationSecs: 30,
+  durationConfirmed: true,
+  sampleRate: 44_100,
+  channels: 2,
+  fileSizeBytes: 1024,
   fileSizeMb: 1,
   isHdr: false,
   colorProfile: "audio",
@@ -32,11 +36,32 @@ const baseMeta = {
 };
 
 assert.equal(api.MIN_AUDIO_PROTECTION_SECONDS, 30);
+assert.equal(api.MAX_AUDIO_PROTECTION_SECONDS, 1200);
+assert.equal(api.MAX_AUDIO_PROTECTION_BYTES, 512 * 1024 * 1024);
 assert.equal(api.isStandaloneAudioTooShort(null), false);
 assert.equal(api.isStandaloneAudioTooShort({ ...baseMeta, durationSecs: 10 }), true);
 assert.equal(api.isStandaloneAudioTooShort({ ...baseMeta, durationSecs: 29.99 }), true);
 assert.equal(api.isStandaloneAudioTooShort({ ...baseMeta, durationSecs: 30 }), false);
 assert.equal(api.isStandaloneAudioTooShort({ ...baseMeta, durationSecs: 42 }), false);
+assert.equal(api.standaloneAudioProtectionPreflight({ ...baseMeta, durationSecs: 1200 }), "ok");
+assert.equal(
+  api.standaloneAudioProtectionPreflight({ ...baseMeta, durationSecs: 1200.001 }),
+  "audio_too_long",
+);
+assert.equal(
+  api.standaloneAudioProtectionPreflight({
+    ...baseMeta,
+    fileSizeBytes: 512 * 1024 * 1024,
+  }),
+  "ok",
+);
+assert.equal(
+  api.standaloneAudioProtectionPreflight({
+    ...baseMeta,
+    fileSizeBytes: 512 * 1024 * 1024 + 1,
+  }),
+  "audio_file_too_large",
+);
 assert.equal(
   api.isStandaloneAudioTooShort({ ...baseMeta, fileType: "video", durationSecs: 10 }),
   false,

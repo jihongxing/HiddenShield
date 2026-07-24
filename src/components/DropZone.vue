@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from "vue";
 
-defineProps<{
+const props = defineProps<{
   selectedPath: string;
   sourceName: string;
   disabled?: boolean;
@@ -9,6 +9,7 @@ defineProps<{
 
 const emit = defineEmits<{
   select: [path: string];
+  error: [message: string];
 }>();
 
 const isDragging = ref(false);
@@ -19,49 +20,69 @@ function isTauriRuntime() {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 }
 
-const VIDEO_EXTS = ["mp4", "mov", "avi", "mkv", "webm", "flv", "wmv"];
-const IMAGE_EXTS = ["jpg", "jpeg", "png", "bmp", "gif", "webp", "tiff"];
+const IMAGE_EXTS = ["jpg", "jpeg", "png", "webp"];
 const AUDIO_EXTS = ["wav", "mp3", "aac", "flac", "ogg", "m4a"];
+const HIDDEN_VIDEO_EXTS = ["mp4", "mov", "avi", "mkv", "webm", "flv", "wmv", "m4v"];
 
-function getFileTypeIcon(filePath: string): string {
-  const ext = filePath.split(".").pop()?.toLowerCase() ?? "";
-  if (VIDEO_EXTS.includes(ext)) return "🎬";
-  if (IMAGE_EXTS.includes(ext)) return "🖼️";
-  if (AUDIO_EXTS.includes(ext)) return "🎵";
-  return "📄";
+function fileExtension(filePath: string): string {
+  return filePath.split(".").pop()?.toLowerCase() ?? "";
+}
+
+function selectSupportedFile(filePath: string) {
+  const extension = fileExtension(filePath);
+  if (HIDDEN_VIDEO_EXTS.includes(extension)) {
+    emit("error", "当前发布版本仅开放图片和音频，视频能力已暂停。");
+    return;
+  }
+  if (!IMAGE_EXTS.includes(extension) && !AUDIO_EXTS.includes(extension)) {
+    emit("error", "当前图片仅支持 PNG、JPEG、WebP；音频仅支持 WAV、MP3、AAC、FLAC、OGG、M4A。");
+    return;
+  }
+  emit("select", filePath);
+}
+
+function getFileTypeMark(filePath: string): string {
+  const ext = fileExtension(filePath);
+  if (IMAGE_EXTS.includes(ext)) return "IMG";
+  if (AUDIO_EXTS.includes(ext)) return "AUD";
+  return "FILE";
 }
 
 function getFileTypeLabel(filePath: string): string {
-  const ext = filePath.split(".").pop()?.toLowerCase() ?? "";
-  if (VIDEO_EXTS.includes(ext)) return "视频";
+  const ext = fileExtension(filePath);
   if (IMAGE_EXTS.includes(ext)) return "图片";
   if (AUDIO_EXTS.includes(ext)) return "音频";
   return "文件";
 }
 
 async function handleTauriOpen() {
-  const { open } = await import("@tauri-apps/plugin-dialog");
-  const selected = await open({
-    multiple: false,
-    filters: [
-      {
-        name: "Media",
-        extensions: [
-          "mp4", "mov", "avi", "mkv", "webm", "flv", "wmv",
-          "wav", "mp3", "aac", "flac", "ogg", "m4a",
-          "jpg", "jpeg", "png", "bmp", "gif", "webp", "tiff",
-        ],
-      },
-    ],
-  });
-  if (selected) {
-    emit("select", selected);
+  try {
+    const { open } = await import("@tauri-apps/plugin-dialog");
+    const selected = await open({
+      multiple: false,
+      filters: [
+        {
+          name: "Media",
+          extensions: [
+            "wav", "mp3", "aac", "flac", "ogg", "m4a",
+            "jpg", "jpeg", "png", "webp",
+          ],
+        },
+      ],
+    });
+    if (typeof selected === "string") {
+      selectSupportedFile(selected);
+    }
+  } catch (error) {
+    console.warn("file picker failed", error);
+    emit("error", "文件选择器没有打开，请确认桌面端窗口仍在运行后重试。");
   }
 }
 
 const fileInputRef = ref<HTMLInputElement | null>(null);
 
 async function handleClick() {
+  if (props.disabled) return;
   if (isTauriRuntime()) {
     await handleTauriOpen();
   } else {
@@ -73,15 +94,16 @@ function onBrowserFileChange(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;
-  emit("select", file.name);
+  selectSupportedFile(file.name);
 }
 
 function onBrowserDrop(event: DragEvent) {
   isDragging.value = false;
+  if (props.disabled) return;
   if (isTauriRuntime()) return; // Tauri drag-drop handled via event listener
   const file = event.dataTransfer?.files?.[0];
   if (!file) return;
-  emit("select", file.name);
+  selectSupportedFile(file.name);
 }
 
 function onDragOver() {
@@ -99,7 +121,7 @@ onMounted(async () => {
   unlistenDragDrop = await listen<{ paths: string[] }>("tauri://drag-drop", (event) => {
     const paths = event.payload.paths;
     if (paths && paths.length > 0) {
-      emit("select", paths[0]);
+      selectSupportedFile(paths[0]);
     }
   });
 });
@@ -131,16 +153,16 @@ onUnmounted(() => {
       class="sr-only"
       type="file"
       :disabled="disabled"
-      accept=".mp4,.mov,.avi,.mkv,.wav,.mp3,.jpg,.jpeg,.png"
+      accept=".wav,.mp3,.aac,.flac,.ogg,.m4a,.jpg,.jpeg,.png,.webp"
       @click.stop
       @change="onBrowserFileChange"
     />
 
     <div class="drop-zone__title">拖入或选择文件</div>
-    <div class="drop-zone__subtitle">视频 / 图片 / 音频</div>
+    <div class="drop-zone__subtitle">图片 / 音频</div>
     <div class="drop-zone__hint">
       <template v-if="sourceName">
-        <span class="drop-zone__type-icon">{{ getFileTypeIcon(sourceName) }}</span>
+        <span class="drop-zone__type-icon">{{ getFileTypeMark(sourceName) }}</span>
         {{ sourceName }}（{{ getFileTypeLabel(sourceName) }}）
       </template>
       <template v-else>

@@ -1,0 +1,28 @@
+{
+  "vectorId": "hslic1-ed25519-v1-valid",
+  "description": "公开测试向量；测试私钥禁止用于真实许可证",
+  "tokenFormat": "HSLIC1.<payload>.<signature>",
+  "signatureAlgorithm": "Ed25519",
+  "signatureDomain": "HiddenShield-Offline-License-v1",
+  "signatureDomainBase64Url": "SGlkZGVuU2hpZWxkLU9mZmxpbmUtTGljZW5zZS12MQA",
+  "testOnlyPrivateKeySeedHex": "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60",
+  "publicKeyHex": "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a",
+  "publicKeyBase64Url": "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo",
+  "canonicalPayload": "{\"expiresAt\":\"2027-07-15T00:00:00Z\",\"installationId\":\"K0Ej_7SgY2R7uAqj8sW6A8vWmKX5n9X8mC1zP4qT6uY\",\"issuedAt\":\"2026-07-15T00:00:00Z\",\"keyId\":\"offline-test-k0\",\"licenseId\":\"lic_k0_0001\",\"notBefore\":\"2026-07-15T00:00:00Z\",\"productCode\":\"creator_offline\",\"schemaVersion\":1}",
+  "payloadBase64Url": "eyJleHBpcmVzQXQiOiIyMDI3LTA3LTE1VDAwOjAwOjAwWiIsImluc3RhbGxhdGlvbklkIjoiSzBFal83U2dZMlI3dUFxajhzVzZBOHZXbUtYNW45WDhtQzF6UDRxVDZ1WSIsImlzc3VlZEF0IjoiMjAyNi0wNy0xNVQwMDowMDowMFoiLCJrZXlJZCI6Im9mZmxpbmUtdGVzdC1rMCIsImxpY2Vuc2VJZCI6ImxpY19rMF8wMDAxIiwibm90QmVmb3JlIjoiMjAyNi0wNy0xNVQwMDowMDowMFoiLCJwcm9kdWN0Q29kZSI6ImNyZWF0b3Jfb2ZmbGluZSIsInNjaGVtYVZlcnNpb24iOjF9",
+  "signatureHex": "1322d9fd52782910f0282d606681ecc09d4610fe368aaacbda4db8eff2fd3d498c16e46539560106a716af81474546aebf1a8561a02b6c3412552d2337197602",
+  "signatureBase64Url": "EyLZ_VJ4KRDwKC1gZoHswJ1GEP42iqrL2k247_L9PUmMFuRlOVYBBqcWr4FHRUauvxqFYaArbDQSVS0jNxl2Ag",
+  "token": "HSLIC1.eyJleHBpcmVzQXQiOiIyMDI3LTA3LTE1VDAwOjAwOjAwWiIsImluc3RhbGxhdGlvbklkIjoiSzBFal83U2dZMlI3dUFxajhzVzZBOHZXbUtYNW45WDhtQzF6UDRxVDZ1WSIsImlzc3VlZEF0IjoiMjAyNi0wNy0xNVQwMDowMDowMFoiLCJrZXlJZCI6Im9mZmxpbmUtdGVzdC1rMCIsImxpY2Vuc2VJZCI6ImxpY19rMF8wMDAxIiwibm90QmVmb3JlIjoiMjAyNi0wNy0xNVQwMDowMDowMFoiLCJwcm9kdWN0Q29kZSI6ImNyZWF0b3Jfb2ZmbGluZSIsInNjaGVtYVZlcnNpb24iOjF9.EyLZ_VJ4KRDwKC1gZoHswJ1GEP42iqrL2k247_L9PUmMFuRlOVYBBqcWr4FHRUauvxqFYaArbDQSVS0jNxl2Ag",
+  "expected": {
+    "tokenLength": 454,
+    "schemaVersion": 1,
+    "licenseId": "lic_k0_0001",
+    "productCode": "creator_offline",
+    "installationId": "K0Ej_7SgY2R7uAqj8sW6A8vWmKX5n9X8mC1zP4qT6uY",
+    "keyId": "offline-test-k0",
+    "issuedAt": "2026-07-15T00:00:00Z",
+    "notBefore": "2026-07-15T00:00:00Z",
+    "expiresAt": "2027-07-15T00:00:00Z",
+    "signatureValid": true
+  }
+}

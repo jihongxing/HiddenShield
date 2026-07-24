@@ -1,15 +1,10 @@
 <script setup lang="ts">
-import type { VaultRecord } from "../lib/tauri-api";
+import { formatLocalDateTime, type VaultRecord } from "../lib/tauri-api";
 
 defineProps<{
   records: VaultRecord[];
 }>();
 
-const platformOutputs = [
-  { key: "outputDouyin" as const, label: "抖音" },
-  { key: "outputBilibili" as const, label: "B站" },
-  { key: "outputXhs" as const, label: "小红书" },
-];
 </script>
 
 <template>
@@ -24,7 +19,7 @@ const platformOutputs = [
 
     <div class="timeline">
       <article v-for="record in records" :key="record.id" class="timeline__item">
-        <div class="timeline__time">{{ record.createdAt }}</div>
+        <div class="timeline__time">{{ formatLocalDateTime(record.createdAt) }}</div>
         <div class="timeline__content">
           <div class="timeline__title">
             <strong>{{ record.fileName }}</strong>
@@ -38,13 +33,8 @@ const platformOutputs = [
             <span>{{ record.isHdrSource ? "HDR 源" : "SDR 源" }}</span>
           </div>
           <div class="timeline__tags">
-            <span
-              v-for="p in platformOutputs.filter(o => record[o.key])"
-              :key="p.key"
-              class="timeline__tag"
-            >
-              {{ p.label }}
-            </span>
+            <span v-if="record.protectedCopyName || record.protectedCopyHash" class="timeline__tag">保护副本</span>
+            <span class="timeline__tag">最小必要变更</span>
           </div>
         </div>
       </article>

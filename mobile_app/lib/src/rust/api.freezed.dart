@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$MobileWatermarkError {
 
- String get field0;
+ String get code; String get message;
 /// Create a copy of MobileWatermarkError
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $MobileWatermarkErrorCopyWith<MobileWatermarkError> get copyWith => _$MobileWate
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MobileWatermarkError&&(identical(other.field0, field0) || other.field0 == field0));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MobileWatermarkError&&(identical(other.code, code) || other.code == code)&&(identical(other.message, message) || other.message == message));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,field0);
+int get hashCode => Object.hash(runtimeType,code,message);
 
 @override
 String toString() {
-  return 'MobileWatermarkError(field0: $field0)';
+  return 'MobileWatermarkError(code: $code, message: $message)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $MobileWatermarkErrorCopyWith<$Res>  {
   factory $MobileWatermarkErrorCopyWith(MobileWatermarkError value, $Res Function(MobileWatermarkError) _then) = _$MobileWatermarkErrorCopyWithImpl;
 @useResult
 $Res call({
- String field0
+ String code, String message
 });
 
 
@@ -62,9 +62,10 @@ class _$MobileWatermarkErrorCopyWithImpl<$Res>
 
 /// Create a copy of MobileWatermarkError
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? field0 = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? code = null,Object? message = null,}) {
   return _then(_self.copyWith(
-field0: null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
+code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
+as String,message: null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }
@@ -150,11 +151,11 @@ return operationFailed(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String field0)?  invalidPayload,TResult Function( String field0)?  operationFailed,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String code,  String message)?  invalidPayload,TResult Function( String code,  String message,  String? existingUid)?  operationFailed,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case MobileWatermarkError_InvalidPayload() when invalidPayload != null:
-return invalidPayload(_that.field0);case MobileWatermarkError_OperationFailed() when operationFailed != null:
-return operationFailed(_that.field0);case _:
+return invalidPayload(_that.code,_that.message);case MobileWatermarkError_OperationFailed() when operationFailed != null:
+return operationFailed(_that.code,_that.message,_that.existingUid);case _:
   return orElse();
 
 }
@@ -172,11 +173,11 @@ return operationFailed(_that.field0);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String field0)  invalidPayload,required TResult Function( String field0)  operationFailed,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String code,  String message)  invalidPayload,required TResult Function( String code,  String message,  String? existingUid)  operationFailed,}) {final _that = this;
 switch (_that) {
 case MobileWatermarkError_InvalidPayload():
-return invalidPayload(_that.field0);case MobileWatermarkError_OperationFailed():
-return operationFailed(_that.field0);}
+return invalidPayload(_that.code,_that.message);case MobileWatermarkError_OperationFailed():
+return operationFailed(_that.code,_that.message,_that.existingUid);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -190,11 +191,11 @@ return operationFailed(_that.field0);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String field0)?  invalidPayload,TResult? Function( String field0)?  operationFailed,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String code,  String message)?  invalidPayload,TResult? Function( String code,  String message,  String? existingUid)?  operationFailed,}) {final _that = this;
 switch (_that) {
 case MobileWatermarkError_InvalidPayload() when invalidPayload != null:
-return invalidPayload(_that.field0);case MobileWatermarkError_OperationFailed() when operationFailed != null:
-return operationFailed(_that.field0);case _:
+return invalidPayload(_that.code,_that.message);case MobileWatermarkError_OperationFailed() when operationFailed != null:
+return operationFailed(_that.code,_that.message,_that.existingUid);case _:
   return null;
 
 }
@@ -206,10 +207,11 @@ return operationFailed(_that.field0);case _:
 
 
 class MobileWatermarkError_InvalidPayload extends MobileWatermarkError {
-  const MobileWatermarkError_InvalidPayload(this.field0): super._();
+  const MobileWatermarkError_InvalidPayload({required this.code, required this.message}): super._();
   
 
-@override final  String field0;
+@override final  String code;
+@override final  String message;
 
 /// Create a copy of MobileWatermarkError
 /// with the given fields replaced by the non-null parameter values.
@@ -221,16 +223,16 @@ $MobileWatermarkError_InvalidPayloadCopyWith<MobileWatermarkError_InvalidPayload
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MobileWatermarkError_InvalidPayload&&(identical(other.field0, field0) || other.field0 == field0));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MobileWatermarkError_InvalidPayload&&(identical(other.code, code) || other.code == code)&&(identical(other.message, message) || other.message == message));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,field0);
+int get hashCode => Object.hash(runtimeType,code,message);
 
 @override
 String toString() {
-  return 'MobileWatermarkError.invalidPayload(field0: $field0)';
+  return 'MobileWatermarkError.invalidPayload(code: $code, message: $message)';
 }
 
 
@@ -241,7 +243,7 @@ abstract mixin class $MobileWatermarkError_InvalidPayloadCopyWith<$Res> implemen
   factory $MobileWatermarkError_InvalidPayloadCopyWith(MobileWatermarkError_InvalidPayload value, $Res Function(MobileWatermarkError_InvalidPayload) _then) = _$MobileWatermarkError_InvalidPayloadCopyWithImpl;
 @override @useResult
 $Res call({
- String field0
+ String code, String message
 });
 
 
@@ -258,9 +260,10 @@ class _$MobileWatermarkError_InvalidPayloadCopyWithImpl<$Res>
 
 /// Create a copy of MobileWatermarkError
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? field0 = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? code = null,Object? message = null,}) {
   return _then(MobileWatermarkError_InvalidPayload(
-null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
+code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
+as String,message: null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }
@@ -272,10 +275,12 @@ as String,
 
 
 class MobileWatermarkError_OperationFailed extends MobileWatermarkError {
-  const MobileWatermarkError_OperationFailed(this.field0): super._();
+  const MobileWatermarkError_OperationFailed({required this.code, required this.message, this.existingUid}): super._();
   
 
-@override final  String field0;
+@override final  String code;
+@override final  String message;
+ final  String? existingUid;
 
 /// Create a copy of MobileWatermarkError
 /// with the given fields replaced by the non-null parameter values.
@@ -287,16 +292,16 @@ $MobileWatermarkError_OperationFailedCopyWith<MobileWatermarkError_OperationFail
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MobileWatermarkError_OperationFailed&&(identical(other.field0, field0) || other.field0 == field0));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MobileWatermarkError_OperationFailed&&(identical(other.code, code) || other.code == code)&&(identical(other.message, message) || other.message == message)&&(identical(other.existingUid, existingUid) || other.existingUid == existingUid));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,field0);
+int get hashCode => Object.hash(runtimeType,code,message,existingUid);
 
 @override
 String toString() {
-  return 'MobileWatermarkError.operationFailed(field0: $field0)';
+  return 'MobileWatermarkError.operationFailed(code: $code, message: $message, existingUid: $existingUid)';
 }
 
 
@@ -307,7 +312,7 @@ abstract mixin class $MobileWatermarkError_OperationFailedCopyWith<$Res> impleme
   factory $MobileWatermarkError_OperationFailedCopyWith(MobileWatermarkError_OperationFailed value, $Res Function(MobileWatermarkError_OperationFailed) _then) = _$MobileWatermarkError_OperationFailedCopyWithImpl;
 @override @useResult
 $Res call({
- String field0
+ String code, String message, String? existingUid
 });
 
 
@@ -324,10 +329,12 @@ class _$MobileWatermarkError_OperationFailedCopyWithImpl<$Res>
 
 /// Create a copy of MobileWatermarkError
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? field0 = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? code = null,Object? message = null,Object? existingUid = freezed,}) {
   return _then(MobileWatermarkError_OperationFailed(
-null == field0 ? _self.field0 : field0 // ignore: cast_nullable_to_non_nullable
-as String,
+code: null == code ? _self.code : code // ignore: cast_nullable_to_non_nullable
+as String,message: null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
+as String,existingUid: freezed == existingUid ? _self.existingUid : existingUid // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

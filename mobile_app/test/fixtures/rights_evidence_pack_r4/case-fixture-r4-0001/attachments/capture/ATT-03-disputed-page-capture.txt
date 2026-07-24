@@ -1,0 +1,5 @@
+HiddenShield synthetic disputed-page capture
+Source: https://evidence.example.invalid/posts/fixture-0001
+Captured at: 2026-07-14T11:30:00.000Z
+Time status: unverified
+Boundary: This fixture is not a real web capture or trusted collection record.

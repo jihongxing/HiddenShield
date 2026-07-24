@@ -1,0 +1,23 @@
+{
+  "source_mockup": null,
+  "source_plan": "docs/面向司法使用场景的版权证据报告PDF升级规划.md",
+  "mode": "plan-driven",
+  "html_file": "docs/prototypes/copyright-evidence-report-r0/finalized.html",
+  "pretext_tier": "simple-layout-prepare-layout",
+  "framework": "vanilla",
+  "iterations": 1,
+  "date": "2026-07-14",
+  "screen": "copyright-evidence-report-r0",
+  "branch": "current",
+  "sample_types": [
+    "image",
+    "audio",
+    "video_l2"
+  ],
+  "pages": [
+    "cover",
+    "executive_summary",
+    "evidence_chain",
+    "scope_and_limitations"
+  ]
+}

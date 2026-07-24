@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hiddenshield.local/contracts/offline-license/revocation-list-payload-v1.schema.json",
+  "title": "HiddenShield Offline License Revocation List Payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "generatedAt",
+    "keyId",
+    "listId",
+    "listType",
+    "revokedLicenseIds",
+    "schemaVersion",
+    "sequence"
+  ],
+  "properties": {
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "keyId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{2,63}$"
+    },
+    "listId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{2,63}$"
+    },
+    "listType": {
+      "const": "offline_license_revocations"
+    },
+    "revokedLicenseIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9._-]{2,63}$"
+      }
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1
+    }
+  }
+}

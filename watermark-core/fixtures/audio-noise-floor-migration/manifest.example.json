@@ -1,0 +1,140 @@
+{
+  "schemaVersion": "audio_noise_floor_migration_manifest_v1",
+  "migrationPhase": "read_compat_legacy_v3",
+  "payloadProtocolVersion": 3,
+  "payloadBytesLength": 39,
+  "audioStrategyVersion": "v3_recovery_2_8k_legacy",
+  "expectedExtractorPath": "WatermarkService::extract -> audio::extract_watermark_wav_readonly_candidate_bytes_with_delta",
+  "formalThresholds": {
+    "fieldNoiseMinSnrDb": 44.0,
+    "extractionConfidenceMin": 0.99,
+    "thresholdsMustNotDrop": true
+  },
+  "rollbackPolicy": {
+    "writeStrategyFlagRequired": true,
+    "legacyFallbackRequired": true,
+    "platformAlgorithmDriftForbidden": true,
+    "formalThresholdsMustNotDrop": true
+  },
+  "plannedExtractorReadOrder": [
+    "v3_noise_floor_migrated_band_v1_candidate",
+    "v3_recovery_2_8k_legacy",
+    "legacy_v3_readonly_candidate",
+    "v2_rollback_legacy"
+  ],
+  "plannedReportFields": [
+    "watermarkUid",
+    "payloadProtocolVersion",
+    "payloadBytesLength",
+    "audioStrategyVersion",
+    "extractorPath",
+    "extractorFallbackPath",
+    "candidateFailureCode",
+    "candidateFailureMessage",
+    "candidateFailureMatrix",
+    "candidateScanAttempted",
+    "candidateScanProfiles",
+    "extractionConfidence",
+    "readCompatibilityMode"
+  ],
+  "fixtures": [
+    {
+      "sampleId": "legacy-core-field-noise-v3",
+      "originEndpoint": "watermark_core_legacy",
+      "artifactRole": "legacy_core_reference",
+      "artifactMode": "generated_legacy_v3_wav",
+      "audioProfile": "field_noise_noise_floor",
+      "mediaType": "audio",
+      "watermarkIdHex32": "A101000000000001B201000000000001",
+      "expectedWatermarkUid": "HS-A1010000-00000001-B2010000-00000001",
+      "payloadProtocolVersion": 3,
+      "payloadBytesLength": 39,
+      "audioStrategyVersion": "v3_recovery_2_8k_legacy",
+      "expectedReadPaths": [
+        "current_default_extractor",
+        "legacy_v3_readonly_candidate"
+      ],
+      "minExtractionConfidence": 0.99
+    },
+    {
+      "sampleId": "desktop-old-write-field-noise-v3",
+      "originEndpoint": "desktop_legacy",
+      "artifactRole": "desktop_old_write",
+      "artifactMode": "generated_legacy_v3_wav",
+      "audioProfile": "field_noise_noise_floor",
+      "mediaType": "audio",
+      "watermarkIdHex32": "A102000000000002B202000000000002",
+      "expectedWatermarkUid": "HS-A1020000-00000002-B2020000-00000002",
+      "payloadProtocolVersion": 3,
+      "payloadBytesLength": 39,
+      "audioStrategyVersion": "v3_recovery_2_8k_legacy",
+      "expectedReadPaths": [
+        "current_default_extractor",
+        "legacy_v3_readonly_candidate"
+      ],
+      "minExtractionConfidence": 0.99
+    },
+    {
+      "sampleId": "mobile-old-write-field-noise-v3",
+      "originEndpoint": "mobile_legacy",
+      "artifactRole": "mobile_old_write",
+      "artifactMode": "generated_legacy_v3_wav",
+      "audioProfile": "field_noise_noise_floor",
+      "mediaType": "audio",
+      "watermarkIdHex32": "A103000000000003B203000000000003",
+      "expectedWatermarkUid": "HS-A1030000-00000003-B2030000-00000003",
+      "payloadProtocolVersion": 3,
+      "payloadBytesLength": 39,
+      "audioStrategyVersion": "v3_recovery_2_8k_legacy",
+      "expectedReadPaths": [
+        "current_default_extractor",
+        "legacy_v3_readonly_candidate"
+      ],
+      "minExtractionConfidence": 0.99
+    },
+    {
+      "sampleId": "desktop-file-backed-field-noise-v3",
+      "originEndpoint": "desktop_legacy",
+      "artifactRole": "desktop_old_write",
+      "artifactMode": "file_backed_legacy_v3_wav",
+      "audioProfile": "field_noise_noise_floor",
+      "mediaType": "audio",
+      "watermarkIdHex32": "D501000000000011E601000000000011",
+      "expectedWatermarkUid": "HS-D5010000-00000011-E6010000-00000011",
+      "payloadProtocolVersion": 3,
+      "payloadBytesLength": 39,
+      "audioStrategyVersion": "v3_recovery_2_8k_legacy",
+      "expectedReadPaths": [
+        "current_default_extractor",
+        "legacy_v3_readonly_candidate"
+      ],
+      "minExtractionConfidence": 0.99,
+      "protectedPath": "watermark-core/fixtures/audio-noise-floor-migration/protected-old/desktop/desktop-old-write-field-noise-v3.wav",
+      "sha256": "0c12881bc6201ba31c18d067ab2ab31d040c5ec23e25c1b9e0e50c0655ef3200",
+      "bytes": 2646044,
+      "generatedBy": "src-tauri/src/bin/audio_noise_floor_migration_desktop_fixture.rs"
+    },
+    {
+      "sampleId": "android-native-file-backed-field-noise-v3",
+      "originEndpoint": "android_native_legacy",
+      "artifactRole": "android_native_old_write",
+      "artifactMode": "file_backed_legacy_v3_wav",
+      "audioProfile": "field_noise_noise_floor",
+      "mediaType": "audio",
+      "watermarkIdHex32": "D502000000000012E602000000000012",
+      "expectedWatermarkUid": "HS-D5020000-00000012-E6020000-00000012",
+      "payloadProtocolVersion": 3,
+      "payloadBytesLength": 39,
+      "audioStrategyVersion": "v3_recovery_2_8k_legacy",
+      "expectedReadPaths": [
+        "current_default_extractor",
+        "legacy_v3_readonly_candidate"
+      ],
+      "minExtractionConfidence": 0.99,
+      "protectedPath": "watermark-core/fixtures/audio-noise-floor-migration/protected-old/android/android-native-old-write-field-noise-v3.wav",
+      "sha256": "51f11815f270a809eb74b8920902d3f4d270d52b712b6001b2b45f3f1dde1b62",
+      "bytes": 2646044,
+      "generatedBy": "mobile_app/rust/src/bin/audio_noise_floor_migration_android_fixture.rs"
+    }
+  ]
+}

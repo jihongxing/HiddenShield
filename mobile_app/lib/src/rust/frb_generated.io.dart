@@ -30,6 +30,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   bool dco_decode_bool(dynamic raw);
 
   @protected
+  MobileExtractResult dco_decode_box_autoadd_mobile_extract_result(dynamic raw);
+
+  @protected
   MobileMediaPayload dco_decode_box_autoadd_mobile_media_payload(dynamic raw);
 
   @protected
@@ -57,7 +60,23 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   MobileMediaPayload dco_decode_mobile_media_payload(dynamic raw);
 
   @protected
+  MobileV3InternalQaWriteResult dco_decode_mobile_v_3_internal_qa_write_result(
+    dynamic raw,
+  );
+
+  @protected
   MobileWatermarkError dco_decode_mobile_watermark_error(dynamic raw);
+
+  @protected
+  String? dco_decode_opt_String(dynamic raw);
+
+  @protected
+  MobileExtractResult? dco_decode_opt_box_autoadd_mobile_extract_result(
+    dynamic raw,
+  );
+
+  @protected
+  int dco_decode_u_32(dynamic raw);
 
   @protected
   BigInt dco_decode_u_64(dynamic raw);
@@ -73,6 +92,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   bool sse_decode_bool(SseDeserializer deserializer);
+
+  @protected
+  MobileExtractResult sse_decode_box_autoadd_mobile_extract_result(
+    SseDeserializer deserializer,
+  );
 
   @protected
   MobileMediaPayload sse_decode_box_autoadd_mobile_media_payload(
@@ -114,9 +138,25 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  MobileV3InternalQaWriteResult sse_decode_mobile_v_3_internal_qa_write_result(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   MobileWatermarkError sse_decode_mobile_watermark_error(
     SseDeserializer deserializer,
   );
+
+  @protected
+  String? sse_decode_opt_String(SseDeserializer deserializer);
+
+  @protected
+  MobileExtractResult? sse_decode_opt_box_autoadd_mobile_extract_result(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  int sse_decode_u_32(SseDeserializer deserializer);
 
   @protected
   BigInt sse_decode_u_64(SseDeserializer deserializer);
@@ -132,6 +172,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_bool(bool self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_box_autoadd_mobile_extract_result(
+    MobileExtractResult self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_box_autoadd_mobile_media_payload(
@@ -182,10 +228,28 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_mobile_v_3_internal_qa_write_result(
+    MobileV3InternalQaWriteResult self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_mobile_watermark_error(
     MobileWatermarkError self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_opt_String(String? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_opt_box_autoadd_mobile_extract_result(
+    MobileExtractResult? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_u_32(int self, SseSerializer serializer);
 
   @protected
   void sse_encode_u_64(BigInt self, SseSerializer serializer);

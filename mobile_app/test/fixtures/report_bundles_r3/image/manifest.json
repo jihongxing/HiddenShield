@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 2,
+  "reportId": "hsr-r3-image-desktop",
+  "reportType": "formal_report",
+  "generatedAt": "2026-07-14T10:10:00+08:00",
+  "sourceSchemaVersion": 2,
+  "bundle": {
+    "sourceKey": "763c2bfdad4eb3a899161908f93f15806f8abff3237793119d04733dae00ec02",
+    "bundleVersion": 1,
+    "supersedesReportId": null
+  },
+  "renderer": {
+    "engine": "chromium",
+    "workerMode": "persistent_warm_worker",
+    "templateVersion": "R1.0",
+    "controlledFonts": [
+      "NotoSansSC-Controlled.ttf",
+      "NotoSerifSC-Controlled.ttf"
+    ],
+    "generationMs": 1202.05,
+    "generationBudgetMs": 3000,
+    "pageCount": 4,
+    "paginationStable": true
+  },
+  "files": [
+    {
+      "path": "report.pdf",
+      "mediaType": "application/pdf",
+      "bytes": 753142,
+      "sha256": "a3e0626a0862637258c69fe46e263b1c36546d2482ec9d5acd96aefc3b9124d1"
+    },
+    {
+      "path": "report.json",
+      "mediaType": "application/json",
+      "bytes": 2370,
+      "sha256": "fb073723962b26dd9611fe77d85f8a5d07121dd07889f8c9869012eb60ad4bbb"
+    }
+  ],
+  "integrity": {
+    "algorithm": "sha256_chain_v1",
+    "genesis": "HiddenShield-Report-Manifest-v2",
+    "entries": [
+      {
+        "sequence": 1,
+        "path": "report.pdf",
+        "fileSha256": "a3e0626a0862637258c69fe46e263b1c36546d2482ec9d5acd96aefc3b9124d1",
+        "fileBytes": 753142,
+        "previousChainDigest": "93f135583302895889c953a54dfec9b6ede66541c3e9437ba04189cfc04238a5",
+        "chainDigest": "44486397b409dec61e7e973ffd66b365af7fafd30ec7e4543ffb535fd0decc60"
+      },
+      {
+        "sequence": 2,
+        "path": "report.json",
+        "fileSha256": "fb073723962b26dd9611fe77d85f8a5d07121dd07889f8c9869012eb60ad4bbb",
+        "fileBytes": 2370,
+        "previousChainDigest": "44486397b409dec61e7e973ffd66b365af7fafd30ec7e4543ffb535fd0decc60",
+        "chainDigest": "837cd4b1122c2a830972a2526abd5cf8483b9220ace3c95dca0fa0d98b5eb8aa"
+      }
+    ],
+    "rootDigest": "837cd4b1122c2a830972a2526abd5cf8483b9220ace3c95dca0fa0d98b5eb8aa"
+  },
+  "signature": {
+    "status": "not_signed",
+    "profile": null,
+    "signerKeyId": null,
+    "certificateChainStatus": "not_evaluated",
+    "revocationStatus": "not_applicable",
+    "signedAt": null,
+    "note": "R3 cross-end fixture is not signed."
+  },
+  "trustedTime": {
+    "status": "not_verified",
+    "packageTimestampPresent": false,
+    "recordMaterialTokenPresent": true,
+    "note": "记录级 TSA 材料状态不等于报告包已获得可信时间戳。"
+  },
+  "verification": {
+    "offlineMode": "sha256_chain_v1",
+    "onlineStatus": "not_deployed",
+    "qrStatus": "not_issued",
+    "onlineVerificationUrl": null
+  }
+}

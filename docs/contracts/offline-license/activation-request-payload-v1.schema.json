@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hiddenshield.local/contracts/offline-license/activation-request-payload-v1.schema.json",
+  "title": "HiddenShield Offline Activation Request Payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "appVersion",
+    "createdAt",
+    "installationId",
+    "nonce",
+    "platform",
+    "requestId",
+    "requestedProductCode",
+    "schemaVersion"
+  ],
+  "properties": {
+    "appVersion": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][A-Za-z0-9.-]+)?$"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "installationId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{43}$"
+    },
+    "nonce": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{22}$"
+    },
+    "platform": {
+      "enum": ["windows", "macos", "linux", "android", "ios"]
+    },
+    "requestId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{2,63}$"
+    },
+    "requestedProductCode": {
+      "const": "creator_offline"
+    },
+    "schemaVersion": {
+      "const": 1
+    }
+  }
+}

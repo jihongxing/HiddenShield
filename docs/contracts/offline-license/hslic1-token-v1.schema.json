@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hiddenshield.local/contracts/offline-license/hslic1-token-v1.schema.json",
+  "title": "HiddenShield HSLIC1 Token v1",
+  "type": "string",
+  "minLength": 300,
+  "maxLength": 500,
+  "pattern": "^HSLIC1\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$"
+}

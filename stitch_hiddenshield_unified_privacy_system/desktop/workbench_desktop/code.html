@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>HiddenShield Workbench</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-high": "#242b2a",
+                      "on-tertiary-container": "#744000",
+                      "tertiary": "#ffd1aa",
+                      "on-secondary-fixed": "#2a1700",
+                      "on-background": "#dde4e1",
+                      "inverse-surface": "#dde4e1",
+                      "secondary-container": "#ee9800",
+                      "primary-fixed-dim": "#3cddc7",
+                      "primary": "#57f1db",
+                      "surface-container-highest": "#2f3634",
+                      "on-tertiary-fixed": "#2d1600",
+                      "on-surface": "#dde4e1",
+                      "on-secondary-container": "#5b3800",
+                      "on-tertiary": "#4b2800",
+                      "surface-variant": "#2f3634",
+                      "secondary-fixed-dim": "#ffb95f",
+                      "on-error-container": "#ffdad6",
+                      "inverse-on-surface": "#2b3230",
+                      "on-primary-fixed": "#00201c",
+                      "on-secondary": "#472a00",
+                      "surface-container": "#1a211f",
+                      "secondary": "#ffb95f",
+                      "on-primary-container": "#00574d",
+                      "surface-tint": "#3cddc7",
+                      "on-tertiary-fixed-variant": "#6b3b00",
+                      "tertiary-container": "#ffac5a",
+                      "on-primary": "#003731",
+                      "error": "#ffb4ab",
+                      "primary-container": "#2dd4bf",
+                      "inverse-primary": "#006b5f",
+                      "outline": "#859490",
+                      "surface-container-low": "#161d1b",
+                      "secondary-fixed": "#ffddb8",
+                      "on-primary-fixed-variant": "#005047",
+                      "background": "#0e1513",
+                      "surface-bright": "#333b39",
+                      "surface-dim": "#0e1513",
+                      "primary-fixed": "#62fae3",
+                      "tertiary-fixed-dim": "#ffb875",
+                      "error-container": "#93000a",
+                      "on-surface-variant": "#bacac5",
+                      "outline-variant": "#3c4a46",
+                      "on-error": "#690005",
+                      "surface-container-lowest": "#09100e",
+                      "surface": "#0e1513",
+                      "tertiary-fixed": "#ffdcc0",
+                      "on-secondary-fixed-variant": "#653e00"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "padding-xs": "4px",
+                      "container-margin": "24px",
+                      "padding-md": "16px",
+                      "padding-lg": "24px",
+                      "unit": "4px",
+                      "padding-sm": "8px"
+              },
+              "fontFamily": {
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "label-lg": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Inter"
+                      ],
+                      "headline-sm": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "label-sm": [
+                              "11px",
+                              {
+                                      "lineHeight": "12px",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-lg": [
+                              "14px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-sm": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-sm": [
+                              "13px",
+                              {
+                                      "lineHeight": "18px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        body {
+            background-color: #0F172A;
+            color: theme('colors.on-background');
+        }
+        .card-surface {
+            background-color: #1E293B;
+            border: 1px solid #334155;
+            border-radius: 8px; /* 0.5rem - rounded-xl in custom config mapped to 0.5rem but manual says 8px */
+        }
+        .input-surface {
+            background-color: #0F172A;
+        }
+      </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+<!-- SideNavBar -->
+<nav class="bg-surface-container dark:bg-surface-container text-primary dark:text-primary h-screen w-64 left-0 top-0 bg-surface-container-low border-r border-outline-variant hidden lg:flex flex-col h-full flex-shrink-0">
+<div class="px-container-margin py-padding-lg border-b border-outline-variant flex items-center gap-3">
+<div class="h-10 w-10 rounded bg-primary-container flex items-center justify-center text-on-primary-container font-headline-md">H</div>
+<div>
+<h1 class="font-headline-sm text-headline-sm font-black text-primary">HiddenShield</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Enterprise Protection</p>
+</div>
+</div>
+<div class="flex-1 py-4 flex flex-col gap-1 overflow-y-auto">
+<a class="text-primary font-bold border-l-2 border-primary bg-surface-container-highest px-4 py-3 flex items-center gap-3 hover:bg-surface-container-high transition-all duration-150 ease-in-out font-label-lg text-label-lg" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+                Workbench
+            </a>
+<a class="text-on-surface-variant hover:text-on-surface px-4 py-3 flex items-center gap-3 hover:bg-surface-container-high transition-all duration-150 ease-in-out font-label-lg text-label-lg" href="#">
+<span class="material-symbols-outlined">settings_suggest</span>
+                Process
+            </a>
+<a class="text-on-surface-variant hover:text-on-surface px-4 py-3 flex items-center gap-3 hover:bg-surface-container-high transition-all duration-150 ease-in-out font-label-lg text-label-lg" href="#">
+<span class="material-symbols-outlined">verified_user</span>
+                Verify
+            </a>
+<a class="text-on-surface-variant hover:text-on-surface px-4 py-3 flex items-center gap-3 hover:bg-surface-container-high transition-all duration-150 ease-in-out font-label-lg text-label-lg" href="#">
+<span class="material-symbols-outlined">enhanced_encryption</span>
+                Vault
+            </a>
+<a class="text-on-surface-variant hover:text-on-surface px-4 py-3 flex items-center gap-3 hover:bg-surface-container-high transition-all duration-150 ease-in-out font-label-lg text-label-lg" href="#">
+<span class="material-symbols-outlined">view_list</span>
+                Batch Queue
+            </a>
+<a class="text-on-surface-variant hover:text-on-surface px-4 py-3 flex items-center gap-3 hover:bg-surface-container-high transition-all duration-150 ease-in-out font-label-lg text-label-lg mt-auto" href="#">
+<span class="material-symbols-outlined">settings</span>
+                Settings
+            </a>
+</div>
+<div class="p-4 border-t border-outline-variant">
+<button class="w-full bg-[#2DD4BF] text-[#0F172A] rounded font-label-lg text-label-lg py-3 px-4 flex justify-center items-center gap-2 hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                New Security Audit
+             </button>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col h-full overflow-hidden">
+<!-- TopAppBar (Mobile Only in this layout, but we'll include it for responsiveness) -->
+<header class="bg-surface dark:bg-surface text-primary dark:text-primary docked full-width top-0 border-b border-outline-variant dark:border-outline-variant flex justify-between items-center w-full px-container-margin py-padding-sm lg:hidden shrink-0">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined">menu</span>
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-primary">HiddenShield</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined cursor-pointer hover:bg-surface-container-high transition-colors p-1 rounded-full">sync</span>
+<span class="material-symbols-outlined cursor-pointer hover:bg-surface-container-high transition-colors p-1 rounded-full">workspace_premium</span>
+</div>
+</header>
+<!-- Workbench Content Area -->
+<div class="flex-1 overflow-y-auto p-container-margin grid grid-cols-12 gap-gutter">
+<!-- Center Workspace (Col 1-8) -->
+<div class="col-span-12 lg:col-span-8 flex flex-col gap-container-margin">
+<!-- Hero Action -->
+<div class="card-surface p-padding-lg flex flex-col md:flex-row justify-between items-center gap-4">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-2">Security Command Center</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">System fully operational. Ready for new protection directives.</p>
+</div>
+<button class="bg-[#2DD4BF] text-[#0F172A] rounded font-label-lg text-label-lg py-3 px-6 whitespace-nowrap hover:opacity-90 transition-opacity">
+                        Start New Protection Task
+                    </button>
+</div>
+<!-- Stats Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<div class="card-surface p-padding-md flex items-center gap-4">
+<div class="h-12 w-12 rounded bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[24px]">shield</span>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Protected Records</p>
+<p class="font-headline-lg text-headline-lg text-on-surface">142,890</p>
+</div>
+</div>
+<div class="card-surface p-padding-md flex items-center gap-4">
+<div class="h-12 w-12 rounded bg-surface-container flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[24px]">autorenew</span>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Active Batch Jobs</p>
+<p class="font-headline-lg text-headline-lg text-on-surface">3</p>
+</div>
+</div>
+</div>
+<!-- Recent Tasks -->
+<div class="card-surface flex-1 flex flex-col min-h-[400px]">
+<div class="p-padding-md border-b border-[#334155] flex justify-between items-center">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Recent Tasks</h3>
+<button class="font-label-md text-label-md text-primary hover:underline">View All</button>
+</div>
+<div class="flex-1 overflow-y-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-[#334155] bg-surface-container-low">
+<th class="py-3 px-4 font-label-md text-label-md text-on-surface-variant">File / Asset</th>
+<th class="py-3 px-4 font-label-md text-label-md text-on-surface-variant">Status</th>
+<th class="py-3 px-4 font-label-md text-label-md text-on-surface-variant text-right">Timestamp</th>
+</tr>
+</thead>
+<tbody class="font-body-md text-body-md text-on-surface">
+<tr class="border-b border-[#334155] hover:bg-[#2D3748] transition-colors">
+<td class="py-3 px-4 flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">description</span>
+                                        Q3_Financial_Data_v2.csv
+                                    </td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary-container/10 text-primary border-l-2 border-primary font-label-sm text-label-sm">
+                                            Ready
+                                        </span>
+</td>
+<td class="py-3 px-4 text-right text-on-surface-variant">10:42 AM</td>
+</tr>
+<tr class="border-b border-[#334155] hover:bg-[#2D3748] transition-colors">
+<td class="py-3 px-4 flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">folder_zip</span>
+                                        Client_Archive_2023.zip
+                                    </td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-secondary-container/10 text-secondary border-l-2 border-secondary font-label-sm text-label-sm">
+                                            Encrypting...
+                                        </span>
+<div class="w-24 h-1 bg-surface-container mt-1 rounded overflow-hidden">
+<div class="h-full bg-secondary w-3/4"></div>
+</div>
+</td>
+<td class="py-3 px-4 text-right text-on-surface-variant">09:15 AM</td>
+</tr>
+<tr class="border-b border-[#334155] hover:bg-[#2D3748] transition-colors">
+<td class="py-3 px-4 flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">image</span>
+                                        Biometric_Scans_Raw.tar
+                                    </td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-error-container/10 text-error border-l-2 border-error font-label-sm text-label-sm">
+                                            Failed
+                                        </span>
+</td>
+<td class="py-3 px-4 text-right text-on-surface-variant">Yesterday</td>
+</tr>
+<tr class="border-b border-[#334155] hover:bg-[#2D3748] transition-colors">
+<td class="py-3 px-4 flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">description</span>
+                                        Employee_Roster_Current.xlsx
+                                    </td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary-container/10 text-primary border-l-2 border-primary font-label-sm text-label-sm">
+                                            Ready
+                                        </span>
+</td>
+<td class="py-3 px-4 text-right text-on-surface-variant">Yesterday</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- Right Contextual Panel (Col 9-12) -->
+<div class="col-span-12 lg:col-span-4 flex flex-col gap-gutter">
+<!-- System Status -->
+<div class="card-surface p-padding-md">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">cloud_sync</span>
+                        System Status
+                    </h3>
+<div class="flex items-center justify-between p-3 rounded input-surface border border-[#334155] mb-3">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+<span class="font-body-md text-body-md text-on-surface">Main Node</span>
+</div>
+<span class="font-label-md text-label-md text-primary">Connected</span>
+</div>
+<div class="flex items-center justify-between p-3 rounded input-surface border border-[#334155]">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<span class="font-body-md text-body-md text-on-surface">Backup Vault</span>
+</div>
+<span class="font-label-md text-label-md text-secondary">Syncing</span>
+</div>
+</div>
+<!-- Alerts -->
+<div class="card-surface p-padding-md">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-error text-[18px]">warning</span>
+                        System Alerts
+                    </h3>
+<div class="flex flex-col items-center justify-center p-6 text-center">
+<span class="material-symbols-outlined text-[48px] text-[#334155] mb-2 font-light">check_circle</span>
+<p class="font-body-md text-body-md text-on-surface-variant">0 active alerts</p>
+<p class="font-body-sm text-body-sm text-[#334155] mt-1">All systems nominal</p>
+</div>
+</div>
+<!-- Quick Shortcuts -->
+<div class="card-surface p-padding-md flex-1">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">bolt</span>
+                        Quick Shortcuts
+                    </h3>
+<div class="flex flex-col gap-2">
+<button class="w-full text-left p-3 rounded input-surface border border-[#334155] hover:border-[#2DD4BF] transition-colors flex items-center justify-between group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">verified_user</span>
+<span class="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors">Verify Credentials</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[16px]">arrow_forward</span>
+</button>
+<button class="w-full text-left p-3 rounded input-surface border border-[#334155] hover:border-[#2DD4BF] transition-colors flex items-center justify-between group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">enhanced_encryption</span>
+<span class="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors">Access Vault</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[16px]">arrow_forward</span>
+</button>
+<button class="w-full text-left p-3 rounded input-surface border border-[#334155] hover:border-[#2DD4BF] transition-colors flex items-center justify-between group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">find_in_page</span>
+<span class="font-body-md text-body-md text-on-surface group-hover:text-primary transition-colors">Search Logs</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="bg-surface-container-highest dark:bg-surface-container-highest text-primary dark:text-primary fixed bottom-0 w-full z-50 border-t border-outline-variant shadow-lg lg:hidden fixed bottom-0 left-0 w-full flex justify-around items-center px-padding-md pb-safe shrink-0 h-16">
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 active:bg-surface-variant scale-95 duration-75" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-label-sm-mobile text-label-sm-mobile">Workbench</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-2 py-1 active:bg-surface-variant scale-95 duration-75" href="#">
+<span class="material-symbols-outlined">settings_suggest</span>
+<span class="font-label-sm-mobile text-label-sm-mobile">Process</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-2 py-1 active:bg-surface-variant scale-95 duration-75" href="#">
+<span class="material-symbols-outlined">verified_user</span>
+<span class="font-label-sm-mobile text-label-sm-mobile">Verify</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-2 py-1 active:bg-surface-variant scale-95 duration-75" href="#">
+<span class="material-symbols-outlined">enhanced_encryption</span>
+<span class="font-label-sm-mobile text-label-sm-mobile">Vault</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-2 py-1 active:bg-surface-variant scale-95 duration-75" href="#">
+<span class="material-symbols-outlined">view_list</span>
+<span class="font-label-sm-mobile text-label-sm-mobile">Queue</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-2 py-1 active:bg-surface-variant scale-95 duration-75 hidden sm:flex" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-sm-mobile text-label-sm-mobile">Settings</span>
+</a>
+</nav>
+</body></html>

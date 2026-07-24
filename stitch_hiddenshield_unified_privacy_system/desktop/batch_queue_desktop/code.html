@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>HiddenShield - Batch Queue</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-high": "#242b2a",
+                      "on-tertiary-container": "#744000",
+                      "tertiary": "#ffd1aa",
+                      "on-secondary-fixed": "#2a1700",
+                      "on-background": "#dde4e1",
+                      "inverse-surface": "#dde4e1",
+                      "secondary-container": "#ee9800",
+                      "primary-fixed-dim": "#3cddc7",
+                      "primary": "#57f1db",
+                      "surface-container-highest": "#2f3634",
+                      "on-tertiary-fixed": "#2d1600",
+                      "on-surface": "#dde4e1",
+                      "on-secondary-container": "#5b3800",
+                      "on-tertiary": "#4b2800",
+                      "surface-variant": "#2f3634",
+                      "secondary-fixed-dim": "#ffb95f",
+                      "on-error-container": "#ffdad6",
+                      "inverse-on-surface": "#2b3230",
+                      "on-primary-fixed": "#00201c",
+                      "on-secondary": "#472a00",
+                      "surface-container": "#1a211f",
+                      "secondary": "#ffb95f",
+                      "on-primary-container": "#00574d",
+                      "surface-tint": "#3cddc7",
+                      "on-tertiary-fixed-variant": "#6b3b00",
+                      "tertiary-container": "#ffac5a",
+                      "on-primary": "#003731",
+                      "error": "#ffb4ab",
+                      "primary-container": "#2dd4bf",
+                      "inverse-primary": "#006b5f",
+                      "outline": "#859490",
+                      "surface-container-low": "#161d1b",
+                      "secondary-fixed": "#ffddb8",
+                      "on-primary-fixed-variant": "#005047",
+                      "background": "#0e1513",
+                      "surface-bright": "#333b39",
+                      "surface-dim": "#0e1513",
+                      "primary-fixed": "#62fae3",
+                      "tertiary-fixed-dim": "#ffb875",
+                      "error-container": "#93000a",
+                      "on-surface-variant": "#bacac5",
+                      "outline-variant": "#3c4a46",
+                      "on-error": "#690005",
+                      "surface-container-lowest": "#09100e",
+                      "surface": "#0e1513",
+                      "tertiary-fixed": "#ffdcc0",
+                      "on-secondary-fixed-variant": "#653e00"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "padding-xs": "4px",
+                      "container-margin": "24px",
+                      "padding-md": "16px",
+                      "padding-lg": "24px",
+                      "unit": "4px",
+                      "padding-sm": "8px"
+              },
+              "fontFamily": {
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "label-lg": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Inter"
+                      ],
+                      "headline-sm": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "label-sm": [
+                              "11px",
+                              {
+                                      "lineHeight": "12px",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-lg": [
+                              "14px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-sm": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-sm": [
+                              "13px",
+                              {
+                                      "lineHeight": "18px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background min-h-screen flex">
+<!-- SideNavBar (Desktop Only) -->
+<nav class="bg-surface-container dark:bg-surface-container text-primary dark:text-primary hidden lg:flex flex-col h-full h-screen w-64 left-0 top-0 bg-surface-container-low border-r border-outline-variant flat no shadows transition-all duration-150 ease-in-out fixed shrink-0">
+<div class="px-container-margin py-padding-lg">
+<h1 class="font-headline-sm text-headline-sm font-black text-primary">HiddenShield</h1>
+<p class="font-label-md text-label-md text-on-surface-variant mt-1">Enterprise Protection</p>
+</div>
+<div class="px-container-margin mb-6">
+<button class="w-full bg-primary-container text-on-primary-container font-label-lg text-label-lg rounded-DEFAULT py-2 px-4 hover:bg-surface-container-high transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">add</span>
+                New Security Audit
+            </button>
+</div>
+<div class="flex-1 overflow-y-auto font-label-lg text-label-lg text-body-md font-body-md flex flex-col">
+<a class="text-on-surface-variant hover:text-on-surface px-4 py-3 hover:bg-surface-container-high flex items-center gap-3" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                Workbench
+            </a>
+<a class="text-on-surface-variant hover:text-on-surface px-4 py-3 hover:bg-surface-container-high flex items-center gap-3" href="#">
+<span class="material-symbols-outlined">settings_suggest</span>
+                Process
+            </a>
+<a class="text-on-surface-variant hover:text-on-surface px-4 py-3 hover:bg-surface-container-high flex items-center gap-3" href="#">
+<span class="material-symbols-outlined">verified_user</span>
+                Verify
+            </a>
+<a class="text-on-surface-variant hover:text-on-surface px-4 py-3 hover:bg-surface-container-high flex items-center gap-3" href="#">
+<span class="material-symbols-outlined">enhanced_encryption</span>
+                Vault
+            </a>
+<a class="text-primary font-bold border-l-2 border-primary bg-surface-container-highest px-4 py-3 hover:bg-surface-container-high flex items-center gap-3" href="#">
+<span class="material-symbols-outlined fill">view_list</span>
+                Batch Queue
+            </a>
+<a class="text-on-surface-variant hover:text-on-surface px-4 py-3 hover:bg-surface-container-high flex items-center gap-3" href="#">
+<span class="material-symbols-outlined">settings</span>
+                Settings
+            </a>
+</div>
+<div class="p-4 mt-auto">
+<div class="flex items-center gap-3 p-2">
+<div class="w-8 h-8 rounded-full bg-surface-variant overflow-hidden">
+<img alt="HiddenShield Admin" class="w-full h-full object-cover" data-alt="A macro shot of a sleek, dark metallic security token with subtle teal glowing circuits, emphasizing high-tech privacy in a minimalist corporate setting, deep shadows." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCOMNJlfqctwbDxDq2GIfAJA7iwgxJfjBkFtJCNE2XVxGwGUyqZVcOqZiDvdW46LLOYZRJjH85DsGSwNT-wW06tiVqjoFLmy9087ojypyh6KRHOxF9wtxqWodzKjftIQhUKoTUl3s6yIfNPTbTEVlx_BSqNyzgHUi6CADyaIxCU4aX9vlWMnAkFXQqbGC19l6Ebwx9oltxG2nRiIiA6qfEtxEPmuNdYud2NpCZi-y_3EaxM5K_pA3szqq1XhspVq-uu7hI-SxA-TIW6"/>
+</div>
+<div>
+<p class="font-label-md text-label-md text-on-surface">Admin User</p>
+</div>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col min-w-0 lg:ml-64">
+<!-- TopAppBar (Hybrid) -->
+<header class="bg-surface dark:bg-surface text-primary dark:text-primary docked full-width top-0 border-b border-outline-variant dark:border-outline-variant flat no shadows flex justify-between items-center w-full px-container-margin py-padding-sm z-40 sticky">
+<div class="flex items-center gap-4 lg:hidden">
+<h2 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary">HiddenShield</h2>
+</div>
+<div class="hidden lg:block">
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Batch Queue Operations</h2>
+</div>
+<div class="flex items-center gap-2">
+<div class="relative hidden md:block">
+<span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="bg-surface-container text-on-surface font-body-sm text-body-sm rounded-DEFAULT border-none pl-9 pr-4 py-1.5 focus:ring-1 focus:ring-primary focus:outline-none w-64 placeholder-on-surface-variant" placeholder="Search queues..." type="text"/>
+</div>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-full flex items-center justify-center opacity-80 hover:opacity-100">
+<span class="material-symbols-outlined">sync</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded-full flex items-center justify-center opacity-80 hover:opacity-100">
+<span class="material-symbols-outlined">workspace_premium</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-variant overflow-hidden ml-2 lg:hidden">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A generic corporate profile placeholder image featuring a sharp, geometric teal icon on a deep space black background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhTmwXXNATy4K2_rYab6M2hn6JZkIqsTq3Dcpx5RgJBt15CJWW0qcS8iFThB5nJfZoWOPuU9p-vws0wV6qqFBmGfwm6DMQrZnv_qJDmFYbZQAU-UbnnXfp1cnTHolYd5D5bNdm6pdno9fbBwAKQTJsT0hID0ICEDDILKpmMLVTkwczk35vVv0mgP1ml63SKHilWd5n5kyWUhFH90poY8lFrEBb1Uf7aj2i6TqdDfZ84vaGwEXbyQcyssbiFyhShX4tVu3w6UZleM21"/>
+</div>
+</div>
+</header>
+<div class="p-container-margin overflow-y-auto">
+<!-- Summary Stats Bento -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-gutter mb-6">
+<!-- Stat Card: Completed -->
+<div class="bg-surface-container-highest border border-outline-variant rounded-xl p-padding-md flex flex-col gap-2 hover:bg-[#2D3748] transition-colors">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface-variant">Completed</span>
+<span class="material-symbols-outlined text-primary text-[20px]">check_circle</span>
+</div>
+<div class="font-headline-lg text-headline-lg text-on-surface">1,204</div>
+</div>
+<!-- Stat Card: Pending -->
+<div class="bg-surface-container-highest border border-outline-variant rounded-xl p-padding-md flex flex-col gap-2 hover:bg-[#2D3748] transition-colors">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface-variant">Pending</span>
+<span class="material-symbols-outlined text-secondary text-[20px]">hourglass_empty</span>
+</div>
+<div class="font-headline-lg text-headline-lg text-on-surface">342</div>
+</div>
+<!-- Stat Card: Paused -->
+<div class="bg-surface-container-highest border border-outline-variant rounded-xl p-padding-md flex flex-col gap-2 hover:bg-[#2D3748] transition-colors">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface-variant">Paused</span>
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">pause_circle</span>
+</div>
+<div class="font-headline-lg text-headline-lg text-on-surface">18</div>
+</div>
+<!-- Stat Card: Failed -->
+<div class="bg-surface-container-highest border border-outline-variant rounded-xl p-padding-md flex flex-col gap-2 hover:bg-[#2D3748] transition-colors">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface-variant">Failed</span>
+<span class="material-symbols-outlined text-error text-[20px]">error</span>
+</div>
+<div class="font-headline-lg text-headline-lg text-error">7</div>
+</div>
+</div>
+<!-- Global Controls -->
+<div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Active Batches</h3>
+<div class="flex gap-3">
+<button class="bg-transparent border border-outline-variant text-on-surface font-label-md text-label-md px-4 py-2 rounded-DEFAULT hover:bg-surface-container-high transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">pause</span>
+                         Pause All
+                     </button>
+<button class="bg-transparent border border-outline-variant text-on-surface font-label-md text-label-md px-4 py-2 rounded-DEFAULT hover:bg-surface-container-high transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">play_arrow</span>
+                         Resume All
+                     </button>
+<button class="bg-transparent border border-outline-variant text-on-surface font-label-md text-label-md px-4 py-2 rounded-DEFAULT hover:bg-surface-container-high transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">clear_all</span>
+                         Clear Completed
+                     </button>
+</div>
+</div>
+<!-- Queue List -->
+<div class="flex flex-col gap-unit">
+<!-- Job Item: Active -->
+<div class="bg-surface-container border border-outline-variant rounded-lg p-padding-md flex flex-col md:flex-row md:items-center gap-4 hover:bg-[#2D3748] transition-colors group">
+<div class="flex-1 flex flex-col gap-2">
+<div class="flex justify-between items-start md:items-center">
+<div>
+<h4 class="font-body-lg text-body-lg text-on-surface font-medium">Data Sanitization Sweep - Cluster A</h4>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1">ID: BQ-8902 • 15,000 items</p>
+</div>
+<!-- Status Chip: Active -->
+<div class="bg-primary/10 border-l-2 border-primary px-2 py-1 text-primary font-label-sm text-label-sm uppercase tracking-wider flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                                Processing
+                            </div>
+</div>
+<!-- Progress -->
+<div class="w-full flex flex-col gap-1 mt-2">
+<div class="flex justify-between font-label-md text-label-md">
+<span class="text-on-surface-variant">Stage 2 of 4: Encrypting Metadata...</span>
+<span class="text-primary font-semibold">68%</span>
+</div>
+<div class="h-1 w-full bg-surface-container-lowest rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full transition-all duration-500" style="width: 68%;"></div>
+</div>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex justify-end mt-2 md:mt-0 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="text-on-surface-variant hover:text-error border border-outline-variant hover:border-error px-3 py-1.5 rounded-DEFAULT font-label-md text-label-md transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">cancel</span>
+                             Cancel
+                         </button>
+</div>
+</div>
+<!-- Job Item: Failed -->
+<div class="bg-surface-container border border-error/50 rounded-lg p-padding-md flex flex-col md:flex-row md:items-center gap-4 hover:bg-[#2D3748] transition-colors group">
+<div class="flex-1 flex flex-col gap-2">
+<div class="flex justify-between items-start md:items-center">
+<div>
+<h4 class="font-body-lg text-body-lg text-on-surface font-medium">Legacy Archive Migration</h4>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1">ID: BQ-8891 • 4,200 items</p>
+</div>
+<!-- Status Chip: Failed -->
+<div class="bg-error/10 border-l-2 border-error px-2 py-1 text-error font-label-sm text-label-sm uppercase tracking-wider flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+                                Failed
+                            </div>
+</div>
+<!-- Progress -->
+<div class="w-full flex flex-col gap-1 mt-2">
+<div class="flex justify-between font-label-md text-label-md">
+<span class="text-error">Error: Checksum mismatch on item 1,024</span>
+<span class="text-on-surface-variant">24%</span>
+</div>
+<div class="h-1 w-full bg-surface-container-lowest rounded-full overflow-hidden">
+<div class="h-full bg-error rounded-full" style="width: 24%;"></div>
+</div>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex justify-end mt-2 md:mt-0">
+<button class="bg-transparent border border-outline-variant text-on-surface hover:text-primary hover:border-primary px-3 py-1.5 rounded-DEFAULT font-label-md text-label-md transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">refresh</span>
+                             Retry
+                         </button>
+</div>
+</div>
+<!-- Job Item: Paused -->
+<div class="bg-surface-container border border-outline-variant rounded-lg p-padding-md flex flex-col md:flex-row md:items-center gap-4 hover:bg-[#2D3748] transition-colors group">
+<div class="flex-1 flex flex-col gap-2">
+<div class="flex justify-between items-start md:items-center">
+<div>
+<h4 class="font-body-lg text-body-lg text-on-surface font-medium text-on-surface-variant">Routine Integrity Check</h4>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1">ID: BQ-8905 • 850 items</p>
+</div>
+<!-- Status Chip: Paused -->
+<div class="bg-surface-container-highest border-l-2 border-outline-variant px-2 py-1 text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">pause</span>
+                                Paused
+                            </div>
+</div>
+<!-- Progress -->
+<div class="w-full flex flex-col gap-1 mt-2">
+<div class="flex justify-between font-label-md text-label-md">
+<span class="text-on-surface-variant">Awaiting manual approval to proceed...</span>
+<span class="text-on-surface-variant">0%</span>
+</div>
+<div class="h-1 w-full bg-surface-container-lowest rounded-full overflow-hidden">
+<div class="h-full bg-outline-variant rounded-full" style="width: 0%;"></div>
+</div>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex justify-end mt-2 md:mt-0 opacity-0 group-hover:opacity-100 transition-opacity gap-2">
+<button class="text-on-surface-variant hover:text-primary border border-outline-variant hover:border-primary px-3 py-1.5 rounded-DEFAULT font-label-md text-label-md transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">play_arrow</span>
+                             Resume
+                         </button>
+</div>
+</div>
+<!-- Job Item: Completed -->
+<div class="bg-surface-container border border-outline-variant rounded-lg p-padding-md flex flex-col md:flex-row md:items-center gap-4 hover:bg-[#2D3748] transition-colors opacity-70">
+<div class="flex-1 flex flex-col gap-2">
+<div class="flex justify-between items-start md:items-center">
+<div>
+<h4 class="font-body-lg text-body-lg text-on-surface font-medium">Nightly Backup Delta</h4>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1">ID: BQ-8850 • 2,100 items</p>
+</div>
+<!-- Status Chip: Completed -->
+<div class="bg-primary/5 border-l-2 border-primary px-2 py-1 text-primary font-label-sm text-label-sm uppercase tracking-wider flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">done_all</span>
+                                Completed
+                            </div>
+</div>
+<!-- Progress -->
+<div class="w-full flex flex-col gap-1 mt-2">
+<div class="flex justify-between font-label-md text-label-md">
+<span class="text-on-surface-variant">Finished successfully in 12m 4s</span>
+<span class="text-primary">100%</span>
+</div>
+<div class="h-1 w-full bg-surface-container-lowest rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 100%;"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

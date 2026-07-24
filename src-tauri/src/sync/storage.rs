@@ -7,6 +7,68 @@ use crate::db::queries;
 
 pub const CLOUD_SYNC_QUEUE_MAX_ATTEMPTS: u32 = 5;
 const CLOUD_SYNC_QUEUE_RETRY_BACKOFF_SECS: [i64; 4] = [60, 300, 900, 3600];
+const VAULT_RECORD_SYNC_PAYLOAD_KEYS: &[&str] = &[
+    "id",
+    "kind",
+    "title",
+    "watermark_uid",
+    "revision",
+    "creator_display_name",
+    "trusted_time_status",
+    "trusted_time_source",
+    "trusted_time_at",
+    "third_party_verification_status",
+    "third_party_verification_provider",
+    "third_party_verification_path",
+    "sha256",
+    "parent_watermark_uid",
+    "rewrite_reason",
+    "extracted_timestamp",
+    "extracted_device_id_hex",
+    "extracted_file_hash_hex",
+    "write_verification_status",
+    "write_verification_message",
+    "write_verification_at",
+    "protected_copy_name",
+    "protected_copy_hash",
+    "payload_protocol_version",
+    "payload_bytes_length",
+    "media_payload_role",
+    "watermark_id_issue_mode",
+    "watermark_id_registry_status",
+    "watermark_id_registry_receipt",
+    "payload_auth_status",
+    "output_strategy",
+    "work_source_declaration",
+    "training_permission_declaration",
+    "creation_method_declaration",
+    "human_edit_level_declaration",
+    "authenticity_claim_declaration",
+    "custom_rights_statement",
+    "video_notary_id",
+    "video_notary_at",
+    "video_notary_receipt_signature",
+    "video_notary_usage_ledger_id",
+    "video_fingerprint_root",
+    "video_bundle_sha256",
+    "video_bundle_bytes",
+    "video_bundle_scene_count",
+    "video_bundle_elapsed_ms",
+    "video_frame_sample_policy",
+    "video_visual_task_id",
+    "video_visual_completed_at",
+    "video_visual_strategy_digest",
+    "video_visual_self_check_confidence",
+    "video_visual_self_check_threshold",
+    "video_visual_checked_frames",
+    "video_visual_media_hash",
+    "video_visual_receipt_hash",
+    "video_visual_output_bytes",
+    "video_visual_output_content_type",
+    "source",
+    "sync_status",
+    "created_at",
+];
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct MobileSyncQueueItem {
@@ -34,7 +96,11 @@ pub struct CloudSyncQueueItem {
     pub status: String,
     pub attempts: u32,
     pub last_error: Option<String>,
+    pub last_error_code: Option<String>,
+    pub last_http_status: Option<u16>,
+    pub blocked_reason: Option<String>,
     pub next_retry_at: Option<String>,
+    pub lease_until: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -107,7 +173,11 @@ CREATE TABLE IF NOT EXISTS cloud_sync_queue (
   status TEXT NOT NULL,
   attempts INTEGER NOT NULL DEFAULT 0,
   last_error TEXT,
+  last_error_code TEXT,
+  last_http_status INTEGER,
+  blocked_reason TEXT,
   next_retry_at TEXT,
+  lease_until TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
@@ -117,6 +187,10 @@ ON cloud_sync_queue(status, created_at ASC);
 ",
     )?;
     ensure_column(conn, "cloud_sync_queue", "next_retry_at", "TEXT")?;
+    ensure_column(conn, "cloud_sync_queue", "last_error_code", "TEXT")?;
+    ensure_column(conn, "cloud_sync_queue", "last_http_status", "INTEGER")?;
+    ensure_column(conn, "cloud_sync_queue", "blocked_reason", "TEXT")?;
+    ensure_column(conn, "cloud_sync_queue", "lease_until", "TEXT")?;
     Ok(())
 }
 
@@ -150,15 +224,33 @@ pub fn enqueue_cloud_sync_event(
     conn.execute(
         "
 INSERT INTO cloud_sync_queue (
-  id, record_id, event_json, status, attempts, last_error, next_retry_at, created_at, updated_at
-) VALUES (?1, ?2, ?3, 'pending', 0, NULL, NULL, ?4, ?4)
+  id, record_id, event_json, status, attempts, last_error, last_error_code,
+  last_http_status, blocked_reason, next_retry_at, lease_until, created_at, updated_at
+) VALUES (?1, ?2, ?3, 'pending', 0, NULL, NULL, NULL, NULL, NULL, NULL, ?4, ?4)
 ON CONFLICT(id) DO UPDATE SET
   event_json = excluded.event_json,
   status = CASE
     WHEN cloud_sync_queue.status = 'synced' THEN 'synced'
     ELSE 'pending'
   END,
+  last_error = CASE
+    WHEN cloud_sync_queue.status = 'synced' THEN cloud_sync_queue.last_error
+    ELSE NULL
+  END,
+  last_error_code = CASE
+    WHEN cloud_sync_queue.status = 'synced' THEN cloud_sync_queue.last_error_code
+    ELSE NULL
+  END,
+  last_http_status = CASE
+    WHEN cloud_sync_queue.status = 'synced' THEN cloud_sync_queue.last_http_status
+    ELSE NULL
+  END,
+  blocked_reason = CASE
+    WHEN cloud_sync_queue.status = 'synced' THEN cloud_sync_queue.blocked_reason
+    ELSE NULL
+  END,
   next_retry_at = NULL,
+  lease_until = NULL,
   updated_at = excluded.updated_at
 ",
         params![queue_id, record_id as i64, event_json, now],
@@ -172,7 +264,8 @@ pub fn list_pending_cloud_sync_queue(
 ) -> Result<Vec<CloudSyncQueueItem>, rusqlite::Error> {
     let mut stmt = conn.prepare(
         "
-SELECT id, record_id, event_json, status, attempts, last_error, next_retry_at, created_at, updated_at
+SELECT id, record_id, event_json, status, attempts, last_error, last_error_code,
+       last_http_status, blocked_reason, next_retry_at, lease_until, created_at, updated_at
 FROM cloud_sync_queue
 WHERE status = 'pending'
    OR (
@@ -195,9 +288,15 @@ LIMIT ?1
                 status: row.get(3)?,
                 attempts: row.get::<_, i64>(4)? as u32,
                 last_error: row.get(5)?,
-                next_retry_at: row.get(6)?,
-                created_at: row.get(7)?,
-                updated_at: row.get(8)?,
+                last_error_code: row.get(6)?,
+                last_http_status: row
+                    .get::<_, Option<i64>>(7)?
+                    .map(|value| value.clamp(0, u16::MAX as i64) as u16),
+                blocked_reason: row.get(8)?,
+                next_retry_at: row.get(9)?,
+                lease_until: row.get(10)?,
+                created_at: row.get(11)?,
+                updated_at: row.get(12)?,
             })
         },
     )?;
@@ -209,6 +308,7 @@ pub fn mark_cloud_sync_queue_syncing(
     queue_ids: &[String],
 ) -> Result<(), rusqlite::Error> {
     let now = chrono::Utc::now().to_rfc3339();
+    let lease_until = (chrono::Utc::now() + chrono::Duration::minutes(10)).to_rfc3339();
     for queue_id in queue_ids {
         conn.execute(
             "
@@ -216,11 +316,15 @@ UPDATE cloud_sync_queue
 SET status = 'syncing',
     attempts = attempts + 1,
     last_error = NULL,
+    last_error_code = NULL,
+    last_http_status = NULL,
+    blocked_reason = NULL,
     next_retry_at = NULL,
+    lease_until = ?2,
     updated_at = ?1
-WHERE id = ?2
+WHERE id = ?3
 ",
-            params![now, queue_id],
+            params![now, lease_until, queue_id],
         )?;
     }
     Ok(())
@@ -237,7 +341,11 @@ pub fn mark_cloud_sync_queue_synced(
 UPDATE cloud_sync_queue
 SET status = 'synced',
     last_error = NULL,
+    last_error_code = NULL,
+    last_http_status = NULL,
+    blocked_reason = NULL,
     next_retry_at = NULL,
+    lease_until = NULL,
     updated_at = ?1
 WHERE id = ?2
 ",
@@ -252,6 +360,16 @@ pub fn mark_cloud_sync_queue_failed(
     queue_ids: &[String],
     error: &str,
 ) -> Result<(), rusqlite::Error> {
+    mark_cloud_sync_queue_failed_structured(conn, queue_ids, error, "retryable_error", None)
+}
+
+pub fn mark_cloud_sync_queue_failed_structured(
+    conn: &Connection,
+    queue_ids: &[String],
+    error: &str,
+    error_code: &str,
+    http_status: Option<u16>,
+) -> Result<(), rusqlite::Error> {
     let now = chrono::Utc::now().to_rfc3339();
     for queue_id in queue_ids {
         let attempts = cloud_sync_queue_attempts(conn, queue_id)?;
@@ -261,14 +379,100 @@ pub fn mark_cloud_sync_queue_failed(
 UPDATE cloud_sync_queue
 SET status = 'failed',
     last_error = ?1,
-    next_retry_at = ?2,
-    updated_at = ?3
-WHERE id = ?4
+    last_error_code = ?2,
+    last_http_status = ?3,
+    blocked_reason = NULL,
+    next_retry_at = ?4,
+    lease_until = NULL,
+    updated_at = ?5
+WHERE id = ?6
 ",
-            params![error, next_retry_at, now, queue_id],
+            params![
+                error,
+                error_code,
+                http_status.map(i64::from),
+                next_retry_at,
+                now,
+                queue_id
+            ],
         )?;
     }
     Ok(())
+}
+
+pub fn mark_cloud_sync_queue_blocked_by_entitlement(
+    conn: &Connection,
+    queue_ids: &[String],
+    error: &str,
+) -> Result<(), rusqlite::Error> {
+    let now = chrono::Utc::now().to_rfc3339();
+    for queue_id in queue_ids {
+        conn.execute(
+            "
+UPDATE cloud_sync_queue
+SET status = 'blocked',
+    last_error = ?1,
+    last_error_code = 'blocked_by_entitlement',
+    last_http_status = 403,
+    blocked_reason = 'blocked_by_entitlement',
+    next_retry_at = NULL,
+    lease_until = NULL,
+    updated_at = ?2
+WHERE id = ?3
+",
+            params![error, now, queue_id],
+        )?;
+    }
+    Ok(())
+}
+
+pub fn mark_cloud_sync_queue_auth_required(
+    conn: &Connection,
+    queue_ids: &[String],
+    error: &str,
+) -> Result<(), rusqlite::Error> {
+    let now = chrono::Utc::now().to_rfc3339();
+    for queue_id in queue_ids {
+        conn.execute(
+            "
+UPDATE cloud_sync_queue
+SET status = 'failed',
+    last_error = ?1,
+    last_error_code = 'auth_required',
+    last_http_status = 401,
+    blocked_reason = 'auth_required',
+    next_retry_at = NULL,
+    lease_until = NULL,
+    updated_at = ?2
+WHERE id = ?3
+",
+            params![error, now, queue_id],
+        )?;
+    }
+    Ok(())
+}
+
+pub fn mark_uploadable_cloud_sync_queue_blocked_by_entitlement(
+    conn: &Connection,
+    error: &str,
+) -> Result<u64, rusqlite::Error> {
+    let now = chrono::Utc::now().to_rfc3339();
+    let changed = conn.execute(
+        "
+UPDATE cloud_sync_queue
+SET status = 'blocked',
+    last_error = ?1,
+    last_error_code = 'blocked_by_entitlement',
+    last_http_status = 403,
+    blocked_reason = 'blocked_by_entitlement',
+    next_retry_at = NULL,
+    lease_until = NULL,
+    updated_at = ?2
+WHERE status IN ('pending', 'failed', 'syncing')
+",
+        params![error, now],
+    )?;
+    Ok(changed as u64)
 }
 
 pub fn reset_cloud_sync_queue_backoff(conn: &Connection) -> Result<(), rusqlite::Error> {
@@ -278,12 +482,38 @@ pub fn reset_cloud_sync_queue_backoff(conn: &Connection) -> Result<(), rusqlite:
 UPDATE cloud_sync_queue
 SET status = 'pending',
     next_retry_at = NULL,
+    lease_until = NULL,
     updated_at = ?1
 WHERE status = 'failed'
 ",
         params![now],
     )?;
     Ok(())
+}
+
+pub fn recover_stale_cloud_syncing_queue(
+    conn: &Connection,
+    stale_before: chrono::DateTime<chrono::Utc>,
+) -> Result<u64, rusqlite::Error> {
+    let now = chrono::Utc::now().to_rfc3339();
+    let stale_before = stale_before.to_rfc3339();
+    let changed = conn.execute(
+        "
+UPDATE cloud_sync_queue
+SET status = 'pending',
+    last_error = '上一次云同步任务中断，已恢复为待同步',
+    last_error_code = 'stale_syncing_recovered',
+    last_http_status = NULL,
+    blocked_reason = NULL,
+    next_retry_at = NULL,
+    lease_until = NULL,
+    updated_at = ?1
+WHERE status = 'syncing'
+  AND (lease_until IS NULL OR lease_until <= ?2 OR updated_at <= ?2)
+",
+        params![now, stale_before],
+    )?;
+    Ok(changed as u64)
 }
 
 fn cloud_sync_queue_attempts(conn: &Connection, queue_id: &str) -> Result<u32, rusqlite::Error> {
@@ -344,7 +574,8 @@ pub fn latest_cloud_sync_queue_update_by_status(
 pub fn latest_cloud_sync_queue_error(conn: &Connection) -> Result<Option<String>, rusqlite::Error> {
     conn.query_row(
         "SELECT last_error FROM cloud_sync_queue
-         WHERE status = 'failed' AND last_error IS NOT NULL AND last_error != ''
+         WHERE status IN ('pending', 'failed', 'blocked')
+           AND last_error IS NOT NULL AND last_error != ''
          ORDER BY updated_at DESC
          LIMIT 1",
         [],
@@ -354,6 +585,62 @@ pub fn latest_cloud_sync_queue_error(conn: &Connection) -> Result<Option<String>
         rusqlite::Error::QueryReturnedNoRows => Ok(None),
         other => Err(other),
     })
+}
+
+pub fn latest_cloud_sync_queue_error_code(
+    conn: &Connection,
+) -> Result<Option<String>, rusqlite::Error> {
+    conn.query_row(
+        "SELECT last_error_code FROM cloud_sync_queue
+         WHERE status IN ('pending', 'failed', 'blocked')
+           AND last_error_code IS NOT NULL AND last_error_code != ''
+         ORDER BY updated_at DESC
+         LIMIT 1",
+        [],
+        |row| row.get::<_, Option<String>>(0),
+    )
+    .or_else(|err| match err {
+        rusqlite::Error::QueryReturnedNoRows => Ok(None),
+        other => Err(other),
+    })
+}
+
+pub fn latest_cloud_sync_queue_blocked_reason(
+    conn: &Connection,
+) -> Result<Option<String>, rusqlite::Error> {
+    conn.query_row(
+        "SELECT blocked_reason FROM cloud_sync_queue
+         WHERE status IN ('pending', 'failed', 'blocked')
+           AND blocked_reason IS NOT NULL AND blocked_reason != ''
+         ORDER BY updated_at DESC
+         LIMIT 1",
+        [],
+        |row| row.get::<_, Option<String>>(0),
+    )
+    .or_else(|err| match err {
+        rusqlite::Error::QueryReturnedNoRows => Ok(None),
+        other => Err(other),
+    })
+}
+
+pub fn latest_cloud_sync_queue_http_status(
+    conn: &Connection,
+) -> Result<Option<u16>, rusqlite::Error> {
+    let value = conn
+        .query_row(
+            "SELECT last_http_status FROM cloud_sync_queue
+             WHERE status IN ('pending', 'failed', 'blocked')
+               AND last_http_status IS NOT NULL
+             ORDER BY updated_at DESC
+             LIMIT 1",
+            [],
+            |row| row.get::<_, Option<i64>>(0),
+        )
+        .or_else(|err| match err {
+            rusqlite::Error::QueryReturnedNoRows => Ok(None),
+            other => Err(other),
+        })?;
+    Ok(value.map(|status| status.clamp(0, u16::MAX as i64) as u16))
 }
 
 pub fn earliest_cloud_sync_queue_retry_at(
@@ -384,7 +671,9 @@ pub fn record_sync_event(
     item: &MobileSyncQueueItem,
 ) -> Result<i64, rusqlite::Error> {
     let tx = conn.unchecked_transaction()?;
-    let payload_json = serde_json::to_string(&item.payload).unwrap_or_else(|_| "{}".to_string());
+    let sanitized_payload = sanitize_mobile_sync_payload(item);
+    let payload_json =
+        serde_json::to_string(&sanitized_payload).unwrap_or_else(|_| "{}".to_string());
     tx.execute(
         "
 INSERT INTO sync_events (
@@ -419,11 +708,41 @@ fn apply_queue_item(
     }
 }
 
+fn item_with_sanitized_payload(item: &MobileSyncQueueItem) -> MobileSyncQueueItem {
+    MobileSyncQueueItem {
+        queue_id: item.queue_id.clone(),
+        record_id: item.record_id.clone(),
+        operation: item.operation.clone(),
+        payload_type: item.payload_type.clone(),
+        payload: sanitize_mobile_sync_payload(item),
+    }
+}
+
+fn sanitize_mobile_sync_payload(item: &MobileSyncQueueItem) -> serde_json::Value {
+    if !matches!(
+        item.payload_type.as_str(),
+        "vault_record" | "evidence_record"
+    ) {
+        return item.payload.clone();
+    }
+    let Some(payload) = item.payload.as_object() else {
+        return serde_json::json!({});
+    };
+    let mut sanitized = serde_json::Map::new();
+    for key in VAULT_RECORD_SYNC_PAYLOAD_KEYS {
+        if let Some(value) = payload.get(*key) {
+            sanitized.insert((*key).to_string(), value.clone());
+        }
+    }
+    serde_json::Value::Object(sanitized)
+}
+
 fn apply_vault_record(
     tx: &rusqlite::Transaction<'_>,
     item: &MobileSyncQueueItem,
 ) -> Result<(), rusqlite::Error> {
-    let record = mobile_payload_to_vault_record(item).map_err(|message| {
+    let sanitized_item = item_with_sanitized_payload(item);
+    let record = mobile_payload_to_vault_record(&sanitized_item).map_err(|message| {
         rusqlite::Error::ToSqlConversionFailure(Box::new(std::io::Error::new(
             std::io::ErrorKind::InvalidData,
             message,
@@ -436,19 +755,24 @@ fn apply_vault_record(
         if existing.revision == record.revision {
             return Ok(());
         }
-        resolve_same_asset_revision(tx, item, &record, &existing)?;
+        resolve_same_asset_revision(tx, &sanitized_item, &record, &existing)?;
         return Ok(());
     }
 
     if let Some(existing) = find_latest_vault_record_by_uid(tx, &record.watermark_uid)? {
-        let inserted_id = queries::insert_record_tx(tx, &record)?;
+        let mut pending_record = record;
+        pending_record.watermark_id_registry_status = "pending_registry_reconcile".to_string();
+        pending_record.write_verification_message = Some(
+            "同步发现同一版权编号对应不同作品指纹，已保留记录并等待后端登记仲裁。".to_string(),
+        );
+        let inserted_id = queries::insert_record_tx(tx, &pending_record)?;
         record_sync_resolution(
             tx,
-            item,
-            &record,
+            &sanitized_item,
+            &pending_record,
             Some(&existing),
-            "variant_accepted",
-            "same_watermark_uid_with_distinct_file_hash_was_accepted_as_asset_variant",
+            "pending_registry_reconcile",
+            "same_watermark_uid_with_distinct_file_hash_requires_backend_registry_arbitration",
             Some(inserted_id),
         )?;
         return Ok(());
@@ -457,7 +781,7 @@ fn apply_vault_record(
     let inserted_id = queries::insert_record_tx(tx, &record)?;
     record_sync_resolution(
         tx,
-        item,
+        &sanitized_item,
         &record,
         None,
         "record_inserted",
@@ -477,13 +801,15 @@ fn apply_evidence_record(
     tx: &rusqlite::Transaction<'_>,
     item: &MobileSyncQueueItem,
 ) -> Result<(), rusqlite::Error> {
-    let evidence = mobile_payload_to_evidence_record(item).map_err(|message| {
+    let sanitized_item = item_with_sanitized_payload(item);
+    let evidence = mobile_payload_to_evidence_record(&sanitized_item).map_err(|message| {
         rusqlite::Error::ToSqlConversionFailure(Box::new(std::io::Error::new(
             std::io::ErrorKind::InvalidData,
             message,
         )))
     })?;
-    let payload_json = serde_json::to_string(&item.payload).unwrap_or_else(|_| "{}".to_string());
+    let payload_json =
+        serde_json::to_string(&sanitized_item.payload).unwrap_or_else(|_| "{}".to_string());
 
     tx.execute(
         "
@@ -710,6 +1036,7 @@ fn mobile_payload_to_vault_record(item: &MobileSyncQueueItem) -> Result<VaultRec
         duration_secs: 0.0,
         resolution: kind,
         watermark_uid,
+        creator_display_name: optional_string(payload, "creator_display_name"),
         thumbnail_path: None,
         output_douyin: None,
         output_bilibili: None,
@@ -718,8 +1045,9 @@ fn mobile_payload_to_vault_record(item: &MobileSyncQueueItem) -> Result<VaultRec
         hw_encoder_used: None,
         process_time_ms: None,
         tsa_token_path: None,
-        network_time: None,
-        tsa_source: None,
+        network_time: optional_string(payload, "trusted_time_at"),
+        tsa_source: optional_string(payload, "trusted_time_source")
+            .or_else(|| optional_string(payload, "third_party_verification_provider")),
         tsa_request_nonce: None,
         is_ai_generated: false,
         ai_training_permission: None,
@@ -730,9 +1058,75 @@ fn mobile_payload_to_vault_record(item: &MobileSyncQueueItem) -> Result<VaultRec
         output_douyin_hash: None,
         output_bilibili_hash: None,
         output_xhs_hash: None,
+        protected_copy_name: optional_string(payload, "protected_copy_name"),
+        protected_copy_path: None,
+        protected_copy_hash: optional_string(payload, "protected_copy_hash"),
+        output_strategy: optional_string(payload, "output_strategy")
+            .unwrap_or_else(|| "minimal_required_change".to_string()),
+        work_source_declaration: optional_string(payload, "work_source_declaration")
+            .unwrap_or_else(|| "unspecified".to_string()),
+        training_permission_declaration: optional_string(
+            payload,
+            "training_permission_declaration",
+        )
+        .unwrap_or_else(|| "prohibited".to_string()),
+        creation_method_declaration: optional_string(payload, "creation_method_declaration")
+            .unwrap_or_else(|| "unspecified".to_string()),
+        human_edit_level_declaration: optional_string(payload, "human_edit_level_declaration")
+            .unwrap_or_else(|| "unspecified".to_string()),
+        authenticity_claim_declaration: optional_string(payload, "authenticity_claim_declaration")
+            .unwrap_or_else(|| "unspecified".to_string()),
+        custom_rights_statement: optional_string(payload, "custom_rights_statement"),
         parent_watermark_uid: optional_string(payload, "parent_watermark_uid"),
         revision,
         rewrite_reason: optional_string(payload, "rewrite_reason"),
+        write_verification_status: optional_string(payload, "write_verification_status"),
+        write_verification_message: optional_string(payload, "write_verification_message"),
+        write_verification_at: optional_string(payload, "write_verification_at"),
+        payload_protocol_version: optional_u64(payload, "payload_protocol_version")
+            .unwrap_or(2)
+            .clamp(1, u32::MAX as u64) as u32,
+        payload_bytes_length: optional_u64(payload, "payload_bytes_length")
+            .unwrap_or(119)
+            .clamp(1, u32::MAX as u64) as u32,
+        watermark_id_issue_mode: optional_string(payload, "watermark_id_issue_mode")
+            .unwrap_or_else(|| "offline_generated".to_string()),
+        watermark_id_registry_status: optional_string(payload, "watermark_id_registry_status")
+            .unwrap_or_else(|| "pending_registration".to_string()),
+        watermark_id_registry_receipt: optional_string(payload, "watermark_id_registry_receipt"),
+        payload_auth_status: optional_string(payload, "payload_auth_status")
+            .unwrap_or_else(|| "verified".to_string()),
+        video_notary_id: optional_string(payload, "video_notary_id"),
+        video_notary_at: optional_string(payload, "video_notary_at"),
+        video_notary_receipt_signature: optional_string(payload, "video_notary_receipt_signature"),
+        video_notary_usage_ledger_id: optional_string(payload, "video_notary_usage_ledger_id"),
+        video_fingerprint_root: optional_string(payload, "video_fingerprint_root"),
+        video_bundle_sha256: optional_string(payload, "video_bundle_sha256"),
+        video_bundle_bytes: optional_u64(payload, "video_bundle_bytes"),
+        video_bundle_scene_count: optional_u64(payload, "video_bundle_scene_count")
+            .map(|value| value as u32),
+        video_bundle_elapsed_ms: optional_u64(payload, "video_bundle_elapsed_ms"),
+        video_frame_sample_policy: optional_string(payload, "video_frame_sample_policy"),
+        video_visual_task_id: optional_string(payload, "video_visual_task_id"),
+        video_visual_completed_at: optional_string(payload, "video_visual_completed_at"),
+        video_visual_strategy_digest: optional_string(payload, "video_visual_strategy_digest"),
+        video_visual_self_check_confidence: optional_f64(
+            payload,
+            "video_visual_self_check_confidence",
+        ),
+        video_visual_self_check_threshold: optional_f64(
+            payload,
+            "video_visual_self_check_threshold",
+        ),
+        video_visual_checked_frames: optional_u64(payload, "video_visual_checked_frames")
+            .map(|value| value as u32),
+        video_visual_media_hash: optional_string(payload, "video_visual_media_hash"),
+        video_visual_receipt_hash: optional_string(payload, "video_visual_receipt_hash"),
+        video_visual_output_bytes: optional_u64(payload, "video_visual_output_bytes"),
+        video_visual_output_content_type: optional_string(
+            payload,
+            "video_visual_output_content_type",
+        ),
     })
 }
 
@@ -790,6 +1184,10 @@ fn optional_string(
 
 fn optional_u64(payload: &serde_json::Map<String, serde_json::Value>, key: &str) -> Option<u64> {
     payload.get(key).and_then(|value| value.as_u64())
+}
+
+fn optional_f64(payload: &serde_json::Map<String, serde_json::Value>, key: &str) -> Option<f64> {
+    payload.get(key).and_then(|value| value.as_f64())
 }
 
 fn synthetic_hash(record_id: &str, watermark_uid: &str) -> String {
@@ -958,11 +1356,7 @@ fn list_evidence_changes(
 }
 
 fn desktop_record_kind(record: &VaultRecord) -> &'static str {
-    match record.resolution.as_str() {
-        "image" => "image",
-        "audio" => "audio",
-        _ => "video",
-    }
+    queries::infer_vault_record_file_type(record)
 }
 
 pub fn build_error_response(error: &str) -> String {
@@ -1169,6 +1563,81 @@ mod tests {
     }
 
     #[test]
+    fn cloud_queue_blocked_by_entitlement_is_not_retried_by_backoff_reset() {
+        let conn = Connection::open_in_memory().unwrap();
+        init_sync_storage(&conn).unwrap();
+        enqueue_cloud_sync_event(&conn, "queue-blocked", 1, "{}").unwrap();
+
+        let blocked = mark_uploadable_cloud_sync_queue_blocked_by_entitlement(
+            &conn,
+            "正式云同步从 Creator 开放",
+        )
+        .unwrap();
+        assert_eq!(blocked, 1);
+        assert_eq!(
+            count_cloud_sync_queue_by_status(&conn, "blocked").unwrap(),
+            1
+        );
+        assert_eq!(
+            latest_cloud_sync_queue_error_code(&conn)
+                .unwrap()
+                .as_deref(),
+            Some("blocked_by_entitlement")
+        );
+        assert_eq!(
+            latest_cloud_sync_queue_http_status(&conn).unwrap(),
+            Some(403)
+        );
+
+        reset_cloud_sync_queue_backoff(&conn).unwrap();
+        let pending = list_pending_cloud_sync_queue(&conn, 10).unwrap();
+        assert!(pending.is_empty());
+        assert_eq!(
+            count_cloud_sync_queue_by_status(&conn, "blocked").unwrap(),
+            1
+        );
+    }
+
+    #[test]
+    fn cloud_queue_recovers_stale_syncing_without_reenqueuing_synced() {
+        let conn = Connection::open_in_memory().unwrap();
+        init_sync_storage(&conn).unwrap();
+        enqueue_cloud_sync_event(&conn, "queue-stale", 1, "{}").unwrap();
+        enqueue_cloud_sync_event(&conn, "queue-synced", 2, "{}").unwrap();
+
+        mark_cloud_sync_queue_syncing(&conn, &["queue-stale".to_string()]).unwrap();
+        mark_cloud_sync_queue_syncing(&conn, &["queue-synced".to_string()]).unwrap();
+        mark_cloud_sync_queue_synced(&conn, &["queue-synced".to_string()]).unwrap();
+        conn.execute(
+            "UPDATE cloud_sync_queue
+             SET updated_at = '2026-01-01T00:00:00Z', lease_until = '2026-01-01T00:00:00Z'
+             WHERE id = 'queue-stale'",
+            [],
+        )
+        .unwrap();
+
+        let recovered = recover_stale_cloud_syncing_queue(&conn, chrono::Utc::now()).unwrap();
+        assert_eq!(recovered, 1);
+        let pending = list_pending_cloud_sync_queue(&conn, 10).unwrap();
+        assert_eq!(pending.len(), 1);
+        assert_eq!(pending[0].id, "queue-stale");
+        assert_eq!(
+            latest_cloud_sync_queue_error_code(&conn)
+                .unwrap()
+                .as_deref(),
+            Some("stale_syncing_recovered")
+        );
+
+        enqueue_cloud_sync_event(&conn, "queue-synced", 2, "{\"updated\":true}").unwrap();
+        let pending = list_pending_cloud_sync_queue(&conn, 10).unwrap();
+        assert_eq!(pending.len(), 1);
+        assert_eq!(
+            count_cloud_sync_queue_by_status(&conn, "synced").unwrap(),
+            1
+        );
+    }
+
+    #[test]
     fn cloud_queue_stops_automatic_retry_after_max_attempts() {
         let conn = Connection::open_in_memory().unwrap();
         init_sync_storage(&conn).unwrap();
@@ -1213,6 +1682,24 @@ mod tests {
                 "sha256": "abc123",
                 "parent_watermark_uid": "uid-parent",
                 "rewrite_reason": "owner rewrite",
+                "write_verification_status": "verified",
+                "write_verification_message": "完成后验证已通过",
+                "write_verification_at": "2026-06-16T12:00:02.000Z",
+                "protected_copy_name": "mobile-image.protected.png",
+                "protected_copy_hash": "sha256:protected-mobile",
+                "payload_protocol_version": 2,
+                "payload_bytes_length": 119,
+                "watermark_id_issue_mode": "server_reserved",
+                "watermark_id_registry_status": "server_confirmed",
+                "watermark_id_registry_receipt": "receipt-mobile",
+                "payload_auth_status": "verified",
+                "output_strategy": "minimal_required_change",
+                "work_source_declaration": "human_created",
+                "training_permission_declaration": "prohibited",
+                "creation_method_declaration": "camera_original",
+                "human_edit_level_declaration": "minor_adjustment",
+                "authenticity_claim_declaration": "creator_declared",
+                "custom_rights_statement": "仅授权本人发布",
                 "source": "write",
                 "sync_status": "pending",
                 "created_at": "2026-06-16T12:00:00.000Z"
@@ -1230,15 +1717,66 @@ mod tests {
             .unwrap();
         assert_eq!(count, 1);
 
-        let (file_name, original_hash, revision, parent_uid, rewrite_reason): (
+        let (
+            file_name,
+            original_hash,
+            revision,
+            parent_uid,
+            rewrite_reason,
+            write_verification_status,
+            write_verification_message,
+            write_verification_at,
+            protected_copy_name,
+            protected_copy_hash,
+            payload_protocol_version,
+            payload_bytes_length,
+            watermark_id_issue_mode,
+            watermark_id_registry_status,
+            watermark_id_registry_receipt,
+            payload_auth_status,
+            output_strategy,
+            work_source_declaration,
+            training_permission_declaration,
+            creation_method_declaration,
+            human_edit_level_declaration,
+            authenticity_claim_declaration,
+            custom_rights_statement,
+        ): (
             String,
             String,
             i64,
             String,
             String,
+            String,
+            String,
+            String,
+            String,
+            String,
+            i64,
+            i64,
+            String,
+            String,
+            String,
+            String,
+            String,
+            String,
+            String,
+            String,
+            String,
+            String,
+            String,
         ) = conn
             .query_row(
-                "SELECT file_name, original_hash, revision, parent_watermark_uid, rewrite_reason
+                "SELECT file_name, original_hash, revision, parent_watermark_uid, rewrite_reason,
+                        write_verification_status, write_verification_message, write_verification_at,
+                        protected_copy_name, protected_copy_hash,
+                        payload_protocol_version, payload_bytes_length,
+                        watermark_id_issue_mode, watermark_id_registry_status,
+                        watermark_id_registry_receipt, payload_auth_status,
+                        output_strategy, work_source_declaration,
+                        training_permission_declaration, creation_method_declaration,
+                        human_edit_level_declaration, authenticity_claim_declaration,
+                        custom_rights_statement
                  FROM vault_records WHERE watermark_uid = 'uid-mobile-1'",
                 [],
                 |row| {
@@ -1248,6 +1786,24 @@ mod tests {
                         row.get(2)?,
                         row.get(3)?,
                         row.get(4)?,
+                        row.get(5)?,
+                        row.get(6)?,
+                        row.get(7)?,
+                        row.get(8)?,
+                        row.get(9)?,
+                        row.get(10)?,
+                        row.get(11)?,
+                        row.get(12)?,
+                        row.get(13)?,
+                        row.get(14)?,
+                        row.get(15)?,
+                        row.get(16)?,
+                        row.get(17)?,
+                        row.get(18)?,
+                        row.get(19)?,
+                        row.get(20)?,
+                        row.get(21)?,
+                        row.get(22)?,
                     ))
                 },
             )
@@ -1257,6 +1813,64 @@ mod tests {
         assert_eq!(revision, 2);
         assert_eq!(parent_uid, "uid-parent");
         assert_eq!(rewrite_reason, "owner rewrite");
+        assert_eq!(write_verification_status, "verified");
+        assert_eq!(write_verification_message, "完成后验证已通过");
+        assert_eq!(write_verification_at, "2026-06-16T12:00:02.000Z");
+        assert_eq!(protected_copy_name, "mobile-image.protected.png");
+        assert_eq!(protected_copy_hash, "sha256:protected-mobile");
+        assert_eq!(payload_protocol_version, 2);
+        assert_eq!(payload_bytes_length, 119);
+        assert_eq!(watermark_id_issue_mode, "server_reserved");
+        assert_eq!(watermark_id_registry_status, "server_confirmed");
+        assert_eq!(watermark_id_registry_receipt, "receipt-mobile");
+        assert_eq!(payload_auth_status, "verified");
+        assert_eq!(output_strategy, "minimal_required_change");
+        assert_eq!(work_source_declaration, "human_created");
+        assert_eq!(training_permission_declaration, "prohibited");
+        assert_eq!(creation_method_declaration, "camera_original");
+        assert_eq!(human_edit_level_declaration, "minor_adjustment");
+        assert_eq!(authenticity_claim_declaration, "creator_declared");
+        assert_eq!(custom_rights_statement, "仅授权本人发布");
+    }
+
+    #[test]
+    fn record_sync_event_sanitizes_local_paths_from_payload_json() {
+        let conn = Connection::open_in_memory().unwrap();
+        queries::init_db(&conn).unwrap();
+        init_sync_storage(&conn).unwrap();
+        let item = MobileSyncQueueItem {
+            queue_id: "queue-paths".to_string(),
+            record_id: "mobile-record-paths".to_string(),
+            operation: "upsertVaultRecord".to_string(),
+            payload_type: "vault_record".to_string(),
+            payload: serde_json::json!({
+                "id": "mobile-record-paths",
+                "kind": "audio",
+                "title": "song.wav",
+                "watermark_uid": "uid-paths",
+                "revision": 1,
+                "sha256": "hash-paths",
+                "output_ref": "C:/Users/test/song_watermarked.wav",
+                "local_path": "C:/Users/test/song.wav",
+                "input_ref": "/private/tmp/song.wav",
+                "created_at": "2026-06-16T12:00:00.000Z"
+            }),
+        };
+
+        record_sync_event(&conn, &item).unwrap();
+
+        let payload_json: String = conn
+            .query_row(
+                "SELECT payload_json FROM sync_events WHERE queue_id = 'queue-paths'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        let payload: serde_json::Value = serde_json::from_str(&payload_json).unwrap();
+        assert!(payload.get("output_ref").is_none());
+        assert!(payload.get("local_path").is_none());
+        assert!(payload.get("input_ref").is_none());
+        assert_eq!(payload["watermark_uid"], "uid-paths");
     }
 
     #[test]
@@ -1385,7 +1999,7 @@ mod tests {
     }
 
     #[test]
-    fn record_sync_event_accepts_same_uid_different_hash_as_variant() {
+    fn record_sync_event_marks_same_uid_different_hash_for_registry_arbitration() {
         let conn = Connection::open_in_memory().unwrap();
         queries::init_db(&conn).unwrap();
         init_sync_storage(&conn).unwrap();
@@ -1434,15 +2048,27 @@ mod tests {
                 "SELECT resolution_type, desktop_hash, mobile_hash
                  FROM sync_resolutions
                  WHERE watermark_uid = 'uid-conflict'
-                   AND resolution_type = 'variant_accepted'",
+                   AND resolution_type = 'pending_registry_reconcile'",
                 [],
                 |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
             )
             .unwrap();
         assert_eq!(vault_count, 2);
-        assert_eq!(resolution_type, "variant_accepted");
+        assert_eq!(resolution_type, "pending_registry_reconcile");
         assert_eq!(desktop_hash.as_deref(), Some("hash-one"));
         assert_eq!(mobile_hash, "hash-two");
+        let registry_status: String = conn
+            .query_row(
+                "SELECT watermark_id_registry_status
+                 FROM vault_records
+                 WHERE watermark_uid = 'uid-conflict'
+                 ORDER BY id DESC
+                 LIMIT 1",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(registry_status, "pending_registry_reconcile");
     }
 
     #[test]

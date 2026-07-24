@@ -1,0 +1,9 @@
+{
+  "fixture": true,
+  "issuer": "fixture_external_platform",
+  "receiptId": "receipt-fixture-r4-0001",
+  "issuedAt": "2026-07-14T11:32:00.000Z",
+  "signatureStatus": "not_evaluated",
+  "trustedTimeStatus": "not_evaluated",
+  "note": "Synthetic external receipt for bundle contract testing only."
+}

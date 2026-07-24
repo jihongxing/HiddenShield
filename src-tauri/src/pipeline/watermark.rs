@@ -1,8 +1,8 @@
 use crate::pipeline::error::PipelineError;
 
 pub use watermark_core::{
-    encode_payload, AIContentFlags, AuthenticityClaim, GenerationMethod, ModificationLevel,
-    TrainingPermission, WatermarkPayload,
+    AIContentFlags, AuthenticityClaim, GenerationMethod, ModificationLevel, TrainingPermission,
+    WatermarkPayload,
 };
 
 #[allow(dead_code)]

@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 2,
+  "reportId": "hsr-HS-MOBILE-R3-IMAGE-000401-2-1783994400000000",
+  "reportType": "formal_report_handoff",
+  "generatedAt": "2026-07-14T02:00:00.000Z",
+  "sourceSchemaVersion": 2,
+  "bundle": {
+    "sourceKey": "0363838d2d01d534b30acf8257d5a32b78c8184a28de2f88d9a6ac73ba2bd13a",
+    "bundleVersion": 1,
+    "supersedesReportId": null
+  },
+  "renderer": {
+    "engine": "mobile_handoff",
+    "workerMode": "not_rendered",
+    "templateVersion": "R3-handoff-v1",
+    "controlledFonts": [],
+    "generationMs": 0,
+    "generationBudgetMs": 0,
+    "pageCount": 0,
+    "paginationStable": true
+  },
+  "files": [
+    {
+      "path": "report.json",
+      "mediaType": "application/json",
+      "bytes": 3229,
+      "sha256": "ac8848e3c0df08acf4d214e9101ca8cf578b887bd52161e2d0870940a467c13d"
+    }
+  ],
+  "integrity": {
+    "algorithm": "sha256_chain_v1",
+    "genesis": "HiddenShield-Report-Manifest-v2",
+    "entries": [
+      {
+        "sequence": 1,
+        "path": "report.json",
+        "fileSha256": "ac8848e3c0df08acf4d214e9101ca8cf578b887bd52161e2d0870940a467c13d",
+        "fileBytes": 3229,
+        "previousChainDigest": "93f135583302895889c953a54dfec9b6ede66541c3e9437ba04189cfc04238a5",
+        "chainDigest": "fa2a38ec99be818290ca5379817d6c8c54e4bbb0fb5edb66c2b3a71fc806d4a2"
+      }
+    ],
+    "rootDigest": "fa2a38ec99be818290ca5379817d6c8c54e4bbb0fb5edb66c2b3a71fc806d4a2"
+  },
+  "signature": {
+    "status": "not_signed",
+    "profile": null,
+    "signerKeyId": null,
+    "certificateChainStatus": "not_evaluated",
+    "revocationStatus": "not_applicable",
+    "signedAt": null,
+    "note": "移动交接包尚未生成 PDF，也未执行数字签名。"
+  },
+  "trustedTime": {
+    "status": "not_verified",
+    "packageTimestampPresent": false,
+    "recordMaterialTokenPresent": true,
+    "note": "记录级时间材料不等于交接包已获得可信时间戳。"
+  },
+  "verification": {
+    "offlineMode": "sha256_chain_v1",
+    "onlineStatus": "not_deployed",
+    "qrStatus": "not_issued",
+    "onlineVerificationUrl": null
+  }
+}

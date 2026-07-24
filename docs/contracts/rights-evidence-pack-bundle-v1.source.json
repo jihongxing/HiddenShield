@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "bundleType": "rights_evidence_pack_bundle",
+  "caseFixturePath": "docs/contracts/rights-evidence-pack-v1.fixture.json",
+  "bundleDir": "docs/fixtures/rights-evidence-pack-r4/case-fixture-r4-0001",
+  "attachmentRoles": [
+    "original",
+    "working_copy",
+    "capture",
+    "external_receipt"
+  ],
+  "attachments": [
+    {
+      "attachmentId": "attachment-original-0001",
+      "sequence": 1,
+      "role": "original",
+      "relativePath": "attachments/original/ATT-01-original-work.txt",
+      "originalFileName": "fixture-original-work.txt",
+      "mediaType": "text/plain",
+      "source": "claimant_submission",
+      "acquisitionMethod": "fixture_import",
+      "derivedFromAttachmentId": null,
+      "originalBytesIncluded": true
+    },
+    {
+      "attachmentId": "attachment-working-copy-0002",
+      "sequence": 2,
+      "role": "working_copy",
+      "relativePath": "attachments/working-copy/ATT-02-analysis-copy.txt",
+      "originalFileName": "fixture-analysis-copy.txt",
+      "mediaType": "text/plain",
+      "source": "hidden_shield_local_derivation",
+      "acquisitionMethod": "normalized_text_copy",
+      "derivedFromAttachmentId": "attachment-original-0001",
+      "originalBytesIncluded": true
+    },
+    {
+      "attachmentId": "attachment-capture-0003",
+      "sequence": 3,
+      "role": "capture",
+      "relativePath": "attachments/capture/ATT-03-disputed-page-capture.txt",
+      "originalFileName": "fixture-disputed-page-capture.txt",
+      "mediaType": "text/plain",
+      "source": "https://evidence.example.invalid/posts/fixture-0001",
+      "acquisitionMethod": "fixture_page_capture",
+      "derivedFromAttachmentId": null,
+      "originalBytesIncluded": true
+    },
+    {
+      "attachmentId": "attachment-external-receipt-0004",
+      "sequence": 4,
+      "role": "external_receipt",
+      "relativePath": "attachments/external-receipt/ATT-04-platform-receipt.json",
+      "originalFileName": "fixture-platform-receipt.json",
+      "mediaType": "application/json",
+      "source": "fixture_external_platform",
+      "acquisitionMethod": "fixture_receipt_import",
+      "derivedFromAttachmentId": null,
+      "originalBytesIncluded": true
+    }
+  ]
+}

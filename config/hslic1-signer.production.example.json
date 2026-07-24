@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "signerType": "managed_kms",
+  "keyId": "offline-production-YYYY-qN",
+  "publicKeyBase64Url": "REPLACE_WITH_ED25519_PUBLIC_KEY_BASE64URL",
+  "keyHandle": "gcp-kms://projects/PROJECT_ID/locations/global/keyRings/hiddenshield-license/cryptoKeys/hslic1-ed25519/cryptoKeyVersions/1",
+  "command": "C:\\Program Files\\nodejs\\node.exe",
+  "arguments": [
+    "D:\\HiddenShield\\scripts\\signers\\hslic1-google-cloud-kms-signer.mjs",
+    "--crypto-key-version",
+    "projects/PROJECT_ID/locations/global/keyRings/hiddenshield-license/cryptoKeys/hslic1-ed25519/cryptoKeyVersions/1",
+    "--key-id",
+    "offline-production-YYYY-qN",
+    "--expected-public-key-base64url",
+    "REPLACE_WITH_ED25519_PUBLIC_KEY_BASE64URL",
+    "--allowed-protection-levels",
+    "SOFTWARE,HSM,HSM_SINGLE_TENANT"
+  ]
+}

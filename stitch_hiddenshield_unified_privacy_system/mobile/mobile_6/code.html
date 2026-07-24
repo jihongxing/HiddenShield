@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>安全哨兵 - 验证</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary-fixed": "#ffddb8",
+                    "outline": "#859490",
+                    "tertiary-fixed": "#ffdcc0",
+                    "secondary-fixed-dim": "#ffb95f",
+                    "tertiary-container": "#ffac5a",
+                    "surface-variant": "#2f3634",
+                    "secondary-container": "#ee9800",
+                    "on-primary-fixed-variant": "#005047",
+                    "error-container": "#93000a",
+                    "inverse-on-surface": "#2b3230",
+                    "primary-fixed-dim": "#3cddc7",
+                    "inverse-surface": "#dde4e1",
+                    "primary-fixed": "#62fae3",
+                    "on-primary": "#003731",
+                    "on-error-container": "#ffdad6",
+                    "surface-container-low": "#161d1b",
+                    "surface-tint": "#3cddc7",
+                    "surface-container-highest": "#2f3634",
+                    "background": "#0e1513",
+                    "secondary": "#ffb95f",
+                    "surface-dim": "#0e1513",
+                    "surface-bright": "#333b39",
+                    "on-primary-container": "#00574d",
+                    "tertiary-fixed-dim": "#ffb875",
+                    "on-tertiary-fixed-variant": "#6b3b00",
+                    "error": "#ffb4ab",
+                    "primary-container": "#2dd4bf",
+                    "on-surface": "#dde4e1",
+                    "surface": "#0e1513",
+                    "on-surface-variant": "#bacac5",
+                    "outline-variant": "#3c4a46",
+                    "surface-container-lowest": "#09100e",
+                    "surface-container-high": "#242b2a",
+                    "inverse-primary": "#006b5f",
+                    "on-tertiary": "#4b2800",
+                    "primary": "#57f1db",
+                    "on-background": "#dde4e1",
+                    "tertiary": "#ffd1aa",
+                    "on-secondary-container": "#5b3800",
+                    "on-primary-fixed": "#00201c",
+                    "surface-container": "#1a211f",
+                    "on-tertiary-fixed": "#2d1600",
+                    "on-secondary-fixed-variant": "#653e00",
+                    "on-error": "#690005",
+                    "on-tertiary-container": "#744000",
+                    "on-secondary-fixed": "#2a1700",
+                    "on-secondary": "#472a00"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "padding-xs": "4px",
+                    "padding-sm": "8px",
+                    "padding-md": "16px",
+                    "padding-lg": "24px",
+                    "gutter": "16px",
+                    "container-margin": "24px",
+                    "unit": "4px"
+            },
+            "fontFamily": {
+                    "headline-sm": [
+                            "Inter"
+                    ],
+                    "body-sm": [
+                            "Inter"
+                    ],
+                    "headline-lg": [
+                            "Inter"
+                    ],
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "label-md": [
+                            "Inter"
+                    ],
+                    "headline-md": [
+                            "Inter"
+                    ],
+                    "label-sm": [
+                            "Inter"
+                    ],
+                    "label-lg": [
+                            "Inter"
+                    ],
+                    "body-lg": [
+                            "Inter"
+                    ]
+            },
+            "fontSize": {
+                    "headline-sm": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-sm": [
+                            "13px",
+                            {
+                                    "lineHeight": "18px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-lg": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "letterSpacing": "-0.01em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-md": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "label-md": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "headline-md": [
+                            "20px",
+                            {
+                                    "lineHeight": "28px",
+                                    "letterSpacing": "-0.01em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "label-sm": [
+                            "11px",
+                            {
+                                    "lineHeight": "12px",
+                                    "letterSpacing": "0.02em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "label-lg": [
+                            "14px",
+                            {
+                                    "lineHeight": "16px",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "body-lg": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #0F172A;
+            color: #dde4e1;
+        }
+        .card-surface {
+            background-color: #1E293B;
+            border: 1px solid #334155;
+        }
+        .input-inset {
+            background-color: #0F172A;
+        }
+        .focus-ring:focus-within {
+            box-shadow: 0 0 0 1px #2DD4BF;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#0F172A] text-on-background antialiased pb-24 md:pb-0 h-screen overflow-hidden flex flex-col">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-container-margin py-padding-md w-full bg-background dark:bg-background border-b border-outline-variant dark:border-outline-variant sticky top-0 z-40 transition-colors duration-200">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary dark:text-primary">security</span>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary">安全哨兵</h1>
+</div>
+<button aria-label="Profile" class="hover:bg-surface-container dark:hover:bg-surface-container p-2 rounded-full transition-colors duration-200">
+<span class="material-symbols-outlined text-primary dark:text-primary">account_circle</span>
+</button>
+</header>
+<main class="flex-1 overflow-y-auto p-container-margin relative w-full max-w-md mx-auto flex flex-col gap-padding-lg">
+<!-- Header Section -->
+<div>
+<h2 class="font-headline-lg text-headline-lg mb-2">验证</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">上传或扫描数字签名、文件哈希以进行即时验证。</p>
+</div>
+<!-- State 1: Input State (Initially Visible) -->
+<div class="flex flex-col gap-padding-lg" id="state-input">
+<div class="card-surface rounded-xl p-padding-lg flex flex-col items-center justify-center min-h-[240px] gap-padding-md border-dashed">
+<div class="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center mb-2">
+<span class="material-symbols-outlined text-3xl text-outline">qr_code_scanner</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant text-center">准备扫描系统元数据</p>
+<button class="mt-4 bg-primary-container text-[#0F172A] font-label-lg text-label-lg py-3 px-8 rounded flex items-center gap-2 transition-transform active:scale-95" onclick="toggleState()">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">document_scanner</span>
+                    扫描样本
+                </button>
+</div>
+<div class="flex gap-gutter">
+<button class="flex-1 card-surface rounded-lg p-padding-md flex flex-col items-center gap-2 hover:bg-[#2D3748] transition-colors">
+<span class="material-symbols-outlined text-primary">photo_camera</span>
+<span class="font-label-md text-label-md">相机</span>
+</button>
+<button class="flex-1 card-surface rounded-lg p-padding-md flex flex-col items-center gap-2 hover:bg-[#2D3748] transition-colors">
+<span class="material-symbols-outlined text-primary">upload_file</span>
+<span class="font-label-md text-label-md">文件</span>
+</button>
+</div>
+<div class="input-inset rounded-lg p-padding-sm focus-ring flex items-center border border-outline-variant">
+<span class="material-symbols-outlined text-outline ml-2">search</span>
+<input class="bg-transparent border-none focus:ring-0 w-full text-on-surface font-body-sm text-body-sm px-3 placeholder-outline" placeholder="手动输入哈希值..." type="text"/>
+</div>
+</div>
+<!-- State 2: Result State (Initially Hidden) -->
+<div class="hidden flex-col gap-padding-lg animate-fade-in" id="state-result">
+<div class="card-surface rounded-xl p-padding-lg flex flex-col items-center text-center relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-1 bg-primary-container"></div>
+<div class="w-20 h-20 rounded-full bg-[rgba(45,212,191,0.1)] flex items-center justify-center mb-6 mt-4 border 2px solid #2DD4BF">
+<span class="material-symbols-outlined text-5xl text-primary" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<div class="inline-flex items-center gap-2 bg-[rgba(45,212,191,0.1)] px-4 py-1.5 rounded-full border border-primary-container mb-6">
+<div class="w-2 h-2 rounded-full bg-primary-container"></div>
+<span class="font-label-lg text-label-lg text-primary-container">已验证</span>
+</div>
+<div class="mb-8 w-full">
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-1">置信度</p>
+<div class="font-headline-lg text-headline-lg text-primary mb-2">99.9%</div>
+<div class="w-full h-1 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-primary-container w-[99.9%]"></div>
+</div>
+</div>
+<div class="w-full flex flex-col gap-3">
+<div class="flex justify-between items-center py-2 border-b border-[#334155]">
+<span class="font-body-sm text-body-sm text-on-surface-variant">样本 ID</span>
+<span class="font-body-sm text-body-sm font-mono">0xA84...F91C</span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-[#334155]">
+<span class="font-body-sm text-body-sm text-on-surface-variant">时间戳</span>
+<span class="font-body-sm text-body-sm font-mono text-outline">2023-10-27 14:32</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-gutter mt-4">
+<button class="w-full border border-[#334155] text-on-background font-label-lg text-label-lg py-3 px-8 rounded flex items-center justify-center gap-2 hover:bg-[#2D3748] transition-colors" onclick="toggleState()">
+<span class="material-symbols-outlined text-outline">visibility</span>
+                    查看证据
+                </button>
+<button class="w-full bg-transparent text-primary font-label-md text-label-md py-3 px-8 rounded flex items-center justify-center gap-2" onclick="toggleState()">
+                    重新验证
+                </button>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center py-padding-sm bg-surface-container-high dark:bg-surface-container-high border-t border-outline-variant dark:border-outline-variant z-50 md:hidden">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 hover:text-primary dark:hover:text-primary" href="#">
+<span class="material-symbols-outlined mb-1">dashboard</span>
+<span class="font-label-sm text-label-sm">工作台</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 hover:text-primary dark:hover:text-primary" href="#">
+<span class="material-symbols-outlined mb-1">pending_actions</span>
+<span class="font-label-sm text-label-sm">处理</span>
+</a>
+<!-- Active Tab -->
+<a class="flex flex-col items-center justify-center bg-primary-container dark:bg-primary-container text-on-primary-container dark:text-on-primary-container rounded-full px-4 py-1 scale-95 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<span class="font-label-sm text-label-sm">验证</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 hover:text-primary dark:hover:text-primary" href="#">
+<span class="material-symbols-outlined mb-1">folder_open</span>
+<span class="font-label-sm text-label-sm">档案</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 hover:text-primary dark:hover:text-primary" href="#">
+<span class="material-symbols-outlined mb-1">settings</span>
+<span class="font-label-sm text-label-sm">设置</span>
+</a>
+</nav>
+<script>
+        function toggleState() {
+            const inputState = document.getElementById('state-input');
+            const resultState = document.getElementById('state-result');
+            
+            if (inputState.classList.contains('hidden')) {
+                inputState.classList.remove('hidden');
+                inputState.classList.add('flex');
+                resultState.classList.add('hidden');
+                resultState.classList.remove('flex');
+            } else {
+                inputState.classList.add('hidden');
+                inputState.classList.remove('flex');
+                resultState.classList.remove('hidden');
+                resultState.classList.add('flex');
+            }
+        }
+    </script>
+<style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+    </style>
+</body></html>

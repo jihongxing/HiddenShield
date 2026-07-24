@@ -1,0 +1,347 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hiddenshield.example/schemas/formal-report-v2-draft.json",
+  "title": "HiddenShield Formal Report Schema V2 Draft",
+  "description": "Phase R0 contract draft. PDF, JSON and Manifest must be generated from the same immutable document snapshot.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "templateVersion",
+    "reportId",
+    "reportType",
+    "exportedAt",
+    "generator",
+    "subject",
+    "work",
+    "overallAssessment",
+    "evidenceEvents",
+    "attachments",
+    "integrity",
+    "legalBoundary"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 2
+    },
+    "templateVersion": {
+      "type": "string"
+    },
+    "reportId": {
+      "type": "string",
+      "pattern": "^HSR-"
+    },
+    "reportType": {
+      "enum": [
+        "copyright_evidence_technical_report",
+        "rights_evidence_pack",
+        "batch_copyright_inventory"
+      ]
+    },
+    "exportedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "generator": {
+      "type": "object",
+      "required": [
+        "app",
+        "appVersion",
+        "platform",
+        "watermarkCoreBoundary"
+      ],
+      "properties": {
+        "app": {
+          "const": "HiddenShield"
+        },
+        "appVersion": {
+          "type": "string"
+        },
+        "platform": {
+          "enum": [
+            "desktop",
+            "android",
+            "ios",
+            "cloud_signing_service"
+          ]
+        },
+        "watermarkCoreBoundary": {
+          "const": "watermark facts are consumed from formal core outputs; report renderers do not implement watermark algorithms"
+        }
+      }
+    },
+    "subject": {
+      "type": "object",
+      "required": [
+        "displayName",
+        "factSource"
+      ],
+      "properties": {
+        "displayName": {
+          "type": "string"
+        },
+        "factSource": {
+          "const": "user_declaration"
+        }
+      }
+    },
+    "work": {
+      "type": "object",
+      "required": [
+        "title",
+        "mediaType",
+        "originalSha256",
+        "watermarkUid"
+      ],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "mediaType": {
+          "enum": [
+            "image",
+            "audio",
+            "video"
+          ]
+        },
+        "originalSha256": {
+          "type": "string"
+        },
+        "protectedCopySha256": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "watermarkUid": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "parentWatermarkUid": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "overallAssessment": {
+      "type": "object",
+      "required": [
+        "status",
+        "statusReasons",
+        "missingEvidence",
+        "failedChecks",
+        "recommendedActions"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "verified_complete",
+            "verified_with_gaps",
+            "verification_failed",
+            "declaration_only",
+            "not_applicable"
+          ]
+        },
+        "statusReasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "missingEvidence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "failedChecks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "recommendedActions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "evidenceEvents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "eventId",
+          "eventType",
+          "occurredAt",
+          "actorType",
+          "source",
+          "status"
+        ],
+        "properties": {
+          "eventId": {
+            "type": "string"
+          },
+          "eventType": {
+            "type": "string"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actorType": {
+            "enum": [
+              "user",
+              "hiddenshield_desktop",
+              "hiddenshield_mobile",
+              "watermark_core",
+              "cloud_service",
+              "third_party"
+            ]
+          },
+          "source": {
+            "type": "string"
+          },
+          "inputDigest": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "outputDigest": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "receiptRef": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "attachmentId",
+          "role",
+          "path",
+          "sha256",
+          "bytes"
+        ],
+        "properties": {
+          "attachmentId": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "required": [
+        "documentJsonSha256",
+        "signatureStatus",
+        "timestampStatus"
+      ],
+      "properties": {
+        "documentJsonSha256": {
+          "type": "string"
+        },
+        "pdfSha256": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "manifestSha256": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "signatureAlgorithm": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "signatureStatus": {
+          "enum": [
+            "not_implemented",
+            "unsigned",
+            "signature_valid_certificate_untrusted",
+            "signature_valid_certificate_trusted",
+            "signature_invalid"
+          ]
+        },
+        "timestampStatus": {
+          "enum": [
+            "not_present",
+            "token_present_unverified",
+            "verified",
+            "invalid"
+          ]
+        }
+      }
+    },
+    "legalBoundary": {
+      "type": "object",
+      "required": [
+        "verifiedFacts",
+        "userDeclarations",
+        "notProven",
+        "disclaimer"
+      ],
+      "properties": {
+        "verifiedFacts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "userDeclarations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "notProven": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "disclaimer": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

@@ -24,7 +24,7 @@ const hasIssue = computed(() => !allGood.value);
 
     <div v-if="expanded || hasIssue" class="system-status__details">
       <div class="system-status__item" :class="{ 'system-status__item--error': !result.ffmpegAvailable }">
-        <span>FFmpeg</span>
+        <span>媒体处理组件</span>
         <strong v-if="result.ffmpegAvailable">已就绪</strong>
         <strong v-else>
           未安装
@@ -32,8 +32,8 @@ const hasIssue = computed(() => !allGood.value);
         </strong>
       </div>
       <div class="system-status__item" :class="{ 'system-status__item--warn': !result.gpuEncoderAvailable }">
-        <span>加速</span>
-        <strong>{{ result.gpuEncoderAvailable ? '可用' : 'CPU' }}</strong>
+        <span>处理方式</span>
+        <strong>{{ result.gpuEncoderAvailable ? '加速处理' : '标准处理' }}</strong>
       </div>
       <div class="system-status__item" :class="{ 'system-status__item--error': !result.diskSufficient }">
         <span>磁盘空间</span>

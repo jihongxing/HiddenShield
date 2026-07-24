@@ -1251,14 +1251,14 @@ mod tests {
     #[test]
     fn tsa_token_file_name_binds_uid_hash_and_nonce() {
         let file_name = build_tsa_token_file_name(
-            "HS-0123-4567-DEAD",
+            "HS-01234567-DEAD89AB-CDEF0123-456789AB",
             "B69956820610C86F72E051AE0C32A54E9AF8BFCA69361BA3093A38D24DBDAEAA",
             "BB7BDCE02BD39BAE",
         );
 
         assert_eq!(
             file_name,
-            "HS-0123-4567-DEAD-b69956820610c86f72e051ae0c32a54e9af8bfca69361ba3093a38d24dbdaeaa-bb7bdce02bd39bae.tsr"
+            "HS-01234567-DEAD89AB-CDEF0123-456789AB-b69956820610c86f72e051ae0c32a54e9af8bfca69361ba3093a38d24dbdaeaa-bb7bdce02bd39bae.tsr"
         );
     }
 
