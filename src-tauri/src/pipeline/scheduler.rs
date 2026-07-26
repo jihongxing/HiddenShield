@@ -1951,6 +1951,8 @@ async fn remux_video_with_protected_audio(
             "aac".into(),
             "-b:a".into(),
             "192k".into(),
+            "-ac".into(),
+            "1".into(),
             "-movflags".into(),
             "+faststart".into(),
         ]);
@@ -2648,6 +2650,8 @@ mod tests {
                 "aac",
                 "-b:a",
                 "160k",
+                "-ac",
+                "1",
                 "-shortest",
                 &protected_video.to_string_lossy(),
             ],
@@ -2826,6 +2830,8 @@ mod tests {
                 mux_args.extend(["-b:a".to_string(), audio_bitrate.to_string()]);
             }
             mux_args.extend([
+                "-ac".to_string(),
+                "1".to_string(),
                 "-shortest".to_string(),
                 protected_video.to_string_lossy().to_string(),
             ]);
@@ -7881,15 +7887,20 @@ mod tests {
 
     async fn run_ffmpeg_test_command(ffmpeg: &Path, args: &[&str], label: &str) {
         let args: Vec<String> = args.iter().map(|value| (*value).to_string()).collect();
-        let mut child = ffmpeg::spawn_ffmpeg(ffmpeg, &args)
+        let child = ffmpeg::spawn_ffmpeg(ffmpeg, &args)
             .await
             .unwrap_or_else(|error| panic!("{label}: spawn failed: {error}"));
-        let status = child
+        let output = child
             .child
-            .wait()
+            .wait_with_output()
             .await
             .unwrap_or_else(|error| panic!("{label}: wait failed: {error}"));
-        assert!(status.success(), "{label}: ffmpeg exited with {status}");
+        assert!(
+            output.status.success(),
+            "{label}: ffmpeg exited with {}: {}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr)
+        );
     }
 
     async fn ffmpeg_encoder_available(ffmpeg: &Path, encoder: &str) -> bool {

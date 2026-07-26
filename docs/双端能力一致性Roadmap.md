@@ -1399,3 +1399,11 @@
 - 本次结论只关闭 Windows 桌面发布环境 Gate，不代表移动端解冻，也不新增桌面专属水印算法、payload、报告字段或跨端能力承诺。
 - 公共信任层继续挂起；图片 / 音频跨端互验和共享核心单一事实源约束保持不变。
 - 下一双端一致性任务：在不修改桌面已通过候选的前提下复跑 `dual:contract`，将结果附入 GA 发布清单，并继续保持移动端冻结状态。
+
+## 2026-07-26 跨端合同 CI 兼容性修复
+
+- 移动端图片预检已从退役的 V2 导入迁移为优先调用共享 `WatermarkService::extract`，并保留现有只读候选兼容路径；未重新导出 V2 API。
+- 桌面 L1 视频音轨固定的 `44.1 kHz / mono` WAV 在 AAC 复用时显式传入 `-ac 1`，兼容 FFmpeg 8 对 `FL` 单声道布局的严格校验。
+- 已通过移动端 35 项单测、跨端 release contract、L1 单轮与发布容器矩阵、以及 V3 feature-gate rollback contract。
+- 本轮不修改 `watermark-core` 算法、payload、共享字段或移动端冻结状态，也不新增任何平台能力承诺。
+- 下一双端一致性任务：等待 GitHub Actions Ubuntu / Windows 矩阵完成后，将通过结果关联到此次 CI 修复提交。

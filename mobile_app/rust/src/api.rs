@@ -10,10 +10,9 @@ use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
 use thiserror::Error;
 use watermark_core::{
-    decode_watermark_payload_readonly, detect_existing_image_watermark_bytes, AIContentFlags,
-    ImageOutputFormat, MediaInput, MediaOutput, PayloadV2BuildInput, TrainingPermission,
-    WatermarkDecodedPayload, WatermarkError, WatermarkIssueMode, WatermarkMediaType,
-    WatermarkPayload, WatermarkService,
+    decode_watermark_payload_readonly, AIContentFlags, ImageOutputFormat, MediaInput, MediaOutput,
+    PayloadV2BuildInput, TrainingPermission, WatermarkDecodedPayload, WatermarkError,
+    WatermarkIssueMode, WatermarkMediaType, WatermarkPayload, WatermarkService,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -170,11 +169,14 @@ pub fn extract_image_readonly_candidate_for_mobile(
 pub fn detect_existing_image_for_mobile(
     image_bytes: Vec<u8>,
 ) -> Result<Option<MobileExtractResult>, MobileWatermarkError> {
-    let detected = detect_existing_image_watermark_bytes(&image_bytes)
-        .map_err(MobileWatermarkError::from_core)?;
-    if let Some(payload) = detected {
-        return Ok(Some(payload.into_mobile_extract_result()));
+    match WatermarkService::extract(MediaInput::ImageBytes {
+        bytes: image_bytes.clone(),
+    }) {
+        Ok(decoded) => return Ok(Some(mobile_extract_result_from_decoded(decoded, "image"))),
+        Err(WatermarkError::ExtractFailed(_)) => {}
+        Err(error) => return Err(MobileWatermarkError::from_core(error)),
     }
+
     match watermark_core::extract_image_watermark_readonly_candidate_bytes(&image_bytes) {
         Ok(decoded) => Ok(Some(mobile_extract_result_from_decoded(decoded, "image"))),
         Err(WatermarkError::ExtractFailed(_)) => Ok(None),

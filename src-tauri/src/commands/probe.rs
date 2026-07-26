@@ -558,6 +558,7 @@ mod tests {
             &crate::config::AppPreferences {
                 default_output_dir: Some(preferred_dir.to_string_lossy().to_string()),
                 onboarding_completed: true,
+                auto_update_enabled: true,
             },
         )
         .unwrap();
