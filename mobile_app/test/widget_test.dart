@@ -11,6 +11,7 @@ import 'package:hidden_shield_mobile/features/verify/verify_page.dart';
 import 'package:hidden_shield_mobile/features/vault/rights_evidence_pack_file_reader.dart';
 import 'package:hidden_shield_mobile/features/vault/rights_evidence_pack_verifier.dart';
 import 'package:hidden_shield_mobile/features/workspace/image_embed_page.dart';
+import 'package:hidden_shield_mobile/licensing/offline_license_manager.dart';
 import 'package:hidden_shield_mobile/storage/vault_store.dart';
 
 void main() {
@@ -221,7 +222,7 @@ void main() {
         insertedRecordId: 'desktop:variant-1',
       ),
     );
-    final state = MobileAppState(vaultStore: store);
+    final state = _testAppState(store);
     await state.load();
     await _markOnboardingComplete(store, state);
 
@@ -266,7 +267,7 @@ void main() {
         lastSyncFailureAt: DateTime.fromMillisecondsSinceEpoch(3500),
       ),
     );
-    final state = MobileAppState(vaultStore: store);
+    final state = _testAppState(store);
     await state.load();
     await _markOnboardingComplete(store, state);
 
@@ -297,7 +298,7 @@ void main() {
   testWidgets('renders account identity contract in settings', (
     WidgetTester tester,
   ) async {
-    final state = MobileAppState(vaultStore: MemoryVaultStore());
+    final state = _testAppState(MemoryVaultStore());
     await state.load();
     state.updateCreatorLabel('Alice Creator');
     await state.continueWithAccountPlaceholder(
@@ -323,7 +324,7 @@ void main() {
     WidgetTester tester,
   ) async {
     final store = MemoryVaultStore();
-    final state = MobileAppState(vaultStore: store);
+    final state = _testAppState(store);
     await state.load();
     await _markOnboardingComplete(store, state);
 
@@ -355,7 +356,7 @@ void main() {
     WidgetTester tester,
   ) async {
     final store = MemoryVaultStore();
-    final state = MobileAppState(vaultStore: store);
+    final state = _testAppState(store);
     await state.load();
     await _markOnboardingComplete(store, state);
 
@@ -384,7 +385,7 @@ void main() {
   testWidgets('free account cannot enable formal cloud sync', (
     WidgetTester tester,
   ) async {
-    final state = MobileAppState(vaultStore: MemoryVaultStore());
+    final state = _testAppState(MemoryVaultStore());
     await state.load();
     await state.continueWithAccountPlaceholder(
       accountLabel: 'free@example.com',
@@ -406,7 +407,7 @@ void main() {
     WidgetTester tester,
   ) async {
     final store = MemoryVaultStore();
-    final state = MobileAppState(vaultStore: store);
+    final state = _testAppState(store);
     await state.load();
     await _markOnboardingComplete(store, state);
 
@@ -430,7 +431,7 @@ void main() {
     WidgetTester tester,
   ) async {
     final store = MemoryVaultStore();
-    final state = MobileAppState(vaultStore: store);
+    final state = _testAppState(store);
     await state.load();
     await _markOnboardingComplete(store, state);
 
@@ -469,7 +470,7 @@ void main() {
         },
       ),
     );
-    final state = MobileAppState(vaultStore: store);
+    final state = _testAppState(store);
     await state.load();
     await _markOnboardingComplete(store, state, creatorLabel: 'Creator User');
 
@@ -491,7 +492,7 @@ void main() {
     WidgetTester tester,
   ) async {
     final store = MemoryVaultStore();
-    final state = MobileAppState(vaultStore: store);
+    final state = _testAppState(store);
     await state.load();
     await _markOnboardingComplete(store, state);
 
@@ -565,7 +566,7 @@ void main() {
         ],
       ),
     );
-    final state = MobileAppState(vaultStore: store);
+    final state = _testAppState(store);
     await state.load();
     await _markOnboardingComplete(store, state, creatorLabel: 'Creator User');
 
@@ -594,7 +595,7 @@ void main() {
         updatedAt: DateTime.fromMillisecondsSinceEpoch(1000),
       ),
     );
-    final state = MobileAppState(vaultStore: store);
+    final state = _testAppState(store);
     await state.load();
     state.setSyncTransportMode(SyncTransportMode.lanDebug);
     await _markOnboardingComplete(store, state);
@@ -639,7 +640,7 @@ void main() {
         createdAt: DateTime.fromMillisecondsSinceEpoch(1000),
       ),
     );
-    final state = MobileAppState(vaultStore: store);
+    final state = _testAppState(store);
     await state.load();
     await _markOnboardingComplete(store, state);
 
@@ -705,7 +706,7 @@ void main() {
         createdAt: DateTime.parse('2026-06-19T08:00:00Z'),
       ),
     );
-    final state = MobileAppState(vaultStore: store);
+    final state = _testAppState(store);
     await state.load();
     await _markOnboardingComplete(store, state);
 
@@ -789,7 +790,7 @@ void main() {
         createdAt: DateTime.fromMillisecondsSinceEpoch(2000),
       ),
     );
-    final state = MobileAppState(vaultStore: store);
+    final state = _testAppState(store);
     await state.load();
     await _markOnboardingComplete(store, state);
 
@@ -819,7 +820,7 @@ void main() {
 
 Future<MobileAppState> _readyAppState({MemoryVaultStore? store}) async {
   final vaultStore = store ?? MemoryVaultStore();
-  final state = MobileAppState(vaultStore: vaultStore);
+  final state = _testAppState(vaultStore);
   await state.load();
   await _markOnboardingComplete(vaultStore, state);
   return state;
@@ -871,4 +872,32 @@ Finder _bottomSheetScrollable() {
         matching: find.byWidgetPredicate((widget) => widget is Scrollable),
       )
       .first;
+}
+
+MobileAppState _testAppState(VaultStore vaultStore) {
+  return MobileAppState(
+    vaultStore: vaultStore,
+    offlineLicenseManager: OfflineLicenseManager(
+      secureStore: _MemoryOfflineLicenseSecureStore(),
+      platform: 'android',
+      appVersion: '1.0.0',
+    ),
+  );
+}
+
+class _MemoryOfflineLicenseSecureStore implements OfflineLicenseSecureStore {
+  final Map<String, String> _values = {};
+
+  @override
+  Future<void> delete(String key) async {
+    _values.remove(key);
+  }
+
+  @override
+  Future<String?> read(String key) async => _values[key];
+
+  @override
+  Future<void> write(String key, String value) async {
+    _values[key] = value;
+  }
 }
