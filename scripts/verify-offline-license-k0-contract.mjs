@@ -1,5 +1,18 @@
 import { readFileSync } from "node:fs";
-import {
+import typescript from "typescript";
+
+const offlineLicenseModule = await import(
+  `data:text/javascript;base64,${Buffer.from(
+    typescript.transpileModule(readFileSync("src/lib/offline-license.ts", "utf8"), {
+      compilerOptions: {
+        module: typescript.ModuleKind.ESNext,
+        target: typescript.ScriptTarget.ES2022,
+      },
+    }).outputText,
+  ).toString("base64")}`,
+);
+
+const {
   decodeBase64Url,
   deriveInstallationIdV1,
   parseActivationRequestV1,
@@ -9,7 +22,7 @@ import {
   verifyActivationRequestV1Checksum,
   verifyOfflineLicenseV1Signature,
   verifyRevocationListV1Signature,
-} from "../src/lib/offline-license.ts";
+} = offlineLicenseModule;
 
 const root = "docs/fixtures/offline-license-k0";
 const licenseFixture = readJson(`${root}/hslic1-ed25519-v1.json`);
