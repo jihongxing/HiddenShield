@@ -1,2 +1,5 @@
 mobile_app/test/fixtures/report_handoff_r3/** text eol=lf
+mobile_app/test/fixtures/report_bundles_r3/** text eol=lf
+mobile_app/test/fixtures/report_bundles_r3/**/report.pdf -text
+mobile_app/test/fixtures/rights_evidence_pack_r4/** text eol=lf
 docs/fixtures/rights-evidence-pack-r4/** text eol=lf
