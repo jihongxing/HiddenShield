@@ -10673,6 +10673,39 @@ mod tests {
         }
     }
 
+    fn sample_cloud_video_task_request(
+        session: &crate::schema::CloudAccountSession,
+    ) -> crate::schema::CloudVideoTaskRequest {
+        crate::schema::CloudVideoTaskRequest {
+            schema_version: "cloud_video_task_v1".to_string(),
+            workspace_id: session.workspace.id.clone(),
+            creator_profile_id: session.creator_profile.id.clone(),
+            capability_level: "hybrid_visual_watermark".to_string(),
+            watermark_uid: "wm_cloud_video_l3".to_string(),
+            source_hash: "sha256:cloud-video-source".to_string(),
+            duration_ms: 125_000,
+            target_profiles: vec!["douyin_9_16_h264_high_crf18_720p".to_string()],
+            upload_manifest: crate::schema::VideoUploadManifest {
+                schema_version: "video_upload_manifest_v1".to_string(),
+                contains_original_video: false,
+                contains_watermarked_video: false,
+                contains_local_paths: false,
+                contains_proxy: false,
+                items: vec![crate::schema::VideoUploadManifestItem {
+                    kind: "video_fingerprint_bundle".to_string(),
+                    sha256: "sha256:cloud-video-bundle".to_string(),
+                    bytes: 48_212,
+                    storage_ref: None,
+                    sandbox_profile: None,
+                    transcode_profile: None,
+                    width: None,
+                    height: None,
+                    frame_count: None,
+                }],
+            },
+        }
+    }
+
     fn sample_l3_worker_receipt_fields(
         task_id: &str,
         worker_id: &str,
