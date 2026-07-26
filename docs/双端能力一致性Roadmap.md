@@ -1407,3 +1407,12 @@
 - 已通过移动端 35 项单测、跨端 release contract、L1 单轮与发布容器矩阵、以及 V3 feature-gate rollback contract。
 - 本轮不修改 `watermark-core` 算法、payload、共享字段或移动端冻结状态，也不新增任何平台能力承诺。
 - 下一双端一致性任务：等待 GitHub Actions Ubuntu / Windows 矩阵完成后，将通过结果关联到此次 CI 修复提交。
+
+## 2026-07-26 v0.1.3 当前 main 双平台绿色基线
+
+- GitHub Actions 运行 `30218394724` 在 `main` 提交 `5a9769ba0e865adb29e7849c3681c3ddec52c254` 上完成，Windows、Ubuntu 和云同步合同三个 Job 均为 `success`。
+- Windows Job `89836421460` 与 Ubuntu Job `89836421478` 均通过前端构建、双端一致性合同、共享水印架构合同、跨端互验合同、视频分层合同、桌面 Rust 测试、离线许可 CI、Flutter analyze 和 Flutter tests。
+- 云同步合同与 E2E Job `89836421470` 通过；本次结果关闭上一节“等待 GitHub Actions 矩阵”的待办。
+- 该运行已写入 `docs/桌面v0.1.3发布清单.md`，作为 `v0.1.3` 发布后的当前 `main` 双平台绿色基线，不替代 Windows installed-payload 验签和物理断网媒体冒烟。
+- 本轮只冻结 CI 证据，不改变移动端冻结状态、桌面或移动端能力承诺、共享字段、payload、算法或跨端读取边界。
+- 下一双端一致性任务：任何候选重建或双端合同变更都必须取得新的 Ubuntu / Windows 全绿运行，并与 `30218394724` 对比后追加记录。
