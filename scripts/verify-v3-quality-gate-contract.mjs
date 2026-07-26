@@ -8,6 +8,7 @@ const sources = {
   packageJson: readFileSync('package.json', 'utf8'),
   qualityBin: readFileSync('watermark-core/src/bin/v3_quality_gate.rs', 'utf8'),
   releaseQualityBin: readFileSync('watermark-core/src/bin/v3_quality_release_gate.rs', 'utf8'),
+  qualityCore: readFileSync('watermark-core/src/quality.rs', 'utf8'),
   noiseFloorBandSelectionBin: readFileSync(
     'watermark-core/src/bin/audio_noise_floor_band_selection_experiment.rs',
     'utf8',
@@ -23,6 +24,8 @@ const sources = {
     'utf8',
   ),
 };
+
+const releaseQualitySource = `${sources.releaseQualityBin}\n${sources.qualityCore}`;
 
 for (const token of [
   'IMAGE_MIN_PSNR',
@@ -73,7 +76,10 @@ for (const token of [
   'watermark:l3-video-visual-release-gate',
   'delegated',
 ]) {
-  assert(sources.releaseQualityBin.includes(token), `V3 release quality gate bin must include ${token}`);
+  assert(
+    releaseQualitySource.includes(token),
+    `V3 release quality gate orchestration or shared quality core must include ${token}`,
+  );
 }
 
 for (const token of [

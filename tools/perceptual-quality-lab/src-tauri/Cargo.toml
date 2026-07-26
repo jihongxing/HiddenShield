@@ -1,0 +1,23 @@
+[package]
+name = "hiddenshield-perceptual-quality-lab"
+version = "0.1.0"
+description = "Standalone perceptual quality and ABX laboratory"
+authors = ["HiddenShield"]
+edition = "2021"
+rust-version = "1.77.2"
+
+[build-dependencies]
+tauri-build = { version = "2.5.6", features = [] }
+
+[dependencies]
+base64 = "0.22"
+hound = "3.5"
+image = "0.25"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri = { version = "2.10.3", features = ["protocol-asset"] }
+tauri-plugin-dialog = "2"
+watermark-core = { path = "../../../watermark-core" }
+
+[dev-dependencies]
+tempfile = "3"

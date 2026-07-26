@@ -388,3 +388,16 @@
 - 外部暴露边界：允许承诺取消后不落库，但不能承诺上包络任务立即释放 CPU / 内存；该延迟属于当前明确资源特征。
 - 证据：`artifacts/desktop-audio-upper-envelope-gate/20260722-final/summary.json`。
 - 下一步：执行 `RC-RELEASE-001`，对最终候选完成 Authenticode 签名且不得重新构建。
+
+## 2026-07-26 独立感知质量实验室共享指标 API
+
+- 新增公开模块 `watermark_core::quality`，提供 `compare_image_quality`、`compare_audio_quality`、`ImageQualityInput / Report`、`AudioQualityInput / Report`、`QualityThresholdProfile / Result`。
+- `watermark:quality-gate:release` 与 `watermark:quality-gate:full` 已改为调用同一共享实现；PSNR、SSIM、SNR、当前 gate 口径 LUFS、峰值差和 clipping 阈值语义不变。
+- 图片报告新增 MAE、P95 通道差、最大通道差和变化像素率；P95 使用固定 256 桶直方图，不再按像素量额外保存并排序完整差异数组。
+- 音频报告新增显式声道输入、单声道诊断下混、分段 SNR、静音噪声底变化及低频 / 水印频带 / 高频差异能量占比；正式 gate 继续使用原单声道 fixture，因此既有结果口径不变。
+- 外部暴露边界：该 API 只负责媒体质量比较，不写入、读取或验证水印，不改变 payload、版权编号、算法强度或跨端互读契约。
+- 当前性能边界：独立实验室对音频使用 FFmpeg 解码后的内存样本进行比较，最长限制 20 分钟、文件不超过 512 MiB；长音频仍可能占用数百 MiB 内存。图片热力图会生成三份会话级 PNG 临时文件。
+- 回滚路径：独立程序可直接移除而不影响正式媒体能力；共享 quality 模块若回滚，必须同时恢复 gate 内原指标实现并通过固定 fixture 数值回归，禁止保留两套漂移口径。
+- 验证：`cargo test --manifest-path watermark-core/Cargo.toml quality::tests --lib` 通过 `3/3`；独立实验室前端 ABX 测试通过 `3/3`，Rust 媒体辅助测试通过 `2/2`，前端生产构建和 Windows Tauri release EXE 构建通过。
+- 运行态 gate 结果：release gate 当前仍由 `low-texture` 的 SSIM `0.982920 < 0.985` 阻断；full gate 仍由 6 个图片样本和 `field-noise` 音频阻断，其中 `field-noise` SNR 为 `12.9879 dB < 44 dB`。共享 API 保留了原公式和阈值，当前失败属于仓库现有算法 / fixture 基线，不能记录为本次工具已使 release/full gate 通过。
+- 下一核心任务：为 release gate 固定不随 runId 漂移的基准 artifact，并单独修复 `low-texture` SSIM 阻断；之后再对共享 API 重构前后 JSON 做逐字段基线比对。

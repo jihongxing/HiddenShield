@@ -10,7 +10,7 @@ use crate::entitlements;
 use crate::report_pdf::{ReportPdfRenderResult, REPORT_PDF_GENERATION_BUDGET_MS};
 use crate::AppState;
 
-const FORMAL_REPORT_DISCLAIMER: &str = "本报告由 HiddenShield 根据本机版权库记录生成，仅作为技术验证与版权管理辅助材料，不构成法律意见、司法鉴定意见或诉讼结果承诺。";
+const FORMAL_REPORT_DISCLAIMER: &str = "本报告由 HiddenShield 根据本机版权库记录生成，仅作为技术验证与版权管理辅助材料，不构成法律意见、司法鉴定意见或诉讼结果承诺。载荷认证标签与 Manifest 摘要匹配只表示技术规则或文件完整性匹配，不等于发行方数字签名、实名认证或法定权属确认。";
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -627,7 +627,7 @@ pub async fn verify_formal_report_bundle(
         .as_ref()
         .is_some_and(|reports_root| report_dir.starts_with(reports_root));
     if !is_internal_report && verified.report_type.as_deref() != Some("formal_report_handoff") {
-        return Err("外部目录只允许校验 HiddenShield 移动签发交接包".to_string());
+        return Err("外部目录只允许校验 HiddenShield 移动报告交接包".to_string());
     }
     Ok(verified)
 }
@@ -938,7 +938,7 @@ fn prepare_mobile_report_handoff_import(
         || verified.manifest_chain_status != "matched"
         || verified.document_contract_status != "matched"
     {
-        return Err("移动签发交接包未通过完整性或文档合同校验".to_string());
+        return Err("移动报告交接包未通过完整性或文档合同校验".to_string());
     }
     let manifest: FormalReportManifest = serde_json::from_slice(
         &std::fs::read(report_dir.join("manifest.json"))
@@ -957,10 +957,10 @@ fn prepare_mobile_report_handoff_import(
         || handoff.handoff.status != "awaiting_desktop_render"
         || handoff.handoff.requested_output != ["report.pdf", "report.json", "manifest.json"]
     {
-        return Err("移动签发交接包生成请求合同不匹配".to_string());
+        return Err("移动报告交接包生成请求合同不匹配".to_string());
     }
     if handoff.records.is_empty() {
-        return Err("移动签发交接包不包含版权记录".to_string());
+        return Err("移动报告交接包不包含版权记录".to_string());
     }
     let exported_at = Utc::now().to_rfc3339();
     let seed = format!(
@@ -1229,9 +1229,9 @@ fn verify_report_bundle_at(
         && document_contract_valid
         && manifest.report_type == "formal_report_handoff"
     {
-        "移动交接包文件、Manifest 摘要链与 report.json 合同匹配；该目录尚未生成 PDF，也未完成签名或报告包可信时间。"
+        "移动报告交接包文件、Manifest 摘要链与 report.json 合同匹配；该目录尚未生成 PDF，也未完成包级数字签名或包级时间戳。"
     } else if integrity_status == "matched" && document_contract_valid {
-        "报告包文件、Manifest 摘要链与 report.json 合同匹配；当前报告包未签名，不能据此判断签名主体或可信时间。"
+        "报告包文件、Manifest 摘要链与 report.json 合同匹配；当前报告包未签名、未获得包级时间戳，不能据此判断签名主体或时间可信性。"
     } else if integrity_status == "matched" {
         "报告包文件摘要匹配，但 report.json 文档合同不匹配。"
     } else {
@@ -1395,7 +1395,7 @@ fn verify_rights_evidence_pack_at(
         && event_chain_valid
         && attachment_chain_valid;
     let message = if all_integrity_matched {
-        "案件包目录、附件、采集事件链和附件链匹配；当前案件包未签名，也未获得包级可信时间。"
+        "案件包目录、附件、采集事件链和附件链匹配；当前案件包未签名，也未获得包级时间戳。"
     } else {
         "案件包至少一项目录或完整性校验不匹配；请保留原目录并核对逐项状态。"
     };

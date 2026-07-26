@@ -148,7 +148,7 @@ async function handleCopy() {
         <strong>{{ record.tsaTokenPath ? "已获取第三方时间戳回执" : "未获取" }}</strong>
       </div>
       <div v-if="record.tsaTokenPath" class="copyright-card__row">
-        <span>可信时间</span>
+        <span>可信时间（需结合验签）</span>
         <strong>{{ formatCopyrightDateTime(record.networkTime || record.createdAt) }}</strong>
       </div>
       <div v-if="record.tsaTokenPath" class="copyright-card__row">

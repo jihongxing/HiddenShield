@@ -76,7 +76,7 @@ const verifyProgressPlan = [
   { percent: 28, stage: "正在提取验证特征" },
   { percent: 44, stage: "正在进行默认验证检测" },
   { percent: 60, stage: "正在匹配本机版权库" },
-  { percent: 74, stage: "正在复核可信时间与版本记录" },
+  { percent: 74, stage: "正在复核时间材料与版本记录" },
   { percent: 86, stage: "正在生成验证结果" },
 ];
 
@@ -287,7 +287,7 @@ async function selectAndVerifyReportBundle() {
   const selected = await open({
     directory: true,
     multiple: false,
-    title: "选择 HiddenShield 报告包或移动签发交接包",
+    title: "选择 HiddenShield 报告包或移动报告交接包",
   });
   if (!selected || Array.isArray(selected)) return;
   verifyingReportBundle.value = true;
@@ -323,7 +323,7 @@ async function renderImportedMobileHandoff() {
     latestReportExport.value = exported;
     latestReportVerification.value = null;
     saveRecentReportExport(exported);
-    diagnosticMsg.value = "移动签发交接包已生成最终 PDF 三件套";
+    diagnosticMsg.value = "移动报告交接包已生成最终 PDF 三件套";
   } catch (error: unknown) {
     console.warn("import mobile report handoff failed", error);
     diagnosticMsg.value = userFacingErrorMessage(error, "生成移动交接最终报告");
@@ -585,7 +585,7 @@ function formatMediaPayloadRole(value?: string | null): string {
             {{ formatMediaPayloadRole(result.mediaPayloadRole) }}
           </span>
           <span v-if="result.payloadAuthStatus">
-            认证 {{ result.payloadAuthStatus === "verified" ? "已通过" : result.payloadAuthStatus }}
+            载荷认证标签 {{ result.payloadAuthStatus === "verified" ? "匹配" : result.payloadAuthStatus }}
           </span>
           <span v-if="result.matchedRecord">第 {{ result.matchedRecord.revision }} 次版本</span>
         </div>
@@ -615,15 +615,15 @@ function formatMediaPayloadRole(value?: string | null): string {
         </div>
 
         <div v-if="result.tsaTokenPresent || result.networkTime" class="verify-tsa">
-          <strong>可信时间</strong>
+          <strong>时间材料</strong>
           <p v-if="result.tsaTokenPresent && result.tsaTokenVerified">
-            {{ getTsaVerificationLabel(result.tsaVerificationPath) ?? "时间回执已复验" }}
+            {{ getTsaVerificationLabel(result.tsaVerificationPath) ?? "RFC 3161 时间回执已完成本地复验" }}
           </p>
           <p v-else-if="result.tsaTokenPresent">
-            时间回执已获取
+            RFC 3161 时间回执已获取，尚未完成独立验签
           </p>
-          <p v-if="result.networkTime">网络时间: {{ new Date(result.networkTime).toLocaleString() }}</p>
-          <p v-if="result.createdAt">存证时间: {{ new Date(result.createdAt).toLocaleString() }}</p>
+          <p v-if="result.networkTime">网络授时记录: {{ new Date(result.networkTime).toLocaleString() }}</p>
+          <p v-if="result.createdAt">本地记录创建时间: {{ new Date(result.createdAt).toLocaleString() }}</p>
         </div>
 
         <button class="ghost-button" type="button" @click="emit('switchTab', 'vault')">
@@ -655,8 +655,8 @@ function formatMediaPayloadRole(value?: string | null): string {
           <strong>{{ formatAnchorProtocol(publicRightsSnapshot.registry.anchorProtocol) }}</strong>
           <span>Manifest</span>
           <strong>{{ publicRightsSnapshot.rightsManifest ? `v${publicRightsSnapshot.rightsManifest.manifestVersion}` : "待回填" }}</strong>
-          <span>法律结论</span>
-          <strong>{{ publicRightsSnapshot.trainingPermission.legalConclusion ? "是" : "否" }}</strong>
+          <span>法律效力边界</span>
+          <strong>{{ publicRightsSnapshot.trainingPermission.legalConclusion ? "上游字段异常，需人工复核" : "系统不作法律结论" }}</strong>
         </div>
         <p v-if="publicRightsSnapshot?.warnings.length" class="verify-public-rights__warning">
           {{ publicRightsSnapshot.warnings.join(" / ") }}
@@ -692,9 +692,9 @@ function formatMediaPayloadRole(value?: string | null): string {
       <div class="verify-report-export">
         <div>
           <strong>跨端报告包校验</strong>
-          <p>{{ importedReportDir || "可选择桌面完整报告包，或移动端生成的桌面签发交接包。" }}</p>
+          <p>{{ importedReportDir || "可选择桌面完整报告包，或移动端生成的桌面报告交接包。" }}</p>
           <small v-if="importedReportVerification">
-            类型：{{ importedReportVerification.reportType === "formal_report_handoff" ? "移动签发交接包" : "完整报告包" }}
+            类型：{{ importedReportVerification.reportType === "formal_report_handoff" ? "移动报告交接包" : "完整报告包" }}
             · 完整性：{{ importedReportVerification.integrityStatus === "matched" ? "文件匹配" : "校验失败" }}
             · 文档合同：{{ importedReportVerification.documentContractStatus === "matched" ? "匹配" : "不匹配" }}
             · 签名：{{ importedReportVerification.signatureStatus === "not_signed" ? "未签名" : "存在但未验证" }}
@@ -764,8 +764,8 @@ function formatMediaPayloadRole(value?: string | null): string {
                 ['附件完整性', rightsEvidencePackVerification.attachmentIntegrityStatus],
                 ['采集事件链', rightsEvidencePackVerification.eventChainStatus],
                 ['附件追加链', rightsEvidencePackVerification.attachmentChainStatus],
-                ['数字签名', rightsEvidencePackVerification.signatureStatus],
-                ['可信时间', rightsEvidencePackVerification.trustedTimeStatus],
+                ['包级数字签名', rightsEvidencePackVerification.signatureStatus],
+                ['包级时间戳', rightsEvidencePackVerification.trustedTimeStatus],
               ]"
               :key="item[0]"
               class="verify-case-pack__status"
@@ -840,7 +840,7 @@ function formatMediaPayloadRole(value?: string | null): string {
             完整性：{{ latestReportVerification.integrityStatus === "matched" ? "文件匹配" : "校验失败" }}
             · 文档合同：{{ latestReportVerification.documentContractStatus === "matched" ? "匹配" : "不匹配" }}
             · 签名：{{ latestReportVerification.signatureStatus === "not_signed" ? "未签名" : "存在但未验证" }}
-            · 可信时间：{{ latestReportVerification.trustedTimeStatus === "not_timestamped" ? "未加盖" : "存在但未验证" }}
+            · 包级时间戳：{{ latestReportVerification.trustedTimeStatus === "not_timestamped" ? "未加盖" : "存在但未验证" }}
           </small>
         </div>
         <div class="verify-report-export__actions">

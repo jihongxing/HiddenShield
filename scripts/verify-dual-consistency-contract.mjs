@@ -624,7 +624,7 @@ assert(
     sources.mobileStateTest.includes('does not overwrite same id local record while awaiting registry arbitration') &&
     sources.desktopStorage.includes('pending_registry_reconcile') &&
     sources.desktopVaultCommand.includes('repair_watermark_record_reissue') &&
-    sources.desktopVault.includes('重新签发并修复保护副本') &&
+    sources.desktopVault.includes('重新签发版权编号并修复保护副本') &&
     sources.mobileVault.includes('申请重新签发'),
   'desktop/mobile sync conflict resolution must keep duplicate, registry arbitration, upgraded, stale revision, and reissue repair outcomes',
 );

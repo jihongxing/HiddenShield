@@ -1,0 +1,37 @@
+{
+  "productName": "HiddenShield 感知质量实验室",
+  "version": "0.1.0",
+  "identifier": "com.hiddenshield.perceptual-quality-lab",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1432",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "HiddenShield 感知质量实验室",
+        "label": "main",
+        "width": 1440,
+        "height": 940,
+        "minWidth": 1080,
+        "minHeight": 720,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' asset: data: blob:; media-src 'self' asset: data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src ipc: http://ipc.localhost",
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["$TEMP/hiddenshield-perceptual-quality-lab/**"]
+      }
+    }
+  },
+  "bundle": {
+    "active": false,
+    "targets": ["nsis"],
+    "icon": ["../../../src-tauri/icons/icon.ico"]
+  }
+}

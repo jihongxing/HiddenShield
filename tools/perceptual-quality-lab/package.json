@@ -1,0 +1,28 @@
+{
+  "name": "hiddenshield-perceptual-quality-lab",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Standalone local perceptual quality and ABX laboratory for HiddenShield media pairs.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "test": "vue-tsc --noEmit && node --test src/abx.test.ts"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.10.1",
+    "@tauri-apps/plugin-dialog": "^2.7.0",
+    "vue": "^3.5.32"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.10.1",
+    "@types/node": "^25.6.0",
+    "@vitejs/plugin-vue": "^6.0.6",
+    "typescript": "^6.0.3",
+    "vite": "^8.1.5",
+    "vue-tsc": "^3.2.6"
+  }
+}

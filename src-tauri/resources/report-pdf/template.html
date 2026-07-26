@@ -1161,7 +1161,7 @@
         <div class="cover-status-row">
           <div class="status-seal" aria-label="报告状态">
             <div>
-              <strong data-bind="statusLabel">验证通过</strong>
+              <strong data-bind="statusLabel">技术校验通过</strong>
               <span data-bind="statusCode">WITH GAPS</span>
             </div>
           </div>
@@ -1178,7 +1178,7 @@
       </div>
 
         <p class="cover-boundary" data-pretext contenteditable="true">
-          本报告由 HiddenShield 根据版权库记录自动生成，不构成法律意见、司法鉴定意见、公证文书或诉讼结果承诺。报告包可使用 manifest.json 离线校验；当前未签名，未提供在线校验服务。
+          本报告由 HiddenShield 根据版权库记录自动生成，不构成法律意见、司法鉴定意见、公证文书或诉讼结果承诺。载荷认证标签与 manifest.json 摘要匹配只表示技术规则或文件完整性匹配，不等于发行方数字签名、实名认证或法定权属确认。当前报告包未签名，未提供在线校验服务。
       </p>
 
       <footer class="page-footer">
@@ -1220,7 +1220,7 @@
               <span>验证状态</span>
             </div>
           </div>
-          <div class="score-caption" data-bind="scoreCaption">核心验证通过<br>登记与签名材料待补</div>
+          <div class="score-caption" data-bind="scoreCaption">核心技术校验通过<br>登记与外部签名材料待补</div>
         </div>
       </div>
 
@@ -1357,7 +1357,7 @@
 
       <div class="boundary-grid">
         <section class="boundary-column verified">
-          <h3>系统已验证</h3>
+          <h3>系统已核对</h3>
           <ul id="boundary-verified"></ul>
         </section>
         <section class="boundary-column declared">
@@ -1408,14 +1408,14 @@
         watermarkUid: "HS-V3-IMG-7F31A2D9",
         creator: "林川影像工作室",
         exportedAt: "2026-07-14 16:20:31 +08:00",
-        statusLabel: "验证通过",
+        statusLabel: "技术校验通过",
         statusCode: "WITH GAPS",
         shortCode: "7F31-A2D9",
         coverStatus: "媒体摘要与写后读取验证一致；版权编号仍处于待登记状态，TSA token 已记录但尚未纳入独立签名校验。",
         summaryHeadline: "保护副本中的 V3 最小锚点已完成写后读取验证",
         summaryNarrative: "HiddenShield 记录的原始图片摘要、保护副本摘要和 V3 最小锚点信息已形成对应关系。报告生成时未导出原始媒体、保护副本或本地文件路径。",
         confidence: "99",
-        scoreCaption: "核心验证通过\n登记与签名材料待补",
+        scoreCaption: "核心技术校验通过\n登记与外部签名材料待补",
         mediaType: "图片 · PNG",
         mediaSpec: "4032 × 3024 px",
         createdAt: "2026-07-12 09:42:18 +08:00",
@@ -1429,7 +1429,7 @@
           "报告隐私策略排除原始媒体、保护副本和本地路径。"
         ],
         gaps: [
-          "版权编号签发模式为 offline generated，registry 状态仍为 pending registration。",
+          "版权编号生成模式为 offline generated，registry 状态仍为 pending registration。",
           "TSA token 存在，但 R0 报告尚未执行独立 token 签名校验。",
           "创作者与作品来源属于用户声明，不等于平台完成身份或权属鉴定。"
         ],
@@ -1488,14 +1488,14 @@
         watermarkUid: "HS-V3-AUD-58C0E4B7",
         creator: "拾音计划 · 周屿",
         exportedAt: "2026-07-14 16:26:08 +08:00",
-        statusLabel: "验证通过",
+        statusLabel: "技术校验通过",
         statusCode: "COMPLETE",
         shortCode: "58C0-E4B7",
         coverStatus: "音频保护副本已完成 V3 recovery packet 写入与写后读取验证；网络时间与 registry receipt 均已记录。",
         summaryHeadline: "音频 recovery packet 与版权记录编号一致",
         summaryNarrative: "HiddenShield 对 WAV 母带计算原始摘要，在保护副本中写入 V3 最小锚点，并完成写后读取。报告呈现技术验证结果，不包含音频字节或本地路径。",
         confidence: "100",
-        scoreCaption: "核心验证通过\n时间与登记材料齐全",
+        scoreCaption: "核心技术校验通过\n时间与登记材料齐全",
         mediaType: "音频 · WAV",
         mediaSpec: "48 kHz · 24 bit · 03:42",
         createdAt: "2026-07-10 21:18:42 +08:00",
@@ -1519,7 +1519,7 @@
           ["写后读取", "默认 extractor 读取锚点并核对 payload auth。", "verified"],
           ["版本关系", "记录父版权编号和母带修订原因。", "verified"],
           ["Registry", "云端 confirm 返回登记 receipt。", "external"],
-          ["可信时间", "记录网络时间与 RFC 3161 token。", "external"],
+          ["时间材料", "记录网络时间与 RFC 3161 token；是否可信仍取决于独立验签与上下文。", "external"],
           ["报告快照", "生成统一事实模型与四页报告。", "verified"],
           ["Manifest", "计划覆盖 PDF、JSON 与时间附件。", ""]
         ],
@@ -1532,7 +1532,7 @@
         ],
         integrity: [
           ["WAV 母带", "摘要已记录", "sha256:53b7dcaf618c…712985cc40d1"],
-          ["保护副本", "验证通过", "sha256:3349d4f8b25f…5bfddf2bac70"],
+          ["保护副本", "读取校验通过", "sha256:3349d4f8b25f…5bfddf2bac70"],
           ["父版本", "关系已记录", "HS-V3-AUD-21AA703C"],
           ["Registry", "已确认", "receipt: reg_rcpt_7a61d08"],
           ["TSA 材料", "token 存在", "RFC3161 / tsa.example"]

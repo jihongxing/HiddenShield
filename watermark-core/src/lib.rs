@@ -4,6 +4,7 @@ mod error;
 mod image;
 pub mod image_spatial_recovery_v1;
 mod payload;
+pub mod quality;
 mod service;
 mod v3_internal_qa;
 mod v3_readonly_fixture;
@@ -50,6 +51,17 @@ pub use payload::{
     TrainingPermission, WatermarkDecodedPayload, WatermarkIdentity, WatermarkIssueMode,
     WatermarkMediaType, WatermarkPayload, WatermarkPayloadV3MinimalAnchor, PAYLOAD_BYTES,
     PAYLOAD_V3_MINIMAL_ANCHOR_BYTES,
+};
+pub use quality::{
+    compare_audio_quality, compare_image_quality, AudioBandEnergyReport, AudioPerceptualDiagnosis,
+    AudioQualityInput, AudioQualityReport, AudioSegmentSnrReport, ImageQualityInput,
+    ImageQualityReport, QualityThresholdProfile, QualityThresholdResult,
+    AUDIO_BALANCED_MAX_LUFS_DELTA, AUDIO_BALANCED_MAX_PEAK_DELTA, AUDIO_BALANCED_MIN_SNR,
+    AUDIO_FORENSIC_MAX_LUFS_DELTA, AUDIO_FORENSIC_MAX_PEAK_DELTA, AUDIO_FORENSIC_MIN_SNR,
+    AUDIO_MAX_NEW_CLIPPING, AUDIO_RELEASE_MAX_LUFS_DELTA, AUDIO_RELEASE_MAX_PEAK_DELTA,
+    AUDIO_RELEASE_MIN_SNR, IMAGE_BALANCED_MIN_PSNR, IMAGE_BALANCED_MIN_SSIM,
+    IMAGE_FORENSIC_MIN_PSNR, IMAGE_FORENSIC_MIN_SSIM, IMAGE_RELEASE_MIN_PSNR,
+    IMAGE_RELEASE_MIN_SSIM,
 };
 pub use service::{
     AudioProtectionMode, EmbedOptions, ImageOutputFormat, MediaInput, MediaOutput,

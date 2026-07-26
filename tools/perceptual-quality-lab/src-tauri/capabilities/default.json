@@ -1,0 +1,11 @@
+{
+  "identifier": "default",
+  "description": "Minimal permissions for the standalone local quality laboratory.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-close",
+    "dialog:default",
+    "dialog:allow-open"
+  ]
+}

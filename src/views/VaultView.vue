@@ -121,7 +121,7 @@ const selectedRecordTimeline = computed(() => {
   if (record.tsaTokenPath) {
     timeline.push(
       { label: "第三方时间证明", value: "已获取第三方时间戳回执" },
-      { label: "可信时间", value: formatCopyrightDateTime(record.networkTime || record.createdAt) },
+      { label: "时间记录", value: formatCopyrightDateTime(record.networkTime || record.createdAt) },
       { label: "时间证明服务", value: formatTimeProofService(record.tsaSource) },
     );
   } else if (record.networkTime) {
@@ -489,9 +489,9 @@ async function supplementTrustedTime(record: VaultRecord) {
     if (selectedLineageRecord.value?.id === updated.id) {
       selectedLineageRecord.value = updated;
     }
-    syncMessage.value = "可信时间材料已补充。";
+    syncMessage.value = "第三方时间材料已补充。";
   } catch (error: unknown) {
-    syncMessage.value = userFacingErrorMessage(error, "补充可信时间");
+    syncMessage.value = userFacingErrorMessage(error, "补充第三方时间材料");
   } finally {
     supplementingTrustedTimeRecordId.value = null;
   }
@@ -801,7 +801,7 @@ async function repairRegistryRecord(record: VaultRecord) {
             <span class="registry-arbitration-panel__label">登记仲裁</span>
             <strong>需要处理的版权编号</strong>
             <p>
-              同一版权编号出现不同作品指纹、后端返回冲突，或历史记录需要重新签发时，必须修复保护副本 payload 后再作为已登记记录使用。
+              同一版权编号出现不同作品指纹、后端返回冲突，或版权编号需要重新签发时，必须修复保护副本 payload 后再作为已登记记录使用。这里的“签发”仅指编号生成或分配，不代表数字签名。
             </p>
           </div>
           <span class="pill">{{ registryAttentionRecords.length }} 条</span>
@@ -828,7 +828,7 @@ async function repairRegistryRecord(record: VaultRecord) {
               :disabled="repairingRecordId === record.id || !cloudProfile"
               @click="repairRegistryRecord(record)"
             >
-              {{ repairingRecordId === record.id ? "修复中" : "重新签发并修复保护副本" }}
+              {{ repairingRecordId === record.id ? "修复中" : "重新签发版权编号并修复保护副本" }}
             </button>
           </div>
         </article>
@@ -991,7 +991,7 @@ async function repairRegistryRecord(record: VaultRecord) {
                 :disabled="repairingRecordId === selectedRecord.id || !cloudProfile"
                 @click="repairRegistryRecord(selectedRecord)"
               >
-                {{ repairingRecordId === selectedRecord.id ? "修复中" : "重新签发并修复保护副本" }}
+                {{ repairingRecordId === selectedRecord.id ? "修复中" : "重新签发版权编号并修复保护副本" }}
               </button>
               <button
                 class="ghost-button"
@@ -1008,7 +1008,7 @@ async function repairRegistryRecord(record: VaultRecord) {
                 :disabled="supplementingTrustedTimeRecordId === selectedRecord.id"
                 @click="supplementTrustedTime(selectedRecord)"
               >
-                {{ supplementingTrustedTimeRecordId === selectedRecord.id ? "正在获取可信时间" : "补充可信时间" }}
+                {{ supplementingTrustedTimeRecordId === selectedRecord.id ? "正在获取第三方时间材料" : "补充第三方时间材料" }}
               </button>
             </div>
 
@@ -1038,7 +1038,7 @@ async function repairRegistryRecord(record: VaultRecord) {
                 <article>
                   <span>版权详细报告</span>
                   <strong>{{ isMockPaymentMode ? "模拟授权" : "¥19.9" }} <small>{{ isMockPaymentMode ? "不扣款" : "/ 份" }}</small></strong>
-                  <p>包含版权信息、验证结果、可信时间与完整性摘要。</p>
+                  <p>包含版权信息、技术验证结果、时间回执状态与完整性摘要；不提供数字签名或法律权属结论。</p>
                   <button
                 class="primary-button report-commerce-card__buy"
                 type="button"
@@ -1094,7 +1094,7 @@ async function repairRegistryRecord(record: VaultRecord) {
               完整性：{{ reportVerificationResults[item.reportId].integrityStatus === "matched" ? "文件匹配" : "校验失败" }}
               · 文档合同：{{ reportVerificationResults[item.reportId].documentContractStatus === "matched" ? "匹配" : "不匹配" }}
               · 签名：{{ reportVerificationResults[item.reportId].signatureStatus === "not_signed" ? "未签名" : "存在但未验证" }}
-              · 可信时间：{{ reportVerificationResults[item.reportId].trustedTimeStatus === "not_timestamped" ? "未加盖" : "存在但未验证" }}
+              · 包级时间戳：{{ reportVerificationResults[item.reportId].trustedTimeStatus === "not_timestamped" ? "未加盖" : "存在但未验证" }}
             </small>
           </div>
           <div class="report-export-item__actions">
@@ -1225,7 +1225,7 @@ async function repairRegistryRecord(record: VaultRecord) {
           <span>第三方时间证明</span>
           <b>{{ selectedLineageRecord.tsaTokenPath ? "已获取第三方时间戳回执" : "未获取" }}</b>
           <template v-if="selectedLineageRecord.tsaTokenPath">
-            <span>可信时间</span>
+            <span>第三方时间回执时间</span>
             <b>{{ formatCopyrightDateTime(selectedLineageRecord.networkTime || selectedLineageRecord.createdAt) }}</b>
             <span>时间证明服务</span>
             <b>{{ formatTimeProofService(selectedLineageRecord.tsaSource) }}</b>

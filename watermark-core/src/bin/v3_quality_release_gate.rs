@@ -1,5 +1,4 @@
 use image::{ImageBuffer, ImageFormat, Rgb};
-use realfft::RealFftPlanner;
 use sha2::{Digest, Sha256};
 use std::env;
 use std::fs;
@@ -7,30 +6,19 @@ use std::io::Cursor;
 use std::path::{Path, PathBuf};
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use watermark_core::{
-    audio_v3_quality_diagnostics, AIContentFlags, AudioProtectionMode, AudioV3QualityDiagnostics,
-    EmbedOptions, ImageOutputFormat, MediaInput, MediaOutput, PayloadV2BuildInput,
-    WatermarkDecodedPayload, WatermarkIssueMode, WatermarkMediaType, WatermarkPayload,
+    audio_v3_quality_diagnostics, compare_audio_quality, compare_image_quality, AIContentFlags,
+    AudioPerceptualDiagnosis, AudioProtectionMode, AudioQualityInput, AudioV3QualityDiagnostics,
+    EmbedOptions, ImageOutputFormat, ImageQualityInput, MediaInput, MediaOutput,
+    PayloadV2BuildInput, WatermarkDecodedPayload, WatermarkIssueMode, WatermarkMediaType,
+    WatermarkPayload, AUDIO_FORENSIC_MAX_LUFS_DELTA, AUDIO_FORENSIC_MAX_PEAK_DELTA,
+    AUDIO_FORENSIC_MIN_SNR, AUDIO_MAX_NEW_CLIPPING, AUDIO_RELEASE_MAX_LUFS_DELTA,
+    AUDIO_RELEASE_MAX_PEAK_DELTA, AUDIO_RELEASE_MIN_SNR, IMAGE_FORENSIC_MIN_PSNR,
+    IMAGE_FORENSIC_MIN_SSIM, IMAGE_RELEASE_MIN_PSNR, IMAGE_RELEASE_MIN_SSIM,
     PAYLOAD_V3_MINIMAL_ANCHOR_BYTES,
 };
 
-const IMAGE_MIN_PSNR: f64 = 32.0;
-const IMAGE_MIN_SSIM: f64 = 0.985;
 const IMAGE_MAX_ROUNDTRIP_MS: u128 = 25_000;
-const IMAGE_FULL_MIN_PSNR: f64 = 38.0;
-const IMAGE_FULL_MIN_SSIM: f64 = 0.990;
-const AUDIO_MIN_SNR: f64 = 45.0;
-const AUDIO_MAX_PEAK_DELTA: f64 = 0.08;
-const AUDIO_MAX_LUFS_DELTA: f64 = 0.8;
-const AUDIO_MAX_NEW_CLIPPING: usize = 0;
-const AUDIO_FULL_MIN_SNR: f64 = 44.0;
-const AUDIO_FULL_MAX_PEAK_DELTA: f64 = 0.8;
-const AUDIO_FULL_MAX_LUFS_DELTA: f64 = 0.5;
 const AUDIO_SAMPLE_RATE: usize = 44_100;
-const AUDIO_DIAGNOSTIC_FFT_SIZE: usize = 4096;
-const AUDIO_DIAGNOSTIC_SEGMENT_SECONDS: usize = 1;
-const AUDIO_LOW_BAND_HZ: (f64, f64) = (20.0, 1_500.0);
-const AUDIO_WATERMARK_BAND_HZ: (f64, f64) = (2_000.0, 8_000.0);
-const AUDIO_HIGH_BAND_HZ: (f64, f64) = (8_000.0, 16_000.0);
 
 fn main() -> Result<(), String> {
     let args: Vec<String> = env::args().skip(1).collect();
@@ -196,36 +184,36 @@ impl GateScope {
 
     fn image_min_psnr(self) -> f64 {
         match self {
-            Self::ReleaseSmoke => IMAGE_MIN_PSNR,
-            Self::Full => IMAGE_FULL_MIN_PSNR,
+            Self::ReleaseSmoke => IMAGE_RELEASE_MIN_PSNR,
+            Self::Full => IMAGE_FORENSIC_MIN_PSNR,
         }
     }
 
     fn image_min_ssim(self) -> f64 {
         match self {
-            Self::ReleaseSmoke => IMAGE_MIN_SSIM,
-            Self::Full => IMAGE_FULL_MIN_SSIM,
+            Self::ReleaseSmoke => IMAGE_RELEASE_MIN_SSIM,
+            Self::Full => IMAGE_FORENSIC_MIN_SSIM,
         }
     }
 
     fn audio_min_snr(self) -> f64 {
         match self {
-            Self::ReleaseSmoke => AUDIO_MIN_SNR,
-            Self::Full => AUDIO_FULL_MIN_SNR,
+            Self::ReleaseSmoke => AUDIO_RELEASE_MIN_SNR,
+            Self::Full => AUDIO_FORENSIC_MIN_SNR,
         }
     }
 
     fn audio_max_peak_delta(self) -> f64 {
         match self {
-            Self::ReleaseSmoke => AUDIO_MAX_PEAK_DELTA,
-            Self::Full => AUDIO_FULL_MAX_PEAK_DELTA,
+            Self::ReleaseSmoke => AUDIO_RELEASE_MAX_PEAK_DELTA,
+            Self::Full => AUDIO_FORENSIC_MAX_PEAK_DELTA,
         }
     }
 
     fn audio_max_lufs_delta(self) -> f64 {
         match self {
-            Self::ReleaseSmoke => AUDIO_MAX_LUFS_DELTA,
-            Self::Full => AUDIO_FULL_MAX_LUFS_DELTA,
+            Self::ReleaseSmoke => AUDIO_RELEASE_MAX_LUFS_DELTA,
+            Self::Full => AUDIO_FORENSIC_MAX_LUFS_DELTA,
         }
     }
 }
@@ -278,8 +266,12 @@ fn run_image_sample(
     let protected = image::load_from_memory(&bytes)
         .map_err(|error| format!("open image protected: {error}"))?
         .to_rgb8();
-    let psnr = image_psnr(&control, &protected)?;
-    let ssim = image_ssim(&control, &protected)?;
+    let quality = compare_image_quality(ImageQualityInput {
+        source: &control,
+        candidate: &protected,
+    })?;
+    let psnr = quality.psnr;
+    let ssim = quality.ssim;
     let roundtrip_ms = embed_ms + extract_ms;
     let extract_passed = anchor.watermark_uid() == payload.watermark_uid();
     let passed = extract_passed
@@ -395,11 +387,17 @@ fn run_audio_sample(
     let protected_samples = wav_samples(&bytes)?;
     let diagnostics = audio_v3_quality_diagnostics(&sample.samples, &protected_samples, &anchor)
         .map_err(|error| format!("audio diagnostics {}: {error}", sample.id))?;
-    let perceptual_analysis = audio_perceptual_diagnosis(&sample.samples, &protected_samples)?;
-    let snr = audio_snr(&sample.samples, &protected_samples)?;
-    let peak_delta = (peak_abs(&sample.samples) - peak_abs(&protected_samples)).abs();
-    let lufs_delta = (approx_lufs(&sample.samples) - approx_lufs(&protected_samples)).abs();
-    let new_clipping = new_clipping_samples(&sample.samples, &protected_samples);
+    let quality = compare_audio_quality(AudioQualityInput {
+        source: &sample.samples,
+        candidate: &protected_samples,
+        sample_rate: AUDIO_SAMPLE_RATE,
+        channels: 1,
+    })?;
+    let perceptual_analysis = &quality.perceptual_diagnosis;
+    let snr = quality.snr;
+    let peak_delta = quality.peak_delta;
+    let lufs_delta = quality.lufs_delta;
+    let new_clipping = quality.new_clipping;
     let extract_passed = anchor.watermark_uid() == payload.watermark_uid();
     let passed = extract_passed
         && snr >= scope.audio_min_snr()
@@ -447,7 +445,7 @@ fn run_audio_sample(
             embed_ms,
             extract_ms,
             audio_diagnostics_json(&diagnostics),
-            audio_perceptual_diagnosis_json(&perceptual_analysis),
+            audio_perceptual_diagnosis_json(perceptual_analysis),
         ),
         markdown: format!(
             "| {} | {} | {} | {:.2} | {:.4} | {:.4} | {} |",
@@ -467,7 +465,7 @@ fn run_audio_sample(
         audio_analysis_markdown: Some(audio_perceptual_diagnosis_markdown(
             media_type_label,
             sample.id,
-            &perceptual_analysis,
+            perceptual_analysis,
         )),
         media_type: media_type_label,
         sample_id: sample.id,
@@ -769,112 +767,6 @@ fn wav_samples(bytes: &[u8]) -> Result<Vec<f32>, String> {
         .map_err(|error| format!("read wav sample: {error}"))
 }
 
-fn image_psnr(
-    source: &ImageBuffer<Rgb<u8>, Vec<u8>>,
-    embedded: &ImageBuffer<Rgb<u8>, Vec<u8>>,
-) -> Result<f64, String> {
-    if source.dimensions() != embedded.dimensions() {
-        return Err("image dimensions differ".to_string());
-    }
-    let mut mse = 0.0;
-    let mut count = 0.0;
-    for (left, right) in source.pixels().zip(embedded.pixels()) {
-        for channel in 0..3 {
-            let delta = f64::from(left[channel]) - f64::from(right[channel]);
-            mse += delta * delta;
-            count += 1.0;
-        }
-    }
-    mse /= count;
-    if mse == 0.0 {
-        return Ok(99.0);
-    }
-    Ok(10.0 * ((255.0 * 255.0) / mse).log10())
-}
-
-fn image_ssim(
-    source: &ImageBuffer<Rgb<u8>, Vec<u8>>,
-    embedded: &ImageBuffer<Rgb<u8>, Vec<u8>>,
-) -> Result<f64, String> {
-    if source.dimensions() != embedded.dimensions() {
-        return Err("image dimensions differ".to_string());
-    }
-    let mut n = 0.0;
-    let mut sum_x = 0.0;
-    let mut sum_y = 0.0;
-    for (left, right) in source.pixels().zip(embedded.pixels()) {
-        let x = luma(left);
-        let y = luma(right);
-        sum_x += x;
-        sum_y += y;
-        n += 1.0;
-    }
-    let mean_x = sum_x / n;
-    let mean_y = sum_y / n;
-    let mut var_x = 0.0;
-    let mut var_y = 0.0;
-    let mut cov = 0.0;
-    for (left, right) in source.pixels().zip(embedded.pixels()) {
-        let dx = luma(left) - mean_x;
-        let dy = luma(right) - mean_y;
-        var_x += dx * dx;
-        var_y += dy * dy;
-        cov += dx * dy;
-    }
-    var_x /= n - 1.0;
-    var_y /= n - 1.0;
-    cov /= n - 1.0;
-    let c1 = (0.01_f64 * 255.0).powi(2);
-    let c2 = (0.03_f64 * 255.0).powi(2);
-    Ok(((2.0 * mean_x * mean_y + c1) * (2.0 * cov + c2))
-        / ((mean_x.powi(2) + mean_y.powi(2) + c1) * (var_x + var_y + c2)))
-}
-
-fn luma(pixel: &Rgb<u8>) -> f64 {
-    0.2126 * f64::from(pixel[0]) + 0.7152 * f64::from(pixel[1]) + 0.0722 * f64::from(pixel[2])
-}
-
-fn audio_snr(source: &[f32], embedded: &[f32]) -> Result<f64, String> {
-    let len = source.len().min(embedded.len());
-    if len == 0 {
-        return Err("empty audio samples".to_string());
-    }
-    let mut signal = 0.0;
-    let mut noise = 0.0;
-    for index in 0..len {
-        let s = f64::from(source[index]);
-        let e = f64::from(embedded[index]);
-        signal += s * s;
-        noise += (s - e) * (s - e);
-    }
-    if noise == 0.0 {
-        return Ok(99.0);
-    }
-    Ok(10.0 * (signal / noise).log10())
-}
-
-fn peak_abs(samples: &[f32]) -> f64 {
-    samples
-        .iter()
-        .fold(0.0_f64, |acc, value| acc.max(f64::from(value.abs())))
-}
-
-fn approx_lufs(samples: &[f32]) -> f64 {
-    let mean_square = samples
-        .iter()
-        .map(|value| f64::from(*value) * f64::from(*value))
-        .sum::<f64>()
-        / samples.len().max(1) as f64;
-    -0.691 + 10.0 * mean_square.max(1.0e-12).log10()
-}
-
-fn new_clipping_samples(source: &[f32], embedded: &[f32]) -> usize {
-    let len = source.len().min(embedded.len());
-    (0..len)
-        .filter(|index| source[*index].abs() < 0.999 && embedded[*index].abs() >= 0.999)
-        .count()
-}
-
 fn audio_diagnostics_json(diagnostics: &AudioV3QualityDiagnostics) -> String {
     format!(
         "{{\"frameCount\":{},\"shortTimeRms\":{{\"min\":{:.6},\"mean\":{:.6},\"max\":{:.6}}},\"lowEnergyFrameRatio\":{:.6},\"transientFrameRatio\":{:.6},\"noiseLikeFrameRatio\":{:.6},\"embeddingStrength\":{{\"minContrast\":{:.6},\"meanContrast\":{:.6},\"maxContrast\":{:.6},\"modifiedPairRatio\":{:.6}}},\"noiseFloorSparseRecovery\":{},\"extractionConfidence\":{:.6}}}",
@@ -919,212 +811,25 @@ fn audio_diagnostics_markdown(
     )
 }
 
-struct AudioPerceptualDiagnosis {
-    segment_count: usize,
-    segment_snr_min: f64,
-    segment_snr_mean: f64,
-    segment_snr_max: f64,
-    segment_snr_first: f64,
-    segment_snr_middle: f64,
-    segment_snr_last: f64,
-    segment_snr_spread: f64,
-    low_band_signal_share: f64,
-    low_band_noise_share: f64,
-    watermark_band_signal_share: f64,
-    watermark_band_noise_share: f64,
-    high_band_signal_share: f64,
-    high_band_noise_share: f64,
-    dominant_noise_band: &'static str,
-    diagnosis: &'static str,
-}
-
-fn audio_perceptual_diagnosis(
-    source: &[f32],
-    protected: &[f32],
-) -> Result<AudioPerceptualDiagnosis, String> {
-    let segment_samples = AUDIO_SAMPLE_RATE * AUDIO_DIAGNOSTIC_SEGMENT_SECONDS;
-    let len = source.len().min(protected.len());
-    if len < segment_samples {
-        return Err("audio too short for segmented SNR diagnosis".to_string());
-    }
-    let mut segment_snrs = Vec::new();
-    for start in (0..len).step_by(segment_samples) {
-        let end = (start + segment_samples).min(len);
-        if end - start < segment_samples / 2 {
-            continue;
-        }
-        segment_snrs.push(audio_snr(&source[start..end], &protected[start..end])?);
-    }
-    if segment_snrs.is_empty() {
-        return Err("no audio segments available for SNR diagnosis".to_string());
-    }
-
-    let segment_snr_min = segment_snrs
-        .iter()
-        .copied()
-        .fold(f64::INFINITY, |acc, value| acc.min(value));
-    let segment_snr_max = segment_snrs
-        .iter()
-        .copied()
-        .fold(f64::NEG_INFINITY, |acc, value| acc.max(value));
-    let segment_snr_mean = segment_snrs.iter().sum::<f64>() / segment_snrs.len() as f64;
-    let segment_snr_first = segment_snrs[0];
-    let segment_snr_middle = segment_snrs[segment_snrs.len() / 2];
-    let segment_snr_last = *segment_snrs.last().unwrap_or(&segment_snr_middle);
-    let segment_snr_spread = segment_snr_max - segment_snr_min;
-
-    let bands = audio_band_energy_diagnosis(source, protected)?;
-    let signal_total = bands
-        .iter()
-        .map(|band| band.signal_energy)
-        .sum::<f64>()
-        .max(1e-18);
-    let noise_total = bands
-        .iter()
-        .map(|band| band.noise_energy)
-        .sum::<f64>()
-        .max(1e-18);
-    let share = |energy: f64, total: f64| energy / total;
-    let low = &bands[0];
-    let watermark = &bands[1];
-    let high = &bands[2];
-    let dominant = bands
-        .iter()
-        .max_by(|left, right| {
-            left.noise_energy
-                .partial_cmp(&right.noise_energy)
-                .unwrap_or(std::cmp::Ordering::Equal)
-        })
-        .ok_or_else(|| "no audio bands available for diagnosis".to_string())?;
-    let watermark_noise_share = share(watermark.noise_energy, noise_total);
-    let high_noise_share = share(high.noise_energy, noise_total);
-    let low_noise_share = share(low.noise_energy, noise_total);
-    let watermark_signal_share = share(watermark.signal_energy, signal_total);
-
-    let diagnosis =
-        if watermark_noise_share >= 0.55 && watermark_noise_share > watermark_signal_share * 1.4 {
-            "specific_watermark_band_energy_redistribution"
-        } else if segment_snr_spread <= 3.0
-            && (watermark_noise_share - watermark_signal_share).abs() <= 0.20
-        {
-            "full_band_noise_floor_statistical_amplification"
-        } else {
-            "audible_distortion_not_indicated_by_objective_diagnostic"
-        };
-
-    Ok(AudioPerceptualDiagnosis {
-        segment_count: segment_snrs.len(),
-        segment_snr_min,
-        segment_snr_mean,
-        segment_snr_max,
-        segment_snr_first,
-        segment_snr_middle,
-        segment_snr_last,
-        segment_snr_spread,
-        low_band_signal_share: share(low.signal_energy, signal_total),
-        low_band_noise_share: low_noise_share,
-        watermark_band_signal_share: watermark_signal_share,
-        watermark_band_noise_share: watermark_noise_share,
-        high_band_signal_share: share(high.signal_energy, signal_total),
-        high_band_noise_share: high_noise_share,
-        dominant_noise_band: dominant.name,
-        diagnosis,
-    })
-}
-
-struct AudioBandEnergy {
-    name: &'static str,
-    lo_hz: f64,
-    hi_hz: f64,
-    signal_energy: f64,
-    noise_energy: f64,
-}
-
-fn audio_band_energy_diagnosis(
-    source: &[f32],
-    protected: &[f32],
-) -> Result<Vec<AudioBandEnergy>, String> {
-    let len = source.len().min(protected.len());
-    let mut bands = vec![
-        AudioBandEnergy {
-            name: "low",
-            lo_hz: AUDIO_LOW_BAND_HZ.0,
-            hi_hz: AUDIO_LOW_BAND_HZ.1,
-            signal_energy: 0.0,
-            noise_energy: 0.0,
-        },
-        AudioBandEnergy {
-            name: "watermark",
-            lo_hz: AUDIO_WATERMARK_BAND_HZ.0,
-            hi_hz: AUDIO_WATERMARK_BAND_HZ.1,
-            signal_energy: 0.0,
-            noise_energy: 0.0,
-        },
-        AudioBandEnergy {
-            name: "high",
-            lo_hz: AUDIO_HIGH_BAND_HZ.0,
-            hi_hz: AUDIO_HIGH_BAND_HZ.1,
-            signal_energy: 0.0,
-            noise_energy: 0.0,
-        },
-    ];
-    if len < AUDIO_DIAGNOSTIC_FFT_SIZE {
-        return Err("audio too short for band-energy diagnosis".to_string());
-    }
-
-    let mut planner = RealFftPlanner::<f64>::new();
-    let fft = planner.plan_fft_forward(AUDIO_DIAGNOSTIC_FFT_SIZE);
-    let step = AUDIO_DIAGNOSTIC_FFT_SIZE;
-    for start in (0..=len - AUDIO_DIAGNOSTIC_FFT_SIZE).step_by(step) {
-        let end = start + AUDIO_DIAGNOSTIC_FFT_SIZE;
-        let mut signal_input = source[start..end]
-            .iter()
-            .map(|sample| f64::from(*sample))
-            .collect::<Vec<_>>();
-        let mut noise_input = source[start..end]
-            .iter()
-            .zip(protected[start..end].iter())
-            .map(|(left, right)| f64::from(*right) - f64::from(*left))
-            .collect::<Vec<_>>();
-        let mut signal_spectrum = fft.make_output_vec();
-        let mut noise_spectrum = fft.make_output_vec();
-        fft.process(&mut signal_input, &mut signal_spectrum)
-            .map_err(|error| format!("FFT failed: {error}"))?;
-        fft.process(&mut noise_input, &mut noise_spectrum)
-            .map_err(|error| format!("FFT failed: {error}"))?;
-
-        for bin in 1..signal_spectrum.len() {
-            let hz = bin as f64 * AUDIO_SAMPLE_RATE as f64 / AUDIO_DIAGNOSTIC_FFT_SIZE as f64;
-            for band in &mut bands {
-                if hz >= band.lo_hz && hz < band.hi_hz {
-                    band.signal_energy += signal_spectrum[bin].norm_sqr();
-                    band.noise_energy += noise_spectrum[bin].norm_sqr();
-                }
-            }
-        }
-    }
-    Ok(bands)
-}
-
 fn audio_perceptual_diagnosis_json(analysis: &AudioPerceptualDiagnosis) -> String {
     format!(
         "{{\"segmentedSnr\":{{\"segmentSeconds\":{},\"segmentCount\":{},\"min\":{:.4},\"mean\":{:.4},\"max\":{:.4},\"first\":{:.4},\"middle\":{:.4},\"last\":{:.4},\"spread\":{:.4}}},\"bandEnergyShare\":{{\"low\":{{\"signal\":{:.6},\"noise\":{:.6}}},\"watermark\":{{\"signal\":{:.6},\"noise\":{:.6}}},\"high\":{{\"signal\":{:.6},\"noise\":{:.6}}}}},\"dominantNoiseBand\":\"{}\",\"diagnosis\":\"{}\"}}",
-        AUDIO_DIAGNOSTIC_SEGMENT_SECONDS,
-        analysis.segment_count,
-        analysis.segment_snr_min,
-        analysis.segment_snr_mean,
-        analysis.segment_snr_max,
-        analysis.segment_snr_first,
-        analysis.segment_snr_middle,
-        analysis.segment_snr_last,
-        analysis.segment_snr_spread,
-        analysis.low_band_signal_share,
-        analysis.low_band_noise_share,
-        analysis.watermark_band_signal_share,
-        analysis.watermark_band_noise_share,
-        analysis.high_band_signal_share,
-        analysis.high_band_noise_share,
-        analysis.dominant_noise_band,
+        analysis.segmented_snr.segment_seconds,
+        analysis.segmented_snr.segment_count,
+        analysis.segmented_snr.min,
+        analysis.segmented_snr.mean,
+        analysis.segmented_snr.max,
+        analysis.segmented_snr.first,
+        analysis.segmented_snr.middle,
+        analysis.segmented_snr.last,
+        analysis.segmented_snr.spread,
+        analysis.band_energy.low_signal_share,
+        analysis.band_energy.low_noise_share,
+        analysis.band_energy.watermark_signal_share,
+        analysis.band_energy.watermark_noise_share,
+        analysis.band_energy.high_signal_share,
+        analysis.band_energy.high_noise_share,
+        analysis.band_energy.dominant_noise_band,
         analysis.diagnosis,
     )
 }
@@ -1138,18 +843,18 @@ fn audio_perceptual_diagnosis_markdown(
         "| {} | {} | {} | {:.2} / {:.2} / {:.2} | {:.2} | {:.3} / {:.3} | {:.3} / {:.3} | {:.3} / {:.3} | {} | {} |",
         media_type,
         sample_id,
-        analysis.segment_count,
-        analysis.segment_snr_min,
-        analysis.segment_snr_mean,
-        analysis.segment_snr_max,
-        analysis.segment_snr_spread,
-        analysis.low_band_signal_share,
-        analysis.low_band_noise_share,
-        analysis.watermark_band_signal_share,
-        analysis.watermark_band_noise_share,
-        analysis.high_band_signal_share,
-        analysis.high_band_noise_share,
-        analysis.dominant_noise_band,
+        analysis.segmented_snr.segment_count,
+        analysis.segmented_snr.min,
+        analysis.segmented_snr.mean,
+        analysis.segmented_snr.max,
+        analysis.segmented_snr.spread,
+        analysis.band_energy.low_signal_share,
+        analysis.band_energy.low_noise_share,
+        analysis.band_energy.watermark_signal_share,
+        analysis.band_energy.watermark_noise_share,
+        analysis.band_energy.high_signal_share,
+        analysis.band_energy.high_noise_share,
+        analysis.band_energy.dominant_noise_band,
         analysis.diagnosis,
     )
 }
