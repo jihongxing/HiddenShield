@@ -33,18 +33,18 @@ Azure Artifact Signing 示例：
 
 ## 当前发布策略
 
-当前发布链路采用 GitHub Actions 构建签名包并生成 Draft GitHub Release。GitHub Releases 是公开更新源；Tauri updater 使用独立 Ed25519 私钥签名更新资产，不依赖 Azure、PFX 或 Windows 代码签名订阅。
+当前发布链路采用 GitHub Actions 构建更新资产并先生成或更新 Draft GitHub Release；审核后由发布负责人公开。`v0.1.3` 已公开发布，资产清单见 [桌面 v0.1.3 发布清单](桌面v0.1.3发布清单.md)。GitHub Releases 是公开更新源；Tauri updater 使用独立 Ed25519 私钥签名更新资产，不依赖 Azure、PFX 或 Windows 代码签名订阅。
 
 约束如下：
 
 - updater 公钥已固化在 `src-tauri/tauri.conf.json`；私钥仅允许配置为 GitHub `production` Environment Secret `TAURI_SIGNING_PRIVATE_KEY`，并以 `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` 解锁。
 - Windows 发布包由 Tauri updater 签名校验完整性和来源；由于本方案不提供 Authenticode，首次安装仍可能显示未知发布者或 SmartScreen 提示。
-- `v0.1.1` 的自动发布仅生成 Windows 更新资产；macOS 必须在 Apple 签名与 notarization 凭据配置完成后另行恢复。
+- `v0.1.3` 当前只发布 Windows 更新资产；macOS 必须在 Apple 签名与 notarization 凭据配置完成后另行恢复。
 - 音视频处理依赖 `ffmpeg` 和 `ffprobe`，生产环境需通过系统 PATH 预装，不再运行时联网下载。
 
 ### 自动更新启用门槛
 
-在以下条件全部满足前，Release workflow 不得生成或发布 updater 消费的 `latest.json`、更新包签名或面向用户的“自动更新已可用”说明：
+Release workflow 已为 `v0.1.3` 生成 `latest.json` 与更新包签名；但在以下条件全部满足前，不得面向用户承诺“自动更新已可用”：
 
 1. GitHub `production` Environment 已配置 `TAURI_SIGNING_PRIVATE_KEY` 与 `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`。
 2. GitHub Release 对用户可公开访问；私有仓库 Release 不能直接作为无凭据客户端更新源。
@@ -52,11 +52,11 @@ Azure Artifact Signing 示例：
 
 客户端默认每 24 小时检查一次已签名更新清单；用户可在“设置 → 应用更新”关闭后台检查或手动检查。检查失败不会阻断当前版本工作。
 
-现有 `0.1.0` 不包含 updater，必须手动安装首个 updater-enabled `0.1.1`；`0.1.2` 起的 Windows 正式版本会生成 `latest.json` 与 `.sig`，可供 `0.1.1` 应用内升级。
+`0.1.0` 不包含 updater，必须手动安装较新的安装器。`v0.1.3` 已发布 `latest.json` 与 `.sig`，但真实升级、数据保留、断网恢复与公开回滚尚未完成发布验收，因此当前推荐手动下载并校验 SHA-256 后安装。
 
 ## GitHub Actions 触发方式
 
-已配置的工作流文件为 [release.yml](/D:/codeSpace/HiddenShield/.github/workflows/release.yml)。
+已配置的工作流文件为 [release.yml](../.github/workflows/release.yml)。
 
 触发方式：
 
@@ -149,9 +149,9 @@ Apple ID 模式：
 - 已生成 `CN=HiddenShield Release Signing` 自签 Code Signing PFX，并配置两个 Windows GitHub secrets。
 - 已取得 Apple Developer 账号、Developer ID Application 证书和 notarization 权限。
 - 版本号已同步更新到：
-  - [package.json](/D:/codeSpace/HiddenShield/package.json)
-  - [Cargo.toml](/D:/codeSpace/HiddenShield/src-tauri/Cargo.toml)
-  - [tauri.conf.json](/D:/codeSpace/HiddenShield/src-tauri/tauri.conf.json)
+  - [package.json](../package.json)
+  - [Cargo.toml](../src-tauri/Cargo.toml)
+  - [tauri.conf.json](../src-tauri/tauri.conf.json)
 - 本地已完成至少一次 `npm run build` 与 `cargo check`。
 - 运维侧已准备好面向用户的 FFmpeg 安装方案。
 
@@ -166,8 +166,8 @@ git push origin v0.1.1
 ```
 
 3. GitHub Actions 自动执行校验、签名、构建、公证。
-4. Workflow 会生成 GitHub Draft Release，并上传安装包。
-5. 人工验收签名、公证和安装流程后，再手动发布 Release。
+4. Workflow 会生成或更新 GitHub Draft Release，并上传安装包及 updater 签名。
+5. 人工验收签名、公证和安装流程后，再手动发布 Release；公开后补传 SHA-256 和发布清单。
 
 如需手动补发某个版本，可在 GitHub Actions 页面运行 `Release` workflow 并填写已有 tag；工作流会直接检出该 tag 对应的提交进行构建。
 
@@ -184,12 +184,12 @@ git push origin v0.1.1
 
 工作流依赖以下脚本：
 
-- [verify-release.mjs](/D:/codeSpace/HiddenShield/scripts/release/verify-release.mjs)
-- [initialize-self-signed-authenticode.ps1](/D:/codeSpace/HiddenShield/scripts/release/initialize-self-signed-authenticode.ps1)
-- [inject-windows-signing.ps1](/D:/codeSpace/HiddenShield/scripts/release/inject-windows-signing.ps1)
-- [sign-with-self-signed-authenticode.ps1](/D:/codeSpace/HiddenShield/scripts/release/sign-with-self-signed-authenticode.ps1)
-- [write-self-signed-authenticode-evidence.ps1](/D:/codeSpace/HiddenShield/scripts/release/write-self-signed-authenticode-evidence.ps1)
-- [import-apple-certificate.sh](/D:/codeSpace/HiddenShield/scripts/release/import-apple-certificate.sh)
-- [prepare-apple-notarization.sh](/D:/codeSpace/HiddenShield/scripts/release/prepare-apple-notarization.sh)
+- [verify-release.mjs](../scripts/release/verify-release.mjs)
+- [initialize-self-signed-authenticode.ps1](../scripts/release/initialize-self-signed-authenticode.ps1)
+- [inject-windows-signing.ps1](../scripts/release/inject-windows-signing.ps1)
+- [sign-with-self-signed-authenticode.ps1](../scripts/release/sign-with-self-signed-authenticode.ps1)
+- [write-self-signed-authenticode-evidence.ps1](../scripts/release/write-self-signed-authenticode-evidence.ps1)
+- [import-apple-certificate.sh](../scripts/release/import-apple-certificate.sh)
+- [prepare-apple-notarization.sh](../scripts/release/prepare-apple-notarization.sh)
 
 这些脚本的目标是让 Windows 免费发布路径不依赖 GCP Billing 或 Azure Subscription。Apple 资质仍需由发布负责人单独提供；未来如升级托管签名，可重新启用现有 Google KMS 与 Azure Artifact Signing adapter。
