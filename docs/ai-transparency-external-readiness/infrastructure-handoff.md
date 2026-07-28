@@ -27,4 +27,3 @@
 2. active/retained pepper、KMS/HSM unavailable 与 retirement/recovery 测试。
 3. signer、object-store finalize、notification delivery 的 receipt mismatch 与崩溃恢复测试。
 4. 双人复核的恢复演练完成记录。
-

@@ -22,4 +22,3 @@
 ## 验收出口
 
 仅当 private package preflight 返回 `sandbox_accepted`、12 个场景均为 `passed`，且每项均绑定不可变 evidence 与双方签署引用时，才能记录“该伙伴 Sandbox 验收已通过”。
-

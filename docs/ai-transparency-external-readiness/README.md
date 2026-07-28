@@ -25,4 +25,3 @@
 - 伙伴 Sandbox：`docs/AI生成内容标识设计伙伴Sandbox接入包合同.md`
 - 伙伴 JSON Schema：`packages/ai-transparency-design-partner-kit/schemas/design-partner-sandbox-kit-v1.schema.json`
 - 伙伴 preflight：`packages/ai-transparency-design-partner-kit/bin/preflight.mjs`
-
