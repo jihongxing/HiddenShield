@@ -845,13 +845,16 @@ Android QA 不能替代 iOS QA。
 - `packages/ai-transparency-sdk` server-side package、framework-neutral API facade、严格摘要/计量 receipt 校验和 fail-closed 错误模型。
 - 内部 fixture、contract、跨端读取和第三方分层样本 Gate。
 
-未完成但仍属于 Phase B 发布出口的范围：
+已完成的 Phase B 发布出口：
 
-- HiddenShield PostgreSQL 后端的 admission / session / mark / confirm 四个 internal platform endpoint。
-- 免费公共 Resolver 的最小只读接口。
+- HiddenShield PostgreSQL 后端的 admission / session / mark / confirm 四个 internal platform endpoint，并通过 SDK → facade → HTTP → Axum → PostgreSQL 端到端 QA。
+- 免费公共 Resolver 的最小只读接口；仅查询 confirmed 记录，保持匿名、无计量、最小公共字段和 `legalConclusion=false`。
+
+仍未完成且作为外部依赖挂起的 Phase B 发布出口：
+
 - 生产 provider Secret 注入和真实恢复演练。
 
-在上述出口完成前，状态保持 `只能内部测试`。
+在真实 provider Secret 注入和恢复演练完成前，平台能力保持 `只能内部测试`；已通过的 internal API 和 Resolver Gate 不构成公网部署、SDK 发布、production credential 发放或客户 SLA。
 
 ### Phase C：平台接入与设计伙伴试点
 

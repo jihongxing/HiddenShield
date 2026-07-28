@@ -2547,3 +2547,12 @@ Creator 行为：
 - 验证：本地 `npm run ai-transparency:ci` 通过；synthetic 输出仍固定为非真实 acceptance。
 - GitHub Gate：仓库 ruleset `main-and-master-required-checks` 已激活，匹配 `refs/heads/main` 与 `refs/heads/master`，并将 `AI Transparency contract gate` 与既有三个 CI checks 设为 required；工作流合并后的首个 PR 将产生该 check。
 - 下一商业化任务：保持该 Gate 为合并前检查；取得真实伙伴外部配置后另行新增受控、不可伪造的真实 Sandbox evidence Gate。
+
+## 2026-07-28 AI Transparency Phase B 发布出口状态校准
+
+- 状态：`internal_platform_api_and_public_resolver_verified_external_provider_activation_pending`。
+- 已完成：PostgreSQL-backed admission/session/mark/confirm internal API 与 confirmed-only 免费公共 Resolver 均已通过独立 Gate；它们不再是 Phase B 未完成出口。
+- 仍挂起：真实 Internal IAM、KMS/HSM、signer、object-store 与通知 provider 的 Secret 注入、真实性校验和恢复演练均依赖外部环境与配置。
+- 商业边界：internal API、Resolver、SDK 和 synthetic Sandbox QA 继续只用于内部测试或招募前演练；不得据此发布 SDK、发放 production credential、开放公网 Resolver、承诺 SLA 或确认收入。
+- 验证：PR #2 的 Ubuntu、Windows、Cloud sync contract/E2E 和 AI Transparency required contract gate 全部通过。
+- 下一商业化任务：取得首个真实设计伙伴及其外部配置后，执行受控的 12 场景 Sandbox evidence 验收；在此之前保持 production provider activation 与真实伙伴验收挂起。
