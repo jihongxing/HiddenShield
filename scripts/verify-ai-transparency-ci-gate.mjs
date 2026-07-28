@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 const packageJson = JSON.parse(await readFile("package.json", "utf8"));
-const workflow = await readFile(".github/workflows/ci.yml", "utf8");
+const workflow = (await readFile(".github/workflows/ci.yml", "utf8")).replace(
+  /\r\n/g,
+  "\n"
+);
 const command = packageJson.scripts["ai-transparency:ci"];
 
 assert.equal(typeof command, "string");
