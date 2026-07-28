@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hiddenshield.internal/contracts/ai-transparency/external-readiness-v1.schema.json",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "status",
+    "provider",
+    "designPartner",
+    "approvals"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "hs-ai-external-readiness-v1"
+    },
+    "status": {
+      "enum": [
+        "configuration_required",
+        "ready_for_internal_review"
+      ]
+    },
+    "provider": {
+      "type": "object",
+      "required": [
+        "iamReceiptUrl",
+        "iamIssuer",
+        "iamAudience",
+        "iamJwksUrl",
+        "workloadIdentityRef",
+        "kmsProvider",
+        "activePepperRef",
+        "retainedPepperRefs",
+        "kmsHealthUrl",
+        "signerEndpoint",
+        "signerCredentialRef",
+        "objectStoreCredentialRef",
+        "notificationCredentialRef",
+        "recoveryRunbookRef"
+      ],
+      "additionalProperties": false
+    },
+    "designPartner": {
+      "type": "object",
+      "required": [
+        "partnerId",
+        "sandboxApiBaseUrl",
+        "resolverBaseUrl",
+        "credentialSecretRef",
+        "partnerBundleRef",
+        "dataProcessingApprovalRef",
+        "acceptanceEvidenceRef"
+      ],
+      "additionalProperties": false
+    },
+    "approvals": {
+      "type": "object",
+      "required": [
+        "securityApprovalRef",
+        "legalApprovalRef",
+        "productApprovalRef"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

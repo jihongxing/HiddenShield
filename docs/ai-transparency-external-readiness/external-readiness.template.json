@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "hs-ai-external-readiness-v1",
+  "status": "configuration_required",
+  "provider": {
+    "iamReceiptUrl": "https://replace-me.internal/receipts",
+    "iamIssuer": "https://replace-me.internal",
+    "iamAudience": "hiddenshield-ai-custody",
+    "iamJwksUrl": "https://replace-me.internal/.well-known/jwks.json",
+    "workloadIdentityRef": "secret://replace-me/workload-identity",
+    "kmsProvider": "replace-me",
+    "activePepperRef": "kms://replace-me/active-pepper",
+    "retainedPepperRefs": [
+      "kms://replace-me/retained-pepper"
+    ],
+    "kmsHealthUrl": "https://replace-me.internal/health",
+    "signerEndpoint": "https://replace-me.internal/sign",
+    "signerCredentialRef": "secret://replace-me/signer",
+    "objectStoreCredentialRef": "secret://replace-me/object-store",
+    "notificationCredentialRef": "secret://replace-me/notification",
+    "recoveryRunbookRef": "runbook://replace-me/provider-recovery-v1"
+  },
+  "designPartner": {
+    "partnerId": "replace-me",
+    "sandboxApiBaseUrl": "https://replace-me.example/sandbox",
+    "resolverBaseUrl": "https://replace-me.example/resolve",
+    "credentialSecretRef": "secret://replace-me/sandbox-credential",
+    "partnerBundleRef": "partner://replace-me/sandbox-kit-v1",
+    "dataProcessingApprovalRef": "partner://replace-me/dpa",
+    "acceptanceEvidenceRef": null
+  },
+  "approvals": {
+    "securityApprovalRef": "approval://replace-me/security",
+    "legalApprovalRef": "approval://replace-me/legal",
+    "productApprovalRef": "approval://replace-me/product"
+  }
+}
