@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "ai_transparency_approval_fixture_v1",
+  "fixtureType": "versioned_profile_entitlement",
+  "fixtureId": "versioned-profile-entitlement-v1",
+  "licenseId": "atl_platform_001",
+  "profileId": "cn_aigc_label_2025_image_export_v1",
+  "profileKind": "regulatory",
+  "versions": [
+    {
+      "profileEntitlementVersionId": "atpev_cn_001_v1",
+      "version": 1,
+      "previousVersionId": null,
+      "status": "superseded",
+      "effectiveAt": "2026-07-01T00:00:00Z",
+      "expiresAt": "2027-07-01T00:00:00Z",
+      "termsVersion": "cn-profile-v1",
+      "legalReviewReference": "legal_cn_001",
+      "sourceChangeRequestId": "atcr_cn_001"
+    },
+    {
+      "profileEntitlementVersionId": "atpev_cn_001_v2",
+      "version": 2,
+      "previousVersionId": "atpev_cn_001_v1",
+      "status": "active",
+      "effectiveAt": "2026-07-27T00:00:00Z",
+      "expiresAt": "2027-07-27T00:00:00Z",
+      "termsVersion": "cn-profile-v1",
+      "legalReviewReference": "legal_cn_002",
+      "sourceChangeRequestId": "atcr_cn_002"
+    }
+  ],
+  "invariants": {
+    "activeVersionCount": 1,
+    "historyIsImmutable": true,
+    "renewCreatesNewVersion": true,
+    "revokedOrExpiredVersionMayBeRevived": false
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hiddenshield.local/contracts/ai-transparency-approval-fixture-v1.schema.json",
+  "type": "object",
+  "required": ["schemaVersion", "fixtureType", "fixtureId"],
+  "properties": {
+    "schemaVersion": { "const": "ai_transparency_approval_fixture_v1" },
+    "fixtureType": {
+      "enum": [
+        "actor_role_source",
+        "versioned_profile_entitlement",
+        "change_request",
+        "approval",
+        "execution",
+        "audit_state_machine",
+        "pre_migration_gates",
+        "concurrency_harness"
+      ]
+    },
+    "fixtureId": { "type": "string", "minLength": 1 }
+  },
+  "additionalProperties": true
+}

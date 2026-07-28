@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "ai_transparency_approval_fixture_v1",
+  "fixtureType": "approval",
+  "fixtureId": "approval-v1",
+  "approval": {
+    "approvalId": "atca_cn_002",
+    "changeRequestId": "atcr_cn_002",
+    "decision": "approved",
+    "approverActorId": "actor_compliance_001",
+    "approverRole": "ai_transparency_compliance_approver",
+    "requestDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "decisionReason": "legal review reference verified",
+    "policyVersion": "ai-transparency-four-eyes-v1"
+  },
+  "selfApprovalRejection": {
+    "approverActorId": "actor_requester_001",
+    "expectedReasonCode": "requester_approver_not_separated"
+  },
+  "invariants": {
+    "approverMustBeHuman": true,
+    "approverRoleMatchesOperation": true,
+    "approvalIsReusableAcrossRequests": false
+  }
+}

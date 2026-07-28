@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "artifact_finalize_recovery",
+  "baseInput": "base-production-input-v1.json",
+  "observed": {
+    "firstFinalizeStatus": "artifact_pending",
+    "firstArtifactReturned": false,
+    "firstCustomerMeteringQuantity": 0,
+    "recoveryUsesSameRequestDigest": true,
+    "recoverySignerInvoked": false,
+    "recoveredStatus": "confirmed"
+  },
+  "expected": {
+    "totalSignerInvocations": 1,
+    "recoveryAttempts": 1,
+    "newConfirmWritesDuringRecovery": 0,
+    "newLedgerWritesDuringRecovery": 0,
+    "artifactReturnedAfterRecovery": true,
+    "committedConfirmedMarkedImageCount": 1
+  }
+}

@@ -1,0 +1,5 @@
+DROP TRIGGER IF EXISTS trg_ai_marking_confirm_audit_append_only
+ON ai_marking_confirm_audit_events;
+
+DROP INDEX IF EXISTS idx_ai_marking_confirm_audit_license_time;
+DROP TABLE IF EXISTS ai_marking_confirm_audit_events;

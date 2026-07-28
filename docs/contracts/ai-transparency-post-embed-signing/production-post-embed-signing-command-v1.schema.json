@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hiddenshield.local/contracts/ai-transparency/production-post-embed-signing-command-v1.schema.json",
+  "title": "HiddenShield Production Post-Embed Signing Command v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "markingSessionId",
+    "executionId",
+    "licenseId",
+    "credentialId",
+    "watermarkUid",
+    "requestedProfileIds",
+    "profileEntitlementVersion",
+    "unsignedV3PngSha256",
+    "signerProviderId",
+    "signerCredentialRefDigest",
+    "authorizationReceiptId",
+    "idempotencyKey",
+    "requestDigest"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "hs-ai-production-post-embed-signing-command-v1"
+    },
+    "markingSessionId": {
+      "type": "string",
+      "pattern": "^session-[a-z0-9-]+$"
+    },
+    "executionId": {
+      "type": "string",
+      "pattern": "^execution-[a-z0-9-]+$"
+    },
+    "licenseId": {
+      "type": "string",
+      "pattern": "^license-[a-z0-9-]+$"
+    },
+    "credentialId": {
+      "type": "string",
+      "pattern": "^credential-[a-z0-9-]+$"
+    },
+    "watermarkUid": {
+      "type": "string",
+      "pattern": "^HS-[A-F0-9]{8}-[A-F0-9]{8}-[A-F0-9]{8}-[A-F0-9]{8}$"
+    },
+    "requestedProfileIds": {
+      "type": "array",
+      "minItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "profileEntitlementVersion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "unsignedV3PngSha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "signerProviderId": {
+      "type": "string",
+      "pattern": "^provider-[a-z0-9-]+$"
+    },
+    "signerCredentialRefDigest": {
+      "$ref": "#/$defs/sha256"
+    },
+    "authorizationReceiptId": {
+      "type": "string",
+      "pattern": "^sign-auth-[a-z0-9-]+$"
+    },
+    "idempotencyKey": {
+      "type": "string",
+      "minLength": 16
+    },
+    "requestDigest": {
+      "$ref": "#/$defs/sha256"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "hs-ai-delivery-security-incident-inspect-notification-outbox-v1",
+  "status": "internal_only",
+  "inspection": {
+    "requiredRole": "ai_transparency_readonly_auditor",
+    "scopeBound": true,
+    "listMaximum": 100,
+    "rawAudit": false,
+    "mediaIdentifiers": false,
+    "authorizationIdentifiers": false,
+    "deliveryEnvelopeIdentifiers": false,
+    "appendOnlyAudit": true
+  },
+  "outbox": {
+    "database": "postgresql_only",
+    "providerNeutral": true,
+    "leaseMinutes": 5,
+    "claimMaximum": 100,
+    "dedupeKey": "incident_id_event_type_control_version",
+    "statuses": [
+      "pending",
+      "leased",
+      "retry_scheduled"
+    ],
+    "replayRequiresRole": "system_executor",
+    "replayIdempotent": true,
+    "appendOnlyAudit": true,
+    "providerSuccessStatusExists": false
+  },
+  "events": [
+    "incident_opened",
+    "incident_became_critical",
+    "incident_acknowledged",
+    "incident_resolved"
+  ],
+  "externalAdapters": {
+    "pagerDuty": "suspended",
+    "email": "suspended",
+    "sms": "suspended",
+    "providerReceiptAccepted": false,
+    "deliverySuccessMayBeClaimed": false
+  },
+  "productionRelease": {
+    "sdk": "closed",
+    "publicResolver": "closed",
+    "productionCredentialIssuance": "closed",
+    "customerUi": "closed"
+  }
+}

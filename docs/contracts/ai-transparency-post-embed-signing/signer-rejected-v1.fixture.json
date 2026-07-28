@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "signer_rejected",
+  "baseInput": "base-production-input-v1.json",
+  "overrides": {
+    "signerReceipt": null
+  },
+  "observed": {
+    "signerStatus": "rejected",
+    "errorCode": "ai_c2pa_signer_rejected",
+    "confirmStatus": "not_started"
+  },
+  "expected": {
+    "artifactReturned": false,
+    "confirmWrites": 0,
+    "customerMeteringQuantity": 0,
+    "orphanSigningEventCreated": false
+  }
+}

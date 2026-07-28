@@ -930,7 +930,7 @@ mod tests {
     use tempfile::NamedTempFile;
     use watermark_core::{
         AIContentFlags, AudioProtectionMode, EmbedOptions, MediaOutput, PayloadV2BuildInput,
-        WatermarkIssueMode, WatermarkMediaType, WatermarkPayload,
+        WatermarkIssueMode, WatermarkMediaType, WatermarkPayload, WatermarkService,
     };
 
     fn test_v2_payload(media_type: WatermarkMediaType) -> WatermarkPayload {
@@ -999,6 +999,44 @@ mod tests {
             "file_read_failed"
         );
         assert_eq!(extraction_error_reason_code(None), "no_valid_watermark");
+    }
+
+    #[test]
+    fn platform_executor_png_fixtures_are_desktop_extractable_after_metadata_stripping() {
+        for bytes in [
+            include_bytes!(
+                "../../../docs/fixtures/ai-transparency-platform-executor-v1/platform-executor-v3.png"
+            )
+            .as_slice(),
+            include_bytes!(
+                "../../../docs/fixtures/ai-transparency-platform-executor-v1/platform-executor-v3-with-metadata.png"
+            )
+            .as_slice(),
+            include_bytes!(
+                "../../../docs/fixtures/ai-transparency-platform-executor-v1/platform-executor-v3-metadata-stripped.png"
+            )
+            .as_slice(),
+            include_bytes!(
+                "../../../docs/fixtures/ai-transparency-platform-executor-v1/platform-executor-v3-with-external-metadata.png"
+            )
+            .as_slice(),
+            include_bytes!(
+                "../../../docs/fixtures/ai-transparency-platform-executor-v1/platform-executor-v3-external-metadata-stripped.png"
+            )
+            .as_slice(),
+        ] {
+            let decoded = WatermarkService::extract(MediaInput::ImageBytes {
+                bytes: bytes.to_vec(),
+            })
+            .unwrap();
+            assert_eq!(
+                decoded.watermark_uid(),
+                "HS-01234567-89ABCDEF-01234567-89ABCDEF"
+            );
+            assert!(decoded.is_v3_minimal_anchor());
+            assert_eq!(decoded.payload_bytes_length(), 39);
+            assert_eq!(decoded.payload_auth_status(), "verified");
+        }
     }
 
     #[test]

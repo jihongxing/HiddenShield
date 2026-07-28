@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "hs-ai-delivery-security-incident-runner-contract-v1",
+  "status": "internal_only",
+  "incident": {
+    "projectionSource": "monitoring_15m",
+    "projectedAlertStatuses": [
+      "warning",
+      "critical"
+    ],
+    "activeIncidentUniqueness": "tenant_workspace_environment_sorted_alert_codes",
+    "resolvedRecurrenceCreatesNewIncident": true,
+    "ackRequiresFourEyes": true,
+    "resolveRequiresFourEyes": true,
+    "changeRequestDigestVersion": "hs-ai-delivery-security-incident-change-digest-v1",
+    "desiredStateSchemaVersion": "hs-ai-delivery-security-incident-desired-state-v1",
+    "transitions": [
+      "open_to_acknowledged",
+      "open_to_resolved",
+      "acknowledged_to_resolved"
+    ],
+    "appendOnlyAudit": true
+  },
+  "cleanupRunner": {
+    "database": "postgresql_only",
+    "intervalMinutes": 15,
+    "leaseMinutes": 5,
+    "baseBackoffMinutes": 1,
+    "maximumBackoffMinutes": 60,
+    "claimMode": "for_update_skip_locked",
+    "singleClaimPerSchedule": true,
+    "appendOnlyAudit": true
+  },
+  "dataBoundary": {
+    "aggregateOnly": true,
+    "rawMedia": false,
+    "downloadToken": false,
+    "authorizationId": false,
+    "deliveryEnvelopeId": false,
+    "secret": false,
+    "fullProviderReceipt": false
+  },
+  "notificationAdapters": {
+    "pagerDuty": "suspended",
+    "email": "suspended",
+    "sms": "suspended",
+    "requiredForProjection": false,
+    "requiredForCleanupRunner": false
+  },
+  "productionRelease": {
+    "sdk": "closed",
+    "publicResolver": "closed",
+    "productionCredentialIssuance": "closed",
+    "customerUi": "closed"
+  }
+}

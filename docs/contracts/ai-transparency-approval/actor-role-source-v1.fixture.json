@@ -1,0 +1,59 @@
+{
+  "schemaVersion": "ai_transparency_approval_fixture_v1",
+  "fixtureType": "actor_role_source",
+  "fixtureId": "actor-role-source-v1",
+  "identitySource": "hiddenshield_internal_iam",
+  "actors": [
+    {
+      "actorId": "actor_requester_001",
+      "actorType": "human",
+      "status": "active",
+      "roleBindings": [
+        {
+          "roleBindingId": "atrb_requester_001",
+          "role": "ai_transparency_requester",
+          "tenantScope": ["tenant_platform_001"],
+          "workspaceScope": ["workspace_platform_001"],
+          "environmentScope": ["production"],
+          "status": "active"
+        }
+      ]
+    },
+    {
+      "actorId": "actor_compliance_001",
+      "actorType": "human",
+      "status": "active",
+      "roleBindings": [
+        {
+          "roleBindingId": "atrb_compliance_001",
+          "role": "ai_transparency_compliance_approver",
+          "tenantScope": ["tenant_platform_001"],
+          "workspaceScope": ["workspace_platform_001"],
+          "environmentScope": ["production"],
+          "status": "active"
+        }
+      ]
+    },
+    {
+      "actorId": "system_executor_001",
+      "actorType": "system",
+      "status": "active",
+      "roleBindings": [
+        {
+          "roleBindingId": "atrb_executor_001",
+          "role": "system_executor",
+          "tenantScope": ["tenant_platform_001"],
+          "workspaceScope": ["workspace_platform_001"],
+          "environmentScope": ["production"],
+          "status": "active"
+        }
+      ]
+    }
+  ],
+  "invariants": {
+    "singleAdminTokenIsIdentitySource": false,
+    "requesterAndApproverMustBeHuman": true,
+    "systemExecutorCannotApprove": true,
+    "scopeMustMatchTenantWorkspaceEnvironment": true
+  }
+}

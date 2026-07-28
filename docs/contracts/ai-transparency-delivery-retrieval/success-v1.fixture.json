@@ -1,0 +1,74 @@
+{
+  "fixtureType": "success",
+  "finalMediaUtf8": "final-png-delivery-envelope-fixture",
+  "finalMediaBase64": "ZmluYWwtcG5nLWRlbGl2ZXJ5LWVudmVsb3BlLWZpeHR1cmU=",
+  "signerReceipt": {
+    "schemaVersion": "hs-ai-production-post-embed-signer-receipt-v1",
+    "signerReceiptId": "signer-receipt-fixture",
+    "executionId": "execution-fixture",
+    "markingSessionId": "session-fixture",
+    "watermarkUid": "HS-DELIVERY-FIXTURE",
+    "finalSignedPngSha256": "7a26252be7ae46db5f05bc93271292e8d479dc49ed41fdb02f37ad863fae202d",
+    "profileEntitlementDigest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "artifactFinalizeReceipt": {
+    "schemaVersion": "hs-ai-production-post-embed-artifact-receipt-v1",
+    "artifactReceiptId": "finalize-receipt-fixture",
+    "executionId": "execution-fixture",
+    "artifactRef": "artifact://execution-fixture",
+    "objectVersion": "object-version-fixture",
+    "finalSignedPngSha256": "7a26252be7ae46db5f05bc93271292e8d479dc49ed41fdb02f37ad863fae202d",
+    "operation": "finalize",
+    "durabilityStatus": "finalized"
+  },
+  "envelope": {
+    "schemaVersion": "hs-ai-confirmed-artifact-delivery-envelope-v1",
+    "deliveryEnvelopeId": "delivery-envelope-fixture",
+    "executionId": "execution-fixture",
+    "markingSessionId": "session-fixture",
+    "transparencyManifestId": "manifest-fixture",
+    "licenseId": "license-fixture",
+    "watermarkUid": "HS-DELIVERY-FIXTURE",
+    "mediaType": "image/png",
+    "claimType": "ai_generated",
+    "signingStatus": "confirmed",
+    "artifactStatus": "finalized",
+    "recoveryState": "completed",
+    "workerRecoveryAttempts": 1,
+    "recoveryControlVersion": 2,
+    "finalFileSha256": "7a26252be7ae46db5f05bc93271292e8d479dc49ed41fdb02f37ad863fae202d",
+    "artifactRef": "artifact://execution-fixture",
+    "artifactObjectVersion": "object-version-fixture",
+    "signerReceiptId": "signer-receipt-fixture",
+    "signerReceiptSha256": "55e8d5dc1fe582b80251b67e063b629312d56a02e7b9febd13b51929a1f88e7a",
+    "artifactFinalizeReceiptId": "finalize-receipt-fixture",
+    "artifactFinalizeReceiptSha256": "b69c5f3f92da3ec1c64af9283eecd9146a7a8478fe90d9190a6dfb208fa629c6",
+    "profileIdentity": {
+      "entitlementVersion": 3,
+      "entitlementDigest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "technicalProfileIds": [
+        "hiddenshield_v3_image_anchor_v1",
+        "c2pa_post_embed_signing_v1"
+      ],
+      "regionalProfileId": "cn_aigc_label_2025_image_export_v1"
+    },
+    "profileIdentityDigest": "c74ed38224b42a7fad0ce0aadf5874a1e9b643cd18ecf7ac6f6e06bd94c1726c",
+    "finalizedAt": "2026-07-28T00:00:00.000Z",
+    "envelopeDigest": "b38fe88fd9e3fe0b15d57c018556ff090e08e4029765aa3708b0b9879ab93eb9"
+  },
+  "retrievalReceipt": {
+    "schemaVersion": "hs-ai-delivery-retrieval-receipt-v1",
+    "retrievalReceiptId": "delivery-retrieval-fixture",
+    "authorizationId": "delivery-auth-fixture",
+    "deliveryEnvelopeId": "delivery-envelope-fixture",
+    "executionId": "execution-fixture",
+    "envelopeDigest": "b38fe88fd9e3fe0b15d57c018556ff090e08e4029765aa3708b0b9879ab93eb9",
+    "finalFileSha256": "7a26252be7ae46db5f05bc93271292e8d479dc49ed41fdb02f37ad863fae202d",
+    "artifactFinalizeReceiptSha256": "b69c5f3f92da3ec1c64af9283eecd9146a7a8478fe90d9190a6dfb208fa629c6",
+    "retrievedAt": "2026-07-28T00:05:00.000Z",
+    "receiptDigest": "de35effd0cace470130b1d5f0a611e7b7531054f2ad9da248ca6c8a0722dbf9d"
+  },
+  "expected": {
+    "admitted": true
+  }
+}

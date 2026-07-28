@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "duplicate_replay",
+  "baseInput": "base-production-input-v1.json",
+  "existingSuccessProjection": {
+    "requestDigest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "finalSignedPngSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "signerReceiptId": "sign-result-post-embed-001",
+    "confirmStatus": "committed",
+    "committedConfirmedMarkedImageCount": 1
+  },
+  "observed": {
+    "replayRequestDigest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "signerInvoked": false,
+    "newConfirmWrites": 0,
+    "newLedgerWrites": 0
+  },
+  "expected": {
+    "replayedExistingProjection": true,
+    "artifactReturned": true,
+    "committedConfirmedMarkedImageCount": 1,
+    "customerMeteringQuantity": 0,
+    "secondSignerReceiptCreated": false
+  }
+}

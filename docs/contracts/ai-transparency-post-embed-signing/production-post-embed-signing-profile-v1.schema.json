@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hiddenshield.local/contracts/ai-transparency/production-post-embed-signing-profile-v1.schema.json",
+  "title": "HiddenShield Production Post-Embed Signing Profile Entitlement v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "profileEntitlementVersion",
+    "licenseId",
+    "status",
+    "technicalProfileIds",
+    "regionalProfileId",
+    "mediaType",
+    "claimType",
+    "issuerMode",
+    "signingOrder",
+    "allowedSignatureAlgorithms",
+    "allowEphemeralSigner",
+    "validFrom",
+    "validUntil",
+    "entitlementDigest"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "hs-ai-production-post-embed-signing-profile-v1"
+    },
+    "profileEntitlementVersion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "licenseId": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "active",
+        "suspended",
+        "revoked",
+        "expired"
+      ]
+    },
+    "technicalProfileIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "contains": {
+        "const": "c2pa_post_embed_signing_v1"
+      },
+      "items": {
+        "type": "string"
+      }
+    },
+    "regionalProfileId": {
+      "type": "string"
+    },
+    "mediaType": {
+      "const": "image/png"
+    },
+    "claimType": {
+      "const": "ai_generated"
+    },
+    "issuerMode": {
+      "const": "production_platform"
+    },
+    "signingOrder": {
+      "const": "watermark_then_c2pa"
+    },
+    "allowedSignatureAlgorithms": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "es256",
+          "es384",
+          "ed25519"
+        ]
+      }
+    },
+    "allowEphemeralSigner": {
+      "const": false
+    },
+    "validFrom": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "validUntil": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "entitlementDigest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  }
+}

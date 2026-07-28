@@ -1,0 +1,47 @@
+{
+  "schemaVersion": "ai_transparency_approval_fixture_v1",
+  "fixtureType": "pre_migration_gates",
+  "fixtureId": "pre-migration-gates-v1",
+  "digestVector": {
+    "version": "hs-ai-change-request-digest-v1",
+    "canonicalJson": "[\"hs-ai-change-request-digest-v1\",\"renew_profile_entitlement\",\"profile_entitlement\",\"atpev_cn_001_v1\",\"profile:atl_platform_001:cn_aigc_label_2025_image_export_v1\",\"tenant_platform_001\",\"workspace_platform_001\",\"production\",1,2,{\"expiresAt\":\"2027-07-27T00:00:00Z\",\"termsVersion\":\"cn-profile-v1\"},null,\"legal_cn_002\",null,\"actor_requester_001\",\"atrb_requester_001\",1]",
+    "sha256": "66850ffacf35b70fac974914734cb59f5e041705c51d6919218cb80db36ba561"
+  },
+  "desiredStateExamples": [
+    { "operation": "create_license", "desiredState": { "status": "active", "issuerMode": "hiddenshield_managed", "deploymentMode": "hosted", "publicVerificationRequired": true, "meteringPlanId": "metering-v1", "effectiveAt": "2026-07-27T00:00:00Z", "expiresAt": "2027-07-27T00:00:00Z" } },
+    { "operation": "renew_license", "desiredState": { "expiresAt": "2028-07-27T00:00:00Z" } },
+    { "operation": "suspend_license", "desiredState": { "status": "suspended" } },
+    { "operation": "revoke_license", "desiredState": { "status": "revoked" } },
+    { "operation": "grant_profile_entitlement", "desiredState": { "profileId": "cn_aigc_label_2025_image_export_v1", "profileKind": "regulatory", "status": "active", "effectiveAt": "2026-07-27T00:00:00Z", "expiresAt": "2027-07-27T00:00:00Z", "termsVersion": "cn-profile-v1" } },
+    { "operation": "renew_profile_entitlement", "desiredState": { "expiresAt": "2028-07-27T00:00:00Z", "termsVersion": "cn-profile-v1" } },
+    { "operation": "suspend_profile_entitlement", "desiredState": { "status": "suspended" } },
+    { "operation": "revoke_profile_entitlement", "desiredState": { "status": "revoked" } }
+  ],
+  "iamVerification": {
+    "interface": "verify_actor_authorization",
+    "sourceIdentitySystem": "hiddenshield_internal_iam",
+    "rawTokenPersisted": false,
+    "requiredInputFields": ["tokenHash", "requiredRole", "tenantId", "workspaceId", "environment", "operation", "verifiedAt"],
+    "stableFailureCodes": ["iam_token_invalid", "iam_token_expired", "iam_actor_inactive", "iam_actor_type_denied", "iam_role_missing", "iam_scope_denied", "iam_authentication_level_insufficient", "iam_unavailable"],
+    "unavailableFailsClosed": true
+  },
+  "referenceVerification": {
+    "interface": "verify_approval_reference",
+    "referenceTypes": ["contract", "legal_review", "security_review"],
+    "fullDocumentPersisted": false,
+    "stableFailureCodes": ["reference_not_found", "reference_inactive", "reference_expired", "reference_scope_mismatch", "reference_operation_denied", "reference_authority_untrusted", "reference_unavailable"],
+    "unavailableFailsClosed": true
+  },
+  "syntheticBackfill": {
+    "evidenceQuality": "migrated_legacy_without_four_eyes",
+    "productionEligibility": false,
+    "historicalHumanApprovalAsserted": false,
+    "zhCN": "此授权记录由旧版数据结构迁移生成。HiddenShield 不声明该历史记录曾完成双人审批；该记录不能单独作为生产 License、生产 Credential 或 SDK 发放依据。",
+    "enUS": "This entitlement record was migrated from a legacy schema. HiddenShield does not assert that historical maker-checker approval occurred. This record alone is not sufficient for production license, production credential, or SDK issuance."
+  },
+  "gate": {
+    "allowsCreate0003": true,
+    "allowsProductionIssuance": false,
+    "allowsWriteEndpoints": false
+  }
+}

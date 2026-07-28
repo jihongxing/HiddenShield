@@ -1,0 +1,27 @@
+{
+  "fixtureType": "delivery_revoke_resource_budget",
+  "schemaVersion": "hs-ai-delivery-resource-budget-v1",
+  "authorization": {
+    "ttlSecondsMinimum": 60,
+    "ttlSecondsMaximum": 900,
+    "maxDownloadBytes": 67108864,
+    "requiredContentType": "image/png",
+    "readTimeoutMs": 5000,
+    "rateLimitPerMinute": 30
+  },
+  "revocation": {
+    "requiredRole": "ai_transparency_security_approver",
+    "activeToRevokedOnly": true,
+    "replayReturnsExistingState": true,
+    "reasonStoredOnAuthorization": true,
+    "auditStoresReasonDigestOnly": true
+  },
+  "failureSemantics": {
+    "revoked": "ai_delivery_authorization_revoked",
+    "rateLimited": "ai_delivery_retrieval_rate_limited",
+    "sizeLimitExceeded": "ai_delivery_retrieval_size_limit_exceeded",
+    "contentTypeInvalid": "ai_delivery_retrieval_content_type_invalid",
+    "readTimeout": "ai_delivery_retrieval_read_timeout",
+    "failedRetrievalReturnsPackage": false
+  }
+}

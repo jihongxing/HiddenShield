@@ -401,3 +401,120 @@
 - 验证：`cargo test --manifest-path watermark-core/Cargo.toml quality::tests --lib` 通过 `3/3`；独立实验室前端 ABX 测试通过 `3/3`，Rust 媒体辅助测试通过 `2/2`，前端生产构建和 Windows Tauri release EXE 构建通过。
 - 运行态 gate 结果：release gate 当前仍由 `low-texture` 的 SSIM `0.982920 < 0.985` 阻断；full gate 仍由 6 个图片样本和 `field-noise` 音频阻断，其中 `field-noise` SNR 为 `12.9879 dB < 44 dB`。共享 API 保留了原公式和阈值，当前失败属于仓库现有算法 / fixture 基线，不能记录为本次工具已使 release/full gate 通过。
 - 下一核心任务：为 release gate 固定不随 runId 漂移的基准 artifact，并单独修复 `low-texture` SSIM 阻断；之后再对共享 API 重构前后 JSON 做逐字段基线比对。
+# 2026-07-27 Post-Embed C2PA Resign Gate
+
+- `watermark-core` 仍只负责正式 V3 图片 anchor 写入与读取；未增加 C2PA 签发、证书、信任链或 metadata 实现。
+- internal QA 已验证：共享核心输出的 verified V3 PNG 经外层 ephemeral C2PA signer 重新签发后，同一最终 PNG 仍可回读相同 verified V3。
+- C2PA active manifest 可读，但分类为 `manifest_present_with_validation_findings`，只表示本地自签测试链。
+- 外部暴露边界：生产 signer/KMS/HSM、C2PA 信任链、SDK 与公共 Resolver 均未开放；失败回滚和最终 hash 绑定尚未进入 production command。
+- 回滚：移除 post-embed wrapper 即恢复为原 V3 PNG 输出，不影响共享核心 API、payload 或算法。
+
+## 2026-07-27 Production Post-Embed Wrapper 合同边界
+
+- 正式顺序冻结为：`watermark-core` V3 写入/回读 → 外部 C2PA signer → C2PA/V3 双回读 → final hash → confirm。
+- `watermark-core` 不保存 signer credential、不生成 production C2PA receipt、不负责 Profile entitlement 或 PostgreSQL confirm。
+- 任一外层失败均不得把未签名或已签名 bytes 作为成功产物返回；共享核心输出只能作为未确认中间件。
+- 当前性能快照未变化；尚未测量 production signer latency、最终文件增长和双回读成本。
+- 回滚路径：关闭 signer wrapper 后恢复 internal V3-only 路径，但不得对外承诺 C2PA + V3 双层能力。
+
+## 2026-07-27 Post-Embed Wrapper Schema Contract
+
+- 新增的 command/receipt/Profile Schema 与七类 fixture 只约束外层 signer wrapper；`watermark-core` 代码、API、V3/39 payload、算法和性能均未变化。
+- fixture 要求 signer 后再次由共享核心读取相同 UID、V3/39 和 verified auth。
+- 当前性能快照未变化；internal command 实现后需单独记录 V3 写入、C2PA 签发、C2PA readback、V3 readback 和 confirm 耗时。
+- 回滚：移除外层 Schema/command 不影响现有共享核心媒体兼容性。
+
+## 2026-07-27 Internal Post-Embed Signing Command 边界
+
+- `watermark-core` 本次无代码、公开 API、payload、算法、fixture 或性能变化；正式 V3 图片写入/读取仍由共享核心唯一负责。
+- backend 新增的 internal-only command 负责 production license/credential/Profile 校验、外部 C2PA signer receipt、最终 hash、双回读结果编排、artifact 隔离和 PostgreSQL confirm，不得实现第二套 V3 embed/extract/auth 逻辑。
+- PostgreSQL 七场景 QA 使用受控 readback interface 验证事务状态机；真实媒体层“最终 PNG 同时可读 C2PA manifest 与 verified V3”的证据仍来自既有 post-embed prototype，两类证据不得混写。
+- 当前性能快照未变化，尚未获得 production signer、C2PA readback、V3 readback、artifact finalize 与 confirm 的分阶段延迟数据。
+- 外部暴露边界：仍不得承诺 production C2PA chain、SDK、公共 Resolver、客户 credential、跨平台验收或法规合规。
+- 回滚：移除 backend post-embed command 与 0007 projection 可恢复 internal V3-only 路径，不影响 `watermark-core` API 或既有保护副本读取。
+
+## 2026-07-27 Signing Reservation / Artifact Recovery 核心边界
+
+- `watermark-core` 本次继续无代码、API、payload、算法、fixture 或性能变化。
+- PostgreSQL reservation、lease、advisory lock、signer invocation key、artifact staging/finalize、recovery audit 和 ledger 延迟提交全部位于 backend 外层。
+- 恢复 `signed_staged` 或 `artifact_pending` 时禁止再次调用共享核心写入；最终 V3 readback 的生产 adapter 仍必须调用 `watermark-core`。
+- 九场景 PostgreSQL QA 证明事务和调用次数，不构成新的媒体鲁棒性、跨端读取、production C2PA trust chain 或性能证据。
+- 回滚：可移除 0008 与 reservation/recovery orchestration 并回到 0007 internal command；`watermark-core` 保护副本与读取兼容性不受影响。
+
+## 2026-07-28 Adapter Receipt / Crash Recovery 核心边界
+
+- `watermark-core` 本次继续无代码、公共 API、payload、算法、fixture、benchmark 或性能变化。
+- `0009`、production signer/object-store receipt、四个 crash injection point 和 PostgreSQL recovery harness 均属于 backend 外层；不得据此在 `watermark-core` 中引入 C2PA signer、对象存储或账单语义。
+- 恢复过程使用同一 final hash 与 signer invocation key，禁止重复 V3 embed；正式 V3 回读 adapter 仍只能调用共享核心。
+- 十三场景 QA 证明单一 external-cost projection、单一 artifact write 和单一 confirm/ledger，不构成媒体鲁棒性、跨端读取、production trust chain 或性能提升证据。
+- 回滚：可移除 0009 receipt columns/indexes 与 crash harness，保留 0008 reservation/recovery；共享核心输出与读取兼容性不受影响。
+
+## 2026-07-28 Internal Recovery Worker 核心边界
+
+- `watermark-core` 本次仍无代码、公共 API、payload、算法、fixture、benchmark 或性能变化。
+- worker scanning、claim lease、attempt、backoff、dead-letter 和 recovery audit 全部属于 backend PostgreSQL orchestration。
+- reserved recovery 不得重新调用 V3 embed；artifact pending recovery 不得调用 signer 或共享核心写入。
+- worker QA 证明 orchestration 与数据库并发，不构成新的媒体鲁棒性、跨端读取或 production trust chain 证据。
+- 回滚：可移除 0010 与 recovery worker module，保留现有手工 idempotent replay；共享核心兼容性不受影响。
+
+## 2026-07-28 Dead-Letter Inspect / Requeue 核心边界
+
+- `watermark-core` 本次仍无代码、公共 API、payload、算法、fixture、benchmark 或性能变化。
+- inspect/requeue command、双人审批、recovery control version、PostgreSQL 行锁与 append-only audit 全部位于 backend 外层。
+- requeue 不执行 V3 embed/extract；后续 reserved recovery 仍必须复用既有 V3 中间产物，正式 V3 readback adapter 仍只能调用共享核心。
+- PostgreSQL 并发 QA 只证明持锁期间 worker 零 claim、提交后单次恢复与成本幂等，不增加跨端媒体兼容性证据。
+- 外部暴露边界不变：无 SDK、公共 Resolver、production credential、客户自助 requeue 或 production C2PA trust chain 承诺。
+- 回滚：可移除 0011 与 dead-letter command module，保留 0010 worker dead-letter 终态；共享核心输出和读取兼容性不受影响。
+
+## 2026-07-28 Confirmed Delivery Envelope 共享合同
+
+- 新增公共类型 `AiConfirmedArtifactDeliveryEnvelope`、Profile identity、验证结果和稳定失败码。
+- 新增 `seal_ai_delivery_envelope`、`validate_ai_delivery_envelope`、Profile/envelope digest 与 canonical receipt JSON SHA-256。
+- 摘要实现显式递归排序 JSON object key，不受 `serde_json preserve_order` 或依赖 feature unification 影响。
+- Desktop/mobile 已共同调用该 API；未在任一端复制 envelope digest、receipt binding 或状态规则。
+- 当前性能快照：新增操作仅为 JSON parse/canonicalize 与 SHA-256；未改变图像 V3 写入/读取性能，尚未建立 production 大 receipt 延迟基线。
+- 外部暴露边界：只能内部测试；不是 SDK、公共 Resolver、法规结论、production trust chain 或客户交付承诺。
+- 回滚：移除 delivery envelope module、0012 projection 与双端 wrapper，不影响现有 V3 payload、媒体 fixture 或跨端读取兼容性。
+
+## 2026-07-28 Delivery Retrieval Receipt 与 Import Admission
+
+- 新增公共类型 `AiDeliveryRetrievalReceipt`、`AiDeliveryImportAdmission` 和 schema version `hs-ai-delivery-retrieval-receipt-v1`。
+- 新增 `seal_ai_delivery_retrieval_receipt`、`ai_delivery_retrieval_receipt_digest` 与 `validate_ai_delivery_import`。
+- 导入准入复用现有 delivery envelope 校验，并额外绑定 authorization ID、retrieval receipt ID、delivery envelope ID、execution ID、envelope digest、final file hash 与 finalize receipt digest。
+- Desktop/mobile 使用同一共享 fixture 和同一核心 API；拒绝结果不得携带任何可继续 vault/import 的 ID 或摘要。
+- 当前性能快照：仅增加固定字段 SHA-256、JSON decode 与既有 envelope 校验；不改变图像 V3 embed/extract 性能，尚无大对象 production 下载延迟基线。
+- 外部暴露边界：`只能内部测试`；receipt digest 不是外部公钥签名，不得解释为公共可验证凭证、SDK token 或法规证明。
+- 回滚：可移除 retrieval receipt/import admission API 和 0013 backend orchestration；现有 V3 payload、delivery envelope 与跨端媒体读取兼容性不受影响。
+
+## 2026-07-28 PostgreSQL Platform API Executor 分层
+
+- `watermark-core` 本次无代码、payload、算法、fixture 或性能变化。
+- backend executor 新增 prepare-only 编排：继续调用共享核心完成 PNG V3 embed、extract、UID 与认证状态回读，再由独立 confirm endpoint 提交 Manifest 和计量。
+- 原 `execute_postgres_internal_image_marking` 保持兼容，内部改为 prepare 后调用既有 PostgreSQL confirm command。
+- Platform API 不实现第二套水印写入、读取、payload、copyright ID 或 rewrite 规则。
+- 性能快照沿用现有 512×512 PostgreSQL E2E fixture；本次只证明真实 HTTP/数据库闭环，不构成新鲁棒性或吞吐结论。
+- 外部暴露边界：`只能内部测试`；SDK、公共 Resolver、production credential、真实 provider 与客户 SLA 继续关闭。
+- 回滚：可移除 0019、Platform API router 和 prepare-only 外层，保留原 executor wrapper；共享核心输出格式与跨端读取兼容性不受影响。
+## 2026-07-28 免费公共 Resolver 核心边界
+
+- `watermark-core` 本次无代码、公共 API、payload、算法、fixture 或性能变化。
+- Resolver 不上传媒体、不调用 embed/extract，只按 watermark UID 或 Manifest ID 读取 confirmed PostgreSQL 公共 view。
+- public `watermarkDetectionStatus` 复用 confirm 时共享核心 write-after-read 结果，不构成现场媒体检测。
+- 当前性能证据仅覆盖小型 JSON/SQL 读取，不构成 V3 检测吞吐、CDN SLA 或公网容量结论。
+- 外部暴露边界：`只能内部测试`；公网域名、WAF/CDN、生产 SLA 与法律义务满足性均未开放。
+- 回滚：可移除 0020 views 与 Resolver router，不影响 V3 payload、正式写入/读取和跨端兼容性。
+## 2026-07-28 设计伙伴 Sandbox 接入包影响
+
+- 本次新增设计伙伴 onboarding、Profile questionnaire、SDK/API 示例、Resolver link 与验收矩阵。
+- 未修改 `watermark-core` 公共 API、V3 payload、图片嵌入/读取算法、rewrite 规则、fixture 或性能快照。
+- 伙伴示例只能通过 backend image marking executor 调用 `watermark-core`，不得形成第二套标识算法。
+- 外部暴露边界不变：当前设计伙伴包为 `只能内部测试`，不代表 core SDK 已公开分发或生产 SLA 已建立。
+- 回滚路径：移除 private partner kit 不影响现有 core 写入、读取、跨端 bridge 或 PostgreSQL 标识记录。
+
+下一核心任务：待真实伙伴生成 accepted Sandbox PNG 后，将其作为外部来源 fixture 纳入跨端读取回归，不因伙伴接入修改现有 V3 算法。
+
+## 2026-07-28 Synthetic Sandbox QA 影响
+
+- 新增 synthetic Sandbox QA 仅模拟 SDK/facade transport；未调用、修改或包装 `watermark-core`。
+- synthetic marked PNG 不含可对外承诺的 HiddenShield V3 盲水印，不进入 core fixture、性能快照或跨端互验。
+- 回滚路径：移除 synthetic harness 不影响 core API、现有图片写读算法或正式 executor。

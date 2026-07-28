@@ -10,9 +10,11 @@ use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
 use thiserror::Error;
 use watermark_core::{
-    decode_watermark_payload_readonly, AIContentFlags, ImageOutputFormat, MediaInput, MediaOutput,
-    PayloadV2BuildInput, TrainingPermission, WatermarkDecodedPayload, WatermarkError,
-    WatermarkIssueMode, WatermarkMediaType, WatermarkPayload, WatermarkService,
+    decode_watermark_payload_readonly, validate_ai_delivery_envelope, validate_ai_delivery_import,
+    AIContentFlags, AiConfirmedArtifactDeliveryEnvelope, AiDeliveryRetrievalReceipt,
+    ImageOutputFormat, MediaInput, MediaOutput, PayloadV2BuildInput, TrainingPermission,
+    WatermarkDecodedPayload, WatermarkError, WatermarkIssueMode, WatermarkMediaType,
+    WatermarkPayload, WatermarkService,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -69,6 +71,27 @@ pub struct MobileExtractResult {
     pub watermark_id_issue_mode: String,
     pub media_type: String,
     pub payload_auth_status: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MobileDeliveryEnvelopeValidationResult {
+    pub accepted: bool,
+    pub reason_code: Option<String>,
+    pub envelope_digest: Option<String>,
+    pub final_file_sha256: Option<String>,
+    pub watermark_uid: Option<String>,
+    pub profile_identity_digest: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MobileDeliveryImportAdmissionResult {
+    pub admitted: bool,
+    pub reason_code: Option<String>,
+    pub authorization_id: Option<String>,
+    pub retrieval_receipt_id: Option<String>,
+    pub envelope_digest: Option<String>,
+    pub final_file_sha256: Option<String>,
+    pub watermark_uid: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -334,6 +357,210 @@ pub fn decode_v3_readonly_media_fixture_for_mobile(
             "v3_fixture_expected",
             "expected V3 minimal anchor fixture media",
         )),
+    }
+}
+
+pub fn validate_ai_delivery_envelope_for_mobile(
+    envelope_json: String,
+    final_media_bytes: Vec<u8>,
+    signer_receipt_json: String,
+    artifact_finalize_receipt_json: String,
+) -> MobileDeliveryEnvelopeValidationResult {
+    let envelope: AiConfirmedArtifactDeliveryEnvelope = match serde_json::from_str(&envelope_json) {
+        Ok(envelope) => envelope,
+        Err(_) => {
+            return mobile_delivery_rejected("ai_delivery_envelope_invalid_contract");
+        }
+    };
+    match validate_ai_delivery_envelope(
+        &envelope,
+        &final_media_bytes,
+        &signer_receipt_json,
+        &artifact_finalize_receipt_json,
+    ) {
+        Ok(result) => MobileDeliveryEnvelopeValidationResult {
+            accepted: true,
+            reason_code: None,
+            envelope_digest: Some(result.envelope_digest),
+            final_file_sha256: Some(result.final_file_sha256),
+            watermark_uid: Some(result.watermark_uid),
+            profile_identity_digest: Some(result.profile_identity_digest),
+        },
+        Err(error) => mobile_delivery_rejected(error.code),
+    }
+}
+
+pub fn admit_ai_delivery_for_mobile_vault_import(
+    envelope_json: String,
+    final_media_bytes: Vec<u8>,
+    signer_receipt_json: String,
+    artifact_finalize_receipt_json: String,
+    retrieval_receipt_json: String,
+) -> MobileDeliveryImportAdmissionResult {
+    let envelope: AiConfirmedArtifactDeliveryEnvelope = match serde_json::from_str(&envelope_json) {
+        Ok(envelope) => envelope,
+        Err(_) => {
+            return mobile_import_rejected("ai_delivery_envelope_invalid_contract");
+        }
+    };
+    let retrieval_receipt: AiDeliveryRetrievalReceipt =
+        match serde_json::from_str(&retrieval_receipt_json) {
+            Ok(receipt) => receipt,
+            Err(_) => {
+                return mobile_import_rejected("ai_delivery_retrieval_receipt_mismatch");
+            }
+        };
+    match validate_ai_delivery_import(
+        &envelope,
+        &final_media_bytes,
+        &signer_receipt_json,
+        &artifact_finalize_receipt_json,
+        &retrieval_receipt,
+    ) {
+        Ok(admission) => MobileDeliveryImportAdmissionResult {
+            admitted: admission.admitted,
+            reason_code: None,
+            authorization_id: Some(admission.authorization_id),
+            retrieval_receipt_id: Some(admission.retrieval_receipt_id),
+            envelope_digest: Some(admission.envelope_digest),
+            final_file_sha256: Some(admission.final_file_sha256),
+            watermark_uid: Some(admission.watermark_uid),
+        },
+        Err(error) => mobile_import_rejected(error.code),
+    }
+}
+
+fn mobile_delivery_rejected(reason_code: &str) -> MobileDeliveryEnvelopeValidationResult {
+    MobileDeliveryEnvelopeValidationResult {
+        accepted: false,
+        reason_code: Some(reason_code.to_string()),
+        envelope_digest: None,
+        final_file_sha256: None,
+        watermark_uid: None,
+        profile_identity_digest: None,
+    }
+}
+
+fn mobile_import_rejected(reason_code: &str) -> MobileDeliveryImportAdmissionResult {
+    MobileDeliveryImportAdmissionResult {
+        admitted: false,
+        reason_code: Some(reason_code.to_string()),
+        authorization_id: None,
+        retrieval_receipt_id: None,
+        envelope_digest: None,
+        final_file_sha256: None,
+        watermark_uid: None,
+    }
+}
+
+#[cfg(test)]
+mod delivery_envelope_tests {
+    use super::*;
+    use serde_json::Value;
+
+    fn fixture() -> Value {
+        serde_json::from_str(include_str!(
+            "../../../docs/contracts/ai-transparency-delivery-envelope/success-v1.fixture.json"
+        ))
+        .unwrap()
+    }
+
+    fn validate(value: &Value) -> MobileDeliveryEnvelopeValidationResult {
+        validate_ai_delivery_envelope_for_mobile(
+            value["envelope"].to_string(),
+            value["finalMediaUtf8"]
+                .as_str()
+                .unwrap()
+                .as_bytes()
+                .to_vec(),
+            value["signerReceipt"].to_string(),
+            value["artifactFinalizeReceipt"].to_string(),
+        )
+    }
+
+    fn admit(value: &Value) -> MobileDeliveryImportAdmissionResult {
+        admit_ai_delivery_for_mobile_vault_import(
+            value["envelope"].to_string(),
+            value["finalMediaUtf8"]
+                .as_str()
+                .unwrap()
+                .as_bytes()
+                .to_vec(),
+            value["signerReceipt"].to_string(),
+            value["artifactFinalizeReceipt"].to_string(),
+            value["retrievalReceipt"].to_string(),
+        )
+    }
+
+    #[test]
+    fn mobile_accepts_shared_delivery_fixture() {
+        let result = validate(&fixture());
+        assert!(result.accepted, "{result:?}");
+        assert!(result.reason_code.is_none());
+    }
+
+    #[test]
+    fn mobile_fails_closed_for_status_and_digest_mismatch() {
+        let mut incomplete_recovery = fixture();
+        incomplete_recovery["envelope"]["recoveryState"] = Value::String("leased".to_string());
+        let result = validate(&incomplete_recovery);
+        assert_eq!(
+            result.reason_code.as_deref(),
+            Some("ai_delivery_envelope_recovery_not_completed")
+        );
+
+        let mut finalize_receipt = fixture();
+        finalize_receipt["artifactFinalizeReceipt"]["objectVersion"] =
+            Value::String("other-version".to_string());
+        let result = validate(&finalize_receipt);
+        assert_eq!(
+            result.reason_code.as_deref(),
+            Some("ai_delivery_envelope_finalize_receipt_hash_mismatch")
+        );
+
+        let mut profile = fixture();
+        profile["envelope"]["profileIdentity"]["regionalProfileId"] =
+            Value::String("eu_ai_act_image_v1".to_string());
+        let result = validate(&profile);
+        assert_eq!(
+            result.reason_code.as_deref(),
+            Some("ai_delivery_envelope_profile_identity_digest_mismatch")
+        );
+    }
+
+    #[test]
+    fn mobile_admits_only_shared_retrieval_package() {
+        let value: Value = serde_json::from_str(include_str!(
+            "../../../docs/contracts/ai-transparency-delivery-retrieval/success-v1.fixture.json"
+        ))
+        .unwrap();
+        let result = admit(&value);
+        assert!(result.admitted, "{result:?}");
+        assert_eq!(
+            result.authorization_id.as_deref(),
+            Some("delivery-auth-fixture")
+        );
+    }
+
+    #[test]
+    fn mobile_import_rejects_receipt_mismatch_without_metadata() {
+        let mut value: Value = serde_json::from_str(include_str!(
+            "../../../docs/contracts/ai-transparency-delivery-retrieval/success-v1.fixture.json"
+        ))
+        .unwrap();
+        value["retrievalReceipt"]["deliveryEnvelopeId"] =
+            Value::String("delivery-envelope-tampered".to_string());
+        let result = admit(&value);
+        assert!(!result.admitted);
+        assert_eq!(
+            result.reason_code.as_deref(),
+            Some("ai_delivery_retrieval_receipt_mismatch")
+        );
+        assert!(result.authorization_id.is_none());
+        assert!(result.retrieval_receipt_id.is_none());
+        assert!(result.envelope_digest.is_none());
+        assert!(result.final_file_sha256.is_none());
+        assert!(result.watermark_uid.is_none());
     }
 }
 
@@ -1164,6 +1391,41 @@ mod tests {
         assert_desktop_core_image_input_is_mobile_extractable(make_jpeg_bytes());
         assert_mobile_image_input_is_desktop_core_extractable(make_webp_bytes());
         assert_desktop_core_image_input_is_mobile_extractable(make_webp_bytes());
+    }
+
+    #[test]
+    fn platform_executor_png_fixtures_are_mobile_extractable_after_metadata_stripping() {
+        for bytes in [
+            include_bytes!(
+                "../../../docs/fixtures/ai-transparency-platform-executor-v1/platform-executor-v3.png"
+            )
+            .as_slice(),
+            include_bytes!(
+                "../../../docs/fixtures/ai-transparency-platform-executor-v1/platform-executor-v3-with-metadata.png"
+            )
+            .as_slice(),
+            include_bytes!(
+                "../../../docs/fixtures/ai-transparency-platform-executor-v1/platform-executor-v3-metadata-stripped.png"
+            )
+            .as_slice(),
+            include_bytes!(
+                "../../../docs/fixtures/ai-transparency-platform-executor-v1/platform-executor-v3-with-external-metadata.png"
+            )
+            .as_slice(),
+            include_bytes!(
+                "../../../docs/fixtures/ai-transparency-platform-executor-v1/platform-executor-v3-external-metadata-stripped.png"
+            )
+            .as_slice(),
+        ] {
+            let extracted = extract_image_for_mobile(bytes.to_vec()).unwrap();
+            assert_eq!(
+                extracted.watermark_uid,
+                "HS-01234567-89ABCDEF-01234567-89ABCDEF"
+            );
+            assert_eq!(extracted.payload_protocol_version, 3);
+            assert_eq!(extracted.payload_bytes_length, 39);
+            assert_eq!(extracted.payload_auth_status, "verified");
+        }
     }
 
     #[test]

@@ -1,0 +1,21 @@
+DROP INDEX IF EXISTS idx_ai_post_embed_signing_artifact_finalize_receipt;
+DROP INDEX IF EXISTS idx_ai_post_embed_signing_artifact_stage_receipt;
+DROP INDEX IF EXISTS idx_ai_post_embed_signing_billable_invocation;
+
+ALTER TABLE ai_post_embed_signing_executions
+DROP CONSTRAINT IF EXISTS ai_post_embed_signing_finalize_receipt_shape_check,
+DROP CONSTRAINT IF EXISTS ai_post_embed_signing_adapter_receipt_shape_check,
+DROP CONSTRAINT IF EXISTS ai_post_embed_signing_signer_disposition_check,
+DROP CONSTRAINT IF EXISTS ai_post_embed_signing_adapter_contract_version_check;
+
+ALTER TABLE ai_post_embed_signing_executions
+DROP COLUMN IF EXISTS artifact_object_version,
+DROP COLUMN IF EXISTS artifact_finalize_receipt_json,
+DROP COLUMN IF EXISTS artifact_finalize_receipt_id,
+DROP COLUMN IF EXISTS artifact_stage_receipt_json,
+DROP COLUMN IF EXISTS artifact_stage_receipt_id,
+DROP COLUMN IF EXISTS signer_receipt_json,
+DROP COLUMN IF EXISTS signer_idempotency_disposition,
+DROP COLUMN IF EXISTS signer_billable_invocation_id,
+DROP COLUMN IF EXISTS signer_result_ref,
+DROP COLUMN IF EXISTS adapter_receipt_contract_version;

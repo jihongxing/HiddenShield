@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "c2pa_readback_failure",
+  "baseInput": "base-production-input-v1.json",
+  "observed": {
+    "computedFinalSignedPngSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "c2paReadback": {
+      "activeManifestPresent": true,
+      "hardBindingValid": false,
+      "validationFindings": [
+        "content_hash_mismatch"
+      ]
+    },
+    "errorCode": "ai_c2pa_readback_failed",
+    "confirmStatus": "not_started"
+  },
+  "expected": {
+    "artifactReturned": false,
+    "signedBytesQuarantined": true,
+    "confirmWrites": 0,
+    "customerMeteringQuantity": 0
+  }
+}

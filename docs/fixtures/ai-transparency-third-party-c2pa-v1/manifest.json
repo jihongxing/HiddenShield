@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "hs-ai-third-party-c2pa-fixture-v1",
+  "fixtureId": "contentauth-c2pa-fixtures-C",
+  "source": {
+    "repository": "https://github.com/contentauth/c2pa-fixtures",
+    "path": "C.jpg",
+    "revision": "main",
+    "license": "Apache-2.0",
+    "retrievedAt": "2026-07-27"
+  },
+  "file": {
+    "path": "contentauth-c2pa-fixtures-C.jpg",
+    "sha256": "cf250bee1d27d12281ac11a4cc407ffeb9392de25f04edcb3ab2318c38f3d7e4",
+    "mediaType": "image/jpeg"
+  },
+  "expected": {
+    "c2paManifestPresent": true,
+    "hiddenShieldV3AnchorPresent": false,
+    "externalPlatformAcceptanceAuthorized": false,
+    "legalConclusion": false
+  }
+}

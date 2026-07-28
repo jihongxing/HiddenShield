@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hiddenshield.local/contracts/ai-transparency/production-post-embed-signing-receipt-v1.schema.json",
+  "title": "HiddenShield Production Post-Embed Signing Receipts v1",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/authorizationReceipt"
+    },
+    {
+      "$ref": "#/$defs/signerReceipt"
+    }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "authorizationReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "receiptId",
+        "providerId",
+        "operation",
+        "actorId",
+        "role",
+        "licenseId",
+        "credentialId",
+        "markingSessionId",
+        "executionId",
+        "profileEntitlementDigest",
+        "unsignedV3PngSha256",
+        "signerCredentialRefDigest",
+        "scopeDigest",
+        "issuedAt",
+        "expiresAt",
+        "providerSignature"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "hs-ai-production-post-embed-signing-authorization-receipt-v1"
+        },
+        "receiptId": {
+          "type": "string",
+          "pattern": "^sign-auth-[a-z0-9-]+$"
+        },
+        "providerId": {
+          "type": "string"
+        },
+        "operation": {
+          "const": "ai_transparency_post_embed_c2pa_sign"
+        },
+        "actorId": {
+          "type": "string"
+        },
+        "role": {
+          "const": "ai_transparency_production_signer"
+        },
+        "licenseId": {
+          "type": "string"
+        },
+        "credentialId": {
+          "type": "string"
+        },
+        "markingSessionId": {
+          "type": "string"
+        },
+        "executionId": {
+          "type": "string"
+        },
+        "profileEntitlementDigest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "unsignedV3PngSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "signerCredentialRefDigest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "scopeDigest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "issuedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "providerSignature": {
+          "type": "string",
+          "minLength": 16
+        }
+      }
+    },
+    "signerReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "signerReceiptId",
+        "providerId",
+        "operation",
+        "markingSessionId",
+        "executionId",
+        "watermarkUid",
+        "profileEntitlementDigest",
+        "unsignedV3PngSha256",
+        "finalSignedPngSha256",
+        "c2paActiveManifestLabel",
+        "c2paClaimDigest",
+        "certificateChainDigest",
+        "signerKeyId",
+        "signerKeyVersion",
+        "signerInvocationKey",
+        "signerResultRef",
+        "idempotencyDisposition",
+        "billableInvocationId",
+        "signatureAlgorithm",
+        "signedAt",
+        "receiptExpiresAt",
+        "providerSignature"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "hs-ai-production-c2pa-signer-receipt-v1"
+        },
+        "signerReceiptId": {
+          "type": "string",
+          "pattern": "^sign-result-[a-z0-9-]+$"
+        },
+        "providerId": {
+          "type": "string"
+        },
+        "operation": {
+          "const": "c2pa_post_embed_sign"
+        },
+        "markingSessionId": {
+          "type": "string"
+        },
+        "executionId": {
+          "type": "string"
+        },
+        "watermarkUid": {
+          "type": "string"
+        },
+        "profileEntitlementDigest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "unsignedV3PngSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "finalSignedPngSha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "c2paActiveManifestLabel": {
+          "type": "string"
+        },
+        "c2paClaimDigest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "certificateChainDigest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "signerKeyId": {
+          "type": "string"
+        },
+        "signerKeyVersion": {
+          "type": "string"
+        },
+        "signerInvocationKey": {
+          "$ref": "#/$defs/sha256"
+        },
+        "signerResultRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "idempotencyDisposition": {
+          "enum": [
+            "created",
+            "replayed"
+          ]
+        },
+        "billableInvocationId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "signatureAlgorithm": {
+          "enum": [
+            "es256",
+            "es384",
+            "ed25519"
+          ]
+        },
+        "signedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "receiptExpiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "providerSignature": {
+          "type": "string",
+          "minLength": 16
+        }
+      }
+    }
+  }
+}

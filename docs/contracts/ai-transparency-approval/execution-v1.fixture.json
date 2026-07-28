@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "ai_transparency_approval_fixture_v1",
+  "fixtureType": "execution",
+  "fixtureId": "execution-v1",
+  "execution": {
+    "executionId": "atce_cn_002",
+    "changeRequestId": "atcr_cn_002",
+    "executorActorId": "system_executor_001",
+    "executorRole": "system_executor",
+    "fromRequestStatus": "approved",
+    "toRequestStatus": "succeeded",
+    "targetVersionBefore": 1,
+    "targetVersionAfter": 2,
+    "resultingEntitlementVersionId": "atpev_cn_001_v2"
+  },
+  "versionConflict": {
+    "actualTargetVersion": 2,
+    "expectedReasonCode": "target_version_conflict",
+    "targetStateWritten": false,
+    "createsCredential": false,
+    "createsMarkingSession": false,
+    "createsLedger": false
+  },
+  "invariants": {
+    "executionRevalidatesApprovalDigest": true,
+    "executionRevalidatesRoleBindings": true,
+    "executionIsAtomic": true
+  }
+}

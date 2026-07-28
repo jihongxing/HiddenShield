@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hiddenshield.local/contracts/ai-transparency/production-post-embed-artifact-receipt-v1.schema.json",
+  "title": "HiddenShield Production Post-Embed Artifact Receipt v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactReceiptId",
+    "providerId",
+    "operation",
+    "executionId",
+    "signerInvocationKey",
+    "artifactRef",
+    "finalSignedPngSha256",
+    "objectVersion",
+    "idempotencyKey",
+    "idempotencyDisposition",
+    "durabilityStatus",
+    "issuedAt",
+    "expiresAt",
+    "providerSignature"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "hs-ai-production-post-embed-artifact-receipt-v1"
+    },
+    "artifactReceiptId": {
+      "type": "string",
+      "pattern": "^artifact-(stage|finalize)-receipt-[a-z0-9-]+$"
+    },
+    "providerId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "operation": {
+      "enum": [
+        "stage",
+        "finalize"
+      ]
+    },
+    "executionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "signerInvocationKey": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "artifactRef": {
+      "type": "string",
+      "minLength": 1
+    },
+    "finalSignedPngSha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "objectVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "idempotencyKey": {
+      "type": "string",
+      "minLength": 1
+    },
+    "idempotencyDisposition": {
+      "enum": [
+        "created",
+        "replayed"
+      ]
+    },
+    "durabilityStatus": {
+      "enum": [
+        "staged",
+        "finalized",
+        "quarantined"
+      ]
+    },
+    "issuedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "providerSignature": {
+      "type": "string",
+      "minLength": 16
+    }
+  }
+}

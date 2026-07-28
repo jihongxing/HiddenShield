@@ -1,0 +1,14 @@
+DROP TRIGGER IF EXISTS trg_ai_delivery_security_operations_audit_append_only
+ON ai_delivery_security_operations_audit_events;
+
+DROP INDEX IF EXISTS idx_ai_delivery_security_operations_scope_time;
+DROP TABLE IF EXISTS ai_delivery_security_operations_audit_events;
+
+DROP TRIGGER IF EXISTS trg_ai_delivery_security_summary_guard
+ON ai_delivery_security_observability_snapshots;
+
+DROP FUNCTION IF EXISTS guard_ai_delivery_security_summary_mutation();
+
+DROP INDEX IF EXISTS idx_ai_delivery_security_summary_retention;
+DROP INDEX IF EXISTS idx_ai_delivery_security_summary_scope_time;
+DROP TABLE IF EXISTS ai_delivery_security_observability_snapshots;

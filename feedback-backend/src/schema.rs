@@ -983,6 +983,81 @@ pub struct EnterpriseAdminAuditEventListResponse {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct AiTransparencyLicenseRecord {
+    pub license_id: String,
+    pub tenant_id: String,
+    pub workspace_id: String,
+    pub environment: String,
+    pub status: String,
+    pub issuer_mode: String,
+    pub deployment_mode: String,
+    pub public_verification_required: bool,
+    pub metering_plan_id: String,
+    pub effective_at: DateTime<Utc>,
+    pub expires_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiTransparencyProfileEntitlementRecord {
+    pub profile_id: String,
+    pub profile_kind: String,
+    pub status: String,
+    pub effective_at: DateTime<Utc>,
+    pub expires_at: DateTime<Utc>,
+    pub terms_version: String,
+    pub approved_by: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiTransparencyLicenseDetailResponse {
+    pub license: AiTransparencyLicenseRecord,
+    pub profile_entitlements: Vec<AiTransparencyProfileEntitlementRecord>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiTransparencyProfileEntitlementCheckRequest {
+    pub license_id: String,
+    pub environment: String,
+    pub requested_profile_ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiTransparencyLicenseDecision {
+    pub authorized: bool,
+    pub reason_code: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiTransparencyProfileDecision {
+    pub profile_id: String,
+    pub authorized: bool,
+    pub reason_code: String,
+    pub profile_kind: Option<String>,
+    pub terms_version: Option<String>,
+    pub expires_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AiTransparencyProfileEntitlementCheckResponse {
+    pub license_id: String,
+    pub authorized: bool,
+    pub evaluated_at: DateTime<Utc>,
+    pub license_decision: AiTransparencyLicenseDecision,
+    pub profile_decisions: Vec<AiTransparencyProfileDecision>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct EnterpriseQuotaBalanceInitRequest {
     pub account_id: String,
     pub workspace_id: String,

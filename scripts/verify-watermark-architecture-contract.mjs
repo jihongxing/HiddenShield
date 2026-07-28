@@ -29,6 +29,10 @@ const sources = {
   backendLib: readFileSync('feedback-backend/src/lib.rs', 'utf8'),
   backendSchema: readFileSync('feedback-backend/src/schema.rs', 'utf8'),
   backendStorage: readFileSync('feedback-backend/src/storage.rs', 'utf8'),
+  backendImageMarkingExecutor: readFileSync(
+    'feedback-backend/src/ai_transparency_image_marking_executor.rs',
+    'utf8',
+  ),
   releasePlan: readFileSync('docs/双端现有能力发布计划.md', 'utf8'),
   capabilityBoundary: readFileSync('docs/当前真实能力边界说明.md', 'utf8'),
 };
@@ -114,12 +118,35 @@ const backendText = [
 ].join('\n');
 
 const backendAlgorithmScanText = sanitizeAllowedWrapperMetadata(backendText);
+const backendCoreDependencyDeclared = /watermark[-_]core/.test(
+  sources.backendCargoToml,
+);
+const backendExecutionWrapperAuthorized =
+  !backendCoreDependencyDeclared ||
+  (sources.backendCargoToml.includes(
+    'postgres = ["dep:sqlx", "dep:watermark-core"]',
+  ) &&
+    sources.backendCargoToml.includes(
+      'watermark-core = { path = "../watermark-core", optional = true }',
+    ) &&
+    /#\[cfg\(feature = "postgres"\)\]\r?\npub mod ai_transparency_image_marking_executor;/.test(
+      sources.backendLib,
+    ) &&
+    sources.backendImageMarkingExecutor.includes('use watermark_core::') &&
+    sources.backendImageMarkingExecutor.includes(
+      'prepare_internal_image_marking',
+    ));
 
 const backendForbiddenPatterns = [
-  {
-    pattern: /watermark[-_]core|watermark_core/,
-    message: 'backend must not add a direct watermark-core dependency unless the architecture contract is updated for an execution-wrapper service',
-  },
+  ...(!backendExecutionWrapperAuthorized
+    ? [
+        {
+          pattern: /watermark[-_]core|watermark_core/,
+          message:
+            'backend must not add a direct watermark-core dependency unless it is the PostgreSQL-gated internal image execution wrapper',
+        },
+      ]
+    : []),
   {
     pattern: /\b(?:WatermarkPayload|PayloadBuildInput|PayloadDigestBuildInput|IdentityBuildInput|WatermarkIdentity|WatermarkService|MediaInput|MediaOutput)\b/,
     message: 'backend must not construct formal watermark payloads or media IO types',

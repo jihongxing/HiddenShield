@@ -1,4 +1,5 @@
 pub mod billing;
+pub mod delivery_envelope;
 pub mod identity;
 pub mod local_batch;
 pub mod offline_license;
