@@ -2565,3 +2565,12 @@ Creator 行为：
 - 验证：`npm run ai-transparency:external-readiness` 断言模板保持 `configuration_required`，拒绝明文 Secret、非 HTTPS endpoint 和伪造的伙伴 acceptance；该检查纳入 AI Transparency CI Gate。
 - 商业边界：配置包不构成 provider activation、Sandbox acceptance、生产 entitlement、收入确认、SDK 发布或 SLA。
 - 下一商业化任务：由基础设施与首个设计伙伴在各自受控系统填写真实引用；随后执行 provider recovery 演练与 12 场景证据化 Sandbox 验收。
+
+## 2026-07-28 AI Transparency External Readiness 双模式验收
+
+- 状态：`template_and_internal_review_preflight_verified_external_execution_pending`。
+- 已完成：将 readiness preflight 冻结为 `template` 与 `review` 两种模式；前者只允许 `configuration_required` 占位模板，后者只允许无占位符的 `ready_for_internal_review` 引用 manifest。
+- Fail-closed：review 拒绝 HTTP、localhost、`*.example` / `*.test` / `*.invalid` endpoint、明文 Secret、错误 URI scheme、未配置 KMS provider、占位符和预先填入的伙伴 acceptance evidence。
+- 验证：加入完整引用 fixture 与 unsafe reference 拒绝 fixture，`npm run ai-transparency:external-readiness` 同时验证两种成功/拒绝路径，并由 AI Transparency CI Gate 强制执行。
+- 商业边界：`ready_for_internal_review` 不等于 provider activation、Sandbox acceptance、生产 entitlement、SDK 发布、收入确认或 SLA。
+- 下一商业化任务：基础设施与伙伴提交受控 manifest 后先执行 review preflight；通过后才进入隔离环境的 provider recovery 与 12 场景 evidence Gate。
