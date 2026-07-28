@@ -4,7 +4,11 @@
 
 冻结日期：`2026-07-27`
 
-实现状态：`identity_schema_fixture_and_state_machine_contract_test_frozen_no_write_implementation`
+历史冻结状态：`identity_schema_fixture_and_state_machine_contract_test_frozen_no_write_implementation`
+
+当前实现状态：`postgresql_0003_change_command_and_real_concurrency_gate_implemented_internal_only`
+
+本合同定义的 approval state machine、desiredState、request digest、change-command、双人审批、execution 与 append-only audit 已在 PostgreSQL 控制面实现并通过真实双连接并发 Gate。真实 Internal IAM、reference authority、法务签署和 production 发放仍为外部依赖。
 
 ## 1. 目的与当前 Gate
 
@@ -380,7 +384,7 @@ GET  /internal/ai-transparency/change-requests/{changeRequestId}/audit-events
 
 所有接口必须使用未来的细粒度内部身份与角色校验；现有单一 admin token 不足以承载 maker-checker 写入。
 
-## 14. 实施前置条件
+## 14. 历史实施前置条件
 
 开始数据库或写接口实现前必须先完成：
 
@@ -413,14 +417,7 @@ npm run ai-transparency:approval-contract
 docs/AI生成内容标识0003迁移前置Gate合同.md
 ```
 
-下一任务可创建：
-
-```text
-0003_ai_transparency_approval_state_machine
-以及 PostgreSQL 真实双连接并发测试实现；SQLite 只保留本地迁移/单元测试
-```
-
-在 migration 与真实并发测试通过前，继续禁止所有 production 发放。
+`0003_ai_transparency_approval_state_machine` 与 PostgreSQL 真实双连接并发测试已实现；SQLite 继续只保留本地迁移/单元测试，不构成生产并发证据。
 
 数据库迁移设计评审见：
 
@@ -428,9 +425,9 @@ docs/AI生成内容标识0003迁移前置Gate合同.md
 docs/AI生成内容标识审批状态机数据库迁移设计评审.md
 ```
 
-评审结论为 `conditional_design_pass`，不代表允许立即创建 `0003`。
+历史评审结论为 `conditional_design_pass`；后续已完成 `0003` 与内部并发 Gate，但不代表真实 provider 或 production 发放获批。
 
-上述工作完成并通过审查前，继续禁止：
+在真实 IAM/reference provider、法务签署、KMS/HSM/signer/object-store/notification provider 与设计伙伴 Gate 完成前，继续禁止：
 
 ```text
 license / Profile 写接口

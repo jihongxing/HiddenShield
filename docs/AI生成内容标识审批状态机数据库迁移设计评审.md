@@ -4,7 +4,11 @@
 
 评审结论：`conditional_design_pass`
 
-实现状态：`design_review_only_no_migration`
+历史评审状态：`conditional_design_pass`
+
+当前实现状态：`postgresql_0003_approval_state_machine_and_real_concurrency_gate_implemented`
+
+本评审中的 `0003` 设计、PostgreSQL 双连接并发 harness、内部 change-command 原子事务与 append-only audit 已实现并通过内部 Gate。真实 Internal IAM、法务/合同/security reference provider 的配置与验真仍是外部依赖；production 发放继续关闭。
 
 ## 1. 评审范围
 
@@ -568,4 +572,4 @@ npm run ai-transparency:approval-contract
 - 覆盖现有 entitlement 历史。
 - 在 migration 和真实并发测试前发放任何 production license、credential 或 SDK。
 
-六项合同 Gate 已完成。下一步可以创建 `0003`，并必须在真实 PostgreSQL 双连接测试通过前保持所有写接口和生产发放禁用。
+历史评审结论中的六项 Gate 已于后续实现满足；`0003` 已创建，真实 PostgreSQL 双连接并发测试、confirm 原子事务及后续审计/交付控制面均已通过内部 Gate。本文件不将真实 provider、法务签署或 production 发放视为已完成。
