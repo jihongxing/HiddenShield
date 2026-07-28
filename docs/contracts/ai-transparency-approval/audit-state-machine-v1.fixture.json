@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "ai_transparency_approval_fixture_v1",
+  "fixtureType": "audit_state_machine",
+  "fixtureId": "audit-state-machine-v1",
+  "changeRequestId": "atcr_cn_002",
+  "events": [
+    {
+      "eventType": "change_request_submitted",
+      "fromState": "draft",
+      "toState": "pending_review",
+      "actorId": "actor_requester_001",
+      "actorType": "human",
+      "reasonCode": "authorized"
+    },
+    {
+      "eventType": "approval_granted",
+      "fromState": "pending_review",
+      "toState": "approved",
+      "actorId": "actor_compliance_001",
+      "actorType": "human",
+      "reasonCode": "authorized"
+    },
+    {
+      "eventType": "execution_started",
+      "fromState": "approved",
+      "toState": "executing",
+      "actorId": "system_executor_001",
+      "actorType": "system",
+      "reasonCode": "authorized"
+    },
+    {
+      "eventType": "execution_succeeded",
+      "fromState": "executing",
+      "toState": "succeeded",
+      "actorId": "system_executor_001",
+      "actorType": "system",
+      "reasonCode": "authorized"
+    },
+    {
+      "eventType": "target_state_changed",
+      "fromState": "executing",
+      "toState": "succeeded",
+      "actorId": "system_executor_001",
+      "actorType": "system",
+      "reasonCode": "authorized"
+    }
+  ],
+  "invariants": {
+    "appendOnly": true,
+    "eachStateTransitionHasOneAuditEvent": true,
+    "auditFailureRollsBackStateChange": true,
+    "createsCredential": false,
+    "createsMarkingSession": false,
+    "createsLedger": false
+  }
+}

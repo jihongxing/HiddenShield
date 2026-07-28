@@ -1,3 +1,34 @@
+pub mod ai_transparency_change_command;
+#[cfg(feature = "postgres")]
+pub mod ai_transparency_confirm_command;
+#[cfg(feature = "postgres")]
+pub mod ai_transparency_credential_custody;
+#[cfg(feature = "postgres")]
+pub mod ai_transparency_dead_letter_command;
+#[cfg(feature = "postgres")]
+pub mod ai_transparency_delivery_envelope;
+#[cfg(feature = "postgres")]
+pub mod ai_transparency_delivery_observability;
+#[cfg(feature = "postgres")]
+pub mod ai_transparency_delivery_retrieval;
+#[cfg(feature = "postgres")]
+pub mod ai_transparency_delivery_security_incident;
+#[cfg(feature = "postgres")]
+pub mod ai_transparency_delivery_security_notification;
+#[cfg(feature = "postgres")]
+pub mod ai_transparency_image_marking_executor;
+pub mod ai_transparency_internal_provider;
+#[cfg(feature = "postgres")]
+pub mod ai_transparency_notification_delivery;
+#[cfg(feature = "postgres")]
+pub mod ai_transparency_platform_api;
+#[cfg(feature = "postgres")]
+pub mod ai_transparency_post_embed_recovery;
+#[cfg(feature = "postgres")]
+pub mod ai_transparency_post_embed_signing;
+pub mod ai_transparency_production_provider;
+#[cfg(feature = "postgres")]
+pub mod ai_transparency_public_resolver;
 pub mod billing;
 pub mod database;
 #[cfg(feature = "postgres")]
@@ -40,14 +71,16 @@ use crate::billing::{
 };
 use crate::database::{DatabaseBackendKind, DatabaseConfig};
 use crate::schema::{
-    AccountDevicesResponse, AnonymousFeedbackBatch, AnonymousFeedbackBatchAck,
-    AnonymousFeedbackStatsQuery, AnonymousFeedbackStatsResponse, AuthChallengeRequest,
-    AuthLogoutRequest, AuthRefreshRequest, AuthSessionRequest, BillingFixtureEventRequest,
-    BillingPaymentSessionRequest, BillingWechatPayNotificationRequest, CloudSyncBatchRequest,
-    CloudSyncChangesResult, CloudVideoTaskClaimRequest, CloudVideoTaskClaimResponse,
-    CloudVideoTaskCompletionRequest, CloudVideoTaskDownloadAuthorizationQuery,
-    CloudVideoTaskDownloadAuthorizationRequest, CloudVideoTaskDownloadAuthorizationResponse,
-    CloudVideoTaskFailureRequest, CloudVideoTaskListQuery, CloudVideoTaskListResponse,
+    AccountDevicesResponse, AiTransparencyLicenseDetailResponse,
+    AiTransparencyProfileEntitlementCheckRequest, AiTransparencyProfileEntitlementCheckResponse,
+    AnonymousFeedbackBatch, AnonymousFeedbackBatchAck, AnonymousFeedbackStatsQuery,
+    AnonymousFeedbackStatsResponse, AuthChallengeRequest, AuthLogoutRequest, AuthRefreshRequest,
+    AuthSessionRequest, BillingFixtureEventRequest, BillingPaymentSessionRequest,
+    BillingWechatPayNotificationRequest, CloudSyncBatchRequest, CloudSyncChangesResult,
+    CloudVideoTaskClaimRequest, CloudVideoTaskClaimResponse, CloudVideoTaskCompletionRequest,
+    CloudVideoTaskDownloadAuthorizationQuery, CloudVideoTaskDownloadAuthorizationRequest,
+    CloudVideoTaskDownloadAuthorizationResponse, CloudVideoTaskFailureRequest,
+    CloudVideoTaskListQuery, CloudVideoTaskListResponse,
     CloudVideoTaskObjectUploadAuthorizationRequest,
     CloudVideoTaskObjectUploadAuthorizationResponse, CloudVideoTaskObjectUploadQuery,
     CloudVideoTaskObjectUploadResponse, CloudVideoTaskRecord, CloudVideoTaskRequest,
@@ -201,6 +234,8 @@ pub enum ApiError {
     Unauthorized,
     #[error("forbidden")]
     Forbidden,
+    #[error("not found")]
+    NotFound(String),
     #[error("rate limited")]
     RateLimited(String),
     #[error("storage error")]
@@ -223,6 +258,9 @@ impl IntoResponse for ApiError {
                 "forbidden".to_string(),
                 "forbidden".to_string(),
             ),
+            ApiError::NotFound(message) => {
+                (StatusCode::NOT_FOUND, "not_found".to_string(), message)
+            }
             ApiError::RateLimited(message) => (
                 StatusCode::TOO_MANY_REQUESTS,
                 "rate_limited".to_string(),
@@ -485,6 +523,14 @@ pub fn build_app_with_admin_auth_enterprise_custody_and_proxy(
             "/internal/enterprise/gateway-dry-run",
             post(dry_run_enterprise_gateway_internal),
         )
+        .route(
+            "/internal/ai-transparency/licenses/:license_id",
+            get(get_ai_transparency_license_internal),
+        )
+        .route(
+            "/internal/ai-transparency/profile-entitlements/check",
+            post(check_ai_transparency_profile_entitlements_internal),
+        )
         .route("/v1/sync/events:batch", post(push_cloud_events_batch))
         .route("/v1/sync/changes", get(get_cloud_changes))
         .route("/v1/anonymous-feedback/batches", post(ingest_batch))
@@ -567,6 +613,9 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         args.database_url.clone(),
         args.deployment_env.clone(),
     );
+    if database_config.runtime_mode.is_production() {
+        crate::ai_transparency_production_provider::ProductionProviderDeploymentConfig::from_environment()?;
+    }
     let storage = Arc::new(Storage::open_with_database_config(
         &database_config,
         args.retention_days,
@@ -2168,6 +2217,137 @@ async fn dry_run_enterprise_gateway_internal(
         }),
     )?;
     Ok(Json(decision))
+}
+
+async fn get_ai_transparency_license_internal(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(license_id): Path<String>,
+) -> Result<Json<AiTransparencyLicenseDetailResponse>, ApiError> {
+    let endpoint = "/internal/ai-transparency/licenses/:license_id";
+    validate_admin_endpoint(&state, &headers, endpoint)?;
+    match state
+        .storage
+        .get_ai_transparency_license_internal(&license_id)
+    {
+        Ok(Some(response)) => {
+            state
+                .storage
+                .record_ai_transparency_admin_audit_event_internal(
+                    "get_license",
+                    "succeeded",
+                    endpoint,
+                    Some(&response.license),
+                    Some(&license_id),
+                    &[],
+                    "authorized",
+                    serde_json::json!({ "environment": response.license.environment }),
+                )?;
+            Ok(Json(response))
+        }
+        Ok(None) => {
+            state
+                .storage
+                .record_ai_transparency_admin_audit_event_internal(
+                    "get_license",
+                    "denied",
+                    endpoint,
+                    None,
+                    Some(&license_id),
+                    &[],
+                    "ai_license_not_found",
+                    serde_json::json!({}),
+                )?;
+            Err(ApiError::NotFound("ai_license_not_found".to_string()))
+        }
+        Err(error) => {
+            let reason_code = error.to_string();
+            state
+                .storage
+                .record_ai_transparency_admin_audit_event_internal(
+                    "get_license",
+                    "failed",
+                    endpoint,
+                    None,
+                    Some(&license_id),
+                    &[],
+                    &reason_code,
+                    serde_json::json!({}),
+                )?;
+            Err(ApiError::from(error))
+        }
+    }
+}
+
+async fn check_ai_transparency_profile_entitlements_internal(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Json(request): Json<AiTransparencyProfileEntitlementCheckRequest>,
+) -> Result<Json<AiTransparencyProfileEntitlementCheckResponse>, ApiError> {
+    let endpoint = "/internal/ai-transparency/profile-entitlements/check";
+    validate_admin_endpoint(&state, &headers, endpoint)?;
+    let requested_profile_ids = request.requested_profile_ids.clone();
+    match state
+        .storage
+        .check_ai_transparency_profile_entitlements_internal(&request)
+    {
+        Ok(response) => {
+            let license = state
+                .storage
+                .get_ai_transparency_license_internal(&request.license_id)?
+                .map(|detail| detail.license);
+            let reason_code = if response.authorized {
+                "authorized".to_string()
+            } else {
+                response
+                    .profile_decisions
+                    .iter()
+                    .find(|decision| !decision.authorized)
+                    .map(|decision| decision.reason_code.clone())
+                    .unwrap_or_else(|| response.license_decision.reason_code.clone())
+            };
+            state
+                .storage
+                .record_ai_transparency_admin_audit_event_internal(
+                    "check_profile_entitlements",
+                    if response.authorized {
+                        "succeeded"
+                    } else {
+                        "denied"
+                    },
+                    endpoint,
+                    license.as_ref(),
+                    Some(&request.license_id),
+                    &requested_profile_ids,
+                    &reason_code,
+                    serde_json::json!({
+                        "environment": request.environment,
+                        "authorized": response.authorized,
+                        "requestedProfileCount": requested_profile_ids.len()
+                    }),
+                )?;
+            Ok(Json(response))
+        }
+        Err(error) => {
+            let reason_code = error.to_string();
+            state
+                .storage
+                .record_ai_transparency_admin_audit_event_internal(
+                    "check_profile_entitlements",
+                    "failed",
+                    endpoint,
+                    None,
+                    Some(&request.license_id),
+                    &requested_profile_ids,
+                    &reason_code,
+                    serde_json::json!({
+                        "environment": request.environment,
+                        "requestedProfileCount": requested_profile_ids.len()
+                    }),
+                )?;
+            Err(ApiError::from(error))
+        }
+    }
 }
 
 async fn get_cloud_changes(
@@ -4229,6 +4409,40 @@ mod tests {
             .admin_audit_event_count_for_tests("allowed", Some("admin_token"))
             .unwrap();
         assert_eq!(allowed_count, 9);
+    }
+
+    #[tokio::test]
+    async fn ai_transparency_internal_routes_require_admin_token_and_hide_unknown_license() {
+        let file = NamedTempFile::new().unwrap();
+        let storage = Arc::new(Storage::open(file.path(), 30).unwrap());
+        let app =
+            build_app_with_billing_and_admin(storage, None, Some("secret-admin-token".to_string()));
+        let unauthorized = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/internal/ai-transparency/licenses/atl-missing")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(unauthorized.status(), StatusCode::UNAUTHORIZED);
+
+        let not_found = app
+            .oneshot(
+                Request::builder()
+                    .uri("/internal/ai-transparency/licenses/atl-missing")
+                    .header(
+                        axum::http::header::AUTHORIZATION,
+                        "Bearer secret-admin-token",
+                    )
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(not_found.status(), StatusCode::NOT_FOUND);
     }
 
     #[test]

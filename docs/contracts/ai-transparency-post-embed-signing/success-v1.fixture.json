@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "success",
+  "baseInput": "base-production-input-v1.json",
+  "observed": {
+    "computedFinalSignedPngSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "c2paReadback": {
+      "activeManifestPresent": true,
+      "hardBindingValid": true,
+      "validationFindings": []
+    },
+    "v3Readback": {
+      "watermarkUid": "HS-ABCDEF01-23456789-ABCDEF01-23456789",
+      "protocolVersion": 3,
+      "payloadBytesLength": 39,
+      "payloadAuthStatus": "verified"
+    },
+    "confirmStatus": "committed"
+  },
+  "expected": {
+    "artifactReturned": true,
+    "finalHashBoundEverywhere": true,
+    "committedConfirmedMarkedImageCount": 1,
+    "customerMeteringQuantity": 1,
+    "orphanSigningEventCreated": false
+  }
+}

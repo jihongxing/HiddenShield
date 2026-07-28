@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "v3_readback_failure",
+  "baseInput": "base-production-input-v1.json",
+  "observed": {
+    "computedFinalSignedPngSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "c2paReadback": {
+      "activeManifestPresent": true,
+      "hardBindingValid": true,
+      "validationFindings": []
+    },
+    "v3Readback": {
+      "watermarkUid": "HS-ABCDEF01-23456789-ABCDEF01-23456789",
+      "protocolVersion": 3,
+      "payloadBytesLength": 39,
+      "payloadAuthStatus": "invalid"
+    },
+    "errorCode": "ai_v3_readback_failed",
+    "confirmStatus": "not_started"
+  },
+  "expected": {
+    "artifactReturned": false,
+    "signedBytesQuarantined": true,
+    "confirmWrites": 0,
+    "customerMeteringQuantity": 0
+  }
+}

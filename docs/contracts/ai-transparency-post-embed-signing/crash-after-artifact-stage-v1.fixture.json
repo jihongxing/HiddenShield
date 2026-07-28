@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "crash_after_artifact_stage",
+  "baseInput": "base-production-input-v1.json",
+  "frozenAt": "2026-07-28T00:00:00Z",
+  "observed": {
+    "crashPoint": "after_artifact_stage",
+    "persistedStatusAfterCrash": "reserved",
+    "signerRequestsBeforeRecovery": 1,
+    "artifactStageRequestsBeforeRecovery": 1,
+    "recoverySignerDisposition": "replayed",
+    "recoveryArtifactStageDisposition": "replayed",
+    "finalStatus": "confirmed"
+  },
+  "expected": {
+    "artifactReturned": true,
+    "replayedExistingProjection": true,
+    "committedConfirmedMarkedImageCount": 1,
+    "customerMeteringQuantity": 1,
+    "totalSignerRequests": 2,
+    "totalArtifactStageRequests": 2,
+    "maxBillableSignerInvocations": 1,
+    "maxUniqueArtifactStageWrites": 1,
+    "signerReceiptPersisted": true,
+    "artifactStageReceiptPersisted": true,
+    "artifactFinalizeReceiptPersisted": true
+  }
+}

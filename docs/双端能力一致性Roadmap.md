@@ -2,6 +2,21 @@
 
 当前状态：Windows 桌面 `v0.1.3` RC / GA Gate `PASSED`（2026-07-26）；移动端继续冻结。
 
+## 2026-07-26 中文宣传片桌面限定边界
+
+状态：`桌面宣传片已生成；不形成移动端承诺`
+
+- 本轮宣传片只介绍当前发布中的 Windows 桌面端，不展示或暗示移动端写入、验证、版权库、报告或云同步已经开放。
+- 桌面流程仅覆盖图片 / 音频保护写入、读取验证、本地版权库和技术证据报告；宣传片演示素材与编号均为视觉样例，不进入正式跨端 fixture。
+- 片中云版权库、SDK、API 统一标记为“未来规划”，个人作品身份统一标记为“终局愿景”；这些内容不代表桌面或移动端已有生产开放能力。
+- 桌面限定原因是当前 `v0.1.3` 发布范围与移动端冻结状态，而不是形成长期桌面独占承诺；移动端解冻后必须重新执行图片 / 音频双向互验与页面级 QA，才可制作双端版本。
+- 验证：宣传片工程、逐镜头文案和重新构建脚本位于 `docs/promo-video/`，成片输出位于 `output/promo-video/`。
+- 风险：未来传播时若截取单个镜头，必须保留“未来规划”或“终局愿景”标签，防止云版权库、SDK、API 和作品身份被误读为当前双端能力。
+
+下一双端一致性任务：
+
+- 移动端继续冻结；若后续需要双端宣传片，先恢复移动端 release gate，并重新完成 desktop->mobile 与 mobile->desktop 图片 / 音频真实文件互验。
+
 ## 2026-07-21 桌面媒体正式支持范围
 
 状态：`桌面发布候选范围已冻结；等待容量与上限 Gate`
@@ -1416,3 +1431,205 @@
 - 该运行已写入 `docs/桌面v0.1.3发布清单.md`，作为 `v0.1.3` 发布后的当前 `main` 双平台绿色基线，不替代 Windows installed-payload 验签和物理断网媒体冒烟。
 - 本轮只冻结 CI 证据，不改变移动端冻结状态、桌面或移动端能力承诺、共享字段、payload、算法或跨端读取边界。
 - 下一双端一致性任务：任何候选重建或双端合同变更都必须取得新的 Ubuntu / Windows 全绿运行，并与 `30218394724` 对比后追加记录。
+
+## 2026-07-27 AI 图片平台生成时标识 MVP 双端一致性约束
+
+- 状态：`design_frozen`。AI 图片平台生成时标识的主交付面是平台 SDK、后端 API 和验证接口；本轮不新增桌面或移动端生成入口，不解除移动端冻结。
+- 统一字段：后续桌面、Android 和 iOS 只读查看必须使用同一组 AI 来源字段、Evidence 等级、锚点状态、元数据签名状态、issuer 信任状态、Profile 状态、warning 和 `legalConclusion=false`。
+- 统一文案：三端都必须区分“平台签名声明”“Registry 签名声明”“用户自声明”“不支持的证据”“无效证据”和“未发现支持的标识”；未发现标识不得表述为人工创作或非 AI。
+- 正式媒体约束：平台 SDK 写入的 AI 图片正式锚点必须由 `watermark-core` 写入，并覆盖平台写入 -> 桌面读取、平台写入 -> Android 读取、平台写入 -> iOS 读取；Android QA 不得替代 iOS QA。
+- 存储与同步：AI Transparency Manifest、Evidence 和 Marker Binding 在进入正式端点前必须定义本地版权库、云同步白名单、报告摘要和隐私边界；不得只在平台 SDK 返回值或单端 UI state 中存在。
+- 下一双端一致性任务：在实现前冻结 AI 来源只读字段的跨端 schema fixture，并将平台写入图片加入现有图片跨端互验矩阵。
+
+## 2026-07-27 Internal AI Image Executor 跨端前置证据
+
+- 已完成：backend internal-only 图片 executor 已通过 `watermark-core` V3 写入与同核心回读，再以 PostgreSQL confirm 固化 AI Transparency 记录；未修改 desktop、Android 或 iOS 代码。
+- 一致性边界：executor 返回的 PNG 保护副本必须作为“平台写入” fixture，供桌面、Android 和 iOS 调用各自正式读取路径；本轮 backend QA 不能替代任何端侧读取证据。
+- 用户可见边界：当前不向任一端承诺平台生成时标识、UI 标签渲染、公共验证或法规合规。
+- 下一双端一致性任务：新增平台写入 PNG fixture 与 desktop/Android/iOS 读取结果合同，覆盖 V3 UID、auth status、metadata 缺失和 `legalConclusion=false`。
+
+## 2026-07-27 平台 Executor PNG 跨端 Fixture
+
+- 状态：`desktop_and_shared_mobile_bridge_verified_ios_runtime_pending`。
+- 已完成：冻结 Executor 输出 PNG、含测试 metadata 与 metadata-stripped fixture；Desktop 正式读取代码路径和 Android/iOS 共用 mobile Rust bridge 均读取同一 V3/39 UID 与 auth 结果。
+- 一致性边界：metadata 剥离验证盲水印不依赖 PNG metadata；`legalConclusion=false` 固定不变，未发现或无效标识不得反推非 AI。
+- 未完成：Android/iOS 产品 UI 均未新增入口；尤其 iOS 尚无 macOS/iOS runtime 证据，共用 bridge 的宿主测试不能替代 iOS QA。
+- Gate：SDK、公共 Resolver、production credential 和生产发放继续关闭。
+- 下一双端一致性任务：在 macOS/iOS runtime 复跑冻结 fixture，并归档原始与 metadata-stripped 两类读取结果。
+
+## 2026-07-27 iOS Runtime Gate 挂起
+
+- 状态：`suspended_external_environment`。
+- 原因：当前没有可用的 macOS/iOS runtime，无法将共用 mobile Rust bridge 宿主测试升级为 iOS 实际运行时或设备证据。
+- 保留证据：Desktop 与共用 mobile bridge fixture 测试继续作为内部回归 Gate，但不得降低或替代 iOS runtime Gate。
+- 解挂条件：提供可执行 iOS runtime 的 macOS CI、模拟器或设备环境，并复跑原始与 metadata-stripped PNG fixture。
+- 可并行任务：继续冻结并验证不依赖 iOS runtime 的第三方 PNG 元数据共存与剥离互操作合同；SDK、公共 Resolver 与生产发放继续关闭。
+
+## 2026-07-27 第三方 PNG 元数据共存内部互验
+
+- 已完成：Desktop 正式读取路径与 Android/iOS 共用 mobile Rust bridge 均读取 external metadata 共存和 stripped fixture，并得到同一 V3/39 UID/auth。
+- 边界：metadata fixture 明确为 `untrusted`，不代表 C2PA、平台签名或第三方数字水印；iOS runtime 的实际环境 Gate 仍挂起。
+- 下一双端一致性任务：取得真实第三方可再分发参考样本后，按其允许的处理链运行互操作 Benchmark；SDK、公共 Resolver 与生产发放继续关闭。
+
+## 2026-07-27 第三方公开 C2PA Metadata Benchmark
+
+- 已完成：桌面内部 QA 使用公开 Apache-2.0 C2PA fixture 验证 manifest 可读取且不会被归类为 HiddenShield V3 anchor。
+- 未覆盖：此项未接入 Android 或 iOS 读取 UI；iOS runtime Gate 仍为外部环境挂起，不能以桌面 C2PA Reader 代替。
+- 下一双端一致性任务：取得适合移动端再分发的第三方样本和处理链许可后，定义移动端只读显示与跨端结果矩阵。
+
+## 2026-07-27 第三方视觉水印与 V3 内部子矩阵
+
+- 已完成：桌面共享核心对 MIT 许可的外部视觉水印样本完成“写前无 V3 → V3 写入 → 写后 verified 回读”。
+- 边界：该视觉水印样本与公开 C2PA fixture 不同资产，未产生 Android/iOS 结果；iOS runtime Gate 持续挂起。
+- 下一双端一致性任务：取得同资产可再分发样本后，定义 Desktop/Android/iOS 的只读 V3 与 C2PA/视觉水印状态矩阵；SDK、公共 Resolver 与生产发放继续关闭。
+
+## 2026-07-27 最终 PNG C2PA 状态一致性
+
+- 已完成：内部 QA 将最终 PNG 明确分类为 `manifest_absent_after_png_reencode`，同时 V3 为 verified。
+- 一致性要求：未来 Desktop/Android/iOS 必须分别展示 C2PA 状态与 V3 状态，不得因 V3 成功隐藏 C2PA 缺失。
+- Gate：iOS runtime 继续挂起；post-embed resign 或兼容容器通过前，不开放三层对外能力。
+
+## 2026-07-27 Post-Embed 双层读取内部证据
+
+- 已完成：桌面内部 QA 对同一最终 PNG 同时读取 active C2PA manifest 与 verified V3。
+- 一致性边界：Android/iOS 尚未读取 post-embed 最终 fixture；iOS runtime 继续挂起，桌面证据不得替代移动端。
+- 下一双端一致性任务：冻结 post-embed 最终 PNG fixture，并加入 Desktop/Android 共用 bridge 读取；iOS runtime 继续保持挂起。
+
+## 2026-07-27 Production Post-Embed Command 双端合同
+
+- 已冻结：最终签名 PNG 的 C2PA 状态与 V3 状态必须作为独立字段进入未来 Desktop/Android/iOS 只读结果，任一失败不得被另一层成功遮蔽。
+- final hash 必须是三端报告、同步和验证引用的唯一交付文件 hash；unsigned V3 hash 仅供内部 signer audit。
+- Gate：本轮不新增端侧入口；iOS runtime 继续挂起，production command 与 SDK 继续关闭。
+
+## 2026-07-27 Post-Embed Signing Schema 一致性 Gate
+
+- 已冻结：最终结果必须独立携带 C2PA readback、V3 readback、final signed hash、signer receipt reference 和 `legalConclusion=false`。
+- 七类 fixture 已覆盖成功和失败语义；本轮不新增 Desktop/Android/iOS UI。
+- Gate：iOS runtime 继续挂起；internal command 未实现前不生成新的跨端正式 fixture。
+
+## 2026-07-27 Internal Post-Embed Signing PostgreSQL Gate
+
+- backend internal-only command 已完成 PostgreSQL success、四类签发/回读拒绝、confirm rollback/orphan-signing 和 duplicate replay 七类事务验证。
+- 本次未修改 Desktop、Android、iOS UI、vault、报告字段或公开验证措辞；`watermark-core` 仍是 V3 写入/读取唯一算法源，backend 不新增第二套水印实现。
+- 当前事务 QA 的 C2PA/V3 readback 为受控 provider interface；它验证命令编排和数据库原子性，不替代既有真实媒体 post-embed prototype，也不构成 iOS runtime 证据。
+- iOS/macOS runtime Gate 继续按环境依赖挂起；SDK、公共 Resolver、production credential 与跨端产品承诺保持关闭。
+- 下一双端任务：在 durable artifact finalize Gate 完成后，冻结成功 signer 输出的跨端 fixture 交付合同；待 iOS runtime 可用时复跑 Desktop/Android/iOS 对同一最终 PNG 的 C2PA 状态与 V3 UID/auth 读取。
+
+## 2026-07-27 Signing Reservation 与 Artifact Recovery 双端边界
+
+- backend 已保证 artifact finalize 完成前不返回最终 PNG；Desktop/Android/iOS 未来只能接收 execution `confirmed`、artifact `finalized` 且 final hash 匹配的产物。
+- `artifact_pending`、`reserved`、`signed_staged` 和 `orphaned` 均为内部状态，不得进入端侧 vault、报告、同步或用户成功提示。
+- 本次未修改三端读取器或 UI；九类 fixture 是 backend 合同与事务证据，不替代最终 PNG 跨端媒体读取 fixture。
+- iOS runtime 继续挂起，SDK、公共 Resolver 与 production credential 继续关闭。
+- 下一双端任务：完成四崩溃点恢复 Gate 后，冻结仅含 `confirmed/finalized` 产物的跨端交付 fixture，并复跑 Desktop/mobile Rust bridge。
+
+## 2026-07-28 Adapter Receipt 与崩溃恢复双端边界
+
+- backend 已证明四个崩溃窗口不会把 `reserved`、`signed_staged` 或 `artifact_pending` 误交付为成功产物；端侧未来仍只允许消费 `confirmed/finalized` 且 final hash 与 finalize receipt 一致的 PNG。
+- signer/object-store receipt 为内部信任与恢复证据，不进入 Desktop/Android/iOS vault 的用户可编辑字段，不作为用户可见法规结论。
+- 本次未修改 Desktop、Android、iOS reader、UI 或报告；十三场景 QA 只证明 backend orchestration、外部成本幂等模拟和 PostgreSQL 原子性。
+- iOS/macOS runtime 继续作为环境依赖挂起；SDK、公共 Resolver、production credential 和跨端发布保持关闭。
+- 下一双端任务：冻结 `confirmed/finalized` 交付 envelope fixture，绑定 final hash、signer receipt ref、artifact finalize receipt ref，并在 Desktop/mobile Rust bridge 验证拒绝非 finalized 状态。
+
+## 2026-07-28 Internal Recovery Worker 双端边界
+
+- recovery worker 只改变 backend internal execution 状态，不新增 Desktop、Android、iOS UI、vault、报告或同步字段。
+- `eligible/leased/retry_scheduled/dead_letter` 均为内部运维状态，不得同步到端侧或显示为用户成功/失败结论。
+- 只有 worker 最终恢复到 `confirmed/finalized` 的产物才可进入未来交付 envelope；dead-letter 不返回媒体，不进入客户成功计量。
+- iOS/macOS runtime 继续作为环境依赖挂起；SDK、公共 Resolver、production credential 和跨端发布保持关闭。
+- 下一双端任务：实现 backend `confirmed/finalized` delivery envelope contract，并让 Desktop/mobile bridge fail-closed 拒绝 recovery 非 completed 状态。
+
+## 2026-07-28 Dead-Letter Inspect / Requeue 双端边界
+
+- inspect/requeue 全部是 backend internal 运维能力，不新增 Desktop、Android、iOS UI、vault、报告或同步字段。
+- `dead_letter`、change request、approval、execution 和 inspection audit 不得被端侧解释为媒体真实性、法规结论或用户可操作状态。
+- requeue 后只有恢复至 `confirmed/finalized` 且 final hash、signer receipt 和 artifact finalize receipt 一致的产物，才可进入未来跨端交付。
+- 本次未修改端侧 reader 或共享核心；iOS/macOS runtime 继续作为环境依赖挂起。
+- SDK、公共 Resolver、production credential、客户自助 requeue 和跨端发布继续关闭。
+- 下一双端任务：实现统一 delivery envelope fixture，并让 Desktop/mobile Rust bridge 拒绝非 finalized、recovery 未 completed、hash mismatch 或 receipt mismatch。
+
+## 2026-07-28 Confirmed / Finalized Delivery Envelope 双端 Gate
+
+- Desktop 与 mobile Rust bridge 已接入 `watermark-core::validate_ai_delivery_envelope`，不各自实现状态或摘要规则。
+- 两端共同读取 `success-v1.fixture.json`，对相同 final bytes、signer receipt、finalize receipt 和 Profile identity 得到一致接受结果。
+- Desktop 已覆盖 artifact 非 finalized、media hash mismatch、signer receipt mismatch；mobile 已覆盖 recovery 非 completed、finalize receipt mismatch、Profile identity mismatch。
+- 任一拒绝均不返回 envelope digest、final hash、watermark UID 或 Profile digest，禁止进入未来 vault/import。
+- 本次未新增用户 UI、同步字段或公开验证措辞；iOS/macOS runtime 继续作为环境依赖挂起。
+- 下一双端任务：冻结 delivery retrieval/import fixture，让 Desktop/mobile 在 artifact 下载后先验证 envelope，再允许写入 vault。
+
+## 2026-07-28 Delivery Retrieval 双端 Import Admission
+
+- Desktop 与 mobile Rust bridge 已新增同语义 import admission，输入均为 envelope、最终 bytes、signer receipt、finalize receipt 和 retrieval receipt。
+- 两端均直接调用 `watermark-core::validate_ai_delivery_import`，没有复制 receipt digest、final hash、Profile identity 或状态判断。
+- 共享 fixture 同时覆盖成功 admission 与 receipt mismatch；拒绝响应在两端均不暴露 vault/import 所需 ID、摘要或 watermark UID。
+- 当前只冻结 bridge Gate，未接入客户 vault/import UI；因此能力仍为 `只能内部测试`，不得形成任一端独有的产品承诺。
+- iOS runtime 实机验证继续作为环境阻塞项挂起；Rust mobile bridge 合同测试已通过。
+- 下一双端任务：在未来内部下载调用层强制消费 admission result，并为 Desktop/Android 增加 tampered bytes 与 expired authorization 的端到端导入拒绝 fixture。
+
+## 2026-07-28 Delivery Revoke / Resource Budget 双端边界
+
+- 本次预算和 revoke 全部位于 backend 授权/对象读取层，Desktop/mobile import admission 合同未变化。
+- 两端仍只能接收 backend 成功返回的完整 retrieval package，并继续调用同一 `validate_ai_delivery_import`。
+- revoked、rate limited、size、MIME 或 timeout 失败均无 bytes/package，因此不得在任一端创建 vault/import 临时记录。
+- 当前未新增 Desktop/mobile 用户 UI 或错误文案，不形成任一端独有产品承诺；iOS runtime 继续挂起。
+- 下一双端任务：未来接入内部下载调用层时，为五类新失败码冻结一致的不可导入状态和用户不可见内部诊断映射。
+
+## 2026-07-28 Delivery Security Observability 双端边界
+
+- monitoring、aggregate audit export、retention 和 cleanup 全部位于 backend，不修改 Desktop/mobile bridge 或 vault/import 合同。
+- observability summary 不包含媒体、authorization、delivery envelope 或 watermark 标识，不得进入端侧 vault、报告或同步 payload。
+- 外部客户 UI 继续关闭；Desktop/mobile 不显示 internal alert code，避免把内部安全信号误表述为法规或用户结论。
+- 下一双端任务保持为未来下载入口的统一不可导入映射；本次无新增双端 runtime 阻塞。
+
+## 2026-07-28 Delivery Security Incident / Cleanup Runner 双端边界
+
+- incident projection、ack/resolve 与 cleanup runner 均为 backend internal orchestration，不新增 Desktop、Android 或 iOS 用户能力。
+- 双端不得展示 internal incident status、alert code、审批状态或 runner 状态为水印验证结果、法规结论或交付成功证明。
+- 本次未改变 delivery envelope、retrieval receipt、`AiDeliveryImportAdmission` 或 Desktop/mobile bridge 行为，因此无需新增平台分叉。
+- iOS runtime Gate 继续按既有状态挂起；该环境限制不阻塞 PostgreSQL incident/runner Gate。
+- 下一双端任务保持不变：正式端侧下载/import 入口只能消费共享 bridge 已批准的 `AiDeliveryImportAdmission`。
+
+## 2026-07-28 生产导向 MVP 双端校准
+
+- backend 生产控制面被正式纳入 AI Transparency MVP，但不因此新增 Desktop/mobile 产品承诺。
+- 双端继续只承担共享核心读取、delivery envelope/retrieval receipt 校验和 import admission，不复制授权、审批、signing recovery、incident 或 outbox 状态机。
+- 平台 SDK/API facade 将作为独立 B2B 接入面实现，不借用 Desktop/mobile UI 作为生产平台控制台。
+- 下一双端任务保持：正式端侧下载/import 入口只能消费 `AiDeliveryImportAdmission`；平台 SDK 接入不改变该约束。
+
+## 2026-07-28 Incident Inspect / Notification Outbox 双端边界
+
+- incident inspect/list、outbox、lease 与 replay 全部位于 backend internal orchestration，不新增 Desktop、Android 或 iOS 用户能力。
+- outbox payload 不得进入端侧 vault、报告、同步 payload 或水印验证 UI。
+- Desktop/mobile 不得把 pending/leased/retry 状态表述为通知成功、媒体真实性或法规结论。
+- 本次未改变 delivery envelope、retrieval receipt、`AiDeliveryImportAdmission` 或 bridge，双端无需新增实现。
+- iOS runtime Gate 继续挂起，不阻塞 PostgreSQL outbox Gate。
+- 下一双端任务保持不变：正式端侧下载/import 入口只能消费共享 bridge 已批准的 `AiDeliveryImportAdmission`。
+## 2026-07-28 Platform API 双端边界
+
+- 本次实现位于 backend 与 server SDK，不新增 Desktop、Android 或 iOS 用户界面承诺。
+- 正式图片标识仍由共享 `watermark-core` 写入和回读；端侧不得复制 admission、confirm、payload 或摘要算法。
+- internal endpoint 返回的 marked PNG 仍须通过既有 Desktop/mobile Rust bridge 校验后才能进入端侧 vault/import。
+- iOS runtime Gate 继续挂起；本次 PostgreSQL E2E 不替代跨端 runtime 互验。
+- 下一双端任务保持为：公共 Resolver 结果字段与端侧验证措辞使用同一 Profile/manifest/marker 术语，不引入平台专属结论。
+## 2026-07-28 免费公共 Resolver 双端措辞
+
+- Resolver 输出固定使用 Manifest、marker、evidence、Profile 和 warning 术语，不引入 Desktop/mobile 专属结论。
+- Desktop/mobile 后续展示 `not_found` 时必须使用“未找到 confirmed record，不等于非 AI”的同一措辞。
+- `issuerTrustStatus=not_evaluated` 与 `legalConclusion=false` 不得被端侧改写为“可信”“合规”或“人工创作”。
+- 本次未新增端侧 runtime；iOS Gate 继续挂起。
+- 下一双端任务：设计伙伴样例中的 Resolver link 和端侧查看文案必须复用同一 Schema 字段。
+## 2026-07-28 设计伙伴 Sandbox 接入包一致性记录
+
+- 已冻结 server-only SDK/API 示例和匿名 Resolver link contract，不新增 Desktop、Android 或 iOS 独占的标识写入算法或产品承诺。
+- 伙伴 mark 路径继续经 backend 调用 `watermark-core`；Desktop/mobile bridge 只消费既有 confirmed/finalized delivery envelope 与公共 Resolver 最小字段。
+- Resolver 文案在各端统一保持“已确认标识记录”与 `legalConclusion=false`，不得显示为法律结论、真实性保证或平台背书。
+- 当前接入包分类为 `只能内部测试`，真实双端伙伴 import/vault 体验不因该包自动开放。
+- iOS runtime Gate 继续作为环境依赖挂起，本任务不以缺失 iOS runtime 阻塞 server-side Sandbox 包。
+
+下一双端任务：首个真实伙伴形成 confirmed PNG fixture 后，将该 fixture 纳入 Desktop/Android 正式读取与 envelope 摘要 fail-closed 回归；iOS 在 runtime 可用后补测。
+
+## 2026-07-28 Synthetic Sandbox QA 一致性边界
+
+- synthetic QA 只验证 server-side SDK/facade 与公共 Resolver 响应 shape，不产出 Desktop、Android 或 iOS 可承诺的 protected-copy fixture。
+- synthetic marked PNG bytes 不是 `watermark-core` 写入产物，不得导入端侧 vault、用于跨端读取报告或替代正式 fixture。
+- 真实伙伴输出 confirmed PNG 后仍必须执行 Desktop/Android 读取和摘要 fail-closed；iOS runtime Gate 保持挂起。

@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "hs-ai-delivery-security-notification-delivery-gate-v1",
+  "status": "internal_only",
+  "destinationPolicy": {
+    "schemaVersion": "hs-ai-delivery-security-destination-policy-v1",
+    "boundBeforeAdapterInvocation": true,
+    "digestBound": true,
+    "allowedAdapters": [
+      "zero_send",
+      "pagerduty",
+      "email",
+      "sms"
+    ],
+    "productionZeroSendAllowed": false,
+    "maxAttemptsRange": [
+      1,
+      20
+    ]
+  },
+  "providerReceipt": {
+    "schemaVersion": "hs-ai-delivery-security-provider-receipt-v1",
+    "bindings": [
+      "notificationId",
+      "payloadDigest",
+      "destinationPolicyDigest",
+      "adapterKind",
+      "adapterInvocationKey"
+    ],
+    "maximumLifetimeSeconds": 900,
+    "appendOnly": true,
+    "simulationMayClaimDelivery": false
+  },
+  "completion": {
+    "atomic": true,
+    "idempotent": true,
+    "terminalStatus": "completed",
+    "invalidReceiptWrites": 0
+  },
+  "deadLetter": {
+    "terminalStatus": "dead_letter",
+    "nonRetryableImmediate": true,
+    "attemptBudgetEnforced": true,
+    "providerReceiptRequired": false
+  },
+  "recovery": {
+    "expiredLeaseReclaim": true,
+    "deadLetterRequeue": true,
+    "idempotent": true,
+    "appendOnlyAudit": true
+  },
+  "externalAdapters": {
+    "pagerDuty": "suspended",
+    "email": "suspended",
+    "sms": "suspended",
+    "zeroSend": "sandbox_simulation_only"
+  },
+  "productionRelease": {
+    "sdk": "closed",
+    "publicResolver": "closed",
+    "productionCredentialIssuance": "closed"
+  }
+}

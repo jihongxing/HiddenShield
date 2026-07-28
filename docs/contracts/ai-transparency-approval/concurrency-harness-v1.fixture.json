@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "ai_transparency_approval_fixture_v1",
+  "fixtureType": "concurrency_harness",
+  "fixtureId": "concurrency-harness-v1",
+  "adapters": [
+    {
+      "databaseKind": "postgres",
+      "independentConnections": 2,
+      "lockingMode": "row_and_target_lock",
+      "productionGate": true
+    }
+  ],
+  "interfaceMethods": ["createAdapter", "applyMigrationsThrough0003", "seedScenario", "openConnection", "runBarrier", "executeCommand", "snapshotState", "assertNoProductionSideEffects", "dispose"],
+  "scenarios": [
+    { "scenarioId": "duplicate_idempotency_request", "expectedWinnerCount": 1, "expectedLoserReasonCode": "idempotency_replay" },
+    { "scenarioId": "concurrent_profile_renew", "expectedWinnerCount": 1, "expectedLoserReasonCode": "target_version_conflict" },
+    { "scenarioId": "duplicate_execution", "expectedWinnerCount": 1, "expectedLoserReasonCode": "target_state_conflict" },
+    { "scenarioId": "grant_vs_revoke_same_target", "expectedWinnerCount": 1, "expectedLoserReasonCode": "conflicting_request_exists" },
+    { "scenarioId": "audit_failure_rollback", "expectedWinnerCount": 0, "expectedLoserReasonCode": "audit_write_failed" },
+    { "scenarioId": "projection_version_conflict", "expectedWinnerCount": 0, "expectedLoserReasonCode": "target_version_conflict" }
+  ],
+  "requiredSnapshotFields": ["winnerCount", "requestStatuses", "targetVersion", "activeVersionCount", "auditSequence", "reasonCodes", "credentialCount", "markingSessionCount", "manifestCount", "ledgerCount"],
+  "invariants": {
+    "postgresIsSoleProductionConcurrencyGate": true,
+    "sqliteConcurrencyEvidenceAccepted": false,
+    "credentialCount": 0,
+    "markingSessionCount": 0,
+    "manifestCount": 0,
+    "ledgerCount": 0,
+    "migrationAndRealConcurrencyTestsRequiredBeforeProduction": true
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "hs-ai-third-party-visual-watermark-fixture-v1",
+  "fixtureId": "watermarkreco-synthetic-figure",
+  "source": {
+    "repository": "https://github.com/IMAGINE-Paris/WatermarkReco",
+    "path": "figure/synthetic.jpg",
+    "revision": "master",
+    "license": "MIT",
+    "retrievedAt": "2026-07-27"
+  },
+  "file": {
+    "path": "watermarkreco-synthetic.jpg",
+    "sha256": "a7ea55a43064b4bd26e52f6955580aae7688ed0976f594862875dbc2724942ca",
+    "mediaType": "image/jpeg"
+  },
+  "expected": {
+    "visibleExternalWatermarkPresent": true,
+    "hiddenShieldV3AnchorPresentBeforeWrite": false,
+    "externalPlatformAcceptanceAuthorized": false,
+    "legalConclusion": false
+  }
+}

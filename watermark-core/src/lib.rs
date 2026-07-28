@@ -1,4 +1,5 @@
 mod audio;
+mod delivery_envelope;
 mod error;
 #[allow(dead_code)]
 mod image;
@@ -33,6 +34,15 @@ pub use audio::{
     MAX_AUDIO_PROTECTION_BYTES, MAX_AUDIO_PROTECTION_SECONDS, MAX_SUPPORTED_AUDIO_CHANNELS,
     MAX_SUPPORTED_AUDIO_SAMPLE_RATE, MIN_AUDIO_PROTECTION_SECONDS, MIN_SUPPORTED_AUDIO_CHANNELS,
     MIN_SUPPORTED_AUDIO_SAMPLE_RATE,
+};
+pub use delivery_envelope::{
+    ai_delivery_envelope_digest, ai_delivery_profile_identity_digest,
+    ai_delivery_retrieval_receipt_digest, canonical_json_sha256, seal_ai_delivery_envelope,
+    seal_ai_delivery_retrieval_receipt, validate_ai_delivery_envelope, validate_ai_delivery_import,
+    AiConfirmedArtifactDeliveryEnvelope, AiDeliveryEnvelopeError, AiDeliveryEnvelopeErrorCode,
+    AiDeliveryEnvelopeValidationResult, AiDeliveryImportAdmission, AiDeliveryProfileIdentity,
+    AiDeliveryRetrievalReceipt, AI_DELIVERY_ENVELOPE_SCHEMA_VERSION,
+    AI_DELIVERY_RETRIEVAL_RECEIPT_SCHEMA_VERSION,
 };
 pub use error::{WatermarkError, WatermarkErrorCode};
 pub use image::{

@@ -1,0 +1,8 @@
+DROP TRIGGER IF EXISTS trg_ai_post_embed_signing_audit_append_only
+ON ai_post_embed_signing_audit_events;
+
+DROP INDEX IF EXISTS idx_ai_post_embed_signing_audit_execution_time;
+DROP TABLE IF EXISTS ai_post_embed_signing_audit_events;
+
+DROP INDEX IF EXISTS idx_ai_post_embed_signing_license_time;
+DROP TABLE IF EXISTS ai_post_embed_signing_executions;

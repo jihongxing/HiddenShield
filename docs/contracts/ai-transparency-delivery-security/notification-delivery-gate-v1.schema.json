@@ -1,0 +1,216 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hiddenshield.internal/contracts/ai-transparency-delivery-security/notification-delivery-gate-v1.schema.json",
+  "title": "HiddenShield AI delivery security notification delivery gate v1",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "status",
+    "destinationPolicy",
+    "providerReceipt",
+    "completion",
+    "deadLetter",
+    "recovery",
+    "externalAdapters",
+    "productionRelease"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "hs-ai-delivery-security-notification-delivery-gate-v1"
+    },
+    "status": {
+      "const": "internal_only"
+    },
+    "destinationPolicy": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "boundBeforeAdapterInvocation",
+        "digestBound",
+        "allowedAdapters",
+        "productionZeroSendAllowed",
+        "maxAttemptsRange"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "hs-ai-delivery-security-destination-policy-v1"
+        },
+        "boundBeforeAdapterInvocation": {
+          "const": true
+        },
+        "digestBound": {
+          "const": true
+        },
+        "allowedAdapters": {
+          "const": [
+            "zero_send",
+            "pagerduty",
+            "email",
+            "sms"
+          ]
+        },
+        "productionZeroSendAllowed": {
+          "const": false
+        },
+        "maxAttemptsRange": {
+          "const": [
+            1,
+            20
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "providerReceipt": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "bindings",
+        "maximumLifetimeSeconds",
+        "appendOnly",
+        "simulationMayClaimDelivery"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "hs-ai-delivery-security-provider-receipt-v1"
+        },
+        "bindings": {
+          "const": [
+            "notificationId",
+            "payloadDigest",
+            "destinationPolicyDigest",
+            "adapterKind",
+            "adapterInvocationKey"
+          ]
+        },
+        "maximumLifetimeSeconds": {
+          "const": 900
+        },
+        "appendOnly": {
+          "const": true
+        },
+        "simulationMayClaimDelivery": {
+          "const": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "completion": {
+      "type": "object",
+      "required": [
+        "atomic",
+        "idempotent",
+        "terminalStatus",
+        "invalidReceiptWrites"
+      ],
+      "properties": {
+        "atomic": {
+          "const": true
+        },
+        "idempotent": {
+          "const": true
+        },
+        "terminalStatus": {
+          "const": "completed"
+        },
+        "invalidReceiptWrites": {
+          "const": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "deadLetter": {
+      "type": "object",
+      "required": [
+        "terminalStatus",
+        "nonRetryableImmediate",
+        "attemptBudgetEnforced",
+        "providerReceiptRequired"
+      ],
+      "properties": {
+        "terminalStatus": {
+          "const": "dead_letter"
+        },
+        "nonRetryableImmediate": {
+          "const": true
+        },
+        "attemptBudgetEnforced": {
+          "const": true
+        },
+        "providerReceiptRequired": {
+          "const": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "recovery": {
+      "type": "object",
+      "required": [
+        "expiredLeaseReclaim",
+        "deadLetterRequeue",
+        "idempotent",
+        "appendOnlyAudit"
+      ],
+      "properties": {
+        "expiredLeaseReclaim": {
+          "const": true
+        },
+        "deadLetterRequeue": {
+          "const": true
+        },
+        "idempotent": {
+          "const": true
+        },
+        "appendOnlyAudit": {
+          "const": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "externalAdapters": {
+      "type": "object",
+      "required": [
+        "pagerDuty",
+        "email",
+        "sms",
+        "zeroSend"
+      ],
+      "properties": {
+        "pagerDuty": {
+          "const": "suspended"
+        },
+        "email": {
+          "const": "suspended"
+        },
+        "sms": {
+          "const": "suspended"
+        },
+        "zeroSend": {
+          "const": "sandbox_simulation_only"
+        }
+      },
+      "additionalProperties": false
+    },
+    "productionRelease": {
+      "type": "object",
+      "required": [
+        "sdk",
+        "publicResolver",
+        "productionCredentialIssuance"
+      ],
+      "properties": {
+        "sdk": {
+          "const": "closed"
+        },
+        "publicResolver": {
+          "const": "closed"
+        },
+        "productionCredentialIssuance": {
+          "const": "closed"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

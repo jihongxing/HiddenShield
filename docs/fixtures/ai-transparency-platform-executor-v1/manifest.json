@@ -1,0 +1,35 @@
+{
+  "files": {
+    "executorOutput": {
+      "path": "platform-executor-v3.png",
+      "sha256": "4edcff3535b7ac114afc39a8927049a31c576448d229f2dfbfaa8f5b51a14d57"
+    },
+    "externalMetadataStripped": {
+      "path": "platform-executor-v3-external-metadata-stripped.png",
+      "sha256": "4edcff3535b7ac114afc39a8927049a31c576448d229f2dfbfaa8f5b51a14d57"
+    },
+    "metadataStripped": {
+      "path": "platform-executor-v3-metadata-stripped.png",
+      "sha256": "4edcff3535b7ac114afc39a8927049a31c576448d229f2dfbfaa8f5b51a14d57"
+    },
+    "withExternalMetadata": {
+      "metadataKeys": [
+        "external_provenance_fixture",
+        "external_metadata_namespace"
+      ],
+      "path": "platform-executor-v3-with-external-metadata.png",
+      "sha256": "664cd027a7d3ba11ec2c2bfc8f15d6a681bd3cdbf5e71fae339eef5f55a6824c"
+    },
+    "withMetadata": {
+      "path": "platform-executor-v3-with-metadata.png",
+      "sha256": "01f6b10afbaeb0e5818324cb5c79b1a92786d0beef57a87f20aa65de66f8d741"
+    }
+  },
+  "legalConclusion": false,
+  "mediaType": "image/png",
+  "payloadAuthStatus": "verified",
+  "payloadBytesLength": 39,
+  "payloadProtocolVersion": 3,
+  "schemaVersion": "hs-ai-platform-executor-cross-end-fixture-v1",
+  "watermarkUid": "HS-01234567-89ABCDEF-01234567-89ABCDEF"
+}

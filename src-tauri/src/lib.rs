@@ -205,6 +205,8 @@ pub fn run() {
             commands::verify::inspect_rewrite_target,
             commands::verify::verify_suspect,
             commands::verify::verify_suspect_readonly_candidate,
+            commands::delivery_envelope::validate_ai_delivery_envelope_command,
+            commands::delivery_envelope::admit_ai_delivery_vault_import_command,
             commands::billing::get_entitlement_state,
             commands::billing::get_usage_ledger_summary,
             commands::billing::record_usage_event,

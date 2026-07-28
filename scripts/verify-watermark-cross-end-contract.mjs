@@ -6,7 +6,12 @@ const sources = {
   ci: readFileSync('.github/workflows/ci.yml', 'utf8'),
   plan: readFileSync('docs/共享水印核心与跨端互验推进计划.md', 'utf8'),
   roadmap: readFileSync('docs/双端能力一致性Roadmap.md', 'utf8'),
+  executorFixtureContract: readFileSync(
+    'docs/AI生成内容标识平台写入PNG跨端Fixture合同.md',
+    'utf8',
+  ),
   mobileRustApi: readFileSync('mobile_app/rust/src/api.rs', 'utf8'),
+  desktopVerify: readFileSync('src-tauri/src/commands/verify.rs', 'utf8'),
   desktopScheduler: readFileSync('src-tauri/src/pipeline/scheduler.rs', 'utf8'),
 };
 
@@ -21,6 +26,8 @@ const requiredTests = [
   'desktop_core_jpeg_image_input_is_mobile_extractable',
   'mobile_webp_image_input_is_desktop_core_extractable',
   'desktop_core_webp_image_input_is_mobile_extractable',
+  'platform_executor_png_fixtures_are_mobile_extractable_after_metadata_stripping',
+  'platform_executor_png_fixtures_are_desktop_extractable_after_metadata_stripping',
   'mobile_audio_output_is_desktop_core_extractable',
   'desktop_core_audio_output_is_mobile_extractable',
   'mobile_flac_audio_input_is_desktop_core_extractable',
@@ -67,6 +74,19 @@ const testGroups = [
     code: 'bridge_contract',
     label: 'image bridge extraction contract',
     filter: 'cross_end_image_bridge_contract_group',
+    modes: ['fast', 'release'],
+  },
+  {
+    code: 'bridge_contract',
+    label: 'platform Executor PNG mobile extraction after metadata stripping',
+    filter: 'platform_executor_png_fixtures_are_mobile_extractable_after_metadata_stripping',
+    modes: ['fast', 'release'],
+  },
+  {
+    code: 'bridge_contract',
+    label: 'platform Executor PNG desktop extraction after metadata stripping',
+    manifest: 'src-tauri/Cargo.toml',
+    filter: 'platform_executor_png_fixtures_are_desktop_extractable_after_metadata_stripping',
     modes: ['fast', 'release'],
   },
   {
@@ -232,6 +252,19 @@ assert(
 );
 
 assert(
+  sources.executorFixtureContract.includes(
+    'docs/fixtures/ai-transparency-platform-executor-v1/',
+  ) &&
+    sources.executorFixtureContract.includes('metadata') &&
+    sources.executorFixtureContract.includes('legalConclusion=false') &&
+    sources.executorFixtureContract.includes('实际 iOS runtime') &&
+    sources.plan.includes('平台写入 PNG fixture') &&
+    sources.roadmap.includes('平台写入 PNG fixture'),
+  'static_contract',
+  'platform Executor PNG fixture contract must freeze metadata stripping, legal boundary, and the real iOS runtime gate',
+);
+
+assert(
   sources.plan.includes('core_algorithm') &&
     sources.plan.includes('mobile_normalize') &&
     sources.plan.includes('desktop_transcode') &&
@@ -270,6 +303,7 @@ assert(
 for (const testName of requiredTests) {
   assert(
     sources.mobileRustApi.includes(testName) ||
+      sources.desktopVerify.includes(testName) ||
       sources.desktopScheduler.includes(testName),
     'bridge_contract',
     `cross-end contract is missing required test ${testName}`,

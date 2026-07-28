@@ -5,7 +5,7 @@ edition = "2021"
 
 [features]
 default = []
-postgres = ["dep:sqlx"]
+postgres = ["dep:sqlx", "dep:watermark-core"]
 
 [dependencies]
 axum = "0.7"
@@ -14,8 +14,10 @@ argon2 = { version = "0.5", features = ["std"] }
 base64 = "0.22"
 chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4", features = ["derive", "env"] }
+crc32fast = "1"
 http = "1"
 hmac = "0.12"
+image = "0.25"
 rand = "0.8"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 rsa = { version = "0.9", features = ["pem", "sha2"] }
@@ -30,6 +32,7 @@ tower-http = { version = "0.5", features = ["cors", "trace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 uuid = { version = "1", features = ["v4", "serde"] }
+watermark-core = { path = "../watermark-core", optional = true }
 
 [dev-dependencies]
 tempfile = "3"

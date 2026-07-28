@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "ai_transparency_approval_fixture_v1",
+  "fixtureType": "change_request",
+  "fixtureId": "change-request-v1",
+  "changeRequest": {
+    "changeRequestId": "atcr_cn_002",
+    "operation": "renew_profile_entitlement",
+    "targetType": "profile_entitlement",
+    "targetId": "atpev_cn_001_v1",
+    "tenantId": "tenant_platform_001",
+    "workspaceId": "workspace_platform_001",
+    "environment": "production",
+    "expectedCurrentVersion": 1,
+    "desiredNextVersion": 2,
+    "desiredState": {
+      "expiresAt": "2027-07-27T00:00:00Z",
+      "termsVersion": "cn-profile-v1"
+    },
+    "contractReference": null,
+    "legalReviewReference": "legal_cn_002",
+    "securityReviewReference": null,
+    "idempotencyKey": "idem_approval_cn_002",
+    "requesterActorId": "actor_requester_001",
+    "requesterRole": "ai_transparency_requester",
+    "status": "pending_review",
+    "requestDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "expiresAt": "2026-07-29T00:00:00Z"
+  },
+  "invariants": {
+    "desiredStateIsImmutableAfterSubmit": true,
+    "productionRegulatoryLegalReviewRequired": true,
+    "createsCredential": false,
+    "createsMarkingSession": false,
+    "createsLedger": false
+  }
+}

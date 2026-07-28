@@ -18,22 +18,29 @@ use crate::billing::{
     BillingPaymentSessionInput, BillingProvider, FixtureBillingProvider, ReportPurchaseEvent,
     ReportPurchaseEventType, ReportPurchaseOrderStatus, FIXTURE_PROVIDER, WECHAT_PAY_PROVIDER,
 };
-use crate::database::{DatabaseBackendKind, DatabaseConfig, DatabaseConfigError};
+use crate::database::{
+    apply_sqlite_ai_transparency_approval_state_machine, DatabaseBackendKind, DatabaseConfig,
+    DatabaseConfigError,
+};
 use crate::schema::{
-    AccountDevice, AccountDevicesResponse, AnonymousEventOutcome, AnonymousFeedbackBatch,
-    AnonymousFeedbackBatchAck, AnonymousFeedbackEvent, AnonymousFeedbackStatsQuery,
-    AnonymousFeedbackStatsResponse, AuthChallengeRequest, AuthChallengeResponse, AuthLogoutRequest,
-    AuthLogoutResponse, AuthRefreshRequest, AuthSessionRequest, BillingEventApplyResponse,
-    BillingFixtureEventRequest, BillingPaymentAction, BillingPaymentSessionReconcileResponse,
-    BillingPaymentSessionRequest, BillingPaymentSessionResponse,
-    BillingPaymentSessionStatusResponse, CloudAccount, CloudAccountSession, CloudAccountSnapshot,
-    CloudCreatorProfile, CloudDevice, CloudEntitlement, CloudSyncBatchRequest,
-    CloudSyncBatchResult, CloudSyncChange, CloudSyncChangesResult, CloudSyncEventDisposition,
-    CloudVideoTaskClaimRequest, CloudVideoTaskClaimResponse, CloudVideoTaskCompletionRequest,
-    CloudVideoTaskFailureRequest, CloudVideoTaskListQuery, CloudVideoTaskListResponse,
-    CloudVideoTaskRecord, CloudVideoTaskRequest, CloudVideoTaskStatusUpdateRequest, CloudWorkspace,
-    CommercialAccountMetrics, CommercialAnonymousFailureRow, CommercialCloudSyncMetrics,
-    CommercialEntitlementPlanRow, CommercialFeatureUsageMetrics, CommercialMetricsOverviewResponse,
+    AccountDevice, AccountDevicesResponse, AiTransparencyLicenseDecision,
+    AiTransparencyLicenseDetailResponse, AiTransparencyLicenseRecord,
+    AiTransparencyProfileDecision, AiTransparencyProfileEntitlementCheckRequest,
+    AiTransparencyProfileEntitlementCheckResponse, AiTransparencyProfileEntitlementRecord,
+    AnonymousEventOutcome, AnonymousFeedbackBatch, AnonymousFeedbackBatchAck,
+    AnonymousFeedbackEvent, AnonymousFeedbackStatsQuery, AnonymousFeedbackStatsResponse,
+    AuthChallengeRequest, AuthChallengeResponse, AuthLogoutRequest, AuthLogoutResponse,
+    AuthRefreshRequest, AuthSessionRequest, BillingEventApplyResponse, BillingFixtureEventRequest,
+    BillingPaymentAction, BillingPaymentSessionReconcileResponse, BillingPaymentSessionRequest,
+    BillingPaymentSessionResponse, BillingPaymentSessionStatusResponse, CloudAccount,
+    CloudAccountSession, CloudAccountSnapshot, CloudCreatorProfile, CloudDevice, CloudEntitlement,
+    CloudSyncBatchRequest, CloudSyncBatchResult, CloudSyncChange, CloudSyncChangesResult,
+    CloudSyncEventDisposition, CloudVideoTaskClaimRequest, CloudVideoTaskClaimResponse,
+    CloudVideoTaskCompletionRequest, CloudVideoTaskFailureRequest, CloudVideoTaskListQuery,
+    CloudVideoTaskListResponse, CloudVideoTaskRecord, CloudVideoTaskRequest,
+    CloudVideoTaskStatusUpdateRequest, CloudWorkspace, CommercialAccountMetrics,
+    CommercialAnonymousFailureRow, CommercialCloudSyncMetrics, CommercialEntitlementPlanRow,
+    CommercialFeatureUsageMetrics, CommercialMetricsOverviewResponse,
     CommercialMetricsPrivacyBoundary, CommercialPaymentSessionMetrics,
     EnterpriseAdminAuditEventListResponse, EnterpriseAdminAuditEventQuery,
     EnterpriseAdminAuditEventRecord, EnterpriseApiAuditEventRequest, EnterpriseApiKeyCreateRequest,
@@ -1204,6 +1211,248 @@ impl Storage {
                 api_key_id.map(str::trim).filter(|value| !value.is_empty()),
                 target_id.map(str::trim).filter(|value| !value.is_empty()),
                 reason.trim(),
+                details_json,
+                Utc::now().to_rfc3339(),
+            ],
+        )?;
+        Ok(audit_event_id)
+    }
+
+    pub fn get_ai_transparency_license_internal(
+        &self,
+        license_id: &str,
+    ) -> Result<Option<AiTransparencyLicenseDetailResponse>, StorageError> {
+        let license_id = license_id.trim();
+        if license_id.is_empty() {
+            return Err(StorageError::BadRequest(
+                "ai_license_id_required".to_string(),
+            ));
+        }
+        let conn = self.conn.lock().unwrap_or_else(|e| e.into_inner());
+        let license = conn
+            .query_row(
+                "SELECT license_id, tenant_id, workspace_id, environment, status, issuer_mode,
+                    deployment_mode, public_verification_required, metering_plan_id,
+                    effective_at, expires_at, created_at, updated_at
+                 FROM ai_transparency_licenses WHERE license_id = ?1",
+                params![license_id],
+                |row| {
+                    Ok((
+                        row.get::<_, String>(0)?,
+                        row.get::<_, String>(1)?,
+                        row.get::<_, String>(2)?,
+                        row.get::<_, String>(3)?,
+                        row.get::<_, String>(4)?,
+                        row.get::<_, String>(5)?,
+                        row.get::<_, String>(6)?,
+                        row.get::<_, i64>(7)?,
+                        row.get::<_, String>(8)?,
+                        row.get::<_, String>(9)?,
+                        row.get::<_, String>(10)?,
+                        row.get::<_, String>(11)?,
+                        row.get::<_, String>(12)?,
+                    ))
+                },
+            )
+            .optional()?;
+        let Some(license) = license else {
+            return Ok(None);
+        };
+        let mut statement = conn.prepare(
+            "SELECT profile_id, profile_kind, status, effective_at, expires_at, terms_version,
+                approved_by, created_at, updated_at
+             FROM ai_profile_entitlements WHERE license_id = ?1 ORDER BY profile_id ASC",
+        )?;
+        let profiles = statement
+            .query_map(params![license_id], |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(4)?,
+                    row.get::<_, String>(5)?,
+                    row.get::<_, String>(6)?,
+                    row.get::<_, String>(7)?,
+                    row.get::<_, String>(8)?,
+                ))
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(Some(AiTransparencyLicenseDetailResponse {
+            license: AiTransparencyLicenseRecord {
+                license_id: license.0,
+                tenant_id: license.1,
+                workspace_id: license.2,
+                environment: license.3,
+                status: license.4,
+                issuer_mode: license.5,
+                deployment_mode: license.6,
+                public_verification_required: license.7 != 0,
+                metering_plan_id: license.8,
+                effective_at: parse_utc_rfc3339(&license.9)?,
+                expires_at: parse_utc_rfc3339(&license.10)?,
+                created_at: parse_utc_rfc3339(&license.11)?,
+                updated_at: parse_utc_rfc3339(&license.12)?,
+            },
+            profile_entitlements: profiles
+                .into_iter()
+                .map(|profile| {
+                    Ok(AiTransparencyProfileEntitlementRecord {
+                        profile_id: profile.0,
+                        profile_kind: profile.1,
+                        status: profile.2,
+                        effective_at: parse_utc_rfc3339(&profile.3)?,
+                        expires_at: parse_utc_rfc3339(&profile.4)?,
+                        terms_version: profile.5,
+                        approved_by: profile.6,
+                        created_at: parse_utc_rfc3339(&profile.7)?,
+                        updated_at: parse_utc_rfc3339(&profile.8)?,
+                    })
+                })
+                .collect::<Result<Vec<_>, StorageError>>()?,
+        }))
+    }
+
+    pub fn check_ai_transparency_profile_entitlements_internal(
+        &self,
+        request: &AiTransparencyProfileEntitlementCheckRequest,
+    ) -> Result<AiTransparencyProfileEntitlementCheckResponse, StorageError> {
+        let license_id = request.license_id.trim();
+        let environment = request.environment.trim();
+        if license_id.is_empty() || environment.is_empty() {
+            return Err(StorageError::BadRequest(
+                "ai_license_id_and_environment_required".to_string(),
+            ));
+        }
+        if request.requested_profile_ids.is_empty() || request.requested_profile_ids.len() > 32 {
+            return Err(StorageError::BadRequest(
+                "ai_requested_profile_ids_invalid".to_string(),
+            ));
+        }
+        let requested_profile_ids = request
+            .requested_profile_ids
+            .iter()
+            .map(|profile_id| profile_id.trim().to_string())
+            .collect::<Vec<_>>();
+        if requested_profile_ids.iter().any(String::is_empty)
+            || requested_profile_ids
+                .iter()
+                .collect::<std::collections::HashSet<_>>()
+                .len()
+                != requested_profile_ids.len()
+        {
+            return Err(StorageError::BadRequest(
+                "ai_requested_profile_ids_invalid".to_string(),
+            ));
+        }
+        let evaluated_at = Utc::now();
+        let Some(detail) = self.get_ai_transparency_license_internal(license_id)? else {
+            return Ok(AiTransparencyProfileEntitlementCheckResponse {
+                license_id: license_id.to_string(),
+                authorized: false,
+                evaluated_at,
+                license_decision: AiTransparencyLicenseDecision {
+                    authorized: false,
+                    reason_code: "ai_license_not_found".to_string(),
+                },
+                profile_decisions: requested_profile_ids
+                    .into_iter()
+                    .map(|profile_id| AiTransparencyProfileDecision {
+                        profile_id,
+                        authorized: false,
+                        reason_code: "ai_license_not_found".to_string(),
+                        profile_kind: None,
+                        terms_version: None,
+                        expires_at: None,
+                    })
+                    .collect(),
+            });
+        };
+        let license_reason_code =
+            ai_license_reason_code(&detail.license, environment, evaluated_at);
+        let license_authorized = license_reason_code == "authorized";
+        let profile_decisions = requested_profile_ids
+            .into_iter()
+            .map(|profile_id| {
+                let entitlement = detail
+                    .profile_entitlements
+                    .iter()
+                    .find(|entitlement| entitlement.profile_id == profile_id);
+                let reason_code = if !license_authorized {
+                    license_reason_code.to_string()
+                } else {
+                    ai_profile_reason_code(entitlement, evaluated_at).to_string()
+                };
+                AiTransparencyProfileDecision {
+                    profile_id,
+                    authorized: reason_code == "authorized",
+                    reason_code,
+                    profile_kind: entitlement.map(|item| item.profile_kind.clone()),
+                    terms_version: entitlement.map(|item| item.terms_version.clone()),
+                    expires_at: entitlement.map(|item| item.expires_at),
+                }
+            })
+            .collect::<Vec<_>>();
+        Ok(AiTransparencyProfileEntitlementCheckResponse {
+            license_id: detail.license.license_id,
+            authorized: license_authorized
+                && profile_decisions.iter().all(|decision| decision.authorized),
+            evaluated_at,
+            license_decision: AiTransparencyLicenseDecision {
+                authorized: license_authorized,
+                reason_code: license_reason_code.to_string(),
+            },
+            profile_decisions,
+        })
+    }
+
+    pub fn record_ai_transparency_admin_audit_event_internal(
+        &self,
+        operation: &str,
+        outcome: &str,
+        endpoint: &str,
+        license: Option<&AiTransparencyLicenseRecord>,
+        license_id: Option<&str>,
+        requested_profile_ids: &[String],
+        reason_code: &str,
+        details_json: serde_json::Value,
+    ) -> Result<String, StorageError> {
+        if !matches!(operation, "get_license" | "check_profile_entitlements")
+            || !matches!(outcome, "succeeded" | "denied" | "failed")
+            || endpoint.trim().is_empty()
+            || reason_code.trim().is_empty()
+        {
+            return Err(StorageError::BadRequest(
+                "ai_transparency_admin_audit_event_invalid".to_string(),
+            ));
+        }
+        let audit_event_id = format!(
+            "ata_{}",
+            short_id(&format!("{}:{}:{}", operation, endpoint, Utc::now()))
+        );
+        let requested_profile_ids_json =
+            serde_json::to_string(requested_profile_ids).map_err(|_| {
+                StorageError::BadRequest("ai_transparency_admin_audit_profiles_invalid".to_string())
+            })?;
+        let details_json = serde_json::to_string(&details_json).map_err(|_| {
+            StorageError::BadRequest("ai_transparency_admin_audit_details_invalid".to_string())
+        })?;
+        let conn = self.conn.lock().unwrap_or_else(|e| e.into_inner());
+        conn.execute(
+            "INSERT INTO ai_transparency_admin_audit_events (
+                audit_event_id, operation, outcome, endpoint, license_id, tenant_id, workspace_id,
+                requested_profile_ids_json, reason_code, details_json, occurred_at
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+            params![
+                audit_event_id,
+                operation,
+                outcome,
+                endpoint,
+                license.map(|item| item.license_id.as_str()).or(license_id),
+                license.map(|item| item.tenant_id.as_str()),
+                license.map(|item| item.workspace_id.as_str()),
+                requested_profile_ids_json,
+                reason_code.trim(),
                 details_json,
                 Utc::now().to_rfc3339(),
             ],
@@ -4799,6 +5048,243 @@ fn init_schema(conn: &Connection) -> Result<(), rusqlite::Error> {
         CREATE INDEX IF NOT EXISTS idx_rights_manifests_status_updated
         ON rights_manifests(status, updated_at DESC);
 
+        CREATE TABLE IF NOT EXISTS ai_transparency_licenses (
+            license_id TEXT PRIMARY KEY,
+            tenant_id TEXT NOT NULL,
+            workspace_id TEXT NOT NULL,
+            environment TEXT NOT NULL,
+            status TEXT NOT NULL,
+            issuer_mode TEXT NOT NULL,
+            deployment_mode TEXT NOT NULL,
+            public_verification_required INTEGER NOT NULL,
+            metering_plan_id TEXT NOT NULL,
+            effective_at TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            CHECK(environment IN ('sandbox', 'production')),
+            CHECK(status IN ('active', 'suspended', 'expired', 'revoked')),
+            CHECK(issuer_mode IN ('hiddenshield_managed', 'platform_managed', 'customer_byok')),
+            CHECK(deployment_mode IN ('hosted', 'private')),
+            CHECK(expires_at > effective_at),
+            CHECK(environment <> 'production' OR public_verification_required = 1)
+        );
+
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_ai_transparency_licenses_one_active
+        ON ai_transparency_licenses(tenant_id, workspace_id, environment)
+        WHERE status = 'active';
+
+        CREATE TABLE IF NOT EXISTS ai_profile_entitlements (
+            license_id TEXT NOT NULL REFERENCES ai_transparency_licenses(license_id),
+            profile_id TEXT NOT NULL,
+            profile_kind TEXT NOT NULL,
+            status TEXT NOT NULL,
+            effective_at TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            terms_version TEXT NOT NULL,
+            approved_by TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            PRIMARY KEY(license_id, profile_id),
+            CHECK(profile_kind IN ('regulatory', 'technical')),
+            CHECK(status IN ('active', 'suspended', 'expired', 'revoked')),
+            CHECK(expires_at > effective_at)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_ai_profile_entitlements_license_status
+        ON ai_profile_entitlements(license_id, status, expires_at);
+
+        CREATE TABLE IF NOT EXISTS ai_sdk_credential_bindings (
+            credential_id TEXT PRIMARY KEY,
+            license_id TEXT NOT NULL REFERENCES ai_transparency_licenses(license_id),
+            api_key_id TEXT NOT NULL UNIQUE,
+            scopes_json TEXT NOT NULL,
+            status TEXT NOT NULL,
+            expires_at TEXT,
+            created_at TEXT NOT NULL,
+            CHECK(status IN ('active', 'suspended', 'revoked'))
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_ai_sdk_credential_bindings_license_status
+        ON ai_sdk_credential_bindings(license_id, status);
+
+        CREATE TABLE IF NOT EXISTS ai_marking_sessions (
+            marking_session_id TEXT PRIMARY KEY,
+            license_id TEXT NOT NULL REFERENCES ai_transparency_licenses(license_id),
+            tenant_id TEXT NOT NULL,
+            workspace_id TEXT NOT NULL,
+            environment TEXT NOT NULL,
+            idempotency_key TEXT NOT NULL,
+            requested_profile_ids_json TEXT NOT NULL,
+            claim_type TEXT NOT NULL,
+            provider_content_id TEXT,
+            status TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            confirmed_at TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE(license_id, idempotency_key),
+            CHECK(environment IN ('sandbox', 'production')),
+            CHECK(claim_type IN ('ai_generated', 'ai_manipulated')),
+            CHECK(status IN ('reserved', 'processing', 'ready_to_confirm', 'confirmed', 'failed', 'cancelled', 'expired'))
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_ai_marking_sessions_license_status
+        ON ai_marking_sessions(license_id, status, created_at DESC);
+
+        CREATE TABLE IF NOT EXISTS ai_transparency_manifests (
+            transparency_manifest_id TEXT PRIMARY KEY,
+            marking_session_id TEXT NOT NULL UNIQUE REFERENCES ai_marking_sessions(marking_session_id),
+            watermark_uid TEXT NOT NULL,
+            manifest_version INTEGER NOT NULL,
+            status TEXT NOT NULL,
+            claim_type TEXT NOT NULL,
+            modality TEXT NOT NULL,
+            generation_mode TEXT NOT NULL,
+            provider_id TEXT NOT NULL,
+            system_name TEXT NOT NULL,
+            system_version TEXT NOT NULL,
+            model_id TEXT,
+            model_version TEXT,
+            operations_json TEXT NOT NULL,
+            generated_at TEXT NOT NULL,
+            provider_content_id TEXT,
+            subject_digest_algorithm TEXT NOT NULL,
+            subject_digest_scope TEXT NOT NULL,
+            subject_digest TEXT NOT NULL,
+            parent_subjects_json TEXT NOT NULL,
+            profile_status_json TEXT NOT NULL DEFAULT '[]',
+            manifest_sha256 TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE(watermark_uid, manifest_version),
+            CHECK(status IN ('active', 'superseded', 'revoked', 'disputed')),
+            CHECK(claim_type IN ('ai_generated', 'ai_manipulated')),
+            CHECK(modality = 'image'),
+            CHECK(subject_digest_algorithm = 'sha256'),
+            CHECK(subject_digest_scope = 'protected_output'),
+            CHECK(length(subject_digest) = 64 AND subject_digest NOT GLOB '*[^0-9a-f]*'),
+            CHECK(length(manifest_sha256) = 64 AND manifest_sha256 NOT GLOB '*[^0-9a-f]*')
+        );
+
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_ai_transparency_manifests_one_active
+        ON ai_transparency_manifests(watermark_uid)
+        WHERE status = 'active';
+
+        CREATE INDEX IF NOT EXISTS idx_ai_transparency_manifests_watermark_status
+        ON ai_transparency_manifests(watermark_uid, status, manifest_version DESC);
+
+        CREATE TABLE IF NOT EXISTS ai_claim_evidence (
+            evidence_id TEXT PRIMARY KEY,
+            transparency_manifest_id TEXT NOT NULL REFERENCES ai_transparency_manifests(transparency_manifest_id),
+            evidence_level TEXT NOT NULL,
+            evidence_source TEXT NOT NULL,
+            issuer_id TEXT,
+            key_id TEXT,
+            proof_type TEXT NOT NULL,
+            subject_digest TEXT NOT NULL,
+            signature_algorithm TEXT,
+            signature TEXT,
+            verification_status TEXT NOT NULL,
+            verified_at TEXT,
+            failure_code TEXT,
+            created_at TEXT NOT NULL,
+            CHECK(evidence_level IN ('self_declared', 'device_signed', 'registry_signed', 'platform_signed', 'externally_verified', 'unsupported_proof', 'invalid_proof')),
+            CHECK(length(subject_digest) = 64 AND subject_digest NOT GLOB '*[^0-9a-f]*'),
+            CHECK(evidence_level NOT IN ('platform_signed', 'registry_signed', 'externally_verified') OR (issuer_id IS NOT NULL AND key_id IS NOT NULL AND signature_algorithm IS NOT NULL AND signature IS NOT NULL)),
+            CHECK(evidence_level NOT IN ('unsupported_proof', 'invalid_proof') OR failure_code IS NOT NULL)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_ai_claim_evidence_manifest
+        ON ai_claim_evidence(transparency_manifest_id, created_at DESC);
+
+        CREATE TABLE IF NOT EXISTS ai_marker_bindings (
+            marker_binding_id TEXT PRIMARY KEY,
+            transparency_manifest_id TEXT NOT NULL REFERENCES ai_transparency_manifests(transparency_manifest_id),
+            marker_type TEXT NOT NULL,
+            marker_profile_id TEXT NOT NULL,
+            marker_version TEXT NOT NULL,
+            detector_scheme TEXT,
+            detector_endpoint TEXT,
+            signpost TEXT,
+            embed_status TEXT NOT NULL,
+            verify_status TEXT NOT NULL,
+            binding_digest TEXT,
+            created_at TEXT NOT NULL,
+            UNIQUE(transparency_manifest_id, marker_type, marker_profile_id),
+            CHECK(marker_type IN ('c2pa', 'xmp', 'iptc', 'json_ld', 'blind_watermark', 'explicit_label'))
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_ai_marker_bindings_manifest
+        ON ai_marker_bindings(transparency_manifest_id, marker_type);
+
+        CREATE TABLE IF NOT EXISTS ai_explicit_label_receipts (
+            receipt_id TEXT PRIMARY KEY,
+            transparency_manifest_id TEXT NOT NULL REFERENCES ai_transparency_manifests(transparency_manifest_id),
+            profile_id TEXT NOT NULL,
+            required_surface TEXT NOT NULL,
+            render_mode TEXT NOT NULL,
+            rendered_asset_digest TEXT,
+            placement_json TEXT NOT NULL,
+            locale TEXT NOT NULL,
+            label_text TEXT NOT NULL,
+            applied_at TEXT NOT NULL,
+            applied_by TEXT NOT NULL,
+            verification_status TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            UNIQUE(transparency_manifest_id, profile_id, required_surface),
+            CHECK(required_surface IN ('platform_ui', 'exported_file', 'both')),
+            CHECK(
+                required_surface = 'platform_ui'
+                OR (
+                    rendered_asset_digest IS NOT NULL
+                    AND length(rendered_asset_digest) = 64
+                    AND rendered_asset_digest NOT GLOB '*[^0-9a-f]*'
+                )
+            )
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_ai_explicit_label_receipts_manifest
+        ON ai_explicit_label_receipts(transparency_manifest_id, profile_id);
+
+        CREATE TABLE IF NOT EXISTS ai_marking_ledger (
+            ledger_entry_id TEXT PRIMARY KEY,
+            license_id TEXT NOT NULL REFERENCES ai_transparency_licenses(license_id),
+            marking_session_id TEXT NOT NULL UNIQUE REFERENCES ai_marking_sessions(marking_session_id),
+            transparency_manifest_id TEXT NOT NULL UNIQUE REFERENCES ai_transparency_manifests(transparency_manifest_id),
+            metering_unit TEXT NOT NULL,
+            quantity INTEGER NOT NULL,
+            ledger_status TEXT NOT NULL,
+            committed_at TEXT,
+            reversal_reason TEXT,
+            created_at TEXT NOT NULL,
+            CHECK(metering_unit = 'confirmed_marked_image'),
+            CHECK(quantity = 1),
+            CHECK(ledger_status IN ('pending', 'committed', 'reversed', 'no_charge'))
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_ai_marking_ledger_license_status
+        ON ai_marking_ledger(license_id, ledger_status, created_at DESC);
+
+        CREATE TABLE IF NOT EXISTS ai_transparency_admin_audit_events (
+            audit_event_id TEXT PRIMARY KEY,
+            operation TEXT NOT NULL,
+            outcome TEXT NOT NULL,
+            endpoint TEXT NOT NULL,
+            license_id TEXT,
+            tenant_id TEXT,
+            workspace_id TEXT,
+            requested_profile_ids_json TEXT NOT NULL,
+            reason_code TEXT NOT NULL,
+            details_json TEXT NOT NULL,
+            occurred_at TEXT NOT NULL,
+            CHECK(operation IN ('get_license', 'check_profile_entitlements')),
+            CHECK(outcome IN ('succeeded', 'denied', 'failed'))
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_ai_transparency_admin_audit_events_license_time
+        ON ai_transparency_admin_audit_events(license_id, occurred_at DESC);
+
         CREATE TABLE IF NOT EXISTS watermark_id_reissue_jobs (
             job_id TEXT PRIMARY KEY,
             account_id TEXT NOT NULL,
@@ -5391,6 +5877,7 @@ fn init_schema(conn: &Connection) -> Result<(), rusqlite::Error> {
         "TEXT",
     )?;
     ensure_enterprise_admin_audit_events_allow_current_operations(conn)?;
+    apply_sqlite_ai_transparency_approval_state_machine(conn)?;
     Ok(())
 }
 
@@ -6991,6 +7478,42 @@ fn parse_utc_rfc3339(value: &str) -> Result<chrono::DateTime<Utc>, StorageError>
     chrono::DateTime::parse_from_rfc3339(value)
         .map(|value| value.with_timezone(&Utc))
         .map_err(|_| StorageError::BadRequest("timestamp is invalid".to_string()))
+}
+
+fn ai_license_reason_code(
+    license: &AiTransparencyLicenseRecord,
+    environment: &str,
+    evaluated_at: chrono::DateTime<Utc>,
+) -> &'static str {
+    if license.environment != environment {
+        "ai_license_environment_mismatch"
+    } else if license.status != "active" {
+        "ai_license_inactive"
+    } else if evaluated_at < license.effective_at {
+        "ai_license_not_effective"
+    } else if evaluated_at >= license.expires_at {
+        "ai_license_expired"
+    } else {
+        "authorized"
+    }
+}
+
+fn ai_profile_reason_code(
+    entitlement: Option<&AiTransparencyProfileEntitlementRecord>,
+    evaluated_at: chrono::DateTime<Utc>,
+) -> &'static str {
+    let Some(entitlement) = entitlement else {
+        return "ai_profile_not_entitled";
+    };
+    if entitlement.status != "active" {
+        "ai_profile_inactive"
+    } else if evaluated_at < entitlement.effective_at {
+        "ai_profile_not_effective"
+    } else if evaluated_at >= entitlement.expires_at {
+        "ai_profile_expired"
+    } else {
+        "authorized"
+    }
 }
 
 fn parse_utc_rfc3339_for_sql(
@@ -13978,5 +14501,112 @@ mod tests {
             )
             .unwrap();
         assert_eq!(ledger_count, 0);
+    }
+
+    #[test]
+    fn ai_transparency_internal_license_query_and_profile_check_are_read_only_and_audited() {
+        let file = tempfile::NamedTempFile::new().unwrap();
+        let storage = Storage::open(file.path(), 30).unwrap();
+        let now = Utc::now();
+        let effective_at = (now - Duration::days(1)).to_rfc3339();
+        let expires_at = (now + Duration::days(1)).to_rfc3339();
+        {
+            let conn = storage.conn.lock().unwrap_or_else(|e| e.into_inner());
+            conn.execute(
+                "INSERT INTO ai_transparency_licenses (
+                    license_id, tenant_id, workspace_id, environment, status, issuer_mode,
+                    deployment_mode, public_verification_required, metering_plan_id,
+                    effective_at, expires_at, created_at, updated_at
+                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?10, ?10)",
+                params![
+                    "atl-test",
+                    "tenant-test",
+                    "workspace-test",
+                    "production",
+                    "active",
+                    "hiddenshield_managed",
+                    "hosted",
+                    1,
+                    "metering-test",
+                    effective_at,
+                    expires_at
+                ],
+            )
+            .unwrap();
+            conn.execute(
+                "INSERT INTO ai_profile_entitlements (
+                    license_id, profile_id, profile_kind, status, effective_at, expires_at,
+                    terms_version, approved_by, created_at, updated_at
+                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?5, ?5)",
+                params![
+                    "atl-test",
+                    "cn-image-v1",
+                    "regulatory",
+                    "active",
+                    effective_at,
+                    expires_at,
+                    "v1",
+                    "test"
+                ],
+            )
+            .unwrap();
+        }
+        let detail = storage
+            .get_ai_transparency_license_internal("atl-test")
+            .unwrap()
+            .unwrap();
+        assert_eq!(detail.profile_entitlements.len(), 1);
+        let authorized = storage
+            .check_ai_transparency_profile_entitlements_internal(
+                &AiTransparencyProfileEntitlementCheckRequest {
+                    license_id: "atl-test".to_string(),
+                    environment: "production".to_string(),
+                    requested_profile_ids: vec!["cn-image-v1".to_string()],
+                },
+            )
+            .unwrap();
+        assert!(authorized.authorized);
+        let denied = storage
+            .check_ai_transparency_profile_entitlements_internal(
+                &AiTransparencyProfileEntitlementCheckRequest {
+                    license_id: "atl-test".to_string(),
+                    environment: "sandbox".to_string(),
+                    requested_profile_ids: vec!["cn-image-v1".to_string()],
+                },
+            )
+            .unwrap();
+        assert_eq!(
+            denied.license_decision.reason_code,
+            "ai_license_environment_mismatch"
+        );
+        storage
+            .record_ai_transparency_admin_audit_event_internal(
+                "check_profile_entitlements",
+                "succeeded",
+                "/internal/ai-transparency/profile-entitlements/check",
+                Some(&detail.license),
+                Some("atl-test"),
+                &["cn-image-v1".to_string()],
+                "authorized",
+                serde_json::json!({ "requestedProfileCount": 1 }),
+            )
+            .unwrap();
+        let conn = storage.conn.lock().unwrap_or_else(|e| e.into_inner());
+        let ledger_count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM ai_marking_ledger WHERE license_id = ?1",
+                params!["atl-test"],
+                |row| row.get(0),
+            )
+            .unwrap();
+        let audit_count: i64 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM ai_transparency_admin_audit_events WHERE license_id = ?1",
+                params!["atl-test"],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(ledger_count, 0);
+        assert_eq!(audit_count, 1);
     }
 }

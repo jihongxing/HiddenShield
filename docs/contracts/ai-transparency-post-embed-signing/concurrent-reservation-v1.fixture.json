@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "concurrent_reservation",
+  "baseInput": "base-production-input-v1.json",
+  "observed": {
+    "postgresConnections": 2,
+    "sameIdempotencyKey": true,
+    "sameRequestDigest": true,
+    "signerInvocations": 1,
+    "firstResult": "confirmed",
+    "secondResult": "replayed_existing_projection"
+  },
+  "expected": {
+    "maxSignerInvocations": 1,
+    "signingExecutionCount": 1,
+    "committedConfirmedMarkedImageCount": 1,
+    "customerMeteringQuantity": 1,
+    "secondSignerReceiptCreated": false
+  }
+}

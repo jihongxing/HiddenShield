@@ -1,0 +1,36 @@
+{
+  "stageReceipt": {
+    "schemaVersion": "hs-ai-production-post-embed-artifact-receipt-v1",
+    "artifactReceiptId": "artifact-stage-receipt-execution-post-embed-001",
+    "providerId": "provider-production-object-store-001",
+    "operation": "stage",
+    "executionId": "execution-post-embed-001",
+    "signerInvocationKey": "88469f55d225b54b4b448652d010cb3137829b03bd40f9c5082533a9c65f6412",
+    "artifactRef": "object://production-post-embed/execution-post-embed-001",
+    "finalSignedPngSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "objectVersion": "version-001",
+    "idempotencyKey": "post-embed-signing-idempotency-001",
+    "idempotencyDisposition": "created",
+    "durabilityStatus": "staged",
+    "issuedAt": "2026-07-27T10:00:02Z",
+    "expiresAt": "2026-07-27T10:10:02Z",
+    "providerSignature": "fixture-provider-signature-artifact-stage"
+  },
+  "finalizeReceipt": {
+    "schemaVersion": "hs-ai-production-post-embed-artifact-receipt-v1",
+    "artifactReceiptId": "artifact-finalize-receipt-execution-post-embed-001",
+    "providerId": "provider-production-object-store-001",
+    "operation": "finalize",
+    "executionId": "execution-post-embed-001",
+    "signerInvocationKey": "88469f55d225b54b4b448652d010cb3137829b03bd40f9c5082533a9c65f6412",
+    "artifactRef": "object://production-post-embed/execution-post-embed-001",
+    "finalSignedPngSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "objectVersion": "version-001",
+    "idempotencyKey": "post-embed-signing-idempotency-001",
+    "idempotencyDisposition": "created",
+    "durabilityStatus": "finalized",
+    "issuedAt": "2026-07-27T10:00:03Z",
+    "expiresAt": "2026-07-27T10:10:03Z",
+    "providerSignature": "fixture-provider-signature-artifact-finalize"
+  }
+}

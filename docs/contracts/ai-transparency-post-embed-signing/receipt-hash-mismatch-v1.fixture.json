@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "receipt_hash_mismatch",
+  "baseInput": "base-production-input-v1.json",
+  "observed": {
+    "computedFinalSignedPngSha256": "9999999999999999999999999999999999999999999999999999999999999999",
+    "receiptFinalSignedPngSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "errorCode": "ai_c2pa_signer_receipt_hash_mismatch",
+    "confirmStatus": "not_started"
+  },
+  "expected": {
+    "artifactReturned": false,
+    "signedBytesQuarantined": true,
+    "confirmWrites": 0,
+    "customerMeteringQuantity": 0
+  }
+}

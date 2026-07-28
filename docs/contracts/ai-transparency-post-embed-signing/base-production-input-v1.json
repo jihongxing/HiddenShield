@@ -1,0 +1,88 @@
+{
+  "command": {
+    "schemaVersion": "hs-ai-production-post-embed-signing-command-v1",
+    "markingSessionId": "session-post-embed-001",
+    "executionId": "execution-post-embed-001",
+    "licenseId": "license-production-001",
+    "credentialId": "credential-production-001",
+    "watermarkUid": "HS-ABCDEF01-23456789-ABCDEF01-23456789",
+    "requestedProfileIds": [
+      "hiddenshield_v3_image_anchor_v1",
+      "c2pa_post_embed_signing_v1",
+      "cn_aigc_label_2025_image_export_v1"
+    ],
+    "profileEntitlementVersion": 1,
+    "unsignedV3PngSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "signerProviderId": "provider-production-c2pa-001",
+    "signerCredentialRefDigest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "authorizationReceiptId": "sign-auth-post-embed-001",
+    "idempotencyKey": "post-embed-signing-idempotency-001",
+    "requestDigest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+  },
+  "profile": {
+    "schemaVersion": "hs-ai-production-post-embed-signing-profile-v1",
+    "profileEntitlementVersion": 1,
+    "licenseId": "license-production-001",
+    "status": "active",
+    "technicalProfileIds": [
+      "hiddenshield_v3_image_anchor_v1",
+      "c2pa_post_embed_signing_v1"
+    ],
+    "regionalProfileId": "cn_aigc_label_2025_image_export_v1",
+    "mediaType": "image/png",
+    "claimType": "ai_generated",
+    "issuerMode": "production_platform",
+    "signingOrder": "watermark_then_c2pa",
+    "allowedSignatureAlgorithms": [
+      "es256"
+    ],
+    "allowEphemeralSigner": false,
+    "validFrom": "2026-07-27T00:00:00Z",
+    "validUntil": "2027-07-27T00:00:00Z",
+    "entitlementDigest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "authorizationReceipt": {
+    "schemaVersion": "hs-ai-production-post-embed-signing-authorization-receipt-v1",
+    "receiptId": "sign-auth-post-embed-001",
+    "providerId": "provider-production-c2pa-001",
+    "operation": "ai_transparency_post_embed_c2pa_sign",
+    "actorId": "workload-ai-transparency-001",
+    "role": "ai_transparency_production_signer",
+    "licenseId": "license-production-001",
+    "credentialId": "credential-production-001",
+    "markingSessionId": "session-post-embed-001",
+    "executionId": "execution-post-embed-001",
+    "profileEntitlementDigest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "unsignedV3PngSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "signerCredentialRefDigest": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "scopeDigest": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "issuedAt": "2026-07-27T10:00:00Z",
+    "expiresAt": "2026-07-27T10:05:00Z",
+    "providerSignature": "fixture-provider-signature-authorization"
+  },
+  "signerReceipt": {
+    "schemaVersion": "hs-ai-production-c2pa-signer-receipt-v1",
+    "signerReceiptId": "sign-result-post-embed-001",
+    "providerId": "provider-production-c2pa-001",
+    "operation": "c2pa_post_embed_sign",
+    "markingSessionId": "session-post-embed-001",
+    "executionId": "execution-post-embed-001",
+    "watermarkUid": "HS-ABCDEF01-23456789-ABCDEF01-23456789",
+    "profileEntitlementDigest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "unsignedV3PngSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "finalSignedPngSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "c2paActiveManifestLabel": "urn:c2pa:manifest:production-post-embed-001",
+    "c2paClaimDigest": "1111111111111111111111111111111111111111111111111111111111111111",
+    "certificateChainDigest": "2222222222222222222222222222222222222222222222222222222222222222",
+    "signerKeyId": "kms-production-c2pa-key-001",
+    "signerKeyVersion": "7",
+    "signerInvocationKey": "88469f55d225b54b4b448652d010cb3137829b03bd40f9c5082533a9c65f6412",
+    "signerResultRef": "signer-result://provider-production-c2pa-001/88469f55d225b54b4b448652d010cb3137829b03bd40f9c5082533a9c65f6412",
+    "idempotencyDisposition": "created",
+    "billableInvocationId": "billable-post-embed-001",
+    "signatureAlgorithm": "es256",
+    "signedAt": "2026-07-27T10:00:01Z",
+    "receiptExpiresAt": "2026-07-27T10:10:01Z",
+    "providerSignature": "fixture-provider-signature-signer-result"
+  }
+}

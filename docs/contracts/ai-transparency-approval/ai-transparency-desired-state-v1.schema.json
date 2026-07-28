@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hiddenshield.local/contracts/ai-transparency-desired-state-v1.schema.json",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": ["operation", "desiredState"],
+      "properties": {
+        "operation": { "const": "create_license" },
+        "desiredState": {
+          "type": "object",
+          "required": ["status", "issuerMode", "deploymentMode", "publicVerificationRequired", "meteringPlanId", "effectiveAt", "expiresAt"],
+          "properties": {
+            "status": { "enum": ["active", "suspended"] },
+            "issuerMode": { "enum": ["hiddenshield_managed", "platform_managed", "customer_byok"] },
+            "deploymentMode": { "enum": ["hosted", "private"] },
+            "publicVerificationRequired": { "type": "boolean" },
+            "meteringPlanId": { "type": "string", "minLength": 1 },
+            "effectiveAt": { "type": "string" },
+            "expiresAt": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": ["operation", "desiredState"],
+      "properties": {
+        "operation": { "const": "renew_license" },
+        "desiredState": {
+          "type": "object",
+          "required": ["expiresAt"],
+          "properties": { "expiresAt": { "type": "string" } },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": ["operation", "desiredState"],
+      "properties": {
+        "operation": { "const": "suspend_license" },
+        "desiredState": {
+          "type": "object",
+          "required": ["status"],
+          "properties": { "status": { "const": "suspended" } },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": ["operation", "desiredState"],
+      "properties": {
+        "operation": { "const": "revoke_license" },
+        "desiredState": {
+          "type": "object",
+          "required": ["status"],
+          "properties": { "status": { "const": "revoked" } },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": ["operation", "desiredState"],
+      "properties": {
+        "operation": { "const": "grant_profile_entitlement" },
+        "desiredState": {
+          "type": "object",
+          "required": ["profileId", "profileKind", "status", "effectiveAt", "expiresAt", "termsVersion"],
+          "properties": {
+            "profileId": { "type": "string", "minLength": 1 },
+            "profileKind": { "enum": ["regulatory", "technical"] },
+            "status": { "enum": ["active", "suspended"] },
+            "effectiveAt": { "type": "string" },
+            "expiresAt": { "type": "string" },
+            "termsVersion": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": ["operation", "desiredState"],
+      "properties": {
+        "operation": { "const": "renew_profile_entitlement" },
+        "desiredState": {
+          "type": "object",
+          "required": ["expiresAt", "termsVersion"],
+          "properties": {
+            "expiresAt": { "type": "string" },
+            "termsVersion": { "type": "string", "minLength": 1 }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": ["operation", "desiredState"],
+      "properties": {
+        "operation": { "const": "suspend_profile_entitlement" },
+        "desiredState": {
+          "type": "object",
+          "required": ["status"],
+          "properties": { "status": { "const": "suspended" } },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "required": ["operation", "desiredState"],
+      "properties": {
+        "operation": { "const": "revoke_profile_entitlement" },
+        "desiredState": {
+          "type": "object",
+          "required": ["status"],
+          "properties": { "status": { "const": "revoked" } },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  ]
+}

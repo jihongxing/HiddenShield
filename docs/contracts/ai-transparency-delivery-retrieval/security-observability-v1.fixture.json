@@ -1,0 +1,30 @@
+{
+  "fixtureType": "delivery_security_observability",
+  "schemaVersion": "hs-ai-delivery-security-observability-v1",
+  "retention": {
+    "rateLimitWindowHours": 24,
+    "metricSnapshotDays": 90
+  },
+  "windows": {
+    "monitoringMinutes": 15,
+    "auditExportMaximumMinutes": 44640,
+    "cleanupBatchLimit": 1000
+  },
+  "alerts": {
+    "integrityFailureCriticalCount": 1,
+    "revokedAccessCriticalCount": 3,
+    "rateLimitedWarningCount": 5,
+    "availabilityFailureWarningCount": 3,
+    "failureRatioWarningPercent": 20,
+    "failureRatioMinimumAttempts": 10
+  },
+  "exportBoundary": {
+    "aggregateOnly": true,
+    "rawEventsAllowed": false,
+    "authorizationIdsAllowed": false,
+    "deliveryEnvelopeIdsAllowed": false,
+    "tokensAllowed": false,
+    "bytesAllowed": false,
+    "secretReferencesAllowed": false
+  }
+}

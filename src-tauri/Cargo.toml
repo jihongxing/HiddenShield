@@ -24,6 +24,10 @@ path = "src/main.rs"
 name = "license_issuer_app"
 path = "src/bin/license_issuer_app.rs"
 
+[[bin]]
+name = "ai_transparency_third_party_c2pa_fixture_qa"
+path = "src/bin/ai_transparency_third_party_c2pa_fixture_qa.rs"
+
 [[example]]
 name = "public_metadata_embed_qa"
 path = "examples/public_metadata_embed_qa.rs"

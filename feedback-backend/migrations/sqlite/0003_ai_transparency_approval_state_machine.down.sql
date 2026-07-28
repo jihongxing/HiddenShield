@@ -1,0 +1,9 @@
+DROP TRIGGER IF EXISTS trg_ai_change_audit_no_delete;
+DROP TRIGGER IF EXISTS trg_ai_change_audit_no_update;
+DROP TABLE IF EXISTS ai_transparency_change_target_locks;
+DROP TABLE IF EXISTS ai_transparency_change_audit_events;
+DROP TABLE IF EXISTS ai_transparency_change_executions;
+DROP TABLE IF EXISTS ai_transparency_change_approvals;
+DROP TABLE IF EXISTS ai_profile_entitlement_versions;
+DROP TABLE IF EXISTS ai_transparency_change_requests;
+DROP TABLE IF EXISTS ai_transparency_actor_role_snapshots;

@@ -1,0 +1,8 @@
+DROP TRIGGER IF EXISTS trg_ai_delivery_security_notification_outbox_audit_append_only
+ON ai_delivery_security_notification_outbox_audit_events;
+DROP TABLE IF EXISTS ai_delivery_security_notification_outbox_audit_events;
+DROP TABLE IF EXISTS ai_delivery_security_notification_outbox;
+
+DROP TRIGGER IF EXISTS trg_ai_delivery_security_incident_inspection_append_only
+ON ai_delivery_security_incident_inspection_audit_events;
+DROP TABLE IF EXISTS ai_delivery_security_incident_inspection_audit_events;
