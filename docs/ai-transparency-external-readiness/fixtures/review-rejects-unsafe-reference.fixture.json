@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "hs-ai-external-readiness-v1",
+  "status": "ready_for_internal_review",
+  "provider": {
+    "iamReceiptUrl": "http://iam.example.com/receipts",
+    "iamIssuer": "https://iam.example.com",
+    "iamAudience": "hiddenshield-ai-custody",
+    "iamJwksUrl": "https://iam.example.com/.well-known/jwks.json",
+    "workloadIdentityRef": "secret://sandbox-identity/ai-transparency-custody",
+    "kmsProvider": "gcp_kms",
+    "activePepperRef": "gcp-kms://sandbox-project/ai-custody/active-pepper",
+    "retainedPepperRefs": [
+      "gcp-kms://sandbox-project/ai-custody/retained-pepper"
+    ],
+    "kmsHealthUrl": "https://kms.example.com/health",
+    "signerEndpoint": "https://signer.example.com/sign",
+    "signerCredentialRef": "secret://sandbox-identity/ai-transparency-signer",
+    "objectStoreCredentialRef": "secret://sandbox-identity/ai-transparency-object-store",
+    "notificationCredentialRef": "secret://sandbox-identity/ai-transparency-notification",
+    "recoveryRunbookRef": "runbook://ai-transparency/provider-recovery-v1"
+  },
+  "designPartner": {
+    "partnerId": "replace-me",
+    "sandboxApiBaseUrl": "https://partner.example.com/api",
+    "resolverBaseUrl": "https://resolver.example.com",
+    "credentialSecretRef": "secret://sandbox-identity/partner-credential",
+    "partnerBundleRef": "partner://synthetic-sandbox-partner/sandbox-kit-v1",
+    "dataProcessingApprovalRef": "partner://synthetic-sandbox-partner/dpa-v1",
+    "acceptanceEvidenceRef": null
+  },
+  "approvals": {
+    "securityApprovalRef": "approval://security/sandbox-readiness-v1",
+    "legalApprovalRef": "approval://legal/sandbox-readiness-v1",
+    "productApprovalRef": "approval://product/sandbox-readiness-v1"
+  }
+}

@@ -13,6 +13,7 @@ assert.match(command, /ai-transparency:sdk-contract/);
 assert.match(command, /ai-transparency:sdk-test/);
 assert.match(command, /ai-transparency:design-partner-kit/);
 assert.match(command, /ai-transparency:synthetic-sandbox-qa/);
+assert.match(command, /ai-transparency:external-readiness/);
 assert.match(workflow, /\n  ai-transparency-contract:\n/);
 assert.match(workflow, /name: AI Transparency contract gate/);
 assert.match(workflow, /run: npm run ai-transparency:ci/);
