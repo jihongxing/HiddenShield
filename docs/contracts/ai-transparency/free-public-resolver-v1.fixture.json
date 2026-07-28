@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "ai_transparency_free_public_resolver",
+  "request": {
+    "method": "GET",
+    "path": "/v1/ai-transparency/public/resolve/watermarks/HS-A1B2C3D4-E5F60718-192A3B4C-5D6E7F80",
+    "authorization": null,
+    "licenseId": null,
+    "mediaUpload": null
+  },
+  "expectedResponse": {
+    "schemaVersion": "hs-ai-public-resolver-v1",
+    "resolutionStatus": "confirmed",
+    "manifestId": "atm_fixture_success_0001",
+    "watermarkUid": "HS-A1B2C3D4-E5F60718-192A3B4C-5D6E7F80",
+    "manifestStatus": "active",
+    "claimType": "ai_generated",
+    "markerStatus": "present_verified",
+    "metadataSignatureStatus": "verified",
+    "watermarkDetectionStatus": "verified",
+    "issuerTrustStatus": "not_evaluated",
+    "evidenceLevel": "platform_signed",
+    "evidenceVerificationStatus": "verified",
+    "generatedAt": "2026-07-27T01:00:00Z",
+    "profiles": [
+      {
+        "profileId": "ca_ai_transparency_2026_image_v1",
+        "status": "applied"
+      },
+      {
+        "profileId": "c2pa_ai_output_2_4_image_v1",
+        "status": "applied"
+      },
+      {
+        "profileId": "cn_aigc_label_2025_image_export_v1",
+        "status": "applied"
+      },
+      {
+        "profileId": "eu_ai_act_article_50_2026_image_v1",
+        "status": "applied"
+      }
+    ],
+    "markers": [
+      {
+        "markerType": "blind_watermark",
+        "profileId": "hiddenshield_v3_image_anchor_v1",
+        "version": "v3",
+        "verificationStatus": "verified"
+      },
+      {
+        "markerType": "c2pa",
+        "profileId": "c2pa_ai_output_2_4_image_v1",
+        "version": "2.4",
+        "verificationStatus": "verified"
+      }
+    ],
+    "legalConclusion": false,
+    "warnings": [
+      "This result reports a confirmed transparency record, not a legal conclusion.",
+      "Absence or failure of a marker does not prove human authorship."
+    ]
+  },
+  "invariants": {
+    "requiresApiKey": false,
+    "requiresLicenseId": false,
+    "createsMarkingLedgerEntry": false,
+    "createsBatchVerificationLedgerEntry": false,
+    "storesUploadedMedia": false,
+    "databaseWrites": 0,
+    "readsPublicViewsOnly": true,
+    "assertsNonAiWhenNotFound": false
+  }
+}

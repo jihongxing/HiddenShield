@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "ai_transparency_profile_entitlement_rejection",
+  "request": {
+    "method": "POST",
+    "path": "/v1/ai-transparency/marking-sessions",
+    "licenseId": "atl_fixture_prod_0001",
+    "idempotencyKey": "fixture-profile-rejection-0001",
+    "claimType": "ai_generated",
+    "requestedProfileIds": [
+      "eu_transparency_code_signatory_2026_image_v1"
+    ]
+  },
+  "credentialScopes": [
+    "mark:image",
+    "profile:eu_image_provider"
+  ],
+  "entitlementState": {
+    "licenseId": "atl_fixture_prod_0001",
+    "profileId": "eu_transparency_code_signatory_2026_image_v1",
+    "status": "not_entitled"
+  },
+  "expectedResponse": {
+    "statusCode": 403,
+    "errorCode": "ai_profile_not_entitled",
+    "message": "requested AI Transparency profile is not entitled"
+  },
+  "invariants": {
+    "scopeAloneIsSufficient": false,
+    "watermarkUidReserved": false,
+    "markingSessionCreated": false,
+    "ledgerCreated": false,
+    "outputMustBeFailClosed": true
+  }
+}

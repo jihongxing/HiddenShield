@@ -2,6 +2,20 @@
 
 当前桌面发布状态：`v0.1.3` RC / GA Gate `PASSED`（2026-07-26）；真实支付与公共信任层仍未进入当前发布范围。
 
+## 2026-07-26 中文社交媒体宣传片
+
+状态：`1080p 主片已生成；待发布负责人终审`
+
+- 新增可复现宣传片工程 `docs/promo-video/`，输出中文横屏 `16:9` 主片与 720p 预览，目标受众为摄影师、设计师、音乐创作者、投资人和潜在合作伙伴。
+- 宣传结构明确分为三层：桌面端图片 / 音频写入、验证、本地版权库和技术证据报告属于当前能力；云版权库、SDK、API 明示为“未来规划”；个人作品身份明示为“终局愿景”。
+- 云版权库段落只承诺未来同步必要版权元数据、登记状态和权利声明，不宣称当前已有生产 PostgreSQL、外部企业 SLA、公开生产 API 或完整原始媒体托管。
+- 报告段落明确“提供技术证据，不替代法律权属认定”；演示作品、版权编号和桌面界面均为宣传片视觉素材，不进入正式版权库、报告、同步 payload 或跨端 QA 证据。
+- 当前宣传片仅介绍桌面端，与 `v0.1.3` 当前发布范围一致；移动端冻结且不在片中出现，不形成新的移动端能力承诺。
+- 配音修订：原 Windows 系统合成女声因机械感不作为推荐发布版本；新增 `zh-CN-XiaoxiaoNeural` 温暖中文神经人声版，旁白改为短句、自然停顿和面向观众的对话式表达，旧版继续保留用于对照。
+- 验证：推荐拟人配音成片为 H.264/AAC、`1920×1080`、30fps、48kHz，时长约 213.67 秒，平均音量约 `-19.1 dB`、峰值约 `-1.0 dB`；逐镜头 MP3、分镜图、时长清单和重新构建脚本已保留。原系统配音版时长约 171.57 秒。
+- 风险：当前推荐版使用联网生成的中文神经人声，不是 OpenAI ChatGPT 原声；发布前仍需人工完整观看并确认音色、停顿、中文专有名词读法、社交平台压缩后的文字可读性，以及片尾“加入粉丝群 / 领取下载链接”是否与实际运营承接一致。
+- 下一商业化任务：由发布负责人完整观看 1080p 主片并签字确认，随后基于同一工程剪出 60 秒创作者版和 30 秒投放版，不新增超出当前能力边界的文案。
+
 ## 2026-07-25 对外产品承诺文档
 
 状态：`正式客户版已生成；批准对外`
@@ -2093,3 +2107,443 @@ Creator 行为：
 - 公开资产使用 Tauri Ed25519 updater 签名；当前 GitHub Actions 发布工作流不提供公开 Authenticode 签名，因此不把该渠道包装为 Windows 发行方签名。
 - 风险：`v0.1.2` 仍为 Draft Release，当前没有可对用户承诺的公开回滚安装包。
 - 下一商业化任务：确认并公开一份可接受的回滚版本后更新发布清单，再开始面向付费设计伙伴的受控分发。
+
+## 2026-07-27 AI 图片平台生成时标识 MVP 设计冻结
+
+- 状态：`design_frozen`。新增 `docs/AI生成内容标识基础设施MVP设计.md`，提前恢复公共信任层中的一个最小子集：面向 AIGC 图片平台的生成时 AI 来源标识基础设施。
+- 商业定位：未来平台 SDK / 私有部署 / Registry / 批量验证的 B2B 增长方向，不进入当前桌面图片 / 音频年费权益，不改变现有价格、支付、套餐、配额或桌面导航。
+- 最小切口：只做平台已知事实的生成时标识，不做上传任意未知素材后的通用 AI 概率检测；先覆盖 AI 图片生成和 AI 图片编辑，音频、视频、文本和通用检测路由不进入本期 MVP。
+- 设计要求：采用“显式标签数据 + C2PA 等标准元数据 + `watermark-core` 鲁棒锚点 + AI Transparency Manifest + Evidence + Registry / Resolver”的多层结构；不在 V3 / 39-byte payload 中加入 AI flag、provider、模型、法规 Profile 或 Evidence 语义。
+- 客户验证：现有电商 / 广告内容团队设计伙伴验证不取消；新增 AIGC 图片平台访谈和设计伙伴筛选，优先验证真实生成链路是否需要鲁棒锚点、Registry、Profile 适配和统一验证接口。
+- 能力边界：本次只有文档设计冻结，不代表已符合中国、欧盟、美国或任何平台规则，不代表生产 C2PA 信任链、平台签名 Evidence、Detector API 或平台 SDK 已上线。
+- 下一商业化任务：在开始任何数据库或 SDK 代码前，筛选至少 3 家 AIGC 图片平台设计伙伴，确认其输出格式、吞吐、延迟、私有部署、签名主体、检测入口和首个 Compliance Profile 需求。
+
+## 2026-07-27 AI 图片平台标识 SDK 法规与商业审计
+
+- 状态：`conditional_design_pass`。已审计 `docs/AI生成内容标识基础设施MVP设计.md`，并按中国、欧盟、加州的不同主体、媒体和流转环节重构为法规 Profile、技术 Profile 和商业授权三层模型。
+- 已完成：将中国图片导出的显式标识改为文件 / UI 回执和验证要求；将 C2PA 定位为技术 Profile 而不是合规结论；将平台付费 SDK 与普通用户免费基础验证、收费企业批量验证分离；冻结 production / sandbox、issuer mode、scope、`confirmed_marked_image` 计量和 fail-closed 授权行为。
+- 商业模式：未来采用年度平台授权、已确认标识量、法规 Profile 包、信任与部署包、企业批量验证包；不按失败、重试、内部写后读或普通用户基础验证收费。价格不在文档阶段冻结，必须由设计伙伴的真实输出量、延迟预算、合规风险和采购约束验证。
+- 验证：已通过中国网信办标识办法、欧盟 AI Act Article 50 透明度实践框架、加州 AI Transparency Act 现行文本的桌面研究核验；`git diff --check` 待本轮文档收口后复跑。
+- 风险：HiddenShield 提供的是技术控制、证据和授权组件，不替代客户的法务责任；加州适用客户的免费检测义务、欧盟 provider / deployer 责任和中国导出显式标识必须由每个 Profile 的外部法务审查确认。
+- 下一商业化任务：与 3 家 AIGC 图片平台完成授权、免费基础验证、计量、签发主体、数据驻留、导出标识和私有部署访谈，并据此冻结首个 production SKU 的合同和非价格化报价结构。
+
+## 2026-07-27 AI 图片平台标识 SDK 数据库/API 合同冻结
+
+- 状态：`schema_contract_frozen_no_implementation`。新增 `docs/AI生成内容标识数据库与API_Schema合同.md`，冻结 AI Transparency SDK 的逻辑数据库模型与 HTTP API 表面。
+- 已完成：冻结 `licenseId`、`issuerMode`、Profile entitlement、`confirmed_marked_image`、免费公共 Resolver、sandbox / production、scope、幂等会话、confirm 原子事务、显式标签回执和错误码。
+- 商业计量：`confirmed_marked_image` 是唯一的 V1 标识计量单位；创建会话、失败、重试、重复确认、内部 write-after-read 和普通用户公共单文件验证均不得产生标识计量。该 ledger 不等同真实支付扣款。
+- 免费验证：V1 公共 Resolver 不需要 API key 或 license，不消费配额且不读取用户媒体文件；它不自动满足任何客户所在地的完整媒体检测义务，后续 Detector 需求须由已购 Profile 和法务审查决定。
+- 风险：现有 Enterprise API key、quota 和 audit 只能作为底层实现基础，不能直接复用其公开权利查询的授权和收费语义；生产 SDK 在 JSON fixture、迁移、contract test、法务 Profile 审查和平台试点前仍不得销售或分发。
+- 下一商业化任务：冻结不依赖运行时代码的授权 / 计量 JSON fixture 和非价格化 production SKU 合同字段，然后再评审数据库迁移。
+
+## 2026-07-27 AI 图片平台标识 SDK 授权与计量 Fixture 冻结
+
+- 状态：`schema_and_fixture_frozen_no_implementation`。新增 `docs/contracts/ai-transparency/`，冻结 production license、三地 Profile entitlement、成功 `confirmed_marked_image`、免费公共 Resolver、过期授权、Profile 拒绝和冲突 confirm 的 JSON 向量。
+- 已完成：统一 `licenseId`、tenant、workspace、Watermark ID、幂等键和计量预期；明确完全相同的 confirm 重放未来应返回原结果且不重复计量，而摘要或请求不一致的重复 confirm 必须返回 `ai_confirmation_conflict`。
+- 验证计划：全量 JSON 解析、共享 ID 关联检查、`git diff --check`；本轮不运行迁移、不创建 API、不发放 production credential、不销售或分发 SDK。
+- 风险：fixture 的签名、摘要和平台字段均为合成占位值，不能作为生产验签、性能或法规合规证据；三地 Profile 的法务解释仍需外部审查。
+- 下一商业化任务：先实现 fixture 的 schema / contract test，验证授权、计量和公共验证不收费边界；只有 contract test 通过后才评审数据库迁移和首个 production SKU 合同。
+
+## 2026-07-27 AI 图片平台标识 SDK 合同迁移骨架
+
+- 状态：`storage_schema_created_runtime_not_implemented`。fixture schema / contract test 已通过后，新增 PostgreSQL `0002_ai_transparency_schema`，并在本地 SQLite 初始化中建立等价的表与索引骨架。
+- 已完成：冻结并落地 production 授权唯一性、Profile entitlement、SDK credential binding、幂等 marking session、AI Transparency Manifest、Evidence、Marker Binding、显式标签回执与 `confirmed_marked_image` ledger 的存储约束；PostgreSQL smoke 已执行 `0001` → `0002` 的真实 up/down，验证 20 张表、21 个索引、partial-index 与 7 项数据库约束回归断言。
+- 验证：`cargo run --manifest-path feedback-backend/Cargo.toml --features postgres --bin postgres_migrate_smoke` 在一次性 PostgreSQL 16 数据库 `hiddenshield_migrate_smoke` 通过；`npm run ai-transparency:schema-contract` 通过（7 个 fixture）；`cargo test --manifest-path feedback-backend/Cargo.toml` 通过（81/81）；`cargo check --manifest-path feedback-backend/Cargo.toml --features postgres` 与 `git diff --check` 通过。
+- 风险：回归测试发现并修复了显式导出文件标签摘要的 SQL `NULL` 检查漏洞；SQLite 镜像与 PostgreSQL 迁移仍只提供存储边界，未实现 API、原子 confirm 事务、生产凭据、扣款、Resolver、Detector 或 SDK。
+- 下一商业化任务：评审内部 license / Profile 管理的最小接口与审计模型；在 confirm 原子事务、法务 Profile 审查和平台试点前不得销售或分发 SDK。
+
+## 2026-07-27 AI 图片平台标识内部授权与审计 V1
+
+- 状态：`internal_read_only_v1`。新增 `docs/AI生成内容标识内部授权管理与审计合同.md`，并实现 admin-token 保护的内部 license 查询与 Profile entitlement 校验。
+- 已完成：`GET /internal/ai-transparency/licenses/:license_id` 与 `POST /internal/ai-transparency/profile-entitlements/check`；两接口只读业务数据、无 credential / session / ledger 创建，并按成功、拒绝、失败写入独立 `ai_transparency_admin_audit_events`。
+- 验证：新增存储与路由测试通过；一次性 PostgreSQL 16 smoke 验证 `0001` → `0002` up/down、21 张表、22 个索引和 7 项约束回归；`cargo test --manifest-path feedback-backend/Cargo.toml` 通过（83/83）、PostgreSQL feature 编译通过、fixture contract 通过。
+- 风险：内部 endpoint 仍复用全局 admin token，不是双人审批、细粒度 RBAC 或生产 license 写入工作流；现有 PostgreSQL 运行时 adapter 也尚未实现。
+- 下一商业化任务：先冻结 license / Profile 写入、续期、暂停、撤销的双人审批与审计合同；在该合同、confirm 原子事务与外部法务 Profile 审查通过前继续禁止 SDK、production credential、公共 Resolver 和商业化发放。
+
+## 2026-07-27 AI 图片平台标识授权写入双人审批合同冻结
+
+- 状态：`four_eyes_write_contract_frozen_no_implementation`。新增 `docs/AI生成内容标识授权写入双人审批与审计状态机合同.md`，冻结 license / Profile 的 create、renew、suspend、revoke 的 maker-checker、系统执行和 append-only 审计状态机。
+- 已冻结：request / approval / execution 三段式合同、request digest、版本冲突、审批过期、生产引用要求、操作角色矩阵、license / Profile 状态转换、稳定 reason code、终态不可恢复和审计 fail-closed。
+- 架构结论：现有 `ai_profile_entitlements` 的 `(licenseId, profileId)` 逻辑唯一键无法承载 revoked / expired 后的可追溯重新授权；实现前必须演进为版本化 entitlement 模型，禁止直接覆盖或复活历史记录。
+- 风险：现有单一 admin token 不具备 actor 身份、角色、审批人分离或生产 RBAC 语义；本轮没有新增数据库、写接口、审批 UI、通知、production license、credential、SDK 或计量。
+- 下一商业化任务：冻结 actor / role 身份来源、versioned Profile entitlement 数据模型与 change request / approval / execution / audit fixture，再实现状态机 contract test；通过前继续禁止所有 production 发放和 SDK 分发。
+
+## 2026-07-27 AI 图片平台标识身份、版本化 Entitlement 与状态机 Fixture 冻结
+
+- 状态：`identity_schema_fixture_contract_test_frozen_no_write_implementation`。新增 `docs/AI生成内容标识审批身份与版本化Entitlement_Schema合同.md` 和 `docs/contracts/ai-transparency-approval/`，并冻结 actor / role、版本化 entitlement、change request、approval、execution、audit 六类 JSON fixture。
+- 已完成：Internal IAM 是唯一 actor 身份来源；requester / approver 为不同 human、system executor 不能审批；版本链、单 active version、production regulatory legal review、digest 绑定、version conflict 无目标写入和 append-only audit 已由可执行 contract test 断言。
+- 验证：`npm run ai-transparency:approval-contract` 通过（6 fixtures）；既有 `npm run ai-transparency:schema-contract` 通过（7 fixtures）；`git diff --check` 通过。
+- 风险：actor identity、role binding、versioned entitlement、request / approval / execution / audit 仍未进入数据库或运行时；request digest canonicalization、其余 operation desiredState Schema、真实并发测试及生产 RBAC / 外部依据真实性来源均未完成。
+- 下一商业化任务：只评审版本化 entitlement 与审批状态机数据库迁移设计；在迁移、真实并发测试、confirm 原子事务、外部法务 Profile 审查和平台试点前继续禁止 license / Profile 写入、production license、credential、SDK、公共 Resolver 与商业化发放。
+
+## 2026-07-27 AI 图片平台标识审批状态机数据库迁移设计评审
+
+- 状态：`conditional_design_pass_no_migration`。新增 `docs/AI生成内容标识审批状态机数据库迁移设计评审.md`，只评审未来 `0003_ai_transparency_approval_state_machine`，未创建 SQL、SQLite schema 或运行时写接口。
+- 设计结论：采用 additive migration；新增 actor role snapshot、versioned entitlement、change request、approval、execution、append-only audit 和 target lock；版本表作为真相源，现有 `ai_profile_entitlements` 暂作 current projection。
+- 并发 Gate：未来 executor 必须通过单一深事务 module 锁 target key 和 request；真实测试必须覆盖双连接 renew 冲突、重复执行、同目标冲突、audit 故障回滚和无 credential / session / ledger 副作用。
+- Backfill 边界：旧 entitlement 可生成 synthetic version / request / approval / audit，但必须明确 `migrated_legacy_without_four_eyes`，不能伪装生产双人审批证据。
+- 阻断：request digest canonicalization、各 operation desiredState Schema、Internal IAM 验真 interface、合同/法务/安全引用验真、synthetic backfill 措辞和 PostgreSQL 并发 harness 尚未冻结。
+- 下一商业化任务：只冻结上述六项阻断和 `0003` migration fixture / Schema Contract；在 migration 与真实并发测试通过前继续禁止所有 production license、credential、SDK、公共 Resolver 和商业化发放。
+
+## 2026-07-27 AI 图片平台标识 0003 迁移前置 Gate 冻结
+
+- 状态：`pre_migration_gates_frozen_0003_creation_permitted_not_started`。新增 `docs/AI生成内容标识0003迁移前置Gate合同.md`、八类 desiredState Schema 与两类 pre-migration fixture；本轮未创建 `0003`。
+- 已完成：冻结 `hs-ai-change-request-digest-v1` 固定向量、八类 operation desiredState、Internal IAM 与外部 reference 验真 interface、synthetic backfill 非生产措辞、PostgreSQL 双连接 harness interface 和六类竞态场景。
+- 验证：`npm run ai-transparency:approval-contract` 通过（8 fixtures）；既有 `npm run ai-transparency:schema-contract` 保持通过；前置 Gate 允许开始创建 `0003`，不允许 production 发放。
+- 风险：IAM/reference adapter、digest runtime implementation、desiredState runtime validator、0003 migration、真实 PostgreSQL 双连接测试和写入事务均未实现；fixture/harness 合同不是并发测试成功证据。
+- 下一商业化任务：创建 `0003_ai_transparency_approval_state_machine` 及 PostgreSQL migration tests，再实现 PostgreSQL 双连接并发 harness；SQLite 只保留本地 migration regression。在真实 migration 与并发测试通过前继续禁止写接口、production license、credential、SDK、公共 Resolver 和商业化发放。
+
+## 2026-07-27 AI Transparency 0003 数据库状态机落地
+
+- 状态：`postgres_database_schema_and_concurrency_primitives_verified`。已创建 PostgreSQL `0003_ai_transparency_approval_state_machine` additive migration；SQLite migration 仅接入本地 schema 初始化和回归。
+- 数据模型：新增 actor/role snapshot、change request、versioned Profile entitlement、approval、execution、append-only audit 和 target lock；现有 `ai_profile_entitlements` 继续作为 projection，并新增 current version metadata。
+- 验证：一次性本地 PostgreSQL `hiddenshield_migrate_smoke_0003` 完成 `0001 -> 0002 -> 0003 -> down`，检查 28 张表、28 个索引和 13 项约束回归；PostgreSQL 两个独立连接完成 6 个冻结并发场景，credential/session/Manifest/ledger 计数均为 0。SQLite migration 测试只证明本地 schema 兼容性。
+- 商业边界：本轮只交付授权治理数据库基础，不包含 SDK、公共 Resolver、生产 credential、付费计量或生产 License/Profile 发放；数据库并发 primitive 通过不等于 operation-specific 原子事务、IAM/reference 验真和法务 Profile Gate 已通过。
+- 风险：synthetic legacy backfill、真实 change command transaction module、confirm 原子事务和生产级 IAM/reference adapter 仍是生产发放阻断项；不得据此对外宣传三地法规合规或平台已可接入。
+- 下一商业化任务：实现并测试单一内部 change-command 原子事务 module，逐场景落地 request/approval/execution/audit/projection 写入，并保持 SDK、公共 Resolver 和生产 credential 发放关闭。
+
+## 2026-07-27 AI Transparency 内部 Change Command 原子事务
+
+- 状态：`postgres_internal_atomic_change_command_verified_no_production_issuance`。新增统一内部 `InternalChangeCommand`；PostgreSQL 实现是唯一生产事务语义，SQLite adapter 只用于本地单元合同。
+- 原子边界：target lock、幂等检查、同目标 in-flight 检查、request、approval、execution、version history、current projection 与 append-only audit 均位于同一数据库事务；audit 写入失败会回滚 request、approval、execution、version 和 projection。
+- 并发验证：六个冻结场景已从直接锁表测试升级为 PostgreSQL 真实双连接 command 测试，并得到冻结的 winner、request status、target version、active version count、audit sequence 和 stable reason code。
+- 零副作用：所有场景继续断言 `ai_sdk_credential_bindings`、`ai_marking_sessions`、`ai_transparency_manifests` 和 `ai_marking_ledger` 为 `0`，未发放 credential、未创建 marking session、未写 Manifest、未计量。
+- 商业边界：module 未连接 HTTP/API/SDK 或生产 credential 发放；身份与外部依据仍由 fixture snapshot 提供，尚未接入真实 Internal IAM、contract/legal/security reference adapter 或法务 Profile 审查。
+- 验证：Rust `85` tests、PostgreSQL feature check、`0001 -> 0002 -> 0003 -> down` smoke、两份 AI Transparency contract 与 `git diff --check` 通过；PostgreSQL 真实双连接 command harness 通过。
+- 下一商业化任务：把 fail-closed Internal IAM 和 contract/legal/security reference adapter 接入 change-command 前置校验，并新增 adapter unavailable、scope mismatch、expired binding 与 reference mismatch 的 PostgreSQL 零写入测试；继续禁止 SDK、公共 Resolver 和所有生产发放。
+
+## 2026-07-27 AI Transparency Fail-Closed IAM 与引用校验边界
+
+- 状态：`fail_closed_adapter_boundary_verified_no_production_provider`。change-command 现在必须接收 Internal IAM 与 approval reference adapter；任一 adapter 拒绝、过期、scope 不匹配或 unavailable 时，在事务开启前返回稳定拒绝码。
+- IAM：preflight 对 requester、approver、executor 分别要求 `ai_transparency_requester`、适用 approver role、`system_executor`；输入仅包含 token hash、role、tenant/workspace/environment/operation，不持久化 raw token。
+- 引用：production regulatory Profile grant/renew 要求 legal review；technical 要求 security review；license create/renew 预留 contract 检查。仅保存 opaque reference ID，不复制原合同或法务文件。
+- 验证：PostgreSQL 覆盖 IAM `invalid`、`expired`、`scope mismatch`、`unavailable` 及 reference `invalid`、`expired`、`scope mismatch`、`unavailable`；每项 request、audit、projection、credential、session、Manifest、ledger 均为零写入。SQLite 同类测试不计入生产 Gate。
+- 商业边界：当前是 adapter seam 与 fail-closed enforcement，不是生产 IAM 或外部合同系统上线；没有 HTTP/API/SDK 暴露，没有 production credential 或 License/Profile 发放。
+- 下一商业化任务：在受控内部环境实现真实 Internal IAM/reference provider client、receipt 校验与 provider health policy，并新增 provider 签名、时钟、scope digest 与 failover 审计测试；继续禁止 SDK、公共 Resolver 和所有生产发放。
+
+## 2026-07-27 AI Transparency 受控 Provider Receipt 与法务 Profile Gate 评审
+
+- 状态：`internal_provider_receipt_verified_legal_profile_gate_blocked`。新增 `docs/AI生成内容标识受控内部Provider与Receipt验证合同.md`，实现受控内部 provider client：验证 provider/key ID、HMAC-SHA256 签名、active/granted、issued/expires 与 IAM/reference scope digest。
+- 验证：两库 harness 使用有效 signed receipt 驱动既有 command 成功场景；IAM/reference 签名无效、过期、scope digest 不匹配、provider health unavailable 和 transport unavailable 均 fail-closed，且保持零写入。
+- 法务 Profile Gate：`BLOCKED`。当前 Profile 仅冻结名称、原则与部分技术映射；未提供每个 CN/EU/US(加州) Profile 的适用主体/分发场景/必需控制/例外/法规来源/有效期/owner/变更记录/法务签署证据，不能作为 production regulatory entitlement 依据。
+- 商业边界：HMAC receipt 是内部受控测试协议，不是生产 KMS/HSM、非对称签名、跨组织 trust 或法律意见；不解锁 SDK、公共 Resolver、production credential 或生产 License/Profile 发放。
+- 下一商业化任务：先建立 CN/EU/US(加州) regulatory Profile 的法律控制矩阵与外部法律审查签署/有效期/变更流程，再评审是否创建 production Profile entitlement；在完成前继续禁止所有生产发放。
+
+## 2026-07-27 AI Transparency Regulatory Profile 法律控制矩阵与外部审查包
+
+- 状态：`external_counsel_package_prepared_all_profiles_blocked`。新增 `docs/AI生成内容标识Regulatory_Profile法律控制矩阵.md` 与 `docs/AI生成内容标识外部法务审查包.md`，覆盖 CN、EU、US（加州）图片 regulatory Profile 的审查输入、证据、控制映射和签署 receipt 模板。
+- 已准备：官方来源审查起点、适用主体/分发场景问题清单、控制矩阵字段、source/control digest、有效期、owner、变更/撤销触发条件和外部法务 receipt 验收规则。
+- 法务 Gate：`BLOCKED`。没有外部法务签署 receipt；CN Profile 在 MVP 与数据库/审批合同之间存在 canonical ID 不一致；每个司法辖区均缺少逐条已审查控制、来源快照、适用条件、例外、有效期与签署证据。
+- 商业边界：审查包不是法律意见、认证或 production entitlement；当前内部 provider HMAC receipt 不得验证或替代外部法务签名。
+- 下一商业化任务：聘请具备 CN/EU/US（加州）相应资质的外部法务，逐 Profile 完成控制矩阵、source snapshot 和签署 receipt；receipt 验证通过后仅重新评审 Profile Gate，不自动开启 production issuance。
+
+## 2026-07-27 AI Transparency 授权人内部审计 Gate
+
+- 状态：`owner_audit_approved_not_external_legal_opinion`。授权产品负责人批准 Regulatory Profile Gate 用于继续内部工程推进。
+- 严格边界：该批准不是外部法律意见、法律签署、监管认可或合规认证；没有 external counsel receipt，CN canonical Profile ID 仍未决。
+- 未解锁项：production entitlement、production credential、SDK、公共 Resolver、法规合规营销和任何生产发放继续关闭。
+- 下一商业化任务：实现并验证 marking session 的单一 PostgreSQL confirm 原子事务；只在 PostgreSQL 真实双连接测试中形成 Gate 证据，验证通过后再评审受控内部标识执行链。
+
+## 2026-07-27 AI Transparency PostgreSQL Confirm 原子事务
+
+- 状态：`postgres_confirm_transaction_verified_internal_only`。实现 PostgreSQL-only confirm command 和 `0004_ai_transparency_confirm_audit` additive migration。
+- 原子边界：Manifest、Evidence、Marker binding、显式 label receipt、pending/committed `confirmed_marked_image` ledger、confirm audit 和 session 状态切换位于同一 PostgreSQL 事务。
+- 验证：一次性 `hiddenshield_migrate_smoke_confirm_20260727` PostgreSQL 16 数据库完成 29 表/29 索引 up/down smoke；真实双连接并发一胜一败，重复 confirm 只提交一次，ledger/audit 故障均零部分写入。
+- 风险与未完成：尚无 production marking session 创建链、production credential/provider/KMS、线上观测或 production execution chain；当前不构成可销售、可集成或合规声明能力。
+- 商业边界：不开放 HTTP/API/SDK，不签发 production credential，不启用公共 Resolver 或任何生产发放。
+- 下一商业化任务：冻结并实现 production credential custody 与受控内部 marking session 创建链；在真实 provider/KMS、撤销和运行审计 Gate 通过前，不开放 SDK、公共 Resolver 或生产发放。
+
+## 2026-07-27 AI Transparency Production Credential Custody
+
+- 状态：`postgres_credential_custody_and_ready_session_verified_internal_only`。冻结 production credential custody/marking session 合同并实现 PostgreSQL `0005_ai_transparency_credential_custody`。
+- Custody：明文 `hsai_live_...` 只返回一次；数据库只保存 prefix、HMAC-SHA256 hash、pepper version、custody key ID、scope、issuer mode、有效期、撤销和使用时间，不保存明文或可逆密文。
+- Session Gate：只有 credential、production license 和全部 requested Profile entitlement 均有效时，内部命令才原子创建 `ready_to_confirm` session、更新 `last_used_at` 并追加 runtime audit。
+- 验证：一次性 `hiddenshield_migrate_smoke_credential_20260727` PostgreSQL 16 库完成 30 表/32 索引 up/down；8 个场景覆盖未授权签发、有效 credential、暂停、过期、scope denied、inactive license、Profile denied 和并发 idempotency。
+- 商业边界：当前仍为内部 QA custody provider/KMS 配置；没有客户自助签发、HTTP/SDK、公共 Resolver、支付计量或生产 SLA，不得对外发放。
+- 下一商业化任务：实现 credential rotate/revoke、真实 Internal IAM receipt 和 KMS/HSM pepper rotation；旧 credential 撤销/轮换 Gate 通过后再评审受控试点 credential 发放。
+
+## 2026-07-27 AI Transparency Credential Lifecycle
+
+- 状态：`postgres_rotate_revoke_and_versioned_pepper_verified_internal_only`。实现 PostgreSQL `0006_ai_transparency_credential_lifecycle`、credential rotate/revoke 原子命令与 versioned pepper 校验。
+- 生命周期：rotate 在同一事务创建 active pepper replacement、撤销旧 credential、写 lifecycle audit；revoke 原子撤销 credential 并写 audit。旧 credential 在提交后无法再创建 `ready_to_confirm`。
+- IAM/KMS 接入：新增可复用 `InternalIamAuthorizationAdapter` 的 custody receipt adapter；pepper 模型支持 active/retained versions。当前仅 QA adapter，不能称为已接入真实生产 IAM/KMS/HSM。
+- 验证：一次性 `hiddenshield_migrate_smoke_lifecycle_20260727` PostgreSQL 16 库完成 31 表/34 索引 up/down；10 个 custody 场景通过，包括 rotate 后旧 key 拒绝、新 `qa-v2` replacement 成功和 revoke 后拒绝。
+- 商业边界：无生产 provider endpoint、HSM/KMS、在线撤销传播、客户控制台或 SDK；不得向真实客户发放 production credential。
+- 下一商业化任务：部署/配置真实 Internal IAM receipt provider 与 KMS/HSM pepper provider，完成 provider unavailable、expired/scope mismatch、pepper retirement、并发 rotate/revoke 和恢复演练 Gate。
+
+## 2026-07-27 Production Provider Deployment Package
+
+- 状态：`production_provider_deployment_package_ready_internal_only`。新增 `docs/AI生成内容标识Production_Provider_Deployment_Package.md` 与 `config/ai-transparency-production-provider.env.example`，冻结只含 Secret 引用的 production custody 配置合同。
+- 实现：production runtime 在 custody enabled 时缺少任一 IAM/KMS/runbook 配置即拒绝启动；四个 PostgreSQL custody 命令在开事务前统一检查 Internal IAM、KMS health 与 active pepper readiness，任一不可用即 fail-closed。
+- 验证：provider readiness 单元测试、全量 Rust 测试和两份 AI Transparency JSON contract 已通过；一次性 PostgreSQL 16 数据库 `hiddenshield_migrate_smoke_provider_20260727` 完成 31 表/34 索引 up/down smoke，并执行 11 个 custody 场景。provider unavailable 时 issue/session/rotate/revoke 均在事务前 fail-closed：仅受控 seed credential/runtime audit 存在，零 marking session、零 `last_used_at`、零 lifecycle audit，随后 QA provider 恢复后正常 session 场景通过。
+- 商业边界：模板与 Gate 不是实际 provider 部署、密钥托管、production credential 或 SDK 授权。真实 endpoint、工作负载身份、KMS/HSM pepper 和恢复演练证据缺失时，所有生产发放继续关闭。
+- 风险：当前 readiness probe 只冻结 adapter 边界和安全默认值；仓库不提供 production 可复用的“永远就绪”实现，QA 放行实现仅存在于测试 binary。
+- 下一商业化任务：由平台/安全提供真实 Internal IAM receipt 与 KMS/HSM reference 后，实现受控 adapter，完成 receipt 过期/scope mismatch、pepper retirement、并发 rotate/revoke 与恢复演练证据。
+
+## 2026-07-27 Internal Image Marking Executor
+
+- 状态：`internal_image_marking_executor_verified_no_external_release`。新增 `docs/AI生成内容标识Internal_Image_Marking_Executor合同.md`，并实现仅内部 PostgreSQL 命令。
+- 执行链：已存在的 `ready_to_confirm` session 只读校验后，由 backend 调用 `watermark-core` 正式 V3 图片写入与同核心回读；回读 UID、V3 与 auth status 均通过后，才调用既有 confirm 原子事务。
+- 验证：一次性 PostgreSQL 16 数据库 `hiddenshield_migrate_smoke_executor_20260727` 中，custody command 创建的 ready session 成功进入 confirmed；Manifest、Evidence、Marker、label receipt、committed `confirmed_marked_image` ledger 和 confirm audit 均为一条。无效 session 不返回保护副本且六类 confirm 记录均为零。
+- 商业边界：输出是内部 PNG 保护副本与 platform UI 标签计划；不写生产 C2PA/TSA 签名，不开放 HTTP、SDK、公共 Resolver、客户 credential 或计量收费。
+- 下一商业化任务：冻结 AI 图片平台输入/输出与 metadata/显式标签 fixture，并建立平台写入 -> 桌面/Android/iOS 读取的跨端互验矩阵；继续禁止外部 SDK 和公共 Resolver。
+## 2026-07-27 Executor PNG 跨端 Fixture Gate
+
+- 状态：`internal_fixture_verified_except_ios_runtime`。已冻结并生成 internal Executor 输出 PNG、含测试 metadata 版本和 metadata-stripped 版本，三者保持同一 `watermark-core` V3/39 UID 与认证结果。
+- 已验证：backend 生成时写后回读、Desktop 正式读取代码路径、Android/iOS 共用 mobile Rust bridge 读取代码路径及 metadata 剥离后读取均通过定向测试；该宿主 bridge 结果不等同于 iOS 实际 runtime 证据。
+- 商业边界：fixture 不解锁付费 SDK、公共 Resolver、production credential、客户发放、生产计量或法规合规宣传；免费公共验证边界仍只保留在冻结合同中，尚未实现。
+- 风险：真实 Internal IAM/KMS/HSM provider 与 iOS macOS/device runtime Gate 未完成，平台集成与 production entitlement 均保持关闭。
+- 下一商业化任务：在 macOS/iOS 正式 runtime 复跑固定 PNG fixture，并取得与 Desktop/Android 相同 UID、V3/39、auth 和 metadata-stripped 结果；通过前不得开始 SDK 发放。
+
+## 2026-07-27 第三方 PNG 元数据共存商业边界
+
+- 已完成：冻结 untrusted 第三方 PNG metadata 共存 fixture 合同，不将自造 metadata 作为 C2PA、平台签名、外部水印或跨平台接受证据。
+- 商业影响：该合同仅减少未来 SDK 互操作设计的不确定性，不构成可售 SDK、收费验证、production entitlement 或法规合规能力。
+- 已验证：一次性 PostgreSQL Executor QA 生成 fixture 后，静态 chunk/digest、Desktop 和 mobile Rust bridge 读取 Gate 均通过。
+- 下一商业化任务：取得真实第三方参考样本与验收授权后开展处理链 Benchmark；生产 SDK 发放仍同时受 iOS runtime 与真实信任链 Gate 阻断。
+
+## 2026-07-27 公开 C2PA Fixture 商业边界
+
+- 已完成：使用 Apache-2.0 的公开 C2PA fixture 建立内部只读互操作 QA，验证不与 HiddenShield V3 anchor 混淆。
+- 商业边界：公开测试语料不构成平台集成、平台验收、收费验证服务、production entitlement 或 C2PA 生产信任链承诺。
+- 下一商业化任务：获得可验证的第三方平台或水印样本及适用处理链授权后，再评审处理链 Benchmark 是否可作为设计伙伴证据。
+
+## 2026-07-27 公开视觉水印子矩阵商业边界
+
+- 已完成：MIT 许可的外部视觉水印样本通过共享核心 V3 写入/回读，且公开 C2PA fixture 非混淆检查随同 Benchmark 执行。
+- 商业边界：两个样本并非同一资产，不能作为平台互操作、设计伙伴验收、SDK 发放或收费验证证据。
+- 下一商业化任务：取得同资产三层样本或提供方组合工具链授权后，评审其处理链保留率；iOS runtime 和生产信任链 Gate 继续阻断生产发放。
+
+## 2026-07-27 PNG C2PA 输出容器商业 Gate
+
+- 结果：当前 V3 PNG 输出不保留输入 C2PA manifest，分类为 `manifest_absent_after_png_reencode`。
+- 商业影响：在 post-embed C2PA 重新签发或兼容容器方案通过前，不得销售“同时保留 C2PA 与 HiddenShield anchor”的 SDK 能力。
+- 下一商业化任务：比较 post-embed resign 与兼容容器方案的密钥托管、延迟、成本、计量和失败回滚，再冻结生产方案。
+
+## 2026-07-27 Internal Post-Embed Resign 商业边界
+
+- 已完成：internal-only ephemeral signer 原型证明最终 PNG 可同时读取 C2PA active manifest 与 verified V3。
+- 商业边界：C2PA 为非受信任本地自签，不能销售为生产签名、平台接受、合规结果或付费 SDK 能力。
+- 风险：production signer receipt、KMS/HSM、Profile entitlement、失败回滚、最终 hash 绑定、延迟和计量均未冻结。
+- 下一商业化任务：冻结 production post-embed signing command 与成本/计量合同；真实 credential 和 SDK 发放继续关闭。
+
+## 2026-07-27 Production Post-Embed Signing 合同冻结
+
+- 已完成：冻结 production command 的 signer receipt、Profile entitlement、最终 hash、双回读、失败不返回产物和计量排除合同。
+- 商业语义：只有最终签名 PNG 完成双回读并成功 confirm 的 `confirmed_marked_image` 才计量；外部 signer 成本但 confirm 失败只进入内部异常成本账。
+- 风险：外部 signer 与 PostgreSQL 非单事务，必须依靠 idempotency、orphan-signing event、结果隔离和相同 request digest 重试。
+- 下一商业化任务：冻结并测试 JSON schema/fixtures，再评审 signer 供应商成本、超时预算、重试上限和套餐计量单位；SDK 发放继续关闭。
+
+## 2026-07-27 Post-Embed Signing Schema Gate
+
+- 已完成：三份 Schema 与七类 fixture contract test 全绿，成功计量仅限一次 committed `confirmed_marked_image`；所有失败与 duplicate replay 均零新增客户计量。
+- 已冻结：signer 成功但 confirm rollback 进入内部 orphan-signing 成本/异常账，不进入客户成功用量。
+- 风险：真实 signer 延迟、供应商成本、超时、重试上限和生产证书链仍无外部配置，继续挂起。
+- 下一商业化任务：实现 internal-only command 并记录每阶段耗时与失败分类，为 signer 成本和套餐计量评审提供内部数据。
+
+## 2026-07-27 Internal Post-Embed Signing PostgreSQL Gate
+
+- 状态：`internal_post_embed_signing_postgres_gate_passed_no_external_release`。新增 internal-only post-embed signing command module 与 `0007_ai_transparency_post_embed_signing` additive migration。
+- 前置 Gate：命令重新核验 active production license、active production credential、post-embed scope、production issuer mode、custody 字段，以及三项 active versioned Profile entitlement；受控 authorization、signer、双回读和 artifact store 均通过 interface 注入，缺失真实 provider 时不得替换为默认放行实现。
+- 事务语义：signer 在 PostgreSQL confirm 事务外隔离；signer receipt/final hash 与 C2PA/V3 双回读通过后，signing projection、Manifest、Evidence、Marker、显式标签 receipt、`confirmed_marked_image` ledger、confirm audit 和 signing audit 才在同一事务提交。confirm 失败时上述成功写入全部回滚，只在独立补偿事务记录 `orphaned` execution 与 append-only `orphan_signing` audit，产物隔离且不返回。
+- 验证：一次性 PostgreSQL 16 数据库 `hiddenshield_migrate_smoke_post_embed_signing` 完成 33 表、36 索引的 0001–0007 up/down smoke；七类 fixture 均升级为真实事务 QA。success 仅产生一次计量；signer rejected、receipt/hash mismatch、C2PA readback failure、V3 readback failure 均零 confirm/ledger；confirm rollback 仅保留 orphan 证据；duplicate replay 不再次调用 signer、不新增 audit/ledger，并返回既有已提交产物。
+- 商业边界：当前 QA 使用受控 signer/readback 与内存 artifact store，不是生产 signer、受信任 C2PA chain、持久化产物服务、SDK、公共 Resolver、客户 credential 或 SLA。真实 IAM/KMS/HSM/signer 配置继续作为外部依赖挂起。
+- 下一商业化任务：实现同 idempotency key 的 PostgreSQL signing reservation/lease 与 durable artifact finalize/recovery Gate，证明并发 replay 不产生第二次外部 signer 成本，并冻结 artifact commit 失败后的可恢复状态。
+
+## 2026-07-27 Signing Reservation 与 Artifact Recovery 商业 Gate
+
+- 状态：`internal_signing_reservation_artifact_recovery_verified`。新增 `0008_ai_transparency_signing_reservation_artifact_recovery`，冻结 `reserved → signed_staged → artifact_pending → confirmed/orphaned` 状态机。
+- 并发成本 Gate：同 idempotency key 使用 PostgreSQL advisory lock 和唯一 reservation projection 串行化；两个真实 PostgreSQL 连接并发执行时，signer invocation、execution、signer receipt、confirm 和 `confirmed_marked_image` 均只有一次，第二连接只 replay 已提交结果。
+- 跨崩溃幂等：由 idempotency key/request digest 确定性生成 `signerInvocationKey` 并绑定 signer receipt。真实 signer adapter 必须把该 key 传给供应商幂等接口；否则只能承诺 live 并发最多一次调用，不能承诺进程崩溃窗口绝不产生第二笔供应商成本。
+- 产物与计量 Gate：confirm 后 durable finalize 未完成时状态为 `artifact_pending`，不返回产物，ledger 保持 `pending`，客户计量为零；恢复成功后 execution `confirmed` 与 ledger `committed` 在同一 PostgreSQL 事务提交，不重签、不重复 confirm、不重复计量。
+- 验证：`hiddenshield_migrate_smoke_signing_reservation` PostgreSQL 16 库完成 33 表/39 索引、0001–0008 up/down；九类 JSON fixture 与九场景真实事务 QA 全绿。
+- 商业边界：当前 durable store 与 signer 为受控内存/QA adapter，不是生产对象存储、真实 signer、供应商幂等证明或 SLA。
+- 下一商业化任务：实现 production signer idempotency adapter contract 与 durable object store adapter contract，并加入 reservation 后、signer 返回后、stage 后、confirm 后四个进程崩溃点恢复演练。
+
+## 2026-07-28 Adapter Receipt 与四崩溃点恢复商业 Gate
+
+- 状态：`internal_adapter_receipt_crash_recovery_verified`。新增 `0009_ai_transparency_adapter_receipts_crash_recovery`，production signer receipt 冻结 result reference、幂等 disposition、billable invocation identity；object-store stage/finalize receipt 冻结 execution、invocation key、final hash、object version、idempotency key、durability status、有效期和 provider signature。
+- 成本 Gate：reservation 后恢复仅发起一次 signer 请求；signer 返回后与 artifact stage 后恢复允许两次 adapter 请求，但受控 provider 对同一 invocation key 返回 replay，billable invocation 始终为 1；artifact stage 唯一写入始终为 1。
+- 事务 Gate：confirm 后崩溃保留 `artifact_pending` 与 pending ledger，恢复只执行幂等 finalize；四类恢复最终均只有一个 execution、一个 confirm audit、一个 manifest、一个 committed ledger 和一个最终 artifact。
+- 验证：一次性 PostgreSQL 16 数据库 `hiddenshield_migrate_smoke_crash_recovery` 完成 33 表/42 索引、0001–0009 up/down；十三类 JSON contract、十三场景真实 PostgreSQL QA、92 个 backend library tests 全绿。
+- 商业边界：当前 signer/object-store 是受控 QA provider，不代表真实供应商 receipt 签名、对象存储 durability、kill/restart 编排、生产 SLA 或供应商账单争议证据。
+- 下一商业化任务：实现 internal-only recovery worker，扫描 expired `reserved` 与超时 `artifact_pending`，加入退避、dead-letter、成本异常和恢复审计指标；真实 provider 配置到位后再执行进程 kill/restart 演练。
+
+## 2026-07-28 Internal Recovery Worker 商业 Gate
+
+- 状态：`internal_recovery_worker_verified`。新增 `0010_ai_transparency_post_embed_recovery_worker` 与 internal-only batch worker。
+- 扫描 Gate：仅扫描 signer lease 已过期的 `reserved`、超过 finalize timeout 的 `artifact_pending` 和 worker lease 已过期的 recovery claim。
+- 并发 Gate：PostgreSQL `FOR UPDATE SKIP LOCKED` 保证双 worker 对同一 execution 最多一个 claim；claim、attempt、worker lease 与 audit 原子提交。
+- 成本与计量：reserved 恢复继续复用稳定 signer invocation key；artifact pending 恢复不重新签发、不重复 confirm 或 ledger。失败按指数退避，达到最大次数进入 dead-letter，不产生客户成功计量。
+- 验证：一次性 PostgreSQL 16 库完成 34 表/45 索引、0001–0010 up/down；expired reserved、artifact timeout、三次退避 dead-letter、双 worker 单 claim 四类 worker QA 全绿；append-only audit UPDATE/DELETE 均被拒绝。
+- 商业边界：当前是可由内部调度器调用的 batch module，不是已部署 production daemon、生产监控、真实 provider 恢复、客户 SLA 或供应商成本担保。
+- 下一商业化任务：冻结 internal dead-letter inspect/requeue command，并接入既有双人审批状态机；禁止运维人员直接 UPDATE dead-letter projection。
+
+## 2026-07-28 Internal Dead-Letter Inspect / Requeue 商业 Gate
+
+- 状态：`internal_dead_letter_governance_verified`。新增 `0011_ai_transparency_dead_letter_requeue_command`、internal inspect/requeue command 与 PostgreSQL QA。
+- 授权边界：inspect 仅允许 readonly auditor；production requeue 固定经过 requester、独立 security approver、security reference 验真和 system executor。
+- 成本边界：requeue 本身不计客户成功量；仅后续 worker 恢复至 confirmed/finalized 后沿用既有单次 signer、artifact、confirm 和 ledger 规则。
+- 并发 Gate：approved requeue 持有 execution 行锁期间，worker `FOR UPDATE SKIP LOCKED` claim 为 0；提交后仅一次恢复成功。
+- 验证：35 表/46 索引、0001–0011 up/down；inspect append-only、摘要拒绝、同人审批拒绝、未审批执行拒绝、重复 submit、五段审计、审计故障全回滚均通过。
+- 商业边界：仍不是客户控制台、收费运维 API、production daemon、真实 provider 演练、SDK、公共 Resolver、production credential 或 SLA。
+- 下一商业化任务：冻结 `confirmed/finalized` delivery envelope 与内部交付授权，明确可计量成功产物的 final hash、receipt、Profile 和恢复状态绑定。
+
+## 2026-07-28 Confirmed / Finalized Delivery Envelope 商业 Gate
+
+- 状态：`internal_delivery_envelope_verified`。新增 `0012_ai_transparency_confirmed_delivery_envelope`、append-only envelope projection 和 Desktop/mobile 共享校验。
+- 成功交付边界：仅 `confirmed + finalized + recovery completed` 可生成 envelope；其他 signing/artifact/recovery 状态均零交付。
+- 计量边界：envelope 创建和 replay 不新增计量；收费成功量仍只来自已 committed 的 `confirmed_marked_image` ledger。
+- Profile 商业绑定：envelope 固定携带 entitlement version/digest、technical Profile ids 和 regional Profile id，避免交付层脱离购买授权与地区 Profile。
+- 验证：PostgreSQL 36 表/47 索引、0001–0012 up/down；创建/replay、append-only、recovery 未完成拒绝及 Desktop/mobile 同 fixture fail-closed 全绿。
+- 商业边界：当前不是客户下载 API、SDK response、公共 Resolver、客户 vault record、production object-store retrieval、法规结论或 SLA。
+- 下一商业化任务：冻结 internal delivery authorization/retrieval command，加入 entitlement、短期下载授权、object-store receipt 和 envelope digest Gate。
+
+## 2026-07-28 Internal Delivery Authorization / Retrieval Gate
+
+- 状态：`internal_delivery_authorization_retrieval_postgres_gate_passed_no_external_release`。
+- 已完成：冻结 60–900 秒短期单次下载授权，绑定 active License、当前 versioned Profile entitlement、object-store finalize receipt digest 与 delivery envelope digest；明文 token 仅返回一次，数据库只保存 SHA-256。
+- 已完成：PostgreSQL `0013_ai_transparency_delivery_authorization_retrieval` 增加授权投影和 append-only 下载审计；并发检索最多一个连接读取对象并返回 package，replay、错误 token 和过期授权 fail-closed。
+- 已完成：成功 package 增加 retrieval receipt；Desktop/mobile 必须经共享 `watermark-core::validate_ai_delivery_import` 才能继续 vault/import，拒绝响应不暴露可导入摘要。
+- 计量边界：下载授权、下载失败、下载成功和端侧 admission 都不新增 `confirmed_marked_image` 客户用量；外部 signer 成本仍只由既有签发合同处理。
+- 商业边界：仍无 SDK、公共 Resolver、客户下载 UI、生产 credential、生产 object-store/IAM/KMS/HSM/signer 或 SLA，不得作为可销售下载能力。
+- 验证：PostgreSQL 16 smoke 通过 38 表、49 索引与 0001–0013 up/down；真实 signing QA 通过授权并发一胜一败、单次对象读取、replay/invalid/expired、Profile revoke-after-grant、artifact unavailable、tampered bytes 拒绝和 audit UPDATE/DELETE 拒绝。
+- 下一商业化任务：冻结 internal delivery revoke 与下载资源预算（最大 bytes、content-type、限速、超时），再评审付费 SDK 的 delivery API 套餐与计量模型。
+
+## 2026-07-28 Internal Delivery Revoke / Resource Budget Gate
+
+- 状态：`internal_delivery_revoke_resource_budget_postgres_gate_passed_no_external_release`。
+- 固定预算：单个 PNG 最大 64 MiB、content type 仅 `image/png`、object-store 读取超时 5 秒、每 License 每分钟最多 30 次 claim；预算固化到 authorization grant 和数据库 CHECK，调用方不能放大。
+- 撤销：同作用域 `ai_transparency_security_approver` 可将 active authorization 原子置为 revoked；重复撤销幂等，consumed/expired 不可撤销，revoke/retrieve 并发最多一方成功。
+- 失败成本：rate limited 在对象读取前拒绝且不消费 authorization；size/MIME/timeout 在 claim 后失败并消费 authorization，全部零 package、零新增 `confirmed_marked_image` 计量。
+- 审计：新增 append-only `authorization_revoked`；只记录 revoker snapshot 与 revoke reason SHA-256，不记录原因原文、token、bytes 或 Secret。
+- 验证：PostgreSQL 16 通过 39 表、50 索引、0001–0014 up/down；真实 QA 覆盖 revoke/replay、并发冲突、超限、错误 MIME、timeout 和限速。
+- 商业边界：仍无 SDK、公共 Resolver、客户下载/import UI、生产 credential、生产 provider 或 SLA；不得作为收费下载能力发布。
+- 下一商业化任务：实现内部 rate-limit window cleanup 与安全观测摘要，再冻结付费 SDK delivery API 的套餐单位、超额策略和客户可见错误边界。
+
+## 2026-07-28 Delivery Security Observability 商业 Gate
+
+- 状态：`internal_delivery_security_observability_postgres_gate_passed_no_external_release`。
+- 保留：rate-limit minute window 保留 24 小时；聚合 security metric snapshot 保留 90 天，保留期内禁止修改或删除。
+- 告警：15 分钟固定窗口评估 integrity、revoked access burst、rate pressure、artifact availability 和 failure ratio；阈值已冻结并进入 fixture/QA。
+- 审计导出：只允许 readonly auditor 导出最多 31 天的 aggregate-only summary；不返回 raw audit、媒体标识、authorization/envelope ID、token、bytes 或 Secret。
+- Cleanup：system executor 使用 `SKIP LOCKED` 每批清理最多 1,000 条到期 rate window 和 metric snapshot；并发不重复删除。
+- 计量边界：summary、export、cleanup 和 alert evaluation 均不产生客户计量，也不改变 `confirmed_marked_image` ledger。
+- 验证：PostgreSQL 16 通过 41 表、53 索引、0001–0015 up/down；真实 QA 覆盖 critical summary、90 天 retention、31 天导出上限、错误角色零写入、并发 cleanup 和 audit 不可变。
+- 商业边界：无客户安全仪表盘、外部告警渠道、SDK、公共 Resolver、production provider 或 SLA。
+- 下一商业化任务：实现 internal security incident ack/resolve 与定时 cleanup runner，再评审客户可见 delivery reliability 指标和付费套餐边界。
+
+## 2026-07-28 Delivery Security Incident / Cleanup Runner 商业 Gate
+
+- 状态：`internal_delivery_security_incident_runner_postgres_gate_passed_no_external_release`。
+- 已完成：新增 `0016_ai_transparency_delivery_security_incident_runner`，把 15 分钟 warning/critical summary 在同一事务内投影为 active incident；同 scope/alert key 并发最多保留一个 active incident，resolved 后复发创建新 incident。
+- 治理：`ack_delivery_security_incident` 与 `resolve_delivery_security_incident` 强制复用既有 change request、requester/approver 四眼、execution 与 append-only audit；digest mismatch、同 actor 审批和 stale control version 均零业务写入。
+- 调度：15 分钟 schedule、5 分钟 lease、`FOR UPDATE SKIP LOCKED` 单 claim、1–60 分钟指数退避和 append-only runner audit 已冻结；runner 复用既有 cleanup command。
+- 计量边界：incident projection、ack/resolve、schedule、runner 与通知状态均不产生客户计量，也不改变 `confirmed_marked_image` ledger。
+- 外部依赖：PagerDuty、邮件和短信 adapter 继续挂起；当前不得伪造通知 receipt，也不得因缺少通知配置阻塞内部 incident/cleanup Gate。
+- 验证：PostgreSQL 16 通过 45 表、58 索引、0001–0016 up/down 与空 schema rollback；真实 QA 覆盖 active incident 并发唯一、ack→resolve、execution replay、resolved 后复发、三类零写入拒绝、双 runner 单 claim 及双类 audit 不可变；backend 92/92 tests 通过。
+- 商业边界：当前仍为 `只能内部测试`，不是客户可见 reliability dashboard、通知 SLA、SDK、公共 Resolver、生产 credential 发放或生产事故响应服务。
+- 下一商业化任务：冻结 internal incident inspect/list 与 provider-neutral durable notification outbox 合同，在不接入真实 PagerDuty/邮件/短信前实现 outbox 去重、lease、重放和 audit Gate。
+
+## 2026-07-28 Incident Inspect / Notification Outbox 商业 Gate
+
+- 状态：`internal_incident_inspect_notification_outbox_postgres_gate_passed_no_provider_delivery`。
+- 已完成：新增 `0017_ai_transparency_delivery_security_notification_outbox`，提供 scope-bound incident inspect/list、provider-neutral durable outbox、唯一 dedupe key、5 分钟 lease、expired lease reclaim、幂等 replay 与 append-only audit。
+- 事务边界：incident opened、became critical、acknowledged、resolved 的 outbox enqueue 与 incident projection/change execution 位于同一 PostgreSQL 事务。
+- 商业安全：outbox 仅有 `pending`、`leased`、`retry_scheduled`，不存在 `sent`、`delivered` 或 provider success；当前不接受 provider receipt，不产生通知计费或 SLA 证据。
+- 数据边界：inspect/list 与 payload 不返回媒体、authorization、delivery envelope、token、bytes、Secret、收件人或 provider endpoint。
+- 验证：PostgreSQL 16 通过 48 表、62 索引、0001–0017 up/down 与空 schema rollback；真实 QA 覆盖 incident inspect/list、错误角色拒绝、重复 enqueue 去重、双连接单 item claim、replay 幂等、二次 claim、expired lease reclaim 及双类 audit 不可变。
+- 外部依赖：PagerDuty、邮件和短信 endpoint、Secret、路由、域名认证与模板审批继续挂起；不得伪造 provider delivery。
+- 商业边界：仍为 `只能内部测试`，SDK、公共 Resolver、客户 incident UI/API、生产 credential 发放和通知 SLA 继续关闭。
+- 下一商业化任务：冻结 provider adapter receipt、destination policy 与 outbox completion/dead-letter 合同；在真实 provider 配置到位前先实现 fail-closed adapter interface、receipt schema 和零发送模拟 Gate。
+
+## 2026-07-28 生产导向 MVP 定义校准
+
+- 决策：License/Profile、四眼审批、credential custody、signing recovery、delivery security、incident 和 notification outbox 均属于 AI Transparency 付费 B2B 产品的 MVP 核心控制面，不作为范围偏离处理。
+- MVP 定义：最小可生产、可授权、可审计、可恢复的基础设施，而不是只完成 SDK happy path 的演示原型。
+- 发布纪律不变：生产导向不代表当前可销售；真实 provider、平台接入、SDK、公共 Resolver、production credential 和 SLA Gate 未通过前继续 `只能内部测试`。
+- 顺序约束：完成 provider adapter receipt/completion/dead-letter 内部 Gate 后，主线必须转向平台 SDK、最小 API facade、免费 Resolver 和设计伙伴接入，避免无限扩展内部运维控制面。
+- provider adapter receipt 与零发送模拟 Gate 已完成。
+- 下一商业化任务：启动 `packages/ai-transparency-sdk` 的授权、Profile admission、marking session、confirm 和 receipt 最小 surface。
+
+## 2026-07-28 Notification Provider Delivery 商业 Gate
+
+- 状态：`internal_notification_delivery_postgres_gate_passed_no_external_provider_release`。
+- 已完成：冻结 `docs/AI生成内容标识Notification_Provider_Adapter与Delivery_Gate合同.md`、JSON Schema 与 fixture，并新增 PostgreSQL additive migration `0018_ai_transparency_notification_delivery_gate`。
+- 策略边界：destination policy 在 adapter 调用前绑定，固定 policy identity/version/digest、adapter、event/priority scope、attempt budget 与 retry budget。
+- Receipt 边界：provider receipt 绑定 notification、payload、policy、adapter 和 invocation key；mismatch、过期或 lease mismatch 均零写入。
+- 事务边界：receipt、outbox completed 投影与 append-only audit 同事务提交；completion replay 不重复 receipt。
+- 恢复边界：支持 retry/dead-letter、dead-letter recovery idempotency 和 expired lease recovery count。
+- 商业安全：sandbox-only zero-send simulation 强制 `deliveryClaimed=false`，不得作为外部通知送达、SLA 或客户计费证据。
+- 验证：PostgreSQL 16 通过 49 表/66 索引、0001–0018 up/down smoke 与完整事务 QA。
+- 外部依赖：真实通知 endpoint/Secret/routing、provider receipt authenticity 和生产恢复演练继续挂起。
+- 下一商业化任务：实现授权付费 `packages/ai-transparency-sdk` 最小 API surface，并绑定 production license、Profile entitlement 与 `confirmed_marked_image` receipt。
+
+## 2026-07-28 AI Transparency SDK / Platform Facade 商业 Gate
+
+- 状态：`internal_server_sdk_and_framework_neutral_facade_verified_no_backend_endpoint_release`。
+- 已完成：新增 `@hiddenshield/ai-transparency-sdk`，冻结 production admission、session、PNG submission、confirm 和 `confirmed_marked_image` receipt 合同。
+- 授权边界：SDK 仅允许 trusted server runtime，要求非占位 production credential 和 HTTPS；credential 不进入 response、receipt、错误或客户端 bundle。
+- Profile 边界：admission 固定绑定 license、tenant/workspace、issuer mode、regional/technical Profile、entitlement version/digest 与过期时间。
+- 完整性边界：SDK 对原图和 marked PNG 分别计算 SHA-256；marked bytes 与服务端摘要不一致时 confirm 零调用。
+- 计量边界：只接受 `confirmed_marked_image + quantity=1 + committed`，并要求 receipt license/session 与 admission/session 一致；duplicate replay 复用原 ledger。
+- Facade：新增四个固定路径的 framework-neutral API handler，强制平台侧 authorization callback 后调用 SDK。
+- 验证：JSON contract、TypeScript build、9 个 SDK/facade tests 与 npm pack dry-run 通过；包内容仅包含 dist、README 和 package metadata。
+- 商业边界：当前包未发布、真实 HiddenShield 后端四端点不存在、生产 credential 不发放、无客户 SLA 或设计伙伴验收。
+- 下一商业化任务：实现 PostgreSQL-backed admission/session/mark/confirm internal endpoint，形成 SDK → API → 现有控制面/执行器/confirm 的真实闭环。
+
+## 2026-07-28 PostgreSQL Platform API 商业 Gate
+
+- 状态：`internal_sdk_to_postgresql_platform_api_gate_passed_no_public_release`。
+- 已完成：新增 `0019_ai_transparency_platform_api` 与独立 PostgreSQL-only Axum router，实现 admission、session、mark、confirm 四个 internal endpoint。
+- 授权边界：admission 校验 production credential/license/tenant/workspace/issuer mode，并绑定 regulatory/technical versioned Profile entitlement set digest。
+- Custody 边界：session 创建复用现有 credential custody；缺失或不可用 provider 继续 fail-closed。
+- 执行边界：mark 复用 image marking executor 与 `watermark-core`，完成 PNG 写入和写后回读，但不提前创建 Manifest 或计量。
+- 计量边界：confirm 在 PostgreSQL 原子事务中复用 confirm command，只提交一条 `confirmed_marked_image + quantity=1 + committed`；duplicate replay 复用原 ledger。
+- 安全边界：无效 credential 在 session claim 前拒绝；Profile 拒绝、PNG/hash mismatch、confirmation token/hash mismatch 均不得产生计量。
+- 验证：一次性 PostgreSQL 16 完成 SDK → facade → HTTP → Axum → PostgreSQL E2E；0001–0019 up/down smoke、backend 92 tests、SDK 9 tests 通过。
+- 商业边界：能力继续 `只能内部测试`；SDK 未发布，公网 gateway、production credential、真实 IAM/KMS/HSM 和客户 SLA 继续关闭。
+- 下一商业化任务：实现免费公共 Resolver 最小只读接口，冻结匿名无计量边界与公共字段最小化，然后准备真实设计伙伴接入包。
+
+## 2026-07-28 免费公共 Resolver 商业 Gate
+
+- 状态：`internal_anonymous_public_resolver_gate_passed_no_public_deployment`。
+- 已完成：新增 `0020_ai_transparency_public_resolver`、三个 confirmed-only PostgreSQL 公共 view 和独立匿名 Axum Resolver。
+- 免费边界：无需 API key、license admission 或媒体上传；不扣 quota，不创建 ledger，不写 platform internal audit。
+- 字段边界：只返回 Manifest identity/status、claim、marker/evidence summary、Profile status、时间、固定 warning 与 `legalConclusion=false`。
+- 隐私边界：不返回 license、tenant/workspace、session/admission、subject digest、provider/system/model、ledger、credential、token、signer/object-store/custody receipt。
+- 语义边界：未找到记录不等于非 AI；issuer trust 固定 `not_evaluated`；接口不提供法律、版权或作者身份结论。
+- 验证：未 confirm 记录不可见；confirm 后匿名 UID/Manifest 双查询一致；not-found 最小响应；查询后 ledger 保持 1、platform audit 保持 5。
+- 发布边界：当前仍为内部 runtime Gate；公网域名、CDN/WAF/DDoS、IP rate-limit、隐私日志策略、SLA 和生产发布继续关闭。
+- 下一商业化任务：冻结真实设计伙伴 sandbox 接入包、Profile mapping questionnaire、示例集成和验收矩阵。
+
+## 2026-07-28 真实设计伙伴 Sandbox 接入包商业 Gate
+
+- 状态：`internal_design_partner_sandbox_kit_verified_external_partner_configuration_required`。
+- 已完成：新增 private package `@hiddenshield/ai-transparency-design-partner-kit`，冻结 onboarding、CN/EU/US-CA Profile mapping questionnaire、server-only SDK/API 示例、Resolver link contract 与 12 场景验收矩阵。
+- 商业模式边界：Evaluation/Sandbox 接入用于验证年度平台授权、Profile 包、部署包与 `confirmed_marked_image` 计量假设，不包含 production credential、公开 npm 发布、客户 SLA 或法律意见。
+- Secret 边界：伙伴 bundle 只允许 `secret://` 引用；真实 endpoint、credential、联系人和法务/采购材料必须由外部系统注入，不得写入可分发包。
+- 验收边界：`sandbox_accepted` 要求真实非占位 HTTPS endpoint、12 场景全部通过且均有不可变 evidence；`blocked_external` 不计为通过。
+- Resolver 边界：链接只绑定 watermark UID 或 Manifest ID，继续匿名、无计量、最小公共字段和 `legalConclusion=false`。
+- 验证：root contract verifier、5 个 package tests、模板 preflight 与 root 聚合命令通过；未配置模板稳定返回 `configuration_required`。
+- 风险：尚无真实设计伙伴身份、Sandbox endpoint、Secret 注入、运行流量和书面验收，因此不能用于价格确认、SLA、生产 entitlement 或收入确认。
+- 下一商业化任务：选择首个 AIGC 图片平台设计伙伴，签署 Sandbox/数据处理边界，注入外部配置并完成 12 场景证据化验收，再用真实月量、延迟和采购反馈更新 Evaluation License 与平台授权报价假设。
+
+## 2026-07-28 Synthetic Sandbox QA 补充 Gate
+
+- 状态：`internal_synthetic_rehearsal_verified_not_partner_acceptance`。
+- 已完成：新增 deterministic synthetic Sandbox QA，复用 SDK/facade success、Profile 拒绝、无效授权、mark/confirm、单次计量/replay 和最小 Resolver 响应形状。
+- 输出边界：固定 `executionMode=synthetic_non_acceptance`、`acceptanceStatus=not_real_partner_acceptance`、`readiness=configuration_required`。
+- 商业边界：synthetic 运行不产生设计伙伴 acceptance、生产 entitlement、可计费用量、价格证据、SLA、法律结论或收入确认。
+- 验证：8 个接入包测试与 root synthetic verifier 通过；每次运行生成 12 个 content-addressed synthetic evidence reference，但不得在真实 partner bundle 中复用。
+- 下一商业化任务：保持 synthetic QA 作为招募前回归；取得首个伙伴外部配置后重新执行真实 12 场景，再更新价格和 Evaluation License 假设。
+
+## 2026-07-28 AI Transparency CI 必跑 Gate
+
+- 状态：`ci_required_contract_gate_implemented`。
+- 已完成：新增独立 GitHub Actions `AI Transparency contract gate`，运行 `npm run ai-transparency:ci`。
+- Gate 内容：SDK contract/test、设计伙伴 package contract/test、template preflight 与 synthetic Sandbox QA。
+- 边界：CI 只执行无外部依赖的确定性合同回归；不连接 PostgreSQL、真实伙伴 endpoint、Secret、provider 或生产 credential。
+- 验证：本地 `npm run ai-transparency:ci` 通过；synthetic 输出仍固定为非真实 acceptance。
+- GitHub Gate：仓库 ruleset `main-and-master-required-checks` 已激活，匹配 `refs/heads/main` 与 `refs/heads/master`，并将 `AI Transparency contract gate` 与既有三个 CI checks 设为 required；工作流合并后的首个 PR 将产生该 check。
+- 下一商业化任务：保持该 Gate 为合并前检查；取得真实伙伴外部配置后另行新增受控、不可伪造的真实 Sandbox evidence Gate。

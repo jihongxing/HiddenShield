@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "ai_transparency_profile_entitlements",
+  "licenseId": "atl_fixture_prod_0001",
+  "entitlements": [
+    {
+      "profileId": "cn_aigc_label_2025_image_export_v1",
+      "profileKind": "regulatory",
+      "status": "active",
+      "effectiveAt": "2026-07-27T00:00:00Z",
+      "expiresAt": "2027-07-27T00:00:00Z",
+      "termsVersion": "cn-image-export-terms-v1",
+      "approvedBy": "fixture_commercial_operator"
+    },
+    {
+      "profileId": "eu_ai_act_article_50_2026_image_v1",
+      "profileKind": "regulatory",
+      "status": "active",
+      "effectiveAt": "2026-07-27T00:00:00Z",
+      "expiresAt": "2027-07-27T00:00:00Z",
+      "termsVersion": "eu-image-provider-terms-v1",
+      "approvedBy": "fixture_commercial_operator"
+    },
+    {
+      "profileId": "ca_ai_transparency_2026_image_v1",
+      "profileKind": "regulatory",
+      "status": "active",
+      "effectiveAt": "2026-07-27T00:00:00Z",
+      "expiresAt": "2027-07-27T00:00:00Z",
+      "termsVersion": "ca-image-provider-terms-v1",
+      "approvedBy": "fixture_commercial_operator"
+    },
+    {
+      "profileId": "c2pa_ai_output_2_4_image_v1",
+      "profileKind": "technical",
+      "status": "active",
+      "effectiveAt": "2026-07-27T00:00:00Z",
+      "expiresAt": "2027-07-27T00:00:00Z",
+      "termsVersion": "c2pa-image-technical-terms-v1",
+      "approvedBy": "fixture_commercial_operator"
+    }
+  ],
+  "expectedAuthorization": {
+    "authorizedProfileIds": [
+      "cn_aigc_label_2025_image_export_v1",
+      "eu_ai_act_article_50_2026_image_v1",
+      "ca_ai_transparency_2026_image_v1",
+      "c2pa_ai_output_2_4_image_v1"
+    ],
+    "unentitledProfileId": "eu_transparency_code_signatory_2026_image_v1"
+  }
+}

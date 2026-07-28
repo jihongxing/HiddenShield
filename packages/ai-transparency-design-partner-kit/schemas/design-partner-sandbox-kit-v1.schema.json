@@ -1,0 +1,272 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hiddenshield.internal/contracts/ai-transparency/design-partner-sandbox-kit-v1.schema.json",
+  "title": "HiddenShield AI Transparency Design Partner Sandbox Kit v1",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "packageStatus",
+    "onboarding",
+    "profileMappingQuestionnaire",
+    "resolverLink",
+    "acceptanceMatrix"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "hs-ai-design-partner-sandbox-kit-v1"
+    },
+    "packageStatus": {
+      "enum": [
+        "configuration_required",
+        "ready_for_internal_review",
+        "approved_for_sandbox",
+        "suspended"
+      ]
+    },
+    "onboarding": {
+      "type": "object",
+      "required": [
+        "partnerId",
+        "partnerLegalNameRef",
+        "technicalContactRef",
+        "securityContactRef",
+        "environment",
+        "sandboxApiBaseUrl",
+        "credentialSecretRef",
+        "resolverBaseUrl",
+        "useCase",
+        "expectedMonthlyConfirmedImages",
+        "peakRequestsPerSecond",
+        "markConfirmLatencyBudgetMs",
+        "outputContentType",
+        "issuerMode",
+        "deploymentMode",
+        "dataResidencyRegions",
+        "acknowledgements",
+        "approvalReferences"
+      ],
+      "properties": {
+        "partnerId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "partnerLegalNameRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "technicalContactRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "securityContactRef": {
+          "type": "string",
+          "minLength": 1
+        },
+        "environment": {
+          "const": "sandbox"
+        },
+        "sandboxApiBaseUrl": {
+          "type": "string",
+          "pattern": "^https://"
+        },
+        "credentialSecretRef": {
+          "type": "string",
+          "pattern": "^secret://"
+        },
+        "resolverBaseUrl": {
+          "type": "string",
+          "pattern": "^https://"
+        },
+        "useCase": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expectedMonthlyConfirmedImages": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "peakRequestsPerSecond": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "markConfirmLatencyBudgetMs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "outputContentType": {
+          "const": "image/png"
+        },
+        "issuerMode": {
+          "enum": [
+            "hiddenshield_managed",
+            "customer_managed",
+            "platform_signed"
+          ]
+        },
+        "deploymentMode": {
+          "enum": [
+            "hosted",
+            "private"
+          ]
+        },
+        "dataResidencyRegions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "enum": [
+              "CN",
+              "EU",
+              "US"
+            ]
+          }
+        },
+        "acknowledgements": {
+          "type": "object",
+          "required": [
+            "nonProduction",
+            "noLegalOpinion",
+            "noSla",
+            "noProductionCredential"
+          ],
+          "properties": {
+            "nonProduction": {
+              "const": true
+            },
+            "noLegalOpinion": {
+              "const": true
+            },
+            "noSla": {
+              "const": true
+            },
+            "noProductionCredential": {
+              "const": true
+            }
+          },
+          "additionalProperties": false
+        },
+        "approvalReferences": {
+          "type": "object",
+          "required": [
+            "partnerTechnicalSignoffRef",
+            "partnerSecuritySignoffRef",
+            "hiddenShieldEngineeringApprovalRef",
+            "hiddenShieldCommercialApprovalRef"
+          ],
+          "properties": {
+            "partnerTechnicalSignoffRef": {
+              "type": "string",
+              "minLength": 1
+            },
+            "partnerSecuritySignoffRef": {
+              "type": "string",
+              "minLength": 1
+            },
+            "hiddenShieldEngineeringApprovalRef": {
+              "type": "string",
+              "minLength": 1
+            },
+            "hiddenShieldCommercialApprovalRef": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "profileMappingQuestionnaire": {
+      "type": "object",
+      "required": [
+        "jurisdictions",
+        "contentModes",
+        "requestedProfileIds",
+        "explicitLabelSurfaces",
+        "c2paRequested",
+        "hiddenShieldAnchorRequired",
+        "legalReviewReference"
+      ],
+      "additionalProperties": true
+    },
+    "resolverLink": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "lookupPreference",
+        "requiresAuthorization",
+        "metered",
+        "legalConclusion",
+        "confirmedWording",
+        "notFoundWording"
+      ],
+      "additionalProperties": false
+    },
+    "acceptanceMatrix": {
+      "type": "object",
+      "required": [
+        "matrixVersion",
+        "scenarios"
+      ],
+      "properties": {
+        "matrixVersion": {
+          "const": "hs-ai-design-partner-acceptance-v1"
+        },
+          "scenarios": {
+            "type": "array",
+            "minItems": 12,
+            "maxItems": 12,
+          "items": {
+            "type": "object",
+            "required": [
+              "scenarioId",
+              "category",
+              "mandatory",
+              "expected",
+              "status",
+              "evidenceRef",
+              "externalDependency"
+            ],
+            "properties": {
+              "scenarioId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "category": {
+                "type": "string",
+                "minLength": 1
+              },
+              "mandatory": {
+                "const": true
+              },
+              "expected": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "enum": [
+                  "not_run",
+                  "passed",
+                  "failed",
+                  "blocked_external"
+                ]
+              },
+              "evidenceRef": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^evidence://sha256/[a-f0-9]{64}$"
+              },
+              "externalDependency": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

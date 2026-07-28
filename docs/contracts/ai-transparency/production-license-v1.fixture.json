@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "ai_transparency_production_license",
+  "license": {
+    "licenseId": "atl_fixture_prod_0001",
+    "tenantId": "tenant_fixture_aigc_0001",
+    "workspaceId": "workspace_fixture_prod_0001",
+    "environment": "production",
+    "status": "active",
+    "issuerMode": "platform_managed",
+    "deploymentMode": "hosted",
+    "publicVerificationRequired": true,
+    "meteringPlanId": "atp_platform_production_v1",
+    "effectiveAt": "2026-07-27T00:00:00Z",
+    "expiresAt": "2027-07-27T00:00:00Z",
+    "createdAt": "2026-07-27T00:00:00Z",
+    "updatedAt": "2026-07-27T00:00:00Z"
+  },
+  "credentialBinding": {
+    "credentialId": "atc_fixture_prod_0001",
+    "licenseId": "atl_fixture_prod_0001",
+    "apiKeyId": "enterprise_api_key_fixture_0001",
+    "scopes": [
+      "mark:image",
+      "profile:cn_image_export",
+      "profile:eu_image_provider",
+      "profile:ca_image_provider",
+      "verify:public",
+      "issuer:platform"
+    ],
+    "status": "active",
+    "expiresAt": "2027-07-27T00:00:00Z",
+    "createdAt": "2026-07-27T00:00:00Z"
+  },
+  "expectedAuthorization": {
+    "canCreateProductionMarkingSession": true,
+    "canUsePublicResolverWithoutCredential": true,
+    "canUseEnterpriseBatchVerification": false,
+    "mustFailClosedWhenExpired": true
+  }
+}

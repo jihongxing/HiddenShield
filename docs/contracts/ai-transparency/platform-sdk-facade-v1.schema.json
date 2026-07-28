@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hiddenshield.internal/contracts/ai-transparency/platform-sdk-facade-v1.schema.json",
+  "title": "HiddenShield AI Transparency Platform SDK and Facade v1",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "packageName",
+    "runtime",
+    "flow",
+    "metering",
+    "failClosed",
+    "releaseBoundary"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "hs-ai-transparency-platform-sdk-facade-v1"
+    },
+    "packageName": {
+      "const": "@hiddenshield/ai-transparency-sdk"
+    },
+    "runtime": {
+      "const": "trusted_server_only"
+    },
+    "flow": {
+      "const": [
+        "admitProductionProfile",
+        "createGenerationSession",
+        "submitGeneratedImage",
+        "confirmGeneratedAsset"
+      ]
+    },
+    "metering": {
+      "type": "object",
+      "required": [
+        "unit",
+        "quantity",
+        "ledgerStatus",
+        "excluded"
+      ],
+      "properties": {
+        "unit": {
+          "const": "confirmed_marked_image"
+        },
+        "quantity": {
+          "const": 1
+        },
+        "ledgerStatus": {
+          "const": "committed"
+        },
+        "excluded": {
+          "const": [
+            "admission",
+            "session_creation",
+            "image_submission_failure",
+            "digest_mismatch",
+            "duplicate_confirm_replay"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "failClosed": {
+      "type": "object",
+      "required": [
+        "unknownResponse",
+        "networkFailure",
+        "timeout",
+        "digestMismatch",
+        "profileDenied",
+        "licenseDenied"
+      ],
+      "properties": {
+        "unknownResponse": {
+          "const": true
+        },
+        "networkFailure": {
+          "const": true
+        },
+        "timeout": {
+          "const": true
+        },
+        "digestMismatch": {
+          "const": true
+        },
+        "profileDenied": {
+          "const": true
+        },
+        "licenseDenied": {
+          "const": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "releaseBoundary": {
+      "type": "object",
+      "required": [
+        "sdk",
+        "facade",
+        "publicEndpoint",
+        "productionCredentialIssuance",
+        "publicResolver"
+      ],
+      "properties": {
+        "sdk": {
+          "const": "internal_only"
+        },
+        "facade": {
+          "const": "framework_neutral_internal_only"
+        },
+        "publicEndpoint": {
+          "const": "closed"
+        },
+        "productionCredentialIssuance": {
+          "const": "closed"
+        },
+        "publicResolver": {
+          "const": "closed"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
