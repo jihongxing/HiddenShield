@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "hs-ai-external-evidence-intake-v1",
+  "sourceKind": "provider_recovery",
+  "sourceReference": "provider://sandbox/recovery-v1",
+  "evidenceSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "evidenceReference": "evidence://sha256/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "signerReference": "receipt://sandbox/signer-v1",
+  "contractReference": "approval://contract/sandbox-v1",
+  "securityReviewReference": "approval://security/sandbox-v1",
+  "resultStatus": "received_for_review",
+  "productionActivation": false,
+  "partnerAcceptance": false
+}

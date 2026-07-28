@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "hs-ai-external-evidence-intake-v1",
+  "sourceKind": "design_partner_sandbox",
+  "sourceReference": "partner://replace-me/sandbox-v1",
+  "evidenceSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "evidenceReference": "evidence://sha256/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "signerReference": "approval://replace-me/signature",
+  "expectedReason": "evidence_window_or_reference"
+}

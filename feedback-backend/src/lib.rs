@@ -7,7 +7,6 @@ pub mod ai_transparency_credential_custody;
 pub mod ai_transparency_dead_letter_command;
 #[cfg(feature = "postgres")]
 pub mod ai_transparency_delivery_envelope;
-#[cfg(feature = "postgres")]
 pub mod ai_transparency_delivery_observability;
 #[cfg(feature = "postgres")]
 pub mod ai_transparency_delivery_retrieval;
@@ -15,6 +14,8 @@ pub mod ai_transparency_delivery_retrieval;
 pub mod ai_transparency_delivery_security_incident;
 #[cfg(feature = "postgres")]
 pub mod ai_transparency_delivery_security_notification;
+#[cfg(feature = "postgres")]
+pub mod ai_transparency_external_evidence_intake;
 #[cfg(feature = "postgres")]
 pub mod ai_transparency_image_marking_executor;
 pub mod ai_transparency_internal_provider;
