@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "ai_transparency_confirmed_marked_image",
+  "request": {
+    "markingSessionId": "ats_fixture_success_0001",
+    "idempotencyKey": "fixture-confirm-success-0001",
+    "subjectDigest": {
+      "algorithm": "sha256",
+      "scope": "protected_output",
+      "value": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    },
+    "generation": {
+      "generationMode": "text_to_image",
+      "providerId": "fixture.aigc.platform",
+      "systemName": "Fixture Image Generator",
+      "systemVersion": "2026.07",
+      "modelId": "fixture-image-model",
+      "modelVersion": "1.0",
+      "generatedAt": "2026-07-27T01:00:00Z",
+      "operations": []
+    },
+    "evidence": {
+      "evidenceLevel": "platform_signed",
+      "issuerId": "fixture.aigc.platform",
+      "keyId": "fixture-platform-key-2026-07",
+      "proofType": "jws",
+      "signatureAlgorithm": "EdDSA",
+      "signature": "fixture-signature-not-production"
+    },
+    "markers": [
+      {
+        "markerType": "blind_watermark",
+        "markerProfileId": "hiddenshield_v3_image_anchor_v1",
+        "markerVersion": "v3",
+        "embedStatus": "verified",
+        "verifyStatus": "verified",
+        "bindingDigest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      {
+        "markerType": "c2pa",
+        "markerProfileId": "c2pa_ai_output_2_4_image_v1",
+        "markerVersion": "2.4",
+        "embedStatus": "verified",
+        "verifyStatus": "verified",
+        "bindingDigest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    ],
+    "explicitLabelReceipts": [
+      {
+        "profileId": "cn_aigc_label_2025_image_export_v1",
+        "requiredSurface": "both",
+        "renderMode": "file_overlay_and_platform_ui",
+        "renderedAssetDigest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "placement": {
+          "position": "bottom_right"
+        },
+        "locale": "zh-CN",
+        "labelText": "AI 生成",
+        "appliedAt": "2026-07-27T01:00:01Z",
+        "appliedBy": "fixture.aigc.platform",
+        "verificationStatus": "verified"
+      }
+    ]
+  },
+  "expectedResponse": {
+    "markingSessionId": "ats_fixture_success_0001",
+    "watermarkUid": "HS-A1B2C3D4-E5F60718-192A3B4C-5D6E7F80",
+    "transparencyManifest": {
+      "transparencyManifestId": "atm_fixture_success_0001",
+      "manifestVersion": 1,
+      "status": "active",
+      "claimType": "ai_generated",
+      "modality": "image",
+      "subjectDigest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "manifestSha256": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
+    },
+    "profileStatuses": [
+      {
+        "profileId": "cn_aigc_label_2025_image_export_v1",
+        "status": "applied"
+      },
+      {
+        "profileId": "eu_ai_act_article_50_2026_image_v1",
+        "status": "applied"
+      },
+      {
+        "profileId": "ca_ai_transparency_2026_image_v1",
+        "status": "applied"
+      },
+      {
+        "profileId": "c2pa_ai_output_2_4_image_v1",
+        "status": "applied"
+      }
+    ],
+    "ledger": {
+      "ledgerEntryId": "atlgr_fixture_success_0001",
+      "meteringUnit": "confirmed_marked_image",
+      "quantity": 1,
+      "ledgerStatus": "committed"
+    },
+    "legalConclusion": false
+  },
+  "invariants": {
+    "activeManifestCountForWatermarkUid": 1,
+    "committedConfirmedMarkedImageCountForSession": 1,
+    "chargeableForRetries": false,
+    "chargeableForPublicVerification": false
+  }
+}

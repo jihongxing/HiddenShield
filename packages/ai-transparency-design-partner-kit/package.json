@@ -1,0 +1,38 @@
+{
+  "name": "@hiddenshield/ai-transparency-design-partner-kit",
+  "version": "0.1.0",
+  "description": "Controlled sandbox onboarding and acceptance kit for HiddenShield AI Transparency design partners.",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "bin": {
+    "hiddenshield-ai-partner-preflight": "./bin/preflight.mjs"
+  },
+  "files": [
+    "bin",
+    "examples",
+    "schemas",
+    "src",
+    "templates",
+    "ACCEPTANCE_MATRIX.md",
+    "ONBOARDING.md",
+    "PROFILE_MAPPING.md",
+    "README.md",
+    "SYNTHETIC_QA.md",
+    "package.json"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "preflight:template": "node bin/preflight.mjs templates/design-partner-sandbox-kit.template.json",
+    "synthetic-sandbox-qa": "node bin/synthetic-sandbox-qa.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "peerDependencies": {
+    "@hiddenshield/ai-transparency-sdk": "0.1.x"
+  },
+  "license": "SEE LICENSE IN ../../LICENSE"
+}

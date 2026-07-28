@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hiddenshield.local/contracts/ai-transparency/fixture-v1.schema.json",
+  "title": "HiddenShield AI Transparency Fixture v1",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "fixtureType"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "fixtureType": {
+      "enum": [
+        "ai_transparency_production_license",
+        "ai_transparency_profile_entitlements",
+        "ai_transparency_confirmed_marked_image",
+        "ai_transparency_free_public_resolver",
+        "ai_transparency_expired_license_rejection",
+        "ai_transparency_profile_entitlement_rejection",
+        "ai_transparency_duplicate_confirm_conflict"
+      ]
+    }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "fixtureType": {
+          "const": "ai_transparency_production_license"
+        }
+      },
+      "required": [
+        "license",
+        "credentialBinding",
+        "expectedAuthorization"
+      ]
+    },
+    {
+      "properties": {
+        "fixtureType": {
+          "const": "ai_transparency_profile_entitlements"
+        }
+      },
+      "required": [
+        "licenseId",
+        "entitlements",
+        "expectedAuthorization"
+      ]
+    },
+    {
+      "properties": {
+        "fixtureType": {
+          "const": "ai_transparency_confirmed_marked_image"
+        }
+      },
+      "required": [
+        "request",
+        "expectedResponse",
+        "invariants"
+      ]
+    },
+    {
+      "properties": {
+        "fixtureType": {
+          "const": "ai_transparency_free_public_resolver"
+        }
+      },
+      "required": [
+        "request",
+        "expectedResponse",
+        "invariants"
+      ]
+    },
+    {
+      "properties": {
+        "fixtureType": {
+          "const": "ai_transparency_expired_license_rejection"
+        }
+      },
+      "required": [
+        "request",
+        "license",
+        "expectedResponse",
+        "invariants"
+      ]
+    },
+    {
+      "properties": {
+        "fixtureType": {
+          "const": "ai_transparency_profile_entitlement_rejection"
+        }
+      },
+      "required": [
+        "request",
+        "credentialScopes",
+        "entitlementState",
+        "expectedResponse",
+        "invariants"
+      ]
+    },
+    {
+      "properties": {
+        "fixtureType": {
+          "const": "ai_transparency_duplicate_confirm_conflict"
+        }
+      },
+      "required": [
+        "existingConfirmation",
+        "conflictingRequest",
+        "expectedResponse",
+        "invariants"
+      ]
+    }
+  ],
+  "additionalProperties": true
+}

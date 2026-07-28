@@ -1,0 +1,191 @@
+{
+  "schemaVersion": "hs-ai-design-partner-sandbox-kit-v1",
+  "packageStatus": "configuration_required",
+  "onboarding": {
+    "partnerId": "partner_replace_me",
+    "partnerLegalNameRef": "crm://replace-me",
+    "technicalContactRef": "iam://replace-me/technical",
+    "securityContactRef": "iam://replace-me/security",
+    "environment": "sandbox",
+    "sandboxApiBaseUrl": "https://sandbox-api.hiddenshield.invalid",
+    "credentialSecretRef": "secret://replace-me/ai-transparency-sandbox-credential",
+    "resolverBaseUrl": "https://sandbox-resolver.hiddenshield.invalid",
+    "useCase": "AIGC image generation-time transparency marking",
+    "expectedMonthlyConfirmedImages": 10000,
+    "peakRequestsPerSecond": 5,
+    "markConfirmLatencyBudgetMs": 5000,
+    "outputContentType": "image/png",
+    "issuerMode": "hiddenshield_managed",
+    "deploymentMode": "hosted",
+    "dataResidencyRegions": [
+      "CN"
+    ],
+    "acknowledgements": {
+      "nonProduction": true,
+      "noLegalOpinion": true,
+      "noSla": true,
+      "noProductionCredential": true
+    },
+    "approvalReferences": {
+      "partnerTechnicalSignoffRef": "approval://replace-me/partner-technical",
+      "partnerSecuritySignoffRef": "approval://replace-me/partner-security",
+      "hiddenShieldEngineeringApprovalRef": "approval://replace-me/hiddenshield-engineering",
+      "hiddenShieldCommercialApprovalRef": "approval://replace-me/hiddenshield-commercial"
+    }
+  },
+  "profileMappingQuestionnaire": {
+    "jurisdictions": [
+      {
+        "region": "CN",
+        "applicability": "unknown",
+        "reason": "Partner legal review required"
+      },
+      {
+        "region": "EU",
+        "applicability": "unknown",
+        "reason": "Partner legal review required"
+      },
+      {
+        "region": "US-CA",
+        "applicability": "unknown",
+        "reason": "Partner legal review required"
+      }
+    ],
+    "contentModes": [
+      "ai_generated"
+    ],
+    "requestedProfileIds": [
+      "hiddenshield_v3_image_anchor_v1",
+      "cn_aigc_label_2025_image_export_v1"
+    ],
+    "explicitLabelSurfaces": [
+      "platform_ui",
+      "exported_file"
+    ],
+    "c2paRequested": false,
+    "hiddenShieldAnchorRequired": true,
+    "legalReviewReference": null
+  },
+  "resolverLink": {
+    "schemaVersion": "hs-ai-public-resolver-v1",
+    "lookupPreference": "watermark_uid",
+    "requiresAuthorization": false,
+    "metered": false,
+    "legalConclusion": false,
+    "confirmedWording": "发现已确认的 AI 来源透明度记录。",
+    "notFoundWording": "未找到已确认记录；这不表示该内容不是 AI 生成。"
+  },
+  "acceptanceMatrix": {
+    "matrixVersion": "hs-ai-design-partner-acceptance-v1",
+    "scenarios": [
+      {
+        "scenarioId": "admission_success",
+        "category": "authorization",
+        "mandatory": true,
+        "expected": "Configured license and Profiles are admitted",
+        "status": "not_run",
+        "evidenceRef": null,
+        "externalDependency": true
+      },
+      {
+        "scenarioId": "profile_denied_fail_closed",
+        "category": "authorization",
+        "mandatory": true,
+        "expected": "Unentitled Profile stops the flow before session creation",
+        "status": "not_run",
+        "evidenceRef": null,
+        "externalDependency": true
+      },
+      {
+        "scenarioId": "session_ready_to_upload",
+        "category": "session",
+        "mandatory": true,
+        "expected": "Session is bound to admission and returns ready_to_upload",
+        "status": "not_run",
+        "evidenceRef": null,
+        "externalDependency": true
+      },
+      {
+        "scenarioId": "invalid_credential_zero_state_change",
+        "category": "security",
+        "mandatory": true,
+        "expected": "Invalid credential cannot claim or mutate the session",
+        "status": "not_run",
+        "evidenceRef": null,
+        "externalDependency": true
+      },
+      {
+        "scenarioId": "png_mark_write_after_read",
+        "category": "marking",
+        "mandatory": true,
+        "expected": "PNG is marked by watermark-core and verified before confirm",
+        "status": "not_run",
+        "evidenceRef": null,
+        "externalDependency": true
+      },
+      {
+        "scenarioId": "confirm_single_metering_unit",
+        "category": "metering",
+        "mandatory": true,
+        "expected": "Confirm creates exactly one committed confirmed_marked_image unit",
+        "status": "not_run",
+        "evidenceRef": null,
+        "externalDependency": true
+      },
+      {
+        "scenarioId": "confirm_replay_no_duplicate_metering",
+        "category": "metering",
+        "mandatory": true,
+        "expected": "Replay reuses the original ledger entry",
+        "status": "not_run",
+        "evidenceRef": null,
+        "externalDependency": true
+      },
+      {
+        "scenarioId": "resolver_preconfirm_not_found",
+        "category": "resolver",
+        "mandatory": true,
+        "expected": "Unconfirmed records are not publicly visible",
+        "status": "not_run",
+        "evidenceRef": null,
+        "externalDependency": true
+      },
+      {
+        "scenarioId": "resolver_postconfirm_anonymous",
+        "category": "resolver",
+        "mandatory": true,
+        "expected": "Confirmed record resolves without Authorization",
+        "status": "not_run",
+        "evidenceRef": null,
+        "externalDependency": true
+      },
+      {
+        "scenarioId": "resolver_minimum_public_fields",
+        "category": "privacy",
+        "mandatory": true,
+        "expected": "Resolver excludes license, tenant, session, digest, model and ledger fields",
+        "status": "not_run",
+        "evidenceRef": null,
+        "externalDependency": true
+      },
+      {
+        "scenarioId": "secret_redaction",
+        "category": "security",
+        "mandatory": true,
+        "expected": "Logs, evidence and partner package contain Secret references only",
+        "status": "not_run",
+        "evidenceRef": null,
+        "externalDependency": false
+      },
+      {
+        "scenarioId": "latency_budget_recorded",
+        "category": "performance",
+        "mandatory": true,
+        "expected": "p50, p95 and failure rate are recorded against the agreed budget",
+        "status": "not_run",
+        "evidenceRef": null,
+        "externalDependency": true
+      }
+    ]
+  }
+}

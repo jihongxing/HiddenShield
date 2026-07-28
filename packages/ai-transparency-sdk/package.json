@@ -1,0 +1,32 @@
+{
+  "name": "@hiddenshield/ai-transparency-sdk",
+  "version": "0.1.0",
+  "description": "Authorized server-side SDK for HiddenShield AI generated image transparency marking.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "package.json"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "SEE LICENSE IN ../../LICENSE",
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "typescript": "^6.0.3"
+  }
+}

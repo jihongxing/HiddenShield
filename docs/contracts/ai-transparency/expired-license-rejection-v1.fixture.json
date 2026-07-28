@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "ai_transparency_expired_license_rejection",
+  "request": {
+    "method": "POST",
+    "path": "/v1/ai-transparency/marking-sessions",
+    "licenseId": "atl_fixture_expired_0001",
+    "idempotencyKey": "fixture-expired-license-0001",
+    "claimType": "ai_generated",
+    "requestedProfileIds": [
+      "cn_aigc_label_2025_image_export_v1"
+    ]
+  },
+  "license": {
+    "licenseId": "atl_fixture_expired_0001",
+    "tenantId": "tenant_fixture_aigc_0001",
+    "workspaceId": "workspace_fixture_prod_0001",
+    "environment": "production",
+    "status": "expired",
+    "issuerMode": "platform_managed",
+    "publicVerificationRequired": true,
+    "effectiveAt": "2025-07-27T00:00:00Z",
+    "expiresAt": "2026-07-26T23:59:59Z"
+  },
+  "expectedResponse": {
+    "statusCode": 403,
+    "errorCode": "ai_license_expired",
+    "message": "AI Transparency production license has expired"
+  },
+  "invariants": {
+    "watermarkUidReserved": false,
+    "markingSessionCreated": false,
+    "manifestCreated": false,
+    "ledgerCreated": false,
+    "outputMustBeFailClosed": true
+  }
+}

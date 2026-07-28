@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "hs-ai-transparency-platform-sdk-facade-v1",
+  "packageName": "@hiddenshield/ai-transparency-sdk",
+  "runtime": "trusted_server_only",
+  "flow": [
+    "admitProductionProfile",
+    "createGenerationSession",
+    "submitGeneratedImage",
+    "confirmGeneratedAsset"
+  ],
+  "metering": {
+    "unit": "confirmed_marked_image",
+    "quantity": 1,
+    "ledgerStatus": "committed",
+    "excluded": [
+      "admission",
+      "session_creation",
+      "image_submission_failure",
+      "digest_mismatch",
+      "duplicate_confirm_replay"
+    ]
+  },
+  "failClosed": {
+    "unknownResponse": true,
+    "networkFailure": true,
+    "timeout": true,
+    "digestMismatch": true,
+    "profileDenied": true,
+    "licenseDenied": true
+  },
+  "releaseBoundary": {
+    "sdk": "internal_only",
+    "facade": "framework_neutral_internal_only",
+    "publicEndpoint": "closed",
+    "productionCredentialIssuance": "closed",
+    "publicResolver": "closed"
+  }
+}
