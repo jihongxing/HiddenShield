@@ -2573,3 +2573,10 @@ Creator 行为：
 - Fail-closed：提交前复用 Internal IAM 与 contract/security reference 预检；无效摘要、引用、时间窗、占位符或 raw Secret 均在事务前拒绝并零写入。
 - 商业边界：`received_for_review` 不等于证据真实、provider activation、Sandbox acceptance、production entitlement、收入确认或法规合规。
 - 下一商业化任务：待真实外部材料到位后，受控接收 evidence 并由独立 recovery / Sandbox Gate 验真，不得把 intake receipt 当作外部验收。
+
+## 2026-07-28 AI Transparency 外部交接演练与 Phase C/D 证据模板
+
+- 状态：`synthetic_rehearsal_verified_external_execution_pending`。
+- 已完成：新增 provider / partner synthetic handoff rehearsal，以及 Phase C 设计伙伴、Phase D provider recovery 的统一证据模板。
+- 边界：rehearsal 固定输出 `not_real_partner_or_provider_acceptance` 和 `blocked_external`；模板不包含 Secret、真实 endpoint、伙伴身份或真实 evidence。
+- 下一商业化任务：外部责任方填写受控引用并经 Evidence Intake 接收后，分别执行真实 Sandbox 与 provider recovery Gate。

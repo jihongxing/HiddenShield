@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "hs-ai-phase-c-d-evidence-v1",
+  "status": "configuration_required",
+  "phaseCDesignPartner": {
+    "partnerIdentityRef": "partner://replace-me/identity",
+    "sandboxBundleRef": "partner://replace-me/sandbox-kit-v1",
+    "acceptanceEvidenceRefs": [],
+    "commercialApprovalRef": "approval://replace-me/commercial"
+  },
+  "phaseDProviders": {
+    "iamReceiptEvidenceRef": null,
+    "kmsRecoveryEvidenceRef": null,
+    "signerRecoveryEvidenceRef": null,
+    "objectStoreRecoveryEvidenceRef": null,
+    "notificationRecoveryEvidenceRef": null,
+    "securityApprovalRef": "approval://replace-me/security"
+  },
+  "releaseBoundary": {
+    "productionActivation": false,
+    "publicResolverDeployment": false,
+    "sdkPublication": false,
+    "legalConclusion": false
+  }
+}
