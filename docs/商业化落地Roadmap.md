@@ -2565,3 +2565,11 @@ Creator 行为：
 - 验证：`npm run ai-transparency:external-readiness` 断言模板保持 `configuration_required`，拒绝明文 Secret、非 HTTPS endpoint 和伪造的伙伴 acceptance；该检查纳入 AI Transparency CI Gate。
 - 商业边界：配置包不构成 provider activation、Sandbox acceptance、生产 entitlement、收入确认、SDK 发布或 SLA。
 - 下一商业化任务：由基础设施与首个设计伙伴在各自受控系统填写真实引用；随后执行 provider recovery 演练与 12 场景证据化 Sandbox 验收。
+
+## 2026-07-28 AI Transparency External Evidence Intake
+
+- 状态：`postgresql_internal_only_append_only_intake_implemented`。
+- 已完成：新增 PostgreSQL `0021` external evidence intake 与 append-only audit，接收 provider recovery / 设计伙伴 Sandbox 的不可变 evidence digest、来源、签署和审批引用。
+- Fail-closed：提交前复用 Internal IAM 与 contract/security reference 预检；无效摘要、引用、时间窗、占位符或 raw Secret 均在事务前拒绝并零写入。
+- 商业边界：`received_for_review` 不等于证据真实、provider activation、Sandbox acceptance、production entitlement、收入确认或法规合规。
+- 下一商业化任务：待真实外部材料到位后，受控接收 evidence 并由独立 recovery / Sandbox Gate 验真，不得把 intake receipt 当作外部验收。
