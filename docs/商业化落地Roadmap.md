@@ -2556,3 +2556,12 @@ Creator 行为：
 - 商业边界：internal API、Resolver、SDK 和 synthetic Sandbox QA 继续只用于内部测试或招募前演练；不得据此发布 SDK、发放 production credential、开放公网 Resolver、承诺 SLA 或确认收入。
 - 验证：PR #2 的 Ubuntu、Windows、Cloud sync contract/E2E 和 AI Transparency required contract gate 全部通过。
 - 下一商业化任务：取得首个真实设计伙伴及其外部配置后，执行受控的 12 场景 Sandbox evidence 验收；在此之前保持 production provider activation 与真实伙伴验收挂起。
+
+## 2026-07-28 AI Transparency External Readiness 配置包
+
+- 状态：`configuration_required_external_only`。
+- 已完成：新增面向基础设施、安全与设计伙伴的统一交接包，包含 provider/partner/approval 引用模板、最小权限清单、恢复演练出口和 12 场景 Sandbox 验收入口。
+- Secret 边界：模板仅允许 `secret://`、KMS/HSM URI、HTTPS endpoint、`runbook://` 和不可变 evidence 引用；不包含 token、私钥、pepper material、客户媒体或真实伙伴身份。
+- 验证：`npm run ai-transparency:external-readiness` 断言模板保持 `configuration_required`，拒绝明文 Secret、非 HTTPS endpoint 和伪造的伙伴 acceptance；该检查纳入 AI Transparency CI Gate。
+- 商业边界：配置包不构成 provider activation、Sandbox acceptance、生产 entitlement、收入确认、SDK 发布或 SLA。
+- 下一商业化任务：由基础设施与首个设计伙伴在各自受控系统填写真实引用；随后执行 provider recovery 演练与 12 场景证据化 Sandbox 验收。
