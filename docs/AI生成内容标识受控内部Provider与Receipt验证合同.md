@@ -2,7 +2,9 @@
 
 版本：`v1`
 
-状态：`internal_test_only_no_production_provider`
+状态：`internal_receipt_validation_implemented_real_provider_activation_external_only`
+
+当前内部 receipt validation、签名/过期/scope/health fail-closed 路径与 PostgreSQL 零写入 QA 已实现。真实 Internal IAM/JWKS、工作负载身份、KMS/HSM、非对称签名、health SLA 与 replay registry 仍需要外部 provider 配置和演练。
 
 ## 1. 边界
 
@@ -63,7 +65,7 @@ client 必须验证 provider/key identity、HMAC signature、receipt kind、acti
 
 PostgreSQL harness 覆盖有效 receipt，以及 IAM/reference 的签名、过期、scope digest、health/transport unavailable 拒绝与零写入。SQLite 结果只作为本地快速回归。
 
-未完成：
+仍属于外部依赖：
 
 - 生产 IAM/reference provider client。
 - HSM/KMS、密钥轮换、非对称签名或 JWKS。

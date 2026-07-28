@@ -2565,3 +2565,11 @@ Creator 行为：
 - 验证：`npm run ai-transparency:external-readiness` 断言模板保持 `configuration_required`，拒绝明文 Secret、非 HTTPS endpoint 和伪造的伙伴 acceptance；该检查纳入 AI Transparency CI Gate。
 - 商业边界：配置包不构成 provider activation、Sandbox acceptance、生产 entitlement、收入确认、SDK 发布或 SLA。
 - 下一商业化任务：由基础设施与首个设计伙伴在各自受控系统填写真实引用；随后执行 provider recovery 演练与 12 场景证据化 Sandbox 验收。
+
+## 2026-07-28 AI Transparency 衍生合同状态收口
+
+- 状态：`historical_contracts_reconciled_internal_control_plane_implemented_external_activation_pending`。
+- 已完成：校准审批迁移评审、身份/Entitlement、双人审批、Internal Provider 与 `0003` 前置 Gate 合同，明确这些历史“待迁移/待实现”步骤已由 PostgreSQL `0003`、真实双连接并发、change-command 与 fail-closed receipt validation 内部 Gate 覆盖。
+- 仍挂起：真实 IAM/JWKS、工作负载身份、KMS/HSM、reference authority、法务签署和 production provider 演练。
+- 商业边界：合同状态收口不构成 production entitlement、SDK 发布、客户接入、收入确认、SLA 或法规合规承诺。
+- 下一商业化任务：由外部责任方提交 readiness review manifest 后执行 provider recovery 与首个设计伙伴 12 场景 evidence Gate。

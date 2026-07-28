@@ -4,7 +4,11 @@
 
 冻结日期：`2026-07-27`
 
-实现状态：`schema_and_fixture_contract_test_frozen_no_database_implementation`
+历史冻结状态：`schema_and_fixture_contract_test_frozen_no_database_implementation`
+
+当前实现状态：`versioned_entitlement_postgresql_0003_and_change_command_implemented_internal_only`
+
+versioned Profile entitlement、actor/role snapshot、change request、双人审批、execution 与 append-only audit 已在 PostgreSQL 控制面实现并通过真实双连接并发 Gate。真实 IAM 身份来源、法务/合同/security reference provider 与 production 发放仍为外部依赖。
 
 ## 1. 当前边界
 
@@ -212,4 +216,4 @@ docs/contracts/ai-transparency-approval/
 
 ## 9. 下一 Gate
 
-身份、版本化 Schema、fixture 和状态机 contract test 已通过；数据库迁移设计与六项 `0003` 前置 Gate 已冻结，见 `docs/AI生成内容标识审批状态机数据库迁移设计评审.md` 和 `docs/AI生成内容标识0003迁移前置Gate合同.md`。现在可创建 `0003`，但 migration、真实并发测试、confirm 原子事务和外部法务 Profile 审查通过前，继续禁止所有生产发放。
+身份、版本化 Schema、fixture 和状态机 contract test 已通过；`0003` 迁移、真实 PostgreSQL 并发测试与 confirm 原子事务也已通过内部 Gate。当前仍禁止 production 发放，直至真实 IAM/reference provider、法务 Profile 签署与其他 production provider Gate 完成。

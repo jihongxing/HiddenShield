@@ -4,7 +4,9 @@
 
 冻结日期：`2026-07-27`
 
-实现状态：`six_pre_migration_gates_frozen_0003_atomic_command_and_fail_closed_adapter_boundary_implemented`
+实现状态：`six_pre_migration_gates_and_postgresql_0003_internal_gate_implemented`
+
+六项 Gate、`0003` 迁移、真实 PostgreSQL 双连接并发 harness、change-command 原子事务和 fail-closed adapter boundary 均已完成内部验证。真实 IAM/reference provider 与 production 发放继续作为外部依赖挂起。
 
 ## 1. Gate 结论
 
@@ -316,4 +318,4 @@ npm run ai-transparency:approval-contract
 
 才允许开始创建 `0003`。
 
-即使允许创建 migration，在 migration 与真实 PostgreSQL 双连接并发测试通过前，仍禁止 license / Profile 写接口和所有生产发放。
+历史创建条件已满足且 `0003` 已落地；production license / Profile 写接口和所有生产发放仍须等待真实 IAM/reference provider、法务签署与其他 production provider Gate。
