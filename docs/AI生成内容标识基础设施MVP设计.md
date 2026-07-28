@@ -2,7 +2,7 @@
 
 更新时间：2026-07-28
 
-状态：`production_oriented_mvp_control_plane_implemented_through_0018`
+状态：`production_oriented_mvp_control_plane_implemented_through_0020`
 
 实施状态：`生产导向控制面已实现至 PostgreSQL 0020；内部图片标识、签发、交付、安全治理、通知 outbox、provider-neutral delivery、server-side SDK/API facade、真实 PostgreSQL 平台端点与匿名免费 Resolver Gate 已通过；公网部署、真实 provider 注入和生产发放仍关闭`
 
@@ -832,11 +832,11 @@ Android QA 不能替代 iOS QA。
 
 ### Phase B：生产控制面与内部图片闭环
 
-状态：`implemented_through_postgresql_0018_internal_gate_passed`
+状态：`implemented_through_postgresql_0020_internal_gate_passed`
 
 已完成范围：
 
-- PostgreSQL `0002–0018` additive migration、up/down smoke 和真实并发 QA。
+- PostgreSQL `0002–0020` additive migration、up/down smoke 和真实并发 QA。
 - License、versioned Profile entitlement、生产 credential custody 和 marking session。
 - `watermark-core` 图片 V3 写入、写后回读、confirm、计量和 append-only audit。
 - post-embed C2PA 重新签发、reservation/lease、artifact finalize 和 recovery/dead-letter。
