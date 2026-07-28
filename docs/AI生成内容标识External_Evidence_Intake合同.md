@@ -1,6 +1,6 @@
 # AI 生成内容标识 External Evidence Intake 合同
 
-状态：`postgresql_internal_only_append_only_intake_implemented`
+状态：`postgresql_internal_only_append_only_intake_and_review_implemented`
 
 能力分类：`只能内部测试`
 
@@ -25,3 +25,11 @@
 `received_for_review` 只表示结构化材料已受控接收，不表示 provider 可用、证据真实、法务已签署、Sandbox 已验收、production credential 可发放、SDK 可发布或法规义务已满足。
 
 真实 evidence、provider receipt、签署引用、伙伴身份与运行证据仍必须由外部责任方提供，并在独立 recovery / Sandbox Gate 中验真。
+
+## 审核决策
+
+- 审核人必须经 Internal IAM 在 intake 的真实 `tenant/workspace/environment` 作用域内取得 `ai_transparency_compliance_approver` 授权；禁止通配符作用域授权。
+- `reviewReference` 必须由 fail-closed security-review reference adapter 验真；同一证据提交人与审核人不得相同，过期证据不得审核。
+- migration `0022_ai_transparency_external_evidence_review` 对每个 intake 最多追加一个不可变决策和一个对应 audit；决策、审计必须在同一 PostgreSQL 事务写入。
+- `accepted_for_gate` 仅记录内部材料审核结论，不改变 intake，不解锁真实 provider activation、Sandbox acceptance、production credential、SDK 生产发放或法律合规结论。
+- `ai_transparency_external_evidence_review_qa` 已在 disposable PostgreSQL 16 数据库验证 accept、同人审核拒绝、过期拒绝、reference 拒绝、audit 写入故障全事务回滚、append-only trigger 和同一 intake 的双连接竞争；拒绝/故障场景零决策与审计残留，竞争场景最多一条决策与对应 audit。

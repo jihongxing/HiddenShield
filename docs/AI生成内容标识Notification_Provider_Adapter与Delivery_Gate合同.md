@@ -85,6 +85,7 @@ receipt 必须绑定：
 - dead-letter 可通过 internal system executor recovery command 重排到 `retry_scheduled`。
 - recovery 使用 idempotency key，重复 recovery 不重复增加 recovery count。
 - recovery 不调用 provider，不生成 delivery receipt，不声称通知成功。
+- recovery/replay 的 append-only audit 写入失败时，`retry_scheduled`、lease 释放及 recovery count 必须整体回滚；replay 不得因审计失败改变既有恢复状态。
 
 ## 7. PostgreSQL 持久化
 
@@ -108,11 +109,14 @@ Migration：`0018_ai_transparency_notification_delivery_gate`
 - 0001–0018 up/down migration smoke。
 - sandbox zero-send receipt 完成。
 - receipt/payload mismatch 零写入。
+- completion audit 写入故障会使 provider receipt 插入与 outbox `completed` 投影一起回滚，通知保持原有效 `leased` 状态。
 - completion replay 只保留一条 receipt。
 - attempt budget 触发 dead-letter。
 - dead-letter recovery 与 recovery replay。
 - expired lease reclaim 与 recovery count。
 - receipt append-only。
+- completion audit 故障注入后 receipt 数保持 `0`、outbox 保持 `leased`，移除注入后正常 completion/replay 仍通过。
+- recovery/replay audit 故障注入后分别保持 `dead_letter + 无 lease + recoveryCount=0` 与 `retry_scheduled + 无 lease + recoveryCount=1`，移除注入后正常 recovery/replay 仍通过。
 
 ## 9. 外部依赖
 

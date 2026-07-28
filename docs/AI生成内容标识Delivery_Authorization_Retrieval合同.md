@@ -104,6 +104,7 @@ Schema version：`hs-ai-delivery-retrieval-receipt-v1`
 - replay、错误 token、过期授权、License/Profile 失效、摘要不匹配、object-store unavailable 和 bridge 拒绝均 fail-closed。
 - 无效 token 不消耗仍有效的授权；过期授权投影为 `expired`。
 - 已 claim 后的对象读取或 bridge 失败不回滚为 `active`，避免同一授权被重复利用。
+- `retrieval_succeeded` audit 写入失败时，调用失败且不返回 package；已完成的 claim 保持 `consumed`，不回滚为 `active`，成功审计行不得残留，避免同一 token 重复取得 bytes。
 - 下载成功不产生 `confirmed_marked_image` 计量；下载审计不是客户计费 ledger。
 
 ## 8. Gate 证据
@@ -111,7 +112,7 @@ Schema version：`hs-ai-delivery-retrieval-receipt-v1`
 - 共享 fixture：`docs/contracts/ai-transparency-delivery-retrieval/success-v1.fixture.json`
 - Desktop/mobile 使用同一 fixture 验证成功准入及 receipt mismatch 拒绝。
 - PostgreSQL 16 migration smoke：38 tables、49 indexes、0001–0013 up/down 与空 schema rollback。
-- PostgreSQL signing QA：签发、finalize、delivery envelope、授权、双连接并发检索、单次 artifact load、replay/invalid/expired、Profile revoke-after-grant、artifact unavailable、tampered bytes 拒绝及 append-only audit 均通过。
+- PostgreSQL signing QA：签发、finalize、delivery envelope、授权、双连接并发检索、单次 artifact load、replay/invalid/expired、Profile revoke-after-grant、artifact unavailable、下载超时、tampered bytes 拒绝及 append-only audit 均通过；`retrieval_succeeded` audit 故障注入后不返回 package、无成功审计残留且授权保持 `consumed`。
 
 ## 9. 仍关闭的能力
 

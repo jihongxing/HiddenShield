@@ -68,6 +68,7 @@ adapter 或命令层任一检查失败均不得返回 package 或 bytes。
 - `revoked -> revoked`：幂等 replay，不重复写审计。
 - `consumed | expired -> revoked`：拒绝。
 - revoke 与 retrieve 竞争同一 PostgreSQL 行锁，最多一方成功；最终状态只能是 `revoked` 或 `consumed`。
+- `authorization_granted` audit 写入失败时，创建事务不得遗留 authorization；`authorization_revoked` audit 写入失败时，授权必须保持 `active`，不得泄漏 revoke 状态。
 
 撤销后的检索返回稳定原因码 `ai_delivery_authorization_revoked`，且在 artifact load 前终止。
 
@@ -116,6 +117,7 @@ adapter 或命令层任一检查失败均不得返回 package 或 bytes。
 - PostgreSQL 16 smoke：39 tables、50 indexes、0001–0014 up/down 和空 schema rollback。
 - PostgreSQL QA：
   - revoke/replay；
+  - grant/revoke audit 故障分别零授权遗留与保持 `active`；
   - revoked 后零 artifact load；
   - revoke/retrieve 双连接竞争最多一方成功；
   - 64 MiB metadata 超限；

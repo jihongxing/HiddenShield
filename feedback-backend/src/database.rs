@@ -153,6 +153,18 @@ pub const POSTGRES_P21_AI_TRANSPARENCY_PUBLIC_RESOLVER_UP_SQL: &str =
 #[cfg(feature = "postgres")]
 pub const POSTGRES_P21_AI_TRANSPARENCY_PUBLIC_RESOLVER_DOWN_SQL: &str =
     include_str!("../migrations/postgres/0020_ai_transparency_public_resolver.down.sql");
+#[cfg(feature = "postgres")]
+pub const POSTGRES_P22_AI_TRANSPARENCY_EXTERNAL_EVIDENCE_INTAKE_UP_SQL: &str =
+    include_str!("../migrations/postgres/0021_ai_transparency_external_evidence_intake.up.sql");
+#[cfg(feature = "postgres")]
+pub const POSTGRES_P22_AI_TRANSPARENCY_EXTERNAL_EVIDENCE_INTAKE_DOWN_SQL: &str =
+    include_str!("../migrations/postgres/0021_ai_transparency_external_evidence_intake.down.sql");
+#[cfg(feature = "postgres")]
+pub const POSTGRES_P23_AI_TRANSPARENCY_EXTERNAL_EVIDENCE_REVIEW_UP_SQL: &str =
+    include_str!("../migrations/postgres/0022_ai_transparency_external_evidence_review.up.sql");
+#[cfg(feature = "postgres")]
+pub const POSTGRES_P23_AI_TRANSPARENCY_EXTERNAL_EVIDENCE_REVIEW_DOWN_SQL: &str =
+    include_str!("../migrations/postgres/0022_ai_transparency_external_evidence_review.down.sql");
 
 pub const SQLITE_P4_AI_TRANSPARENCY_APPROVAL_STATE_MACHINE_UP_SQL: &str =
     include_str!("../migrations/sqlite/0003_ai_transparency_approval_state_machine.up.sql");

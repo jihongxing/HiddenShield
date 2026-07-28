@@ -30,6 +30,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         POSTGRES_P20_AI_TRANSPARENCY_PLATFORM_API_UP_SQL,
         POSTGRES_P21_AI_TRANSPARENCY_PUBLIC_RESOLVER_DOWN_SQL,
         POSTGRES_P21_AI_TRANSPARENCY_PUBLIC_RESOLVER_UP_SQL,
+        POSTGRES_P22_AI_TRANSPARENCY_EXTERNAL_EVIDENCE_INTAKE_DOWN_SQL,
+        POSTGRES_P22_AI_TRANSPARENCY_EXTERNAL_EVIDENCE_INTAKE_UP_SQL,
+        POSTGRES_P23_AI_TRANSPARENCY_EXTERNAL_EVIDENCE_REVIEW_DOWN_SQL,
+        POSTGRES_P23_AI_TRANSPARENCY_EXTERNAL_EVIDENCE_REVIEW_UP_SQL,
         POSTGRES_P3_AI_TRANSPARENCY_SCHEMA_DOWN_SQL, POSTGRES_P3_AI_TRANSPARENCY_SCHEMA_UP_SQL,
         POSTGRES_P4_AI_TRANSPARENCY_APPROVAL_STATE_MACHINE_DOWN_SQL,
         POSTGRES_P4_AI_TRANSPARENCY_APPROVAL_STATE_MACHINE_UP_SQL,
@@ -114,6 +118,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "ai_platform_marking_sessions",
         "ai_platform_marking_submissions",
         "ai_platform_api_audit_events",
+        "ai_transparency_external_evidence_intakes",
+        "ai_transparency_external_evidence_intake_audit_events",
+        "ai_transparency_external_evidence_review_decisions",
+        "ai_transparency_external_evidence_review_audit_events",
     ];
     let required_indexes = [
         "idx_auth_challenges_identifier_created",
@@ -257,6 +265,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     .await?;
     execute_sql_batch(&pool, POSTGRES_P20_AI_TRANSPARENCY_PLATFORM_API_UP_SQL).await?;
     execute_sql_batch(&pool, POSTGRES_P21_AI_TRANSPARENCY_PUBLIC_RESOLVER_UP_SQL).await?;
+    execute_sql_batch(
+        &pool,
+        POSTGRES_P22_AI_TRANSPARENCY_EXTERNAL_EVIDENCE_INTAKE_UP_SQL,
+    )
+    .await?;
+    execute_sql_batch(
+        &pool,
+        POSTGRES_P23_AI_TRANSPARENCY_EXTERNAL_EVIDENCE_REVIEW_UP_SQL,
+    )
+    .await?;
     assert_tables_present(&pool, &required_tables).await?;
     assert_indexes_present(&pool, &required_indexes).await?;
     assert_views_present(&pool, &required_views).await?;
@@ -291,6 +309,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_ai_transparency_constraints(&pool).await?;
     assert_ai_transparency_approval_constraints(&pool).await?;
 
+    execute_sql_batch(
+        &pool,
+        POSTGRES_P23_AI_TRANSPARENCY_EXTERNAL_EVIDENCE_REVIEW_DOWN_SQL,
+    )
+    .await?;
+    execute_sql_batch(
+        &pool,
+        POSTGRES_P22_AI_TRANSPARENCY_EXTERNAL_EVIDENCE_INTAKE_DOWN_SQL,
+    )
+    .await?;
     execute_sql_batch(&pool, POSTGRES_P21_AI_TRANSPARENCY_PUBLIC_RESOLVER_DOWN_SQL).await?;
     execute_sql_batch(&pool, POSTGRES_P20_AI_TRANSPARENCY_PLATFORM_API_DOWN_SQL).await?;
     execute_sql_batch(
@@ -375,7 +403,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "{}",
         serde_json::json!({
             "ok": true,
-            "migrations": ["0001_auth_sync_registry", "0002_ai_transparency_schema", "0003_ai_transparency_approval_state_machine", "0004_ai_transparency_confirm_audit", "0005_ai_transparency_credential_custody", "0006_ai_transparency_credential_lifecycle", "0007_ai_transparency_post_embed_signing", "0008_ai_transparency_signing_reservation_artifact_recovery", "0009_ai_transparency_adapter_receipts_crash_recovery", "0010_ai_transparency_post_embed_recovery_worker", "0011_ai_transparency_dead_letter_requeue_command", "0012_ai_transparency_confirmed_delivery_envelope", "0013_ai_transparency_delivery_authorization_retrieval", "0014_ai_transparency_delivery_revoke_resource_budget", "0015_ai_transparency_delivery_security_observability", "0016_ai_transparency_delivery_security_incident_runner", "0017_ai_transparency_delivery_security_notification_outbox", "0018_ai_transparency_notification_delivery_gate", "0019_ai_transparency_platform_api", "0020_ai_transparency_public_resolver"],
+            "migrations": ["0001_auth_sync_registry", "0002_ai_transparency_schema", "0003_ai_transparency_approval_state_machine", "0004_ai_transparency_confirm_audit", "0005_ai_transparency_credential_custody", "0006_ai_transparency_credential_lifecycle", "0007_ai_transparency_post_embed_signing", "0008_ai_transparency_signing_reservation_artifact_recovery", "0009_ai_transparency_adapter_receipts_crash_recovery", "0010_ai_transparency_post_embed_recovery_worker", "0011_ai_transparency_dead_letter_requeue_command", "0012_ai_transparency_confirmed_delivery_envelope", "0013_ai_transparency_delivery_authorization_retrieval", "0014_ai_transparency_delivery_revoke_resource_budget", "0015_ai_transparency_delivery_security_observability", "0016_ai_transparency_delivery_security_incident_runner", "0017_ai_transparency_delivery_security_notification_outbox", "0018_ai_transparency_notification_delivery_gate", "0019_ai_transparency_platform_api", "0020_ai_transparency_public_resolver", "0021_ai_transparency_external_evidence_intake", "0022_ai_transparency_external_evidence_review"],
             "upTablesChecked": required_tables.len(),
             "viewsChecked": required_views.len(),
             "indexesChecked": required_indexes.len(),

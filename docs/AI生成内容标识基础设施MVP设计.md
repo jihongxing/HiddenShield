@@ -2,9 +2,9 @@
 
 更新时间：2026-07-28
 
-状态：`production_oriented_mvp_control_plane_implemented_through_0020`
+状态：`production_oriented_mvp_control_plane_implemented_through_0022`
 
-实施状态：`生产导向控制面已实现至 PostgreSQL 0020；内部图片标识、签发、交付、安全治理、通知 outbox、provider-neutral delivery、server-side SDK/API facade、真实 PostgreSQL 平台端点与匿名免费 Resolver Gate 已通过；公网部署、真实 provider 注入和生产发放仍关闭`
+实施状态：`生产导向控制面已实现至 PostgreSQL 0022；内部图片标识、签发、交付、安全治理、通知 outbox、provider-neutral delivery、server-side SDK/API facade、真实 PostgreSQL 平台端点与匿名免费 Resolver Gate，以及外部 Evidence 的 append-only intake/review 事务 QA 已通过；公网部署、真实 provider 注入和生产发放仍关闭`
 
 能力分类：`只能内部测试，不构成当前用户承诺或真实法律意见`
 
@@ -1017,6 +1017,8 @@ packages/ai-transparency-design-partner-kit
 当前状态为 `design_partner_sandbox_kit_implemented_external_partner_configuration_required`。未注入真实伙伴身份引用、Sandbox endpoint、`secret://` credential 引用和伙伴运行证据时，模板必须保持 `valid=true + readiness=configuration_required`。
 
 已补齐内部 synthetic Sandbox QA：它复用 SDK/facade 与最小 Resolver contract 演练 12 个场景，输出固定为 `synthetic_non_acceptance + not_real_partner_acceptance + configuration_required`，不构成真实伙伴、生产、法律、SLA 或计费证据。
+
+已冻结 `docs/AI生成内容标识PostgreSQL_QA故障注入矩阵.md`：对所有 AI Transparency PostgreSQL QA 明确登记并发、回放、audit 故障、外部/读取故障与恢复覆盖；非事务 owner 必须标注下层委托关系，外部 provider/IAM/KMS 演练继续作为独立外部 Gate。
 
 CI 已新增独立 `AI Transparency contract gate`，固定运行 `npm run ai-transparency:ci`，将 SDK contract/test、接入包 contract/test、template preflight 和 synthetic Sandbox QA 设为必跑回归；GitHub active ruleset 已对 `main` / `master` 将其设为 required check，待工作流合并后的首个 PR 报告该 check。
 

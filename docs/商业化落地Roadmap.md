@@ -2404,6 +2404,7 @@ Creator 行为：
 - 状态：`internal_delivery_authorization_retrieval_postgres_gate_passed_no_external_release`。
 - 已完成：冻结 60–900 秒短期单次下载授权，绑定 active License、当前 versioned Profile entitlement、object-store finalize receipt digest 与 delivery envelope digest；明文 token 仅返回一次，数据库只保存 SHA-256。
 - 已完成：PostgreSQL `0013_ai_transparency_delivery_authorization_retrieval` 增加授权投影和 append-only 下载审计；并发检索最多一个连接读取对象并返回 package，replay、错误 token 和过期授权 fail-closed。
+- 质量补充：真实 PostgreSQL 故障注入验证 `retrieval_succeeded` audit 失败时不返回 package、无成功审计残留，且已 claim 的授权保持 `consumed` 以禁止 token 重用；下载超时与双连接单消费回归持续通过。
 - 已完成：成功 package 增加 retrieval receipt；Desktop/mobile 必须经共享 `watermark-core::validate_ai_delivery_import` 才能继续 vault/import，拒绝响应不暴露可导入摘要。
 - 计量边界：下载授权、下载失败、下载成功和端侧 admission 都不新增 `confirmed_marked_image` 客户用量；外部 signer 成本仍只由既有签发合同处理。
 - 商业边界：仍无 SDK、公共 Resolver、客户下载 UI、生产 credential、生产 object-store/IAM/KMS/HSM/signer 或 SLA，不得作为可销售下载能力。
@@ -2418,6 +2419,7 @@ Creator 行为：
 - 失败成本：rate limited 在对象读取前拒绝且不消费 authorization；size/MIME/timeout 在 claim 后失败并消费 authorization，全部零 package、零新增 `confirmed_marked_image` 计量。
 - 审计：新增 append-only `authorization_revoked`；只记录 revoker snapshot 与 revoke reason SHA-256，不记录原因原文、token、bytes 或 Secret。
 - 验证：PostgreSQL 16 通过 39 表、50 索引、0001–0014 up/down；真实 QA 覆盖 revoke/replay、并发冲突、超限、错误 MIME、timeout 和限速。
+- 质量补充：对 `authorization_granted` / `authorization_revoked` audit insert 分别注入故障，确认创建无授权残留、撤销保持 `active`；revoke-vs-claim 双连接竞争继续最多一方成功。
 - 商业边界：仍无 SDK、公共 Resolver、客户下载/import UI、生产 credential、生产 provider 或 SLA；不得作为收费下载能力发布。
 - 下一商业化任务：实现内部 rate-limit window cleanup 与安全观测摘要，再冻结付费 SDK delivery API 的套餐单位、超额策略和客户可见错误边界。
 
@@ -2476,6 +2478,8 @@ Creator 行为：
 - 恢复边界：支持 retry/dead-letter、dead-letter recovery idempotency 和 expired lease recovery count。
 - 商业安全：sandbox-only zero-send simulation 强制 `deliveryClaimed=false`，不得作为外部通知送达、SLA 或客户计费证据。
 - 验证：PostgreSQL 16 通过 49 表/66 索引、0001–0018 up/down smoke 与完整事务 QA。
+- 质量补充：真实 PostgreSQL QA 对 completion audit insert 注入失败，确认 provider receipt 与 `completed` 投影全事务回滚至 `leased`；移除注入后 completion replay、lease reclaim 与 dead-letter recovery 回归通过。
+- 恢复质量补充：对 dead-letter recovery 与 recovery idempotency replay 的 audit insert 分别注入失败，确认 `retry_scheduled`、lease 释放及 recovery count 均不泄漏状态变更。
 - 外部依赖：真实通知 endpoint/Secret/routing、provider receipt authenticity 和生产恢复演练继续挂起。
 - 下一商业化任务：实现授权付费 `packages/ai-transparency-sdk` 最小 API surface，并绑定 production license、Profile entitlement 与 `confirmed_marked_image` receipt。
 
@@ -2548,6 +2552,15 @@ Creator 行为：
 - GitHub Gate：仓库 ruleset `main-and-master-required-checks` 已激活，匹配 `refs/heads/main` 与 `refs/heads/master`，并将 `AI Transparency contract gate` 与既有三个 CI checks 设为 required；工作流合并后的首个 PR 将产生该 check。
 - 下一商业化任务：保持该 Gate 为合并前检查；取得真实伙伴外部配置后另行新增受控、不可伪造的真实 Sandbox evidence Gate。
 
+## 2026-07-29 External Evidence 审核控制 Gate
+
+- 状态：`internal_append_only_review_verified_external_evidence_pending`。
+- 已完成：冻结 `accepted_for_gate` / `rejected` fixture，新增 `0022` 一证据一决策的 PostgreSQL append-only review/audit 迁移，并以 intake 真实 scope 执行 IAM 与 security-review reference fail-closed 预检。
+- 商业边界：内部接受结论不构成 provider activation、Sandbox acceptance、production credential 发放、平台计费、收入确认或法律合规结论。
+- 验证：已在 disposable `hiddenshield_migrate_smoke_evidence_review` PostgreSQL 16 数据库运行 `postgres_migrate_smoke`，`0021/0022` upgrade/rollback、57 张表、68 个索引与 14 项约束回归通过；`ai_transparency_external_evidence_review_qa` 额外验证审核成功、拒绝零写入、audit 故障全回滚、append-only 与双连接竞争最多一胜。
+- 风险：真实外部材料继续由基础设施团队与设计伙伴提供；当前审查合同不替代其真实性、双人业务审批或外部 Gate 验收。
+- 下一商业化任务：收到真实 provider 或伙伴 evidence 后，以已冻结的 intake/review 合同执行独立、受控的外部 evidence Gate。
+
 ## 2026-07-28 AI Transparency Phase B 发布出口状态校准
 
 - 状态：`internal_platform_api_and_public_resolver_verified_external_provider_activation_pending`。
@@ -2580,3 +2593,12 @@ Creator 行为：
 - 已完成：新增 provider / partner synthetic handoff rehearsal，以及 Phase C 设计伙伴、Phase D provider recovery 的统一证据模板。
 - 边界：rehearsal 固定输出 `not_real_partner_or_provider_acceptance` 和 `blocked_external`；模板不包含 Secret、真实 endpoint、伙伴身份或真实 evidence。
 - 下一商业化任务：外部责任方填写受控引用并经 Evidence Intake 接收后，分别执行真实 Sandbox 与 provider recovery Gate。
+
+## 2026-07-29 AI Transparency PostgreSQL QA 故障注入矩阵
+
+- 状态：`internal_postgresql_failure_matrix_verified_external_recovery_pending`。
+- 已完成：新增统一矩阵，登记 approval、confirm、credential custody、image executor、post-embed/recovery/dead-letter、delivery authorization/retrieval/revoke、notification outbox、external evidence 与 platform facade/resolver 的真实 PostgreSQL QA 归属。
+- 覆盖规则：每行强制显式标记并发、回放、audit 故障、外部/读取故障和恢复；非事务 owner 只能以“委托下层事务 owner”标记，不允许隐含空白。
+- CI：`npm run ai-transparency:postgres-failure-matrix` 已纳入 `ai-transparency:ci`，确保新增或改名 runner 时矩阵登记不会静默丢失。
+- 边界：真实 IAM/KMS/HSM、signer/object-store、通知 provider、真实伙伴/provider 及 iOS runtime 恢复演练继续为外部依赖，不得由本地 PostgreSQL QA 代替。
+- 下一商业化任务：保持内部矩阵为回归基线；真实外部配置到位后，为对应行补充受控 provider recovery / 伙伴 Sandbox 演练证据。
