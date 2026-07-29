@@ -8,7 +8,7 @@ const runnerNames = (await readdir("feedback-backend/src/bin"))
   .sort();
 assert.ok(runnerNames.length > 0);
 for (const runner of runnerNames) {
-  assert.match(matrix, new RegExp(`\\`${runner}\\``));
+  assert.match(matrix, new RegExp("`" + runner + "`"));
 }
 for (const criterion of ["并发", "回放", "audit 故障", "外部/读取故障", "恢复"]) {
   assert.match(matrix, new RegExp(criterion));
