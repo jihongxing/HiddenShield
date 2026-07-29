@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use sha2::{Digest, Sha256};
-use sqlx::{PgPool, Postgres, Transaction};
+use sqlx::{PgPool, Postgres, Row, Transaction};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -9,6 +9,8 @@ use crate::ai_transparency_change_command::{
 };
 
 pub const REASON_EVIDENCE_RECEIVED: &str = "ai_external_evidence_received_for_review";
+pub const REASON_EVIDENCE_ACCEPTED: &str = "ai_external_evidence_accepted_for_gate";
+pub const REASON_EVIDENCE_REJECTED: &str = "ai_external_evidence_rejected";
 
 #[derive(Debug, Clone)]
 pub struct SubmitExternalEvidenceIntakeCommand {
@@ -35,6 +37,17 @@ pub struct ExternalEvidenceIntakeOutcome {
     pub reason_code: &'static str,
 }
 
+#[derive(Debug, Clone)]
+pub struct ReviewExternalEvidenceIntakeCommand {
+    pub evidence_intake_id: String,
+    pub decision: String,
+    pub reviewer_snapshot_id: String,
+    pub reviewer_token_hash: String,
+    pub review_reference: String,
+    pub reason_digest: String,
+    pub decided_at: DateTime<Utc>,
+}
+
 #[derive(Debug, Error)]
 pub enum ExternalEvidenceIntakeError {
     #[error("external evidence intake is invalid: {0}")]
@@ -45,6 +58,110 @@ pub enum ExternalEvidenceIntakeError {
     ReferenceDenied(String),
     #[error("external evidence intake database error: {0}")]
     Database(#[from] sqlx::Error),
+}
+
+pub async fn review_external_evidence_intake(
+    pool: &PgPool,
+    preflight: &ChangeCommandPreflight<'_>,
+    command: &ReviewExternalEvidenceIntakeCommand,
+) -> Result<ExternalEvidenceIntakeOutcome, ExternalEvidenceIntakeError> {
+    if !matches!(command.decision.as_str(), "accepted_for_gate" | "rejected")
+        || !is_sha256(&command.reason_digest)
+        || !command.review_reference.starts_with("approval://")
+    {
+        return Err(ExternalEvidenceIntakeError::Invalid("review_decision"));
+    }
+    let row = sqlx::query(
+        "SELECT tenant_id, workspace_id, environment, submitter_snapshot_id, valid_until
+         FROM ai_transparency_external_evidence_intakes WHERE evidence_intake_id = $1",
+    )
+    .bind(&command.evidence_intake_id)
+    .fetch_optional(pool)
+    .await?
+    .ok_or(ExternalEvidenceIntakeError::Invalid("evidence_intake_id"))?;
+    let tenant_id: String = row.try_get("tenant_id")?;
+    let workspace_id: String = row.try_get("workspace_id")?;
+    let environment: String = row.try_get("environment")?;
+    let submitter_snapshot_id: String = row.try_get("submitter_snapshot_id")?;
+    let valid_until: DateTime<Utc> = row.try_get("valid_until")?;
+    if submitter_snapshot_id == command.reviewer_snapshot_id || valid_until <= command.decided_at {
+        return Err(ExternalEvidenceIntakeError::Invalid(
+            "reviewer_or_evidence_window",
+        ));
+    }
+    let actor = preflight
+        .iam
+        .verify_actor_authorization(&ActorAuthorizationInput {
+            token_hash: &command.reviewer_token_hash,
+            required_role: "ai_transparency_compliance_approver",
+            tenant_id: &tenant_id,
+            workspace_id: &workspace_id,
+            environment: &environment,
+            operation: "review_external_evidence",
+        });
+    if !actor.authorized {
+        return Err(ExternalEvidenceIntakeError::AuthorizationDenied(
+            actor
+                .reason_code
+                .unwrap_or_else(|| "iam_scope_denied".to_string()),
+        ));
+    }
+    let reference = preflight
+        .references
+        .verify_approval_reference(&ApprovalReferenceInput {
+            reference_type: ApprovalReferenceType::SecurityReview,
+            reference_id: &command.review_reference,
+            tenant_id: &tenant_id,
+            workspace_id: &workspace_id,
+            environment: &environment,
+            operation: "review_external_evidence",
+        });
+    if !reference.verified {
+        return Err(ExternalEvidenceIntakeError::ReferenceDenied(
+            reference
+                .reason_code
+                .unwrap_or_else(|| "reference_unavailable".to_string()),
+        ));
+    }
+    let mut transaction = pool.begin().await?;
+    let row = sqlx::query(
+        "SELECT submitter_snapshot_id, valid_until
+         FROM ai_transparency_external_evidence_intakes
+         WHERE evidence_intake_id = $1 FOR UPDATE",
+    )
+    .bind(&command.evidence_intake_id)
+    .fetch_optional(&mut *transaction)
+    .await?
+    .ok_or(ExternalEvidenceIntakeError::Invalid("evidence_intake_id"))?;
+    let locked_submitter_snapshot_id: String = row.try_get("submitter_snapshot_id")?;
+    let locked_valid_until: DateTime<Utc> = row.try_get("valid_until")?;
+    if locked_submitter_snapshot_id == command.reviewer_snapshot_id
+        || locked_valid_until <= command.decided_at
+    {
+        return Err(ExternalEvidenceIntakeError::Invalid(
+            "reviewer_or_evidence_window",
+        ));
+    }
+    let decision_id = Uuid::new_v4().to_string();
+    let audit_id = Uuid::new_v4().to_string();
+    sqlx::query("INSERT INTO ai_transparency_external_evidence_review_decisions (evidence_review_decision_id, evidence_intake_id, decision, reviewer_snapshot_id, review_reference, reason_digest, decided_at) VALUES ($1,$2,$3,$4,$5,$6,$7)")
+        .bind(&decision_id).bind(&command.evidence_intake_id).bind(&command.decision).bind(&command.reviewer_snapshot_id).bind(&command.review_reference).bind(&command.reason_digest).bind(command.decided_at).execute(&mut *transaction).await?;
+    let event_type = if command.decision == "accepted_for_gate" {
+        "evidence_accepted_for_gate"
+    } else {
+        "evidence_rejected"
+    };
+    sqlx::query("INSERT INTO ai_transparency_external_evidence_review_audit_events (evidence_review_audit_event_id, evidence_review_decision_id, event_type, actor_snapshot_id, event_digest, occurred_at) VALUES ($1,$2,$3,$4,$5,$6)")
+        .bind(&audit_id).bind(&decision_id).bind(event_type).bind(&command.reviewer_snapshot_id).bind(&command.reason_digest).bind(command.decided_at).execute(&mut *transaction).await?;
+    transaction.commit().await?;
+    Ok(ExternalEvidenceIntakeOutcome {
+        evidence_intake_id: command.evidence_intake_id.clone(),
+        reason_code: if command.decision == "accepted_for_gate" {
+            REASON_EVIDENCE_ACCEPTED
+        } else {
+            REASON_EVIDENCE_REJECTED
+        },
+    })
 }
 
 pub async fn submit_external_evidence_intake(

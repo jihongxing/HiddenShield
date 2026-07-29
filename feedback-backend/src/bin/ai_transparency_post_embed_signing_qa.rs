@@ -12,7 +12,7 @@ use std::{
 };
 
 #[cfg(feature = "postgres")]
-use chrono::{Duration, Utc};
+use chrono::{DateTime, Duration, Utc};
 #[cfg(feature = "postgres")]
 use hiddenshield_feedback_backend::ai_transparency_change_command::{
     ActorAuthorizationDecision, ActorAuthorizationInput, ApprovalReferenceAdapter,
@@ -2211,6 +2211,24 @@ async fn run_delivery_retrieval_gate(
     pool: &sqlx::PgPool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let fixture_type = "delivery_retrieval_gate";
+    let retrieval_fixture: Value = serde_json::from_str(include_str!(
+        "../../../docs/contracts/ai-transparency-delivery-retrieval/success-v1.fixture.json"
+    ))?;
+    if retrieval_fixture["expected"]["retrievalSucceededAuditFailure"]["packageReturned"].as_bool()
+        != Some(false)
+        || retrieval_fixture["expected"]["retrievalSucceededAuditFailure"]["authorizationStatus"]
+            .as_str()
+            != Some("consumed")
+        || retrieval_fixture["expected"]["retrievalSucceededAuditFailure"]
+            ["successfulAuditRowsWritten"]
+            .as_i64()
+            != Some(0)
+        || retrieval_fixture["expected"]["retrievalSucceededAuditFailure"]["tokenReusable"]
+            .as_bool()
+            != Some(false)
+    {
+        return Err("delivery retrieval audit failure fixture mismatch".into());
+    }
     seed_production_state(pool, fixture_type).await?;
     let signing_command = command(fixture_type, PostEmbedSigningFailureInjection::None);
     let signer = ControlledSigner::new(false, 0);
@@ -2330,6 +2348,61 @@ async fn run_delivery_retrieval_gate(
         )
         .into());
     }
+    let audit_failure_grant =
+        issue_delivery_authorization(pool, &authorization_command, &preflight).await?;
+    sqlx::raw_sql(
+        "CREATE FUNCTION fail_delivery_retrieval_audit_qa()
+         RETURNS TRIGGER AS $$ BEGIN
+             IF NEW.event_type = 'retrieval_succeeded' THEN
+                 RAISE EXCEPTION 'delivery_retrieval_audit_failure_qa';
+             END IF;
+             RETURN NEW;
+         END; $$ LANGUAGE plpgsql;
+         CREATE TRIGGER trg_fail_delivery_retrieval_audit_qa
+         BEFORE INSERT ON ai_delivery_download_audit_events
+         FOR EACH ROW EXECUTE FUNCTION fail_delivery_retrieval_audit_qa();",
+    )
+    .execute(pool)
+    .await?;
+    let mut audit_failure_connection = pool.acquire().await?;
+    let audit_failure = execute_postgres_retrieve_delivery(
+        &mut audit_failure_connection,
+        &RetrieveDeliveryCommand {
+            authorization_id: audit_failure_grant.authorization_id.clone(),
+            retrieval_token: audit_failure_grant.retrieval_token,
+        },
+        &store,
+    )
+    .await;
+    drop(audit_failure_connection);
+    if audit_failure.is_ok() {
+        return Err("delivery retrieval audit failure was accepted".into());
+    }
+    let audit_failure_status: String = sqlx::query_scalar(
+        "SELECT status FROM ai_delivery_retrieval_authorizations WHERE authorization_id = $1",
+    )
+    .bind(&audit_failure_grant.authorization_id)
+    .fetch_one(pool)
+    .await?;
+    let audit_failure_success_audits: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM ai_delivery_download_audit_events
+         WHERE authorization_id = $1 AND event_type = 'retrieval_succeeded'",
+    )
+    .bind(&audit_failure_grant.authorization_id)
+    .fetch_one(pool)
+    .await?;
+    if audit_failure_status != "consumed" || audit_failure_success_audits != 0 {
+        return Err(
+            "delivery retrieval audit failure leaked success audit or reusable token".into(),
+        );
+    }
+    sqlx::raw_sql(
+        "DROP TRIGGER trg_fail_delivery_retrieval_audit_qa
+         ON ai_delivery_download_audit_events;
+         DROP FUNCTION fail_delivery_retrieval_audit_qa();",
+    )
+    .execute(pool)
+    .await?;
 
     let mut replay_connection = pool.acquire().await?;
     let replay =
@@ -2589,12 +2662,12 @@ async fn run_delivery_retrieval_gate(
         .iter()
         .filter(|event| *event == "authorization_granted")
         .count()
-        != 6
+        != 7
         || audit_types
             .iter()
             .filter(|event| *event == "retrieval_claimed")
             .count()
-            != 3
+            != 4
         || audit_types
             .iter()
             .filter(|event| *event == "retrieval_succeeded")
@@ -2651,6 +2724,9 @@ async fn run_delivery_revoke_resource_budget_gate(
             != Some(DELIVERY_READ_TIMEOUT_MS as i64)
         || contract_fixture["authorization"]["rateLimitPerMinute"].as_i64()
             != Some(DELIVERY_RATE_LIMIT_PER_MINUTE as i64)
+        || contract_fixture["revocation"]["grantAuditFailureLeavesNoAuthorization"].as_bool()
+            != Some(true)
+        || contract_fixture["revocation"]["revokeAuditFailureLeavesActive"].as_bool() != Some(true)
     {
         return Err("delivery resource budget fixture mismatch".into());
     }
@@ -2706,6 +2782,57 @@ async fn run_delivery_revoke_resource_budget_gate(
         reason: "internal security revocation QA".to_string(),
     };
 
+    let authorization_count_before_audit_failure: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM ai_delivery_retrieval_authorizations
+         WHERE delivery_envelope_id = $1",
+    )
+    .bind(&envelope.delivery_envelope_id)
+    .fetch_one(pool)
+    .await?;
+    sqlx::raw_sql(
+        "CREATE FUNCTION fail_delivery_authorization_grant_audit_qa()
+         RETURNS TRIGGER AS $$ BEGIN
+             IF NEW.event_type = 'authorization_granted' THEN
+                 RAISE EXCEPTION 'delivery_authorization_grant_audit_failure_qa';
+             END IF;
+             RETURN NEW;
+         END; $$ LANGUAGE plpgsql;
+         CREATE TRIGGER trg_fail_delivery_authorization_grant_audit_qa
+         BEFORE INSERT ON ai_delivery_download_audit_events
+         FOR EACH ROW EXECUTE FUNCTION fail_delivery_authorization_grant_audit_qa();",
+    )
+    .execute(pool)
+    .await?;
+    let mut grant_audit_failure_connection = pool.acquire().await?;
+    let grant_audit_failure = execute_postgres_create_delivery_authorization(
+        &mut grant_audit_failure_connection,
+        &authorization_command,
+        &preflight,
+    )
+    .await;
+    drop(grant_audit_failure_connection);
+    if grant_audit_failure.is_ok() {
+        return Err("delivery authorization grant audit failure was accepted".into());
+    }
+    let authorization_count_after_audit_failure: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM ai_delivery_retrieval_authorizations
+         WHERE delivery_envelope_id = $1",
+    )
+    .bind(&envelope.delivery_envelope_id)
+    .fetch_one(pool)
+    .await?;
+    if authorization_count_after_audit_failure != authorization_count_before_audit_failure {
+        return Err(
+            "delivery authorization grant audit failure leaked active authorization".into(),
+        );
+    }
+    sqlx::raw_sql(
+        "DROP TRIGGER trg_fail_delivery_authorization_grant_audit_qa
+         ON ai_delivery_download_audit_events;
+         DROP FUNCTION fail_delivery_authorization_grant_audit_qa();",
+    )
+    .execute(pool)
+    .await?;
     let revoked_grant =
         issue_delivery_authorization(pool, &authorization_command, &preflight).await?;
     if revoked_grant.max_download_bytes != DELIVERY_MAX_DOWNLOAD_BYTES
@@ -2753,6 +2880,47 @@ async fn run_delivery_revoke_resource_budget_gate(
         )
         .into());
     }
+    sqlx::raw_sql(
+        "CREATE FUNCTION fail_delivery_authorization_revoke_audit_qa()
+         RETURNS TRIGGER AS $$ BEGIN
+             IF NEW.event_type = 'authorization_revoked' THEN
+                 RAISE EXCEPTION 'delivery_authorization_revoke_audit_failure_qa';
+             END IF;
+             RETURN NEW;
+         END; $$ LANGUAGE plpgsql;
+         CREATE TRIGGER trg_fail_delivery_authorization_revoke_audit_qa
+         BEFORE INSERT ON ai_delivery_download_audit_events
+         FOR EACH ROW EXECUTE FUNCTION fail_delivery_authorization_revoke_audit_qa();",
+    )
+    .execute(pool)
+    .await?;
+    let mut revoke_audit_failure_connection = pool.acquire().await?;
+    let revoke_audit_failure = execute_postgres_revoke_delivery_authorization(
+        &mut revoke_audit_failure_connection,
+        &revoke_command,
+        &preflight,
+    )
+    .await;
+    drop(revoke_audit_failure_connection);
+    if revoke_audit_failure.is_ok() {
+        return Err("delivery authorization revoke audit failure was accepted".into());
+    }
+    let status_after_revoke_audit_failure: String = sqlx::query_scalar(
+        "SELECT status FROM ai_delivery_retrieval_authorizations WHERE authorization_id = $1",
+    )
+    .bind(&revoked_grant.authorization_id)
+    .fetch_one(pool)
+    .await?;
+    if status_after_revoke_audit_failure != "active" {
+        return Err("delivery authorization revoke audit failure leaked revoked status".into());
+    }
+    sqlx::raw_sql(
+        "DROP TRIGGER trg_fail_delivery_authorization_revoke_audit_qa
+         ON ai_delivery_download_audit_events;
+         DROP FUNCTION fail_delivery_authorization_revoke_audit_qa();",
+    )
+    .execute(pool)
+    .await?;
     let mut revoke_connection = pool.acquire().await?;
     let revoked = execute_postgres_revoke_delivery_authorization(
         &mut revoke_connection,
@@ -4035,6 +4203,9 @@ async fn run_notification_delivery_gate(
     if fixture["destinationPolicy"]["boundBeforeAdapterInvocation"].as_bool() != Some(true)
         || fixture["providerReceipt"]["maximumLifetimeSeconds"].as_i64() != Some(900)
         || fixture["completion"]["invalidReceiptWrites"].as_i64() != Some(0)
+        || fixture["completion"]["auditFailureRollback"].as_bool() != Some(true)
+        || fixture["recovery"]["auditFailureRollback"].as_bool() != Some(true)
+        || fixture["recovery"]["replayAuditFailureNoStateChange"].as_bool() != Some(true)
         || fixture["externalAdapters"]["zeroSend"].as_str() != Some("sandbox_simulation_only")
     {
         return Err("notification delivery gate fixture mismatch".into());
@@ -4225,6 +4396,49 @@ async fn run_notification_delivery_gate(
         receipt,
         ..invalid_complete
     };
+    sqlx::raw_sql(
+        "CREATE FUNCTION fail_notification_completion_audit_qa()
+         RETURNS TRIGGER AS $$ BEGIN RAISE EXCEPTION 'notification_completion_audit_failure_qa'; END; $$ LANGUAGE plpgsql;
+         CREATE TRIGGER trg_fail_notification_completion_audit_qa
+         BEFORE INSERT ON ai_delivery_security_notification_outbox_audit_events
+         FOR EACH ROW EXECUTE FUNCTION fail_notification_completion_audit_qa();",
+    )
+    .execute(pool)
+    .await?;
+    let mut audit_failure_connection = pool.acquire().await?;
+    let audit_failure = complete_postgres_notification_delivery(
+        &mut audit_failure_connection,
+        &complete_command,
+        preflight,
+    )
+    .await;
+    drop(audit_failure_connection);
+    if audit_failure.is_ok() {
+        return Err("notification completion audit failure was accepted".into());
+    }
+    let receipt_count_after_audit_failure: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM ai_delivery_security_notification_provider_receipts
+         WHERE notification_id = $1",
+    )
+    .bind(&claimed.notification_id)
+    .fetch_one(pool)
+    .await?;
+    let status_after_audit_failure: String = sqlx::query_scalar(
+        "SELECT status FROM ai_delivery_security_notification_outbox WHERE notification_id = $1",
+    )
+    .bind(&claimed.notification_id)
+    .fetch_one(pool)
+    .await?;
+    if receipt_count_after_audit_failure != 0 || status_after_audit_failure != "leased" {
+        return Err("notification completion audit failure leaked receipt or state".into());
+    }
+    sqlx::raw_sql(
+        "DROP TRIGGER trg_fail_notification_completion_audit_qa
+         ON ai_delivery_security_notification_outbox_audit_events;
+         DROP FUNCTION fail_notification_completion_audit_qa();",
+    )
+    .execute(pool)
+    .await?;
     let mut complete_connection = pool.acquire().await?;
     let completed = complete_postgres_notification_delivery(
         &mut complete_connection,
@@ -4341,6 +4555,48 @@ async fn run_notification_delivery_gate(
         executor_token_hash: sha256_hex(b"notification-delivery-gate-token"),
         recovery_idempotency_key: "notification-recovery-gate-v1".to_string(),
     };
+    sqlx::raw_sql(
+        "CREATE FUNCTION fail_notification_recovery_audit_qa()
+         RETURNS TRIGGER AS $$ BEGIN RAISE EXCEPTION 'notification_recovery_audit_failure_qa'; END; $$ LANGUAGE plpgsql;
+         CREATE TRIGGER trg_fail_notification_recovery_audit_qa
+         BEFORE INSERT ON ai_delivery_security_notification_outbox_audit_events
+         FOR EACH ROW EXECUTE FUNCTION fail_notification_recovery_audit_qa();",
+    )
+    .execute(pool)
+    .await?;
+    let mut audit_failure_connection = pool.acquire().await?;
+    let audit_failure = recover_postgres_notification_dead_letter(
+        &mut audit_failure_connection,
+        &recover_command,
+        preflight,
+    )
+    .await;
+    drop(audit_failure_connection);
+    if audit_failure.is_ok() {
+        return Err("notification recovery audit failure was accepted".into());
+    }
+    let recovery_state_after_audit_failure: (String, Option<String>, Option<DateTime<Utc>>, i32) =
+        sqlx::query_as(
+            "SELECT status, lease_owner, lease_expires_at, recovery_count
+             FROM ai_delivery_security_notification_outbox WHERE notification_id = $1",
+        )
+        .bind(&second.notification_id)
+        .fetch_one(pool)
+        .await?;
+    if recovery_state_after_audit_failure.0 != "dead_letter"
+        || recovery_state_after_audit_failure.1.is_some()
+        || recovery_state_after_audit_failure.2.is_some()
+        || recovery_state_after_audit_failure.3 != 0
+    {
+        return Err("notification recovery audit failure leaked retry or lease state".into());
+    }
+    sqlx::raw_sql(
+        "DROP TRIGGER trg_fail_notification_recovery_audit_qa
+         ON ai_delivery_security_notification_outbox_audit_events;
+         DROP FUNCTION fail_notification_recovery_audit_qa();",
+    )
+    .execute(pool)
+    .await?;
     let mut recover_connection = pool.acquire().await?;
     let recovered = recover_postgres_notification_dead_letter(
         &mut recover_connection,
@@ -4367,6 +4623,48 @@ async fn run_notification_delivery_gate(
         )
         .into());
     }
+    sqlx::raw_sql(
+        "CREATE FUNCTION fail_notification_recovery_replay_audit_qa()
+         RETURNS TRIGGER AS $$ BEGIN RAISE EXCEPTION 'notification_recovery_replay_audit_failure_qa'; END; $$ LANGUAGE plpgsql;
+         CREATE TRIGGER trg_fail_notification_recovery_replay_audit_qa
+         BEFORE INSERT ON ai_delivery_security_notification_outbox_audit_events
+         FOR EACH ROW EXECUTE FUNCTION fail_notification_recovery_replay_audit_qa();",
+    )
+    .execute(pool)
+    .await?;
+    let mut replay_audit_failure_connection = pool.acquire().await?;
+    let replay_audit_failure = recover_postgres_notification_dead_letter(
+        &mut replay_audit_failure_connection,
+        &recover_command,
+        preflight,
+    )
+    .await;
+    drop(replay_audit_failure_connection);
+    if replay_audit_failure.is_ok() {
+        return Err("notification recovery replay audit failure was accepted".into());
+    }
+    let replay_state_after_audit_failure: (String, Option<String>, Option<DateTime<Utc>>, i32) =
+        sqlx::query_as(
+            "SELECT status, lease_owner, lease_expires_at, recovery_count
+             FROM ai_delivery_security_notification_outbox WHERE notification_id = $1",
+        )
+        .bind(&second.notification_id)
+        .fetch_one(pool)
+        .await?;
+    if replay_state_after_audit_failure.0 != "retry_scheduled"
+        || replay_state_after_audit_failure.1.is_some()
+        || replay_state_after_audit_failure.2.is_some()
+        || replay_state_after_audit_failure.3 != 1
+    {
+        return Err("notification recovery replay audit failure changed recovery state".into());
+    }
+    sqlx::raw_sql(
+        "DROP TRIGGER trg_fail_notification_recovery_replay_audit_qa
+         ON ai_delivery_security_notification_outbox_audit_events;
+         DROP FUNCTION fail_notification_recovery_replay_audit_qa();",
+    )
+    .execute(pool)
+    .await?;
     let recovery_claim = ClaimDeliverySecurityNotificationsCommand {
         runner_id: "notification-delivery-gate-runner-recovery-a".to_string(),
         ..claim_command.clone()

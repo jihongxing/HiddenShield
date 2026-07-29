@@ -1,0 +1,6 @@
+{
+  "schemaVersion": "hs-ai-external-evidence-review-v1",
+  "decision": "accepted_for_gate",
+  "reviewerMatchesSubmitter": true,
+  "expectedError": "reviewer_or_evidence_window"
+}

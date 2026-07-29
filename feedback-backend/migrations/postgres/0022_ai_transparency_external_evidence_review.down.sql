@@ -1,0 +1,5 @@
+DROP TRIGGER IF EXISTS trg_ai_external_evidence_review_audit_append_only ON ai_transparency_external_evidence_review_audit_events;
+DROP TRIGGER IF EXISTS trg_ai_external_evidence_review_decisions_append_only ON ai_transparency_external_evidence_review_decisions;
+DROP FUNCTION IF EXISTS reject_ai_transparency_external_evidence_review_mutation();
+DROP TABLE IF EXISTS ai_transparency_external_evidence_review_audit_events;
+DROP TABLE IF EXISTS ai_transparency_external_evidence_review_decisions;

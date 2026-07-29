@@ -34,7 +34,8 @@
     "atomic": true,
     "idempotent": true,
     "terminalStatus": "completed",
-    "invalidReceiptWrites": 0
+    "invalidReceiptWrites": 0,
+    "auditFailureRollback": true
   },
   "deadLetter": {
     "terminalStatus": "dead_letter",
@@ -46,7 +47,9 @@
     "expiredLeaseReclaim": true,
     "deadLetterRequeue": true,
     "idempotent": true,
-    "appendOnlyAudit": true
+    "appendOnlyAudit": true,
+    "auditFailureRollback": true,
+    "replayAuditFailureNoStateChange": true
   },
   "externalAdapters": {
     "pagerDuty": "suspended",

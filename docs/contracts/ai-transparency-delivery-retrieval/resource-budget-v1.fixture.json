@@ -14,7 +14,9 @@
     "activeToRevokedOnly": true,
     "replayReturnsExistingState": true,
     "reasonStoredOnAuthorization": true,
-    "auditStoresReasonDigestOnly": true
+    "auditStoresReasonDigestOnly": true,
+    "grantAuditFailureLeavesNoAuthorization": true,
+    "revokeAuditFailureLeavesActive": true
   },
   "failureSemantics": {
     "revoked": "ai_delivery_authorization_revoked",

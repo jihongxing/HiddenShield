@@ -1,0 +1,7 @@
+{
+  "schemaVersion": "hs-ai-external-evidence-review-v1",
+  "decision": "accepted_for_gate",
+  "reviewReference": "approval://security/denied-v1",
+  "referenceVerified": false,
+  "expectedError": "reference_unavailable"
+}
