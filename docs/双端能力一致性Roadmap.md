@@ -1633,3 +1633,58 @@
 - synthetic QA 只验证 server-side SDK/facade 与公共 Resolver 响应 shape，不产出 Desktop、Android 或 iOS 可承诺的 protected-copy fixture。
 - synthetic marked PNG bytes 不是 `watermark-core` 写入产物，不得导入端侧 vault、用于跨端读取报告或替代正式 fixture。
 - 真实伙伴输出 confirmed PNG 后仍必须执行 Desktop/Android 读取和摘要 fail-closed；iOS runtime Gate 保持挂起。
+
+## 2026-07-29 云版权库多用户体系一致性边界
+
+- 状态：`c0_contract_frozen_cross_end_fixture_verified`。
+- 桌面与移动端必须共享 `cloud-copyright-record-v1`、workspace context、RBAC 结果、outbox 状态、cursor、冲突代码和数据白名单；不得各自解释团队记录、删除、撤销或公开状态。
+- 双端均继续本地优先：离线写入仅代表本地成功，媒体、保护副本、本地路径、seed 和 token 不同步；云端确认前不得显示“已备份”。
+- 团队 workspace 切换、成员撤销和冲突必须同步显示相同的 fail-closed 状态；撤销后保留本地草稿和诊断，不允许静默上传或覆盖。
+- `watermark-core` 继续只提供算法、payload、编号和读写验证；云版权库只同步其结果摘要和状态，不能复制算法或改写跨端验证语义。
+- C0 已完成：同一 fixture 覆盖 desktop-written/mobile-read、mobile-written/desktop-read、成员撤销和路径/媒体/seed/token/private key 零同步。
+- 下一双端任务：在 C1 migration 设计评审中冻结本地 record ID、workspace context、outbox 与 server version 的映射；不得改变现有 fixture。
+
+## 2026-07-29 云版权库 C1 迁移评审一致性边界
+
+- 状态：`c1_design_review_approved_no_client_implementation`。
+- 已冻结：C1 只添加 workspace-scoped 云投影、membership、record version、change/event/audit/cursor；桌面和移动现有本地 record、outbox、payload 与 UI 在 C1 实现前不改动。
+- 后续 C1 adapter 必须把 `cloud-copyright-record-v1` 的 `recordId`、workspace context、base record version、server version、disposition 和错误码以相同语义映射到 Rust/Dart bridge。
+- 设计中的 revoke-vs-push、stale version 和 workspace isolation 必须在 C2 形成 desktop↔mobile fixture；不得让任一端静默采用 last-write-wins。
+- 下一双端任务：待 C1 PostgreSQL QA 通过后，冻结 Rust/Dart transport mapping fixture 与端侧 outbox migration，不在本评审内提前修改客户端。
+
+## 2026-07-29 云版权库 C1 PostgreSQL 核心实现一致性边界
+
+- 状态：`c1_postgres_core_implemented_no_client_transport`。
+- C1 已通过 migration smoke 与八场景真实 PostgreSQL QA；本次没有修改 Desktop、Android、iOS、本地 vault、outbox 或 UI，因此没有产生单端产品承诺。
+- 后续 Rust/Dart transport 必须复用 C0 `cloud-copyright-record-v1` 的 workspace、base/server version、disposition 和错误码；不得把服务端 `accepted` 误显示为跨端已备份或团队已同步。
+- 生产团队协作、公开 SDK 和端侧同步入口继续关闭；下一双端任务是冻结同一份 Rust/Dart mapping fixture 和失败关闭文案。
+
+## 2026-07-29 云版权库 C2 Transport 合同一致性边界
+
+- 状态：`c2_contract_frozen_no_client_implementation`。
+- Desktop Rust 与 Mobile Rust/Dart 只能映射相同的 workspace、record、base/server version、idempotency key、request digest、cursor 和 disposition；两端均不得直连 internal API。
+- `conflict_version_changed`、`blocked_by_membership_revoked`、`forbidden`、`role_denied` 与 scope failure 一律保留本地草稿并停止自动重试，不能显示为“已备份”。
+- 本阶段不改端侧 bridge 或 UI；iOS runtime 环境 Gate 继续挂起，不能用 schema fixture 替代真实 runtime 互验。
+- 下一双端任务：C3 adapter 实现前冻结 Desktop/Android transport fixture 和同一份错误文案断言。
+
+## 2026-07-29 云版权库 C3 RLS 与身份 Receipt 评审边界
+
+- 状态：`c3_design_review_approved_no_client_implementation`。
+- C3 receipt 只能由受控 internal adapter 验真；Desktop/Android/iOS 不接收、缓存或重放 raw identity receipt，也不直连数据库或 internal API。
+- RLS scope failure、identity receipt failure 与 membership revoked 继续统一映射为保留本地草稿、停止自动重试；不得产生端侧“已备份”状态。
+- iOS runtime Gate 继续独立挂起；本评审既不修改 bridge，也不能替代 Desktop/Android 或 iOS 的真实 scope transport fixture。
+- 下一双端任务：待 C3 adapter 与 scope QA 实现后，执行 Desktop/Android transport fixture；iOS 环境可用后补测。
+
+## 2026-07-29 云版权库 C3 Fail-Closed Fixture
+
+- Desktop Rust 与 Android Rust/Dart 已冻结同一份 fail-closed fixture：所有 identity、scope、role、membership 或 conflict failure 均保留本地草稿、停止自动重试，并显示“未标记为已备份”。
+- 这是合同验证，不是 Desktop/Android runtime implementation；端侧 bridge、UI 与 vault 状态机未修改。
+- iOS runtime Gate 继续挂起；不得把 schema fixture 当作 iOS 运行态验收。
+
+## 2026-07-29 云版权库阶段性收尾一致性边界
+
+- 状态：`phase_checkpoint_external_gates_suspended`。
+- Desktop/Android/iOS 正式云版权库 transport 均未开放；当前只有跨端 schema、错误语义和 contract-only fixture。
+- Desktop/Android 必须继续本地优先；C3 identity/scope failure 保留草稿且不得显示“已备份”。iOS runtime Gate 继续挂起。
+- 恢复时必须先完成真实 RLS/identity adapter 与 PostgreSQL scope QA，再执行 Desktop/Android transport runtime fixture；不得提前改单端产品承诺。
+- 下一双端任务：暂停云版权库一致性工作，等待外部配置后按阶段性交接清单恢复。

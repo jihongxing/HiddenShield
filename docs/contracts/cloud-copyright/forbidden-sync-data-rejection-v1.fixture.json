@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "forbidden_sync_data_rejection",
+  "recordCandidate": {
+    "recordId": "ccr_01J4C0PYRIGHT000000000001",
+    "workspaceId": "ws_personal_01J4C0PYRIGHT000000000001",
+    "watermarkUid": "HS-01234567-89ABCDEF-01234567-89ABCDEF",
+    "originalPath": "C:/Users/example/Pictures/source.png",
+    "protectedCopyPath": "C:/Users/example/Pictures/protected.png"
+  },
+  "forbiddenFields": [
+    "originalPath",
+    "protectedCopyPath",
+    "localPath",
+    "mediaBytes",
+    "creatorSeed",
+    "accessToken",
+    "refreshToken",
+    "privateKey"
+  ],
+  "expectedError": {
+    "code": "rejected_forbidden_sync_data",
+    "remoteWriteCommitted": false,
+    "auditAppended": false
+  }
+}

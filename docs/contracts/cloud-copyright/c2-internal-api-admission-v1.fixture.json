@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "internal_api_admission",
+  "endpointClass": "internal_only",
+  "operations": [
+    {
+      "operation": "cloud_copyright_records_read",
+      "method": "POST",
+      "requiredRole": "cloud_copyright_reader"
+    },
+    {
+      "operation": "cloud_copyright_changes_execute",
+      "method": "POST",
+      "requiredRole": "cloud_copyright_writer"
+    },
+    {
+      "operation": "cloud_copyright_memberships_revoke",
+      "method": "POST",
+      "requiredRole": "cloud_copyright_workspace_admin"
+    }
+  ],
+  "requiredClaims": [
+    "actor_id",
+    "account_id",
+    "workspace_id",
+    "device_id",
+    "membership_id",
+    "role",
+    "request_id",
+    "receipt_digest"
+  ],
+  "forbiddenExposure": [
+    "public_router_registration",
+    "anonymous_access",
+    "browser_cors",
+    "desktop_direct_call",
+    "mobile_direct_call",
+    "public_sdk_export",
+    "production_credential_issuance"
+  ]
+}

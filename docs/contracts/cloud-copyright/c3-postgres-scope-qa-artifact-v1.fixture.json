@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "artifactKind": "cloud_copyright_postgres_scope_qa",
+  "evidenceClass": "fixture_contract_only",
+  "database": {
+    "kind": "postgres",
+    "databaseNamePattern": "hiddenshield_migrate_smoke_*",
+    "connections": 2,
+    "sqliteAllowed": false,
+    "mockDatabaseAllowed": false
+  },
+  "receiptProtection": {
+    "rawIdentityReceipt": "excluded",
+    "scopeDigest": "sha256:scope-qa-fixture-v1",
+    "providerResponse": "excluded"
+  },
+  "retention": {
+    "classification": "internal_security_qa",
+    "retainDays": 90,
+    "exportBoundary": "internal_audited_export_only"
+  },
+  "scenarios": [
+    {
+      "scenarioId": "valid_scoped_read_write",
+      "receiptClass": "verified",
+      "expected": {
+        "outcome": "accepted",
+        "visibleRows": 1,
+        "recordDelta": 1,
+        "changeDelta": 1,
+        "eventDelta": 1,
+        "auditDelta": 1,
+        "cursorDelta": 1
+      }
+    },
+    {
+      "scenarioId": "missing_scope",
+      "receiptClass": "verified",
+      "expected": {
+        "outcome": "scope_missing",
+        "visibleRows": 0,
+        "recordDelta": 0,
+        "changeDelta": 0,
+        "eventDelta": 0,
+        "auditDelta": 0,
+        "cursorDelta": 0
+      }
+    },
+    {
+      "scenarioId": "account_workspace_mismatch",
+      "receiptClass": "scope_mismatch",
+      "expected": {
+        "outcome": "scope_mismatch",
+        "visibleRows": 0,
+        "recordDelta": 0,
+        "changeDelta": 0,
+        "eventDelta": 0,
+        "auditDelta": 0,
+        "cursorDelta": 0
+      }
+    },
+    {
+      "scenarioId": "device_membership_mismatch",
+      "receiptClass": "scope_mismatch",
+      "expected": {
+        "outcome": "scope_mismatch",
+        "visibleRows": 0,
+        "recordDelta": 0,
+        "changeDelta": 0,
+        "eventDelta": 0,
+        "auditDelta": 0,
+        "cursorDelta": 0
+      }
+    },
+    {
+      "scenarioId": "role_denied",
+      "receiptClass": "verified",
+      "expected": {
+        "outcome": "role_denied",
+        "visibleRows": 0,
+        "recordDelta": 0,
+        "changeDelta": 0,
+        "eventDelta": 0,
+        "auditDelta": 0,
+        "cursorDelta": 0
+      }
+    },
+    {
+      "scenarioId": "revoked_after_receipt",
+      "receiptClass": "verified_but_membership_revoked",
+      "expected": {
+        "outcome": "blocked_by_membership_revoked",
+        "visibleRows": 0,
+        "recordDelta": 0,
+        "changeDelta": 0,
+        "eventDelta": 0,
+        "auditDelta": 0,
+        "cursorDelta": 0
+      }
+    },
+    {
+      "scenarioId": "expired_invalid_unavailable_receipt",
+      "receiptClass": "invalid",
+      "expected": {
+        "outcome": "identity_receipt_rejected",
+        "visibleRows": 0,
+        "recordDelta": 0,
+        "changeDelta": 0,
+        "eventDelta": 0,
+        "auditDelta": 0,
+        "cursorDelta": 0
+      }
+    },
+    {
+      "scenarioId": "service_actor_reason_gate",
+      "receiptClass": "system_missing_reason",
+      "expected": {
+        "outcome": "system_reason_required",
+        "visibleRows": 0,
+        "recordDelta": 0,
+        "changeDelta": 0,
+        "eventDelta": 0,
+        "auditDelta": 0,
+        "cursorDelta": 0
+      }
+    },
+    {
+      "scenarioId": "pool_scope_bleed",
+      "receiptClass": "scope_absent_second_connection",
+      "expected": {
+        "outcome": "scope_missing",
+        "visibleRows": 0,
+        "recordDelta": 0,
+        "changeDelta": 0,
+        "eventDelta": 0,
+        "auditDelta": 0,
+        "cursorDelta": 0
+      }
+    },
+    {
+      "scenarioId": "two_workspace_concurrency",
+      "receiptClass": "verified",
+      "expected": {
+        "outcome": "accepted_isolated",
+        "visibleRows": 1,
+        "recordDelta": 1,
+        "changeDelta": 1,
+        "eventDelta": 1,
+        "auditDelta": 1,
+        "cursorDelta": 1
+      }
+    },
+    {
+      "scenarioId": "audit_failure_rollback",
+      "receiptClass": "verified",
+      "expected": {
+        "outcome": "audit_write_failed",
+        "visibleRows": 0,
+        "recordDelta": 0,
+        "changeDelta": 0,
+        "eventDelta": 0,
+        "auditDelta": 0,
+        "cursorDelta": 0
+      }
+    },
+    {
+      "scenarioId": "direct_sql_denial",
+      "receiptClass": "app_role_wrong_scope",
+      "expected": {
+        "outcome": "rls_denied",
+        "visibleRows": 0,
+        "recordDelta": 0,
+        "changeDelta": 0,
+        "eventDelta": 0,
+        "auditDelta": 0,
+        "cursorDelta": 0
+      }
+    }
+  ]
+}

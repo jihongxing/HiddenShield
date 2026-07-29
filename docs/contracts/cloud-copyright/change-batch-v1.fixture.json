@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "change_batch",
+  "workspaceId": "ws_personal_01J4C0PYRIGHT000000000001",
+  "deviceId": "device_desktop_01J4C0PYRIGHT01",
+  "changes": [
+    {
+      "changeId": "ccc_01J4C0PYRIGHT000000000001",
+      "idempotencyKey": "desktop:ccr_01J4C0PYRIGHT000000000001:7",
+      "operation": "upsert_record",
+      "recordId": "ccr_01J4C0PYRIGHT000000000001",
+      "baseRecordVersion": 6,
+      "requestDigest": "sha256:change-request-7"
+    }
+  ],
+  "expectedDispositions": [
+    {
+      "changeId": "ccc_01J4C0PYRIGHT000000000001",
+      "status": "accepted",
+      "recordVersion": 7,
+      "auditAppended": true
+    },
+    {
+      "changeId": "ccc_01J4C0PYRIGHT000000000001",
+      "status": "duplicate",
+      "recordVersion": 7,
+      "auditAppended": false
+    }
+  ]
+}

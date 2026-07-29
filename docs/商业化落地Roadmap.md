@@ -2619,3 +2619,87 @@ Creator 行为：
 - 挂起范围：真实 provider/IAM/KMS/HSM/signer/object-store/notification 配置与恢复演练、CN/EU/US-CA 法务签署、真实设计伙伴 Sandbox、第三方处理链样本授权和 iOS runtime。
 - 商业边界：不得在暂停期发布 SDK、开放公网 Resolver/API、发放 production credential、确认收入或承诺 SLA/三地合规。
 - 恢复任务：先按 `docs/AI生成内容标识阶段性收尾与外部Gate交接.md` 接收并审核外部 evidence，再逐 Gate 执行 provider recovery 或 12 场景设计伙伴 Sandbox 验收。
+
+## 2026-07-29 云版权库多用户体系总体设计
+
+- 状态：`c0_contract_frozen_existing_sync_contracts_verified_no_production_migration`。
+- 决策：云版权库定位为多租户版权 metadata、协作、审计和恢复系统；原始媒体、保护副本、本地路径、creator seed 明文和凭据不进入默认云同步。
+- 商业模型：个人 workspace 是账户基础能力；Creator/Studio/Enterprise 的差异应以同步容量、历史保留、成员席位、审计/导出、私有化和 Enterprise SDK entitlement 表达，不改变记录所有权。
+- 安全前置：生产数据库必须为 PostgreSQL；设备绑定凭据须进入操作系统安全存储；workspace membership、角色、撤销、审计、冲突和删除保留期必须先完成真实 PostgreSQL Gate。
+- SDK 边界：首期只冻结内部 schema/transport package；`public-rights-sdk` 只读公开投影，AI Transparency SDK 仅通过最小 evidence link 关联，Enterprise SDK 在权限与计量 Gate 后另行开放。
+- 验证：临时 SQLite 后端上的 `cloud:contract`、`cloud:sync-reliability-contract`、双设备 `cloud:e2e` 与 PostgreSQL migration contract 通过；该结果不替代生产 PostgreSQL 多租户、凭据托管、团队权限或恢复演练。
+- C0 完成：`cloud-copyright-record-v1`、workspace membership/RBAC、change batch、冲突、成员撤销和隐私拒绝六类 fixture 已冻结；无容器 `cloud:copyright-contract` 已纳入 `cloud:ci`。
+- 下一商业化任务：仅评审 C1 PostgreSQL additive migration 与多租户并发 harness；评审通过前不创建迁移、不开放公开 SDK。
+
+## 2026-07-29 云版权库 C1 多租户迁移设计评审
+
+- 状态：`c1_design_review_approved_no_migration_created`。
+- 已冻结：`0023_cloud_copyright_multitenant_core` 的 additive 表清单、workspace membership/RBAC、私有 record projection、change/event/audit/cursor、RLS/repository guard 和八个真实 PostgreSQL 双连接竞争场景。
+- 商业边界：设计通过不代表 PostgreSQL 多租户云版权库、团队协作、备份恢复、Enterprise SDK 或 SLA 已实现；production database、公开 SDK 和客户发放继续关闭。
+- 实施前置：C0 contract 必须保持通过；迁移只能添加新表/索引，不改写 `0001` 或旧同步 payload；harness 必须使用名称含 `hiddenshield_migrate_smoke` 的 PostgreSQL 一次性库与两个真实连接。
+- 下一商业化任务：取得用户实施授权后创建 `0023`、`CloudCopyrightRepository` 和八场景 PostgreSQL QA；未通过 migration smoke 与并发 Gate 前不进入 C2。
+
+## 2026-07-29 云版权库 C1 PostgreSQL 核心实现
+
+- 状态：`c1_postgres_core_implemented_internal_only`。
+- 已完成：`0023_cloud_copyright_multitenant_core` additive migration、`CloudCopyrightRepository`、PostgreSQL migration smoke 和八场景双连接并发 QA；stale-version 竞争已验证为一次 `accepted` 与一次 `conflict_version_changed`。
+- 商业边界：该证据不开放 production 云版权库、团队协作、账户/成员管理 UI、公开 SDK、Enterprise entitlement、备份恢复承诺或 SLA。
+- 验证：`npm run cloud:postgres-migrate-smoke` 与 `npm run cloud:copyright-postgres-qa` 通过；仅连接名称含 `hiddenshield_migrate_smoke` 的一次性 PostgreSQL 库。
+- 下一商业化任务：冻结 C2 端侧 transport/RBAC mapping 与 production RLS/request-scope Gate，随后才评审受控内部 API。
+
+## 2026-07-29 云版权库 C2 合同冻结
+
+- 状态：`c2_contract_frozen_no_runtime_or_migration`。
+- 已冻结：Desktop Rust 与 Mobile Rust/Dart transport mapping、PostgreSQL transaction-local request scope/RLS、internal-only operation admission 与零公开暴露面。
+- 商业边界：合同不开放生产云版权库、团队协作、公开 API/SDK、Enterprise entitlement、客户凭据、成员管理 UI 或 SLA。
+- 验证：`npm run cloud:copyright-c2-contract` 已纳入 `cloud:ci`；contract verifier 拒绝任何 `0024` cloud copyright migration。
+- 下一商业化任务：仅评审 C3 RLS additive migration、internal identity receipt adapter 和真实 PostgreSQL scope QA 设计。
+
+## 2026-07-29 云版权库 C3 RLS 与身份 Receipt 设计评审
+
+- 状态：`c3_design_review_approved_no_migration_or_runtime_created`。
+- 已冻结：`0024_cloud_copyright_rls_request_scope` 的 additive/role/RLS 目标、异步 verified identity receipt adapter、12 场景 PostgreSQL 双连接 scope QA 与零公开路由边界。
+- 商业边界：评审不提供 production RLS、真实团队隔离、internal API、公开 SDK、客户 credential、恢复承诺或 SLA。
+- 阻塞：真实 Internal IAM/JWKS 或 mTLS provider、PostgreSQL role bootstrap 与 Secret reference 是外部配置依赖；未到位时 C3 实现必须保持 fail-closed。
+- 下一商业化任务：外部配置到位后，仅评审 `0024` SQL 和 adapter JSON/contract fixture，不先创建 migration。
+
+## 2026-07-29 云版权库 C3 无外部依赖合同包
+
+- 状态：`c3_contract_frozen_no_migration_or_runtime_created`。
+- 已完成：identity receipt Schema/canonical digest、invalid/expired/scope mismatch/unavailable fixture、RLS SQL static lint、Desktop/Android draft-retention fixture、role/Secret reference handoff template 与旧 sync/internal API 隔离审计。
+- 商业边界：所有资产均为内部合同或交接材料，不构成 IAM 接入、RLS runtime、客户同步、团队协作、公开 API/SDK 或 SLA。
+- 验证：`npm run cloud:copyright-c3-contract` 已接入 `cloud:ci`；该 Gate 拒绝 `0024` migration、公开/内部 cloud copyright route、RLS bypass、global scope 和 public grant。
+- 下一商业化任务：继续等待外部 identity/role 配置；到位后仅评审 `0024` SQL 与 adapter fixture。
+
+## 2026-07-29 云版权库 C3 External Readiness Dry-Run
+
+- 状态：`c3_external_readiness_dry_run_internal_only`。
+- 已完成：缺失配置返回 `blocked`、只接受 Secret/evidence/IAM reference、字面秘密或错误引用返回 `rejected`，并增加 C3 contract/交接材料 secret scanner。
+- 商业边界：dry-run 不连接真实 IAM/JWKS/mTLS、不连接 PostgreSQL、不创建 `0024`、不启动 internal API，也不代表 production readiness。
+- 验证：`cloud:copyright-c3-external-readiness-contract`、`cloud:copyright-c3-secret-scan` 已接入 `cloud:ci`。
+- 下一商业化任务：继续等待外部配置；收到引用后运行 dry-run，结果为 `ready_for_review` 时仅进入 `0024` SQL 与 adapter fixture 评审。
+
+## 2026-07-29 云版权库 C3 Receipt Boundary 与 RLS Mutation Gate
+
+- 状态：`c3_contract_hardening_internal_only`。
+- 已完成：receipt key-order、生命周期、时钟偏差与 replay fixture；RLS lint 已用缺失 `FORCE RLS`、`BYPASSRLS`、`SET ROLE`、`PUBLIC` grant、全局 scope 五类 mutation 验证拒绝。
+- 商业边界：mutation Gate 不执行 PostgreSQL SQL、不创建 role/migration、不验证真实 provider，也不开放任何端侧或公开能力。
+- 验证：`cloud:copyright-c3-rls-lint-mutations` 已接入 `cloud:ci`。
+- 下一商业化任务：继续等待外部配置；配置到位后先运行 external readiness，再仅评审 `0024` SQL 与 adapter fixture。
+
+## 2026-07-29 云版权库 C3 PostgreSQL Scope QA Artifact 合同
+
+- 状态：`c3_scope_qa_artifact_contract_frozen`。
+- 已完成：未来真实 PostgreSQL scope QA 的 machine-readable artifact Schema 与 12 场景预期 fixture，固定 PostgreSQL-only、双连接、receipt 脱敏、90 天内部安全证据保留和审计导出边界。
+- 商业边界：fixture 是未来验收格式，不是 RLS runtime、真实数据库 QA、客户可见报告或生产团队协作证据。
+- 验证：`cloud:copyright-c3-scope-qa-contract` 已接入 `cloud:ci`。
+- 下一商业化任务：继续等待外部配置；收到后先运行 external readiness，再仅评审 `0024` SQL 与 adapter fixture。
+
+## 2026-07-29 云版权库阶段性收尾
+
+- 状态：`phase_checkpoint_external_gates_suspended`。
+- 已收口：C0-C3 合同、C1 PostgreSQL 核心、八场景并发 QA、C3 external readiness/secret scan/RLS mutation 与 12 场景 scope artifact 格式。
+- 外部阻塞：真实 IAM/JWKS 或 mTLS、workload identity、PostgreSQL role bootstrap/Secret reference、审批与恢复演练 evidence。
+- 商业边界：生产云版权库、团队协作、端侧正式 transport、internal/public API、公开 SDK、RLS runtime、production role/credential 和 SLA 全部继续关闭。
+- 恢复入口：`docs/云版权库阶段性收尾与外部Gate交接.md`；只有 external readiness 为 `ready_for_review` 才能评审 `0024` SQL。
+- 下一商业化任务：暂停云版权库任务族，切换到用户指定的新任务族。

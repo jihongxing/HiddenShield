@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hiddenshield.local/contracts/cloud-copyright/cloud-copyright-contract-v1.schema.json",
+  "title": "HiddenShield cloud copyright contract fixtures v1",
+  "type": "object",
+  "required": ["schemaVersion", "fixtureType"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "fixtureType": {
+      "enum": [
+        "copyright_record",
+        "workspace_membership_rbac",
+        "change_batch",
+        "conflict_version_changed",
+        "membership_revoked",
+        "forbidden_sync_data_rejection"
+      ]
+    }
+  },
+  "oneOf": [
+    {
+      "properties": { "fixtureType": { "const": "copyright_record" } },
+      "required": ["recordSchemaVersion", "record", "crossEndCases"]
+    },
+    {
+      "properties": { "fixtureType": { "const": "workspace_membership_rbac" } },
+      "required": ["workspace", "memberships", "permissionMatrix"]
+    },
+    {
+      "properties": { "fixtureType": { "const": "change_batch" } },
+      "required": ["workspaceId", "deviceId", "changes", "expectedDispositions"]
+    },
+    {
+      "properties": { "fixtureType": { "const": "conflict_version_changed" } },
+      "required": ["change", "expectedError", "localResolution"]
+    },
+    {
+      "properties": { "fixtureType": { "const": "membership_revoked" } },
+      "required": ["membership", "change", "expectedError", "localResolution"]
+    },
+    {
+      "properties": { "fixtureType": { "const": "forbidden_sync_data_rejection" } },
+      "required": ["recordCandidate", "forbiddenFields", "expectedError"]
+    }
+  ]
+}

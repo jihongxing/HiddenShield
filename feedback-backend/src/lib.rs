@@ -32,6 +32,8 @@ pub mod ai_transparency_production_provider;
 #[cfg(feature = "postgres")]
 pub mod ai_transparency_public_resolver;
 pub mod billing;
+#[cfg(feature = "postgres")]
+pub mod cloud_copyright;
 pub mod database;
 #[cfg(feature = "postgres")]
 pub mod postgres_auth;

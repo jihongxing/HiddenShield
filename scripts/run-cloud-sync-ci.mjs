@@ -43,6 +43,13 @@ try {
   backend.stderr.on('data', (chunk) => writePrefixed('cloud-backend', chunk));
 
   await waitForCloud();
+  await runNodeScript('scripts/verify-cloud-copyright-contract.mjs');
+  await runNodeScript('scripts/verify-cloud-copyright-c2-contract.mjs');
+  await runNodeScript('scripts/verify-cloud-copyright-c3-contract.mjs');
+  await runNodeScript('scripts/verify-cloud-copyright-c3-external-readiness.mjs');
+  await runNodeScript('scripts/verify-cloud-copyright-c3-secret-scan.mjs');
+  await runNodeScript('scripts/verify-cloud-copyright-c3-rls-lint-mutations.mjs');
+  await runNodeScript('scripts/verify-cloud-copyright-c3-scope-qa-contract.mjs');
   await runNodeScript('scripts/verify-cloud-sync-contract.mjs');
   await runNodeScript('scripts/verify-cloud-sync-e2e.mjs');
   console.log('Cloud sync CI OK');
@@ -56,7 +63,7 @@ try {
 
 async function waitForCloud() {
   const startedAt = Date.now();
-  while (Date.now() - startedAt < 300_000) {
+  while (Date.now() - startedAt < 600_000) {
     if (backend.exitCode != null) {
       throw new Error(`cloud backend exited early with code ${backend.exitCode}`);
     }
@@ -71,7 +78,7 @@ async function waitForCloud() {
     }
     await delay(500);
   }
-  throw new Error(`cloud backend did not become healthy within 300s: ${cloudUrl}`);
+  throw new Error(`cloud backend did not become healthy within 600s: ${cloudUrl}`);
 }
 
 async function runNodeScript(scriptPath) {

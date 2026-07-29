@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "membership_revoked",
+  "membership": {
+    "workspaceId": "ws_team_01J4C0PYRIGHT000000000001",
+    "accountId": "acct_editor",
+    "role": "editor",
+    "status": "removed",
+    "membershipVersion": 5
+  },
+  "change": {
+    "changeId": "ccc_01J4C0PYRIGHT000000000003",
+    "operation": "upsert_record",
+    "recordId": "ccr_01J4C0PYRIGHT000000000001",
+    "baseRecordVersion": 7
+  },
+  "expectedError": {
+    "code": "blocked_by_membership_revoked",
+    "remoteWriteCommitted": false,
+    "auditAppended": false
+  },
+  "localResolution": {
+    "preserveLocalDraft": true,
+    "requiresWorkspaceReauthorization": true
+  }
+}

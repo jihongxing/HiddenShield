@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "identity_receipt",
+  "canonicalization": "hs-cloud-copyright-identity-receipt-digest-v1",
+  "receipt": {
+    "schemaVersion": "hs-cloud-copyright-identity-receipt-v1",
+    "providerId": "internal-iam",
+    "keyId": "kid-c3-fixture",
+    "receiptId": "receipt-c3-valid-001",
+    "audience": "hiddenshield-cloud-copyright-internal",
+    "environment": "production",
+    "operation": "cloud_copyright_changes_execute",
+    "actor": {
+      "actorId": "actor_c3_owner",
+      "actorKind": "human",
+      "accountId": "acct_c3_owner",
+      "workspaceId": "ws_c3_primary",
+      "deviceId": "device_c3_owner",
+      "membershipId": "membership_c3_owner",
+      "roles": ["cloud_copyright_writer"]
+    },
+    "requestId": "request-c3-001",
+    "requestDigest": "sha256:canonical-request-c3-001",
+    "issuedAt": "2026-07-29T00:00:00Z",
+    "expiresAt": "2026-07-29T00:05:00Z",
+    "signature": "fixture-signature-not-a-secret"
+  },
+  "receiptDigest": "sha256:61ae89afba7fd93e24e82ab8dd9dc587472d87a01928ad2f071bd0d998f7c967",
+  "expected": {
+    "admitted": true,
+    "scopeKeys": [
+      "app.account_id",
+      "app.workspace_id",
+      "app.device_id",
+      "app.membership_id",
+      "app.request_id",
+      "app.actor_kind",
+      "app.receipt_digest"
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "identity_receipt_failures",
+  "expected": {
+    "admitted": false,
+    "databaseWrites": 0,
+    "localState": "draft_retained",
+    "retryAllowed": false
+  },
+  "cases": [
+    {
+      "caseId": "invalid_signature",
+      "reasonCode": "identity_receipt_invalid_signature"
+    },
+    {
+      "caseId": "expired_receipt",
+      "reasonCode": "identity_receipt_expired"
+    },
+    {
+      "caseId": "scope_mismatch",
+      "reasonCode": "identity_receipt_scope_mismatch"
+    },
+    {
+      "caseId": "request_digest_mismatch",
+      "reasonCode": "identity_receipt_request_digest_mismatch"
+    },
+    {
+      "caseId": "provider_unavailable",
+      "reasonCode": "internal_identity_unavailable"
+    }
+  ]
+}

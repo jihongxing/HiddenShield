@@ -34,6 +34,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         POSTGRES_P22_AI_TRANSPARENCY_EXTERNAL_EVIDENCE_INTAKE_UP_SQL,
         POSTGRES_P23_AI_TRANSPARENCY_EXTERNAL_EVIDENCE_REVIEW_DOWN_SQL,
         POSTGRES_P23_AI_TRANSPARENCY_EXTERNAL_EVIDENCE_REVIEW_UP_SQL,
+        POSTGRES_P24_CLOUD_COPYRIGHT_MULTITENANT_CORE_DOWN_SQL,
+        POSTGRES_P24_CLOUD_COPYRIGHT_MULTITENANT_CORE_UP_SQL,
         POSTGRES_P3_AI_TRANSPARENCY_SCHEMA_DOWN_SQL, POSTGRES_P3_AI_TRANSPARENCY_SCHEMA_UP_SQL,
         POSTGRES_P4_AI_TRANSPARENCY_APPROVAL_STATE_MACHINE_DOWN_SQL,
         POSTGRES_P4_AI_TRANSPARENCY_APPROVAL_STATE_MACHINE_UP_SQL,
@@ -122,6 +124,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "ai_transparency_external_evidence_intake_audit_events",
         "ai_transparency_external_evidence_review_decisions",
         "ai_transparency_external_evidence_review_audit_events",
+        "cloud_copyright_workspaces",
+        "cloud_copyright_workspace_memberships",
+        "cloud_copyright_creator_profiles",
+        "cloud_copyright_records",
+        "cloud_copyright_changes",
+        "cloud_copyright_events",
+        "cloud_copyright_audit_events",
+        "cloud_copyright_workspace_cursors",
     ];
     let required_indexes = [
         "idx_auth_challenges_identifier_created",
@@ -192,6 +202,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "idx_ai_delivery_security_notification_provider_receipt_item",
         "idx_ai_platform_admissions_license_status",
         "idx_ai_platform_api_audit_license_time",
+        "idx_cloud_copyright_one_active_personal_workspace",
+        "idx_cloud_copyright_memberships_account_workspace",
+        "idx_cloud_copyright_creator_profiles_account",
+        "idx_cloud_copyright_records_workspace_updated",
+        "idx_cloud_copyright_changes_workspace_record",
+        "idx_cloud_copyright_events_workspace_sequence",
+        "idx_cloud_copyright_audit_workspace_sequence",
     ];
     let required_views = [
         "ai_public_confirmed_manifests",
@@ -275,6 +292,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         POSTGRES_P23_AI_TRANSPARENCY_EXTERNAL_EVIDENCE_REVIEW_UP_SQL,
     )
     .await?;
+    execute_sql_batch(&pool, POSTGRES_P24_CLOUD_COPYRIGHT_MULTITENANT_CORE_UP_SQL).await?;
     assert_tables_present(&pool, &required_tables).await?;
     assert_indexes_present(&pool, &required_indexes).await?;
     assert_views_present(&pool, &required_views).await?;
@@ -308,7 +326,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     .await?;
     assert_ai_transparency_constraints(&pool).await?;
     assert_ai_transparency_approval_constraints(&pool).await?;
+    assert_cloud_copyright_constraints(&pool).await?;
+    assert_trigger_present(&pool, "cloud_copyright_events_append_only").await?;
+    assert_trigger_present(&pool, "cloud_copyright_audit_events_append_only").await?;
 
+    execute_sql_batch(
+        &pool,
+        POSTGRES_P24_CLOUD_COPYRIGHT_MULTITENANT_CORE_DOWN_SQL,
+    )
+    .await?;
     execute_sql_batch(
         &pool,
         POSTGRES_P23_AI_TRANSPARENCY_EXTERNAL_EVIDENCE_REVIEW_DOWN_SQL,
@@ -403,11 +429,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "{}",
         serde_json::json!({
             "ok": true,
-            "migrations": ["0001_auth_sync_registry", "0002_ai_transparency_schema", "0003_ai_transparency_approval_state_machine", "0004_ai_transparency_confirm_audit", "0005_ai_transparency_credential_custody", "0006_ai_transparency_credential_lifecycle", "0007_ai_transparency_post_embed_signing", "0008_ai_transparency_signing_reservation_artifact_recovery", "0009_ai_transparency_adapter_receipts_crash_recovery", "0010_ai_transparency_post_embed_recovery_worker", "0011_ai_transparency_dead_letter_requeue_command", "0012_ai_transparency_confirmed_delivery_envelope", "0013_ai_transparency_delivery_authorization_retrieval", "0014_ai_transparency_delivery_revoke_resource_budget", "0015_ai_transparency_delivery_security_observability", "0016_ai_transparency_delivery_security_incident_runner", "0017_ai_transparency_delivery_security_notification_outbox", "0018_ai_transparency_notification_delivery_gate", "0019_ai_transparency_platform_api", "0020_ai_transparency_public_resolver", "0021_ai_transparency_external_evidence_intake", "0022_ai_transparency_external_evidence_review"],
+            "migrations": ["0001_auth_sync_registry", "0002_ai_transparency_schema", "0003_ai_transparency_approval_state_machine", "0004_ai_transparency_confirm_audit", "0005_ai_transparency_credential_custody", "0006_ai_transparency_credential_lifecycle", "0007_ai_transparency_post_embed_signing", "0008_ai_transparency_signing_reservation_artifact_recovery", "0009_ai_transparency_adapter_receipts_crash_recovery", "0010_ai_transparency_post_embed_recovery_worker", "0011_ai_transparency_dead_letter_requeue_command", "0012_ai_transparency_confirmed_delivery_envelope", "0013_ai_transparency_delivery_authorization_retrieval", "0014_ai_transparency_delivery_revoke_resource_budget", "0015_ai_transparency_delivery_security_observability", "0016_ai_transparency_delivery_security_incident_runner", "0017_ai_transparency_delivery_security_notification_outbox", "0018_ai_transparency_notification_delivery_gate", "0019_ai_transparency_platform_api", "0020_ai_transparency_public_resolver", "0021_ai_transparency_external_evidence_intake", "0022_ai_transparency_external_evidence_review", "0023_cloud_copyright_multitenant_core"],
             "upTablesChecked": required_tables.len(),
             "viewsChecked": required_views.len(),
             "indexesChecked": required_indexes.len(),
-            "constraintRegressionsChecked": 14,
+            "constraintRegressionsChecked": 15,
             "rollback": "empty_schema_verified"
         })
     );
@@ -608,6 +634,81 @@ async fn insert_smoke_marking_session(
     .bind(idempotency_key)
     .execute(pool)
     .await?;
+    Ok(())
+}
+
+#[cfg(feature = "postgres")]
+async fn assert_cloud_copyright_constraints(
+    pool: &sqlx::PgPool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    pool.execute(
+        "INSERT INTO cloud_accounts (
+            id, identifier, password_hash_algorithm, display_name, workspace_id,
+            workspace_name, creator_profile_id, creator_display_name, creator_seed_ref,
+            seed_envelope_version, entitlement_id, entitlement_plan_name,
+            entitlement_plan_code, entitlement_status, entitlement_features_json,
+            created_at, updated_at
+         ) VALUES (
+            'acct-smoke-primary', 'cloud-copyright-smoke@example.invalid', 'sha256',
+            'Cloud Copyright Smoke', 'legacy-workspace-smoke', 'Legacy Workspace',
+            'legacy-profile-smoke', 'Cloud Copyright Smoke', 'seed-envelope://smoke',
+            1, 'entitlement-smoke', 'Free', 'free', 'active', '{}'::jsonb, NOW(), NOW()
+         )",
+    )
+    .await?;
+    assert_statement_rejected(
+        pool,
+        "cloud copyright workspace type",
+        "INSERT INTO cloud_copyright_workspaces (
+            workspace_id, owner_account_id, workspace_type, status,
+            membership_version, created_at, updated_at
+         ) VALUES (
+            'cc-workspace-invalid', 'acct-smoke-primary', 'invalid', 'active', 1, NOW(), NOW()
+         )",
+    )
+    .await?;
+    pool.execute(
+        "INSERT INTO cloud_copyright_workspaces (
+            workspace_id, owner_account_id, workspace_type, status,
+            membership_version, created_at, updated_at
+         ) VALUES (
+            'cc-workspace-smoke', 'acct-smoke-primary', 'personal', 'active', 1, NOW(), NOW()
+         )",
+    )
+    .await?;
+    assert_statement_rejected(
+        pool,
+        "cloud copyright membership role",
+        "INSERT INTO cloud_copyright_workspace_memberships (
+            membership_id, workspace_id, account_id, role, status,
+            membership_version, invited_by_account_id, joined_at, created_at, updated_at
+         ) VALUES (
+            'cc-membership-invalid', 'cc-workspace-smoke', 'acct-smoke-primary',
+            'invalid', 'active', 1, 'acct-smoke-primary', NOW(), NOW(), NOW()
+         )",
+    )
+    .await?;
+    Ok(())
+}
+
+#[cfg(feature = "postgres")]
+async fn assert_trigger_present(
+    pool: &sqlx::PgPool,
+    trigger_name: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS(
+            SELECT 1
+            FROM pg_trigger
+            WHERE tgname = $1 AND NOT tgisinternal
+        )",
+    )
+    .bind(trigger_name)
+    .fetch_one(pool)
+    .await?;
+    if !exists {
+        return Err(format!("expected trigger {trigger_name} to exist").into());
+    }
     Ok(())
 }
 

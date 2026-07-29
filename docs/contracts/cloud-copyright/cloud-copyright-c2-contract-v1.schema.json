@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hiddenshield.local/contracts/cloud-copyright/cloud-copyright-c2-contract-v1.schema.json",
+  "title": "HiddenShield cloud copyright C2 contract fixtures v1",
+  "type": "object",
+  "required": ["schemaVersion", "fixtureType"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "fixtureType": {
+      "enum": [
+        "transport_mapping",
+        "postgres_request_scope",
+        "internal_api_admission"
+      ]
+    }
+  },
+  "oneOf": [
+    {
+      "properties": { "fixtureType": { "const": "transport_mapping" } },
+      "required": ["recordSchema", "desktop", "mobile", "expectedResult"]
+    },
+    {
+      "properties": { "fixtureType": { "const": "postgres_request_scope" } },
+      "required": ["transactionScope", "rlsPolicies", "failureCases"]
+    },
+    {
+      "properties": { "fixtureType": { "const": "internal_api_admission" } },
+      "required": ["endpointClass", "operations", "requiredClaims", "forbiddenExposure"]
+    }
+  ]
+}
