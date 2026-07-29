@@ -2602,3 +2602,20 @@ Creator 行为：
 - CI：`npm run ai-transparency:postgres-failure-matrix` 已纳入 `ai-transparency:ci`，确保新增或改名 runner 时矩阵登记不会静默丢失。
 - 边界：真实 IAM/KMS/HSM、signer/object-store、通知 provider、真实伙伴/provider 及 iOS runtime 恢复演练继续为外部依赖，不得由本地 PostgreSQL QA 代替。
 - 下一商业化任务：保持内部矩阵为回归基线；真实外部配置到位后，为对应行补充受控 provider recovery / 伙伴 Sandbox 演练证据。
+
+## 2026-07-29 AI Transparency PostgreSQL 统一 QA Suite
+
+- 状态：`internal_postgresql_qa_suite_verified_external_recovery_pending`。
+- 已完成：新增 `npm run ai-transparency:postgres-qa`，在同一个一次性 PostgreSQL 测试库中顺序运行迁移 smoke、approval、confirm、credential custody、image marking executor、external evidence review、platform API 和 post-embed signing QA，减少内部回归时漏跑 runner 的风险。
+- 执行边界：调用方可显式传入一次性 `HIDDENSHIELD_POSTGRES_TEST_DATABASE_URL`（或 `DATABASE_URL`）；未传入时脚本仅在 Podman/Docker 可用时创建并清理名称含 `hiddenshield_migrate_smoke` 的本地容器。该命令不纳入默认 CI，CI 继续只验证合同和矩阵登记，避免引入容器运行时依赖。
+- 安全 Gate：显式 URL 必须是 PostgreSQL 且数据库名包含 `hiddenshield_migrate_smoke`；普通开发、共享或生产数据库在迁移和写入前被 fail-closed 拒绝。无容器合同测试 `npm run ai-transparency:postgres-qa-contract` 已纳入 `ai-transparency:ci`。
+- 商业与能力边界：suite 仅提供内部 PostgreSQL 事务回归证据，不代表真实 IAM/KMS/HSM、signer/object-store、通知 provider、设计伙伴、iOS runtime、生产发放或三地法规合规已经验收。
+- 下一商业化任务：在真实外部配置到位后，使用受控测试库运行对应 provider recovery / 设计伙伴 Sandbox 验收，并将签署 evidence 通过 Evidence Intake 接收和双人审核。
+
+## 2026-07-29 AI Transparency 阶段性收尾
+
+- 状态：`phase_suspended_external_dependencies_internal_control_plane_frozen_through_0022`。
+- 已完成：内部控制面、外部证据接收/审核、SDK/API facade、最小 Resolver、synthetic Sandbox、PostgreSQL QA 故障矩阵和一次性测试库 fail-closed suite 已收束为回归基线。
+- 挂起范围：真实 provider/IAM/KMS/HSM/signer/object-store/notification 配置与恢复演练、CN/EU/US-CA 法务签署、真实设计伙伴 Sandbox、第三方处理链样本授权和 iOS runtime。
+- 商业边界：不得在暂停期发布 SDK、开放公网 Resolver/API、发放 production credential、确认收入或承诺 SLA/三地合规。
+- 恢复任务：先按 `docs/AI生成内容标识阶段性收尾与外部Gate交接.md` 接收并审核外部 evidence，再逐 Gate 执行 provider recovery 或 12 场景设计伙伴 Sandbox 验收。
