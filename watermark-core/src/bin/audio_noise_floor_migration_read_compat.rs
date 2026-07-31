@@ -318,7 +318,9 @@ fn run_fixture(fixture: &Fixture) -> Result<FixtureRow, String> {
             .contains(AUDIO_STRATEGY_VERSION)
         && candidate_read.read_compatibility_mode == AUDIO_NOISE_FLOOR_CANDIDATE_READ_COMPAT_MODE
         && candidate_read.candidate_failure_code.as_deref()
-            == Some(AudioNoiseFloorMigrationCandidateFailureCode::CandidatePayloadNotFound.as_str());
+            == Some(
+                AudioNoiseFloorMigrationCandidateFailureCode::CandidatePayloadNotFound.as_str(),
+            );
     let pass = default_ok && readonly_ok && confidence_ok && fallback_ok;
 
     Ok(FixtureRow {

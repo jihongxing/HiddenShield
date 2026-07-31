@@ -1633,3 +1633,45 @@
 - synthetic QA 只验证 server-side SDK/facade 与公共 Resolver 响应 shape，不产出 Desktop、Android 或 iOS 可承诺的 protected-copy fixture。
 - synthetic marked PNG bytes 不是 `watermark-core` 写入产物，不得导入端侧 vault、用于跨端读取报告或替代正式 fixture。
 - 真实伙伴输出 confirmed PNG 后仍必须执行 Desktop/Android 读取和摘要 fail-closed；iOS runtime Gate 保持挂起。
+
+## 2026-07-31 桌面能力与性能快照
+
+- 已新增 `docs/项目当前能力范围与性能指标.md`，将桌面图片 / 音频正式规格、资源边界、完整链路性能和核心微基准分层记录。
+- 本次不把 Windows `100 MP / 512 MiB` 图片边界或 `20 分钟 / 512 MiB` 音频边界外推到 Android/iOS；移动端正式发布和同级资源能力继续冻结。
+- 双端共享术语保持为图片“写入 / 读取 / 验证 / 保护副本”和音频“30 秒保护门槛 / 保留采样率与声道”；未新增端侧分叉文案。
+- 当前双端性能仍缺同设备档位、同 fixture、同统计口径的对照矩阵，不能根据桌面数据推导移动端 SLA。
+- 验证：只更新治理与汇总文档，未修改 Desktop/mobile runtime、bridge、同步字段、报告字段或共享 payload。
+- 风险：历史原始性能 artifact 未全部存在于当前检出工作区，后续跨端性能 Gate 必须保存可追溯 JSON。
+
+下一双端一致性任务：
+
+- 桌面 `performance-baseline-v1` 完成后，选取其中 10 个图片与 10 个音频 fixture，在 Android 正式 bridge 上复跑读取性能和 UID 一致性；iOS 继续按环境 Gate 单独记录。
+
+## 2026-07-31 宣传性能专项基准双端边界
+
+- 本次 `10.8 MiB / 12 MP JPEG` 与 `19.3 MiB / 3 分钟 FLAC` 性能数字仅来自固定 Windows Release 环境，不得外推为 Android/iOS 性能。
+- 桌面正式写入与读取继续调用 `watermark-core`；专项 runner 没有新增第二套图片或音频算法。
+- 移动端继续冻结，宣传图必须明确为 Windows 桌面端参考数据，不得使用“全平台”“跨端同速”或移动端设备图标。
+- 验证：本次未修改 Desktop/mobile runtime、bridge、payload、fixture 互读合同或用户能力边界。
+
+下一双端一致性任务：
+
+- 未来移动端恢复后，使用同一标准化素材生成规范建立 Android 独立性能图；移动端数字必须单独测试和发布，不能复用 Windows 结果。
+
+## 2026-07-31 Windows 性能宣传图一致性记录
+
+- 已生成 `docs/promo-performance/HiddenShield-performance-poster-4x5.png`，顶部明确标注 `WINDOWS DESKTOP · RELEASE`。
+- 海报未使用移动设备图标、全平台表述或跨端同速承诺；Android/iOS 不得复用其中的 0.99 / 0.05 / 2.28 / 0.22 秒数字。
+- 图片 / 音频术语继续使用“保护写入”“读取验证”“保护副本”，与当前桌面产品口径一致。
+- 下一双端任务：移动端恢复发布后，单独建立同素材桶的 Android/iOS 性能证据和平台专属宣传图。
+
+## 2026-07-31 Windows 能力范围宣传图一致性记录
+
+- 已生成 `docs/promo-performance/HiddenShield-capability-poster-4x5.png`，顶部明确标注 Windows Desktop `v0.1.3`。
+- 图片与音频卡均只使用桌面正式边界；音频明确为 `1–2 声道`，不把共享核心 1–8 声道兼容性实验外推为产品能力。
+- 图底明确排除移动端同等发布能力，不使用全平台、双端正式支持或跨端资源上限承诺。
+- 图片独立变换恢复只承诺既有单项范围，不外推到组合扰动或移动端。
+
+下一双端任务：
+
+- 移动端正式恢复前，任何渠道不得裁掉海报中的 Windows 平台标签和移动端排除说明。

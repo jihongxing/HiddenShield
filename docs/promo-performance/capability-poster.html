@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HiddenShield 当前能力范围</title>
+  <style>
+    @font-face {
+      font-family: "Noto Sans SC";
+      src: url("file:///C:/Windows/Fonts/NotoSansSC-VF.ttf") format("truetype");
+      font-weight: 100 900;
+      font-display: swap;
+    }
+
+    :root {
+      color-scheme: dark;
+      font-family: "Noto Sans SC", "Microsoft YaHei", sans-serif;
+      background: #0b1015;
+      color: #f3f7f8;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      width: 1600px;
+      height: 2000px;
+      margin: 0;
+      overflow: hidden;
+      background: #0b1015;
+    }
+
+    .poster {
+      position: relative;
+      width: 1600px;
+      height: 2000px;
+      padding: 94px 104px 82px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 86% 10%, rgba(55, 183, 169, 0.19), transparent 28%),
+        radial-gradient(circle at 7% 80%, rgba(209, 132, 77, 0.10), transparent 29%),
+        linear-gradient(155deg, #0b1015 0%, #101820 50%, #0b1015 100%);
+    }
+
+    .poster::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: 0.34;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(114, 214, 202, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(114, 214, 202, 0.045) 1px, transparent 1px);
+      background-size: 64px 64px;
+      mask-image: linear-gradient(to bottom, black, transparent 70%);
+    }
+
+    .poster::after {
+      content: "";
+      position: absolute;
+      top: -310px;
+      right: -250px;
+      width: 820px;
+      height: 820px;
+      border: 1px solid rgba(114, 214, 202, 0.16);
+      border-radius: 50%;
+      box-shadow:
+        0 0 0 90px rgba(114, 214, 202, 0.025),
+        0 0 0 180px rgba(114, 214, 202, 0.018);
+      pointer-events: none;
+    }
+
+    .content {
+      position: relative;
+      z-index: 2;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .brand-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 66px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      letter-spacing: 0.19em;
+      font-size: 24px;
+      font-weight: 720;
+    }
+
+    .brand-mark {
+      width: 54px;
+      height: 62px;
+      display: grid;
+      place-items: center;
+      clip-path: polygon(50% 0, 92% 15%, 85% 72%, 50% 100%, 15% 72%, 8% 15%);
+      color: #071311;
+      background: linear-gradient(145deg, #93eee4, #37b7a9 72%);
+      box-shadow: 0 12px 36px rgba(55, 183, 169, 0.25);
+      font-size: 19px;
+      font-weight: 900;
+      letter-spacing: -0.06em;
+    }
+
+    .platform {
+      padding: 12px 20px 13px;
+      border: 1px solid rgba(168, 180, 186, 0.25);
+      color: #a8b4ba;
+      font-size: 18px;
+      font-weight: 580;
+      letter-spacing: 0.08em;
+    }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      color: #72d6ca;
+      font-size: 20px;
+      font-weight: 720;
+      letter-spacing: 0.21em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 58px;
+      height: 3px;
+      background: #72d6ca;
+      box-shadow: 0 0 20px rgba(114, 214, 202, 0.52);
+    }
+
+    h1 {
+      max-width: 1160px;
+      margin: 25px 0 24px;
+      font-size: 100px;
+      line-height: 1.02;
+      font-weight: 790;
+      letter-spacing: -0.045em;
+    }
+
+    .lead {
+      max-width: 1110px;
+      margin: 0;
+      color: #a8b4ba;
+      font-size: 29px;
+      line-height: 1.68;
+      letter-spacing: 0.015em;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 34px;
+      margin-top: 66px;
+    }
+
+    .card {
+      position: relative;
+      min-height: 740px;
+      padding: 42px 46px 40px;
+      overflow: hidden;
+      border: 1px solid rgba(140, 154, 162, 0.22);
+      background: linear-gradient(145deg, rgba(24, 35, 43, 0.96), rgba(16, 23, 29, 0.92));
+      box-shadow: 0 28px 70px rgba(0, 0, 0, 0.27);
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      right: -112px;
+      bottom: -118px;
+      width: 310px;
+      height: 310px;
+      border: 42px solid rgba(114, 214, 202, 0.035);
+      border-radius: 50%;
+    }
+
+    .card.audio::after {
+      border-color: rgba(209, 132, 77, 0.045);
+    }
+
+    .card-top {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .media-icon {
+      width: 82px;
+      height: 82px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(114, 214, 202, 0.44);
+      color: #72d6ca;
+      background: rgba(55, 183, 169, 0.08);
+    }
+
+    .audio .media-icon {
+      border-color: rgba(209, 132, 77, 0.48);
+      color: #df9a68;
+      background: rgba(209, 132, 77, 0.08);
+    }
+
+    .media-icon svg {
+      width: 45px;
+      height: 45px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: square;
+      stroke-linejoin: miter;
+    }
+
+    .capability-index {
+      color: #77858d;
+      font-family: "Segoe UI", sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+    }
+
+    .card h2 {
+      position: relative;
+      z-index: 2;
+      margin: 37px 0 8px;
+      font-size: 43px;
+      line-height: 1.15;
+      font-weight: 760;
+      letter-spacing: -0.035em;
+    }
+
+    .card-subtitle {
+      position: relative;
+      z-index: 2;
+      color: #8c9aa2;
+      font-size: 18px;
+      line-height: 1.55;
+    }
+
+    .format-row {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      min-height: 74px;
+      margin-top: 28px;
+    }
+
+    .format {
+      align-self: flex-start;
+      padding: 10px 13px 11px;
+      border: 1px solid rgba(114, 214, 202, 0.28);
+      color: #cceee9;
+      background: rgba(114, 214, 202, 0.06);
+      font-family: "Segoe UI", "Noto Sans SC", sans-serif;
+      font-size: 15px;
+      font-weight: 670;
+      letter-spacing: 0.045em;
+    }
+
+    .audio .format {
+      border-color: rgba(209, 132, 77, 0.28);
+      color: #efc09d;
+      background: rgba(209, 132, 77, 0.06);
+    }
+
+    .limits {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-top: 30px;
+      padding-top: 31px;
+      border-top: 1px solid rgba(140, 154, 162, 0.20);
+    }
+
+    .limit {
+      min-height: 109px;
+    }
+
+    .limit-label {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: #8c9aa2;
+      font-size: 16px;
+      font-weight: 620;
+      letter-spacing: 0.08em;
+    }
+
+    .limit-label::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      background: #72d6ca;
+    }
+
+    .audio .limit-label::before {
+      background: #d1844d;
+    }
+
+    .limit-value {
+      margin-top: 10px;
+      color: #f3f7f8;
+      font-family: "Segoe UI", "Noto Sans SC", sans-serif;
+      font-size: 34px;
+      line-height: 1.15;
+      font-weight: 740;
+      letter-spacing: -0.035em;
+    }
+
+    .limit-value.compact {
+      font-size: 28px;
+      line-height: 1.25;
+    }
+
+    .output {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 22px;
+      margin-top: 17px;
+      padding: 23px 25px;
+      border-left: 3px solid #72d6ca;
+      background: rgba(114, 214, 202, 0.055);
+    }
+
+    .audio .output {
+      border-left-color: #d1844d;
+      background: rgba(209, 132, 77, 0.055);
+    }
+
+    .output span {
+      color: #8c9aa2;
+      font-size: 15px;
+      font-weight: 620;
+      letter-spacing: 0.07em;
+    }
+
+    .output strong {
+      text-align: right;
+      color: #f3f7f8;
+      font-size: 18px;
+      line-height: 1.45;
+      font-weight: 680;
+    }
+
+    .verified {
+      display: grid;
+      grid-template-columns: 170px 1fr;
+      gap: 26px;
+      align-items: start;
+      margin-top: 30px;
+      padding: 26px 30px;
+      border-left: 4px solid #72d6ca;
+      background: rgba(114, 214, 202, 0.065);
+    }
+
+    .verified strong {
+      color: #72d6ca;
+      font-size: 18px;
+      letter-spacing: 0.11em;
+    }
+
+    .verified div {
+      color: #b8c3c8;
+      font-size: 17px;
+      line-height: 1.65;
+    }
+
+    .footer {
+      margin-top: auto;
+      padding-top: 38px;
+      border-top: 1px solid rgba(140, 154, 162, 0.24);
+    }
+
+    .disclaimer {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      color: #bdc7cb;
+      font-size: 18px;
+      line-height: 1.62;
+      font-weight: 510;
+      letter-spacing: 0.01em;
+    }
+
+    .disclaimer::before {
+      content: "i";
+      flex: 0 0 auto;
+      width: 28px;
+      height: 28px;
+      margin-top: 2px;
+      display: grid;
+      place-items: center;
+      border: 1px solid #d1844d;
+      border-radius: 50%;
+      color: #df9a68;
+      font-family: "Segoe UI", sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .footer-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 18px;
+      color: #66757d;
+      font-family: "Segoe UI", "Noto Sans SC", sans-serif;
+      font-size: 15px;
+      letter-spacing: 0.07em;
+    }
+  </style>
+</head>
+<body>
+  <main class="poster">
+    <div class="content">
+      <header>
+        <div class="brand-row">
+          <div class="brand">
+            <span class="brand-mark">HS</span>
+            <span>HIDDENSHIELD</span>
+          </div>
+          <div class="platform">WINDOWS DESKTOP · v0.1.3</div>
+        </div>
+
+        <div class="eyebrow">Current Capability</div>
+        <h1>当前明确可承诺的<br />素材保护范围</h1>
+        <p class="lead">
+          面向 Windows 桌面端，支持图片与音频保护副本写入、读取验证和本地版权记录。
+        </p>
+      </header>
+
+      <section class="cards">
+        <article class="card image">
+          <div class="card-top">
+            <div class="media-icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48">
+                <rect x="7" y="9" width="34" height="30"></rect>
+                <circle cx="17" cy="19" r="3.5"></circle>
+                <path d="M10 34l9-9 7 7 5-5 8 7"></path>
+              </svg>
+            </div>
+            <div class="capability-index">IMAGE / 01</div>
+          </div>
+          <h2>图片保护</h2>
+          <div class="card-subtitle">静态图片输入 · 写入与读取验证</div>
+          <div class="format-row">
+            <span class="format">PNG</span>
+            <span class="format">JPEG / JPG</span>
+            <span class="format">WEBP</span>
+          </div>
+          <div class="limits">
+            <div class="limit">
+              <div class="limit-label">最大像素</div>
+              <div class="limit-value">100 MP</div>
+            </div>
+            <div class="limit">
+              <div class="limit-label">最大文件</div>
+              <div class="limit-value">512 MiB</div>
+            </div>
+            <div class="limit">
+              <div class="limit-label">尺寸规则</div>
+              <div class="limit-value compact">核心容量预检</div>
+            </div>
+            <div class="limit">
+              <div class="limit-label">像素尺寸</div>
+              <div class="limit-value compact">保持原宽高</div>
+            </div>
+          </div>
+          <div class="output">
+            <span>保护副本</span>
+            <strong>统一输出 PNG</strong>
+          </div>
+        </article>
+
+        <article class="card audio">
+          <div class="card-top">
+            <div class="media-icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48">
+                <path d="M8 25h6l6-9v20l-6-8H8z"></path>
+                <path d="M27 18c3 3 3 9 0 12"></path>
+                <path d="M33 13c6 6 6 16 0 22"></path>
+              </svg>
+            </div>
+            <div class="capability-index">AUDIO / 02</div>
+          </div>
+          <h2>音频保护</h2>
+          <div class="card-subtitle">完整音频输入 · 写入与读取验证</div>
+          <div class="format-row">
+            <span class="format">WAV</span>
+            <span class="format">MP3</span>
+            <span class="format">FLAC</span>
+            <span class="format">OGG</span>
+            <span class="format">M4A</span>
+          </div>
+          <div class="limits">
+            <div class="limit">
+              <div class="limit-label">时长范围</div>
+              <div class="limit-value compact">30 秒–20 分钟</div>
+            </div>
+            <div class="limit">
+              <div class="limit-label">最大文件</div>
+              <div class="limit-value">512 MiB</div>
+            </div>
+            <div class="limit">
+              <div class="limit-label">采样率</div>
+              <div class="limit-value">8–48 kHz</div>
+            </div>
+            <div class="limit">
+              <div class="limit-label">声道支持</div>
+              <div class="limit-value compact">1–2 声道</div>
+            </div>
+          </div>
+          <div class="output">
+            <span>保护副本</span>
+            <strong>输出 WAV<br />保持采样率与声道</strong>
+          </div>
+        </article>
+      </section>
+
+      <section class="verified">
+        <strong>VERIFIED RANGE</strong>
+        <div>
+          图片已验证独立恢复：90° / 180° / 270° 旋转、85% 缩放、JPEG / WebP quality 75 与 60，以及轴对齐裁切后宽、高各保留原图约 1/4。
+        </div>
+      </section>
+
+      <footer class="footer">
+        <div class="disclaimer">
+          当前正式范围仅限 Windows 桌面端图片与音频保护。视频画面水印、移动端同等发布能力不在本图承诺范围；版权编号与技术报告不等同于国家版权登记、司法鉴定或法律权属结论。
+        </div>
+        <div class="footer-meta">
+          <span>LOCAL-FIRST · PROTECTED COPY · READBACK VERIFIED</span>
+          <span>CAPABILITY · 2026.07</span>
+        </div>
+      </footer>
+    </div>
+  </main>
+</body>
+</html>

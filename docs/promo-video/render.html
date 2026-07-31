@@ -1,0 +1,946 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HiddenShield Promo Video</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI", sans-serif;
+      --bg: #07111f;
+      --panel: rgba(14, 31, 51, 0.86);
+      --panel-strong: rgba(10, 24, 42, 0.96);
+      --line: rgba(116, 190, 207, 0.22);
+      --text: #f4f7fa;
+      --muted: #95aabe;
+      --cyan: #23d5c3;
+      --blue: #4f7cff;
+      --gold: #e8b65a;
+      --purple: #956dff;
+      --danger: #ff6b7c;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      width: 1920px;
+      height: 1080px;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    body {
+      color: var(--text);
+      background:
+        radial-gradient(circle at 12% 18%, rgba(35, 213, 195, 0.11), transparent 30%),
+        radial-gradient(circle at 83% 72%, rgba(79, 124, 255, 0.14), transparent 32%),
+        linear-gradient(135deg, #07111f 0%, #091728 50%, #07111f 100%);
+    }
+
+    body::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: 0.18;
+      background-image:
+        linear-gradient(rgba(130, 180, 200, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(130, 180, 200, 0.08) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: linear-gradient(to bottom, black, transparent 92%);
+    }
+
+    .frame {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      padding: 76px 96px 70px;
+      display: flex;
+      flex-direction: column;
+      isolation: isolate;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 56px;
+      margin-bottom: 42px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .brand img {
+      width: 50px;
+      height: 50px;
+      border-radius: 13px;
+      box-shadow: 0 12px 35px rgba(35, 213, 195, 0.22);
+    }
+
+    .tag {
+      padding: 10px 18px;
+      border: 1px solid rgba(35, 213, 195, 0.32);
+      border-radius: 999px;
+      color: var(--cyan);
+      background: rgba(35, 213, 195, 0.08);
+      font-size: 19px;
+      font-weight: 650;
+      letter-spacing: 0.08em;
+    }
+
+    .tag.future {
+      border-color: rgba(149, 109, 255, 0.45);
+      color: #bfa8ff;
+      background: rgba(149, 109, 255, 0.1);
+    }
+
+    .content {
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      align-items: center;
+      gap: 78px;
+    }
+
+    .copy { position: relative; z-index: 3; }
+
+    .eyebrow {
+      margin-bottom: 22px;
+      color: var(--cyan);
+      font-size: 23px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+    }
+
+    .future-copy .eyebrow { color: #bfa8ff; }
+
+    h1 {
+      max-width: 830px;
+      margin: 0;
+      font-size: 62px;
+      line-height: 1.18;
+      letter-spacing: -0.035em;
+      text-wrap: balance;
+    }
+
+    .lead {
+      max-width: 760px;
+      margin: 30px 0 0;
+      color: var(--muted);
+      font-size: 25px;
+      line-height: 1.75;
+    }
+
+    .accent { color: var(--cyan); }
+    .future-accent { color: #bfa8ff; }
+    .gold { color: var(--gold); }
+
+    .visual {
+      position: relative;
+      min-height: 730px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .panel {
+      position: relative;
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 34px;
+      background: linear-gradient(150deg, rgba(17, 38, 61, 0.94), rgba(8, 20, 35, 0.92));
+      box-shadow: 0 35px 100px rgba(0, 0, 0, 0.34);
+      overflow: hidden;
+    }
+
+    .panel::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border-radius: inherit;
+      box-shadow: inset 0 1px rgba(255, 255, 255, 0.06);
+    }
+
+    .window {
+      width: 1020px;
+      height: 690px;
+      border-radius: 28px;
+      overflow: hidden;
+      background: #0a1727;
+      border: 1px solid rgba(132, 187, 207, 0.2);
+      box-shadow: 0 45px 100px rgba(0, 0, 0, 0.42);
+    }
+
+    .window-bar {
+      height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 22px;
+      background: rgba(6, 17, 30, 0.92);
+      border-bottom: 1px solid rgba(138, 190, 209, 0.16);
+    }
+
+    .window-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .window-title img { width: 29px; height: 29px; border-radius: 8px; }
+
+    .window-dots { display: flex; gap: 9px; }
+    .window-dots span { width: 11px; height: 11px; border-radius: 50%; background: #334459; }
+
+    .app {
+      height: calc(100% - 58px);
+      display: grid;
+      grid-template-columns: 208px 1fr;
+    }
+
+    .sidebar {
+      padding: 24px 16px;
+      background: rgba(8, 21, 36, 0.98);
+      border-right: 1px solid rgba(138, 190, 209, 0.13);
+    }
+
+    .nav {
+      padding: 13px 15px;
+      margin-bottom: 8px;
+      border-radius: 12px;
+      color: #8ca3b8;
+      font-size: 16px;
+    }
+
+    .nav.active {
+      color: var(--text);
+      background: linear-gradient(90deg, rgba(35, 213, 195, 0.16), rgba(79, 124, 255, 0.08));
+      border: 1px solid rgba(35, 213, 195, 0.18);
+    }
+
+    .main {
+      padding: 30px 34px;
+      background:
+        radial-gradient(circle at 85% 10%, rgba(79, 124, 255, 0.08), transparent 28%),
+        #0b192a;
+    }
+
+    .main-head {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .main h2 { margin: 0 0 8px; font-size: 27px; }
+    .main-sub { color: #87a0b6; font-size: 15px; }
+
+    .status {
+      padding: 8px 12px;
+      border-radius: 9px;
+      color: var(--cyan);
+      background: rgba(35, 213, 195, 0.09);
+      border: 1px solid rgba(35, 213, 195, 0.24);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .dropzone {
+      height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 22px;
+      border: 1px dashed rgba(35, 213, 195, 0.42);
+      border-radius: 20px;
+      background: rgba(35, 213, 195, 0.04);
+    }
+
+    .drop-icon {
+      width: 62px;
+      height: 62px;
+      display: grid;
+      place-items: center;
+      border-radius: 18px;
+      color: var(--cyan);
+      background: rgba(35, 213, 195, 0.11);
+      font-size: 30px;
+    }
+
+    .drop-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .drop-sub { color: #8199ad; font-size: 14px; }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .card {
+      padding: 17px;
+      border-radius: 16px;
+      border: 1px solid rgba(137, 187, 206, 0.14);
+      background: rgba(12, 29, 48, 0.84);
+    }
+
+    .card-label { color: #7791a8; font-size: 13px; margin-bottom: 7px; }
+    .card-value { font-size: 16px; font-weight: 650; }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 9px;
+      margin-top: 18px;
+    }
+
+    .step {
+      position: relative;
+      padding: 14px 10px;
+      text-align: center;
+      border-radius: 13px;
+      color: #8aa2b7;
+      background: rgba(9, 24, 41, 0.9);
+      border: 1px solid rgba(130, 180, 200, 0.12);
+      font-size: 13px;
+    }
+
+    .step.done {
+      color: #dffefa;
+      border-color: rgba(35, 213, 195, 0.32);
+      background: rgba(35, 213, 195, 0.08);
+    }
+
+    .step strong {
+      display: block;
+      width: 25px;
+      height: 25px;
+      margin: 0 auto 8px;
+      border-radius: 50%;
+      line-height: 25px;
+      color: #07111f;
+      background: var(--cyan);
+    }
+
+    .result-card {
+      margin-top: 20px;
+      padding: 20px 22px;
+      display: grid;
+      grid-template-columns: 58px 1fr auto;
+      align-items: center;
+      gap: 17px;
+      border-radius: 18px;
+      border: 1px solid rgba(35, 213, 195, 0.26);
+      background: linear-gradient(90deg, rgba(35, 213, 195, 0.1), rgba(79, 124, 255, 0.06));
+    }
+
+    .check {
+      width: 52px;
+      height: 52px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #06111e;
+      background: var(--cyan);
+      font-size: 27px;
+      font-weight: 900;
+    }
+
+    .result-title { font-size: 18px; font-weight: 750; margin-bottom: 6px; }
+    .result-sub { color: #86a1b6; font-size: 13px; }
+    .uid { font: 650 13px/1.3 Consolas, monospace; color: #bfeee9; }
+
+    .table {
+      border: 1px solid rgba(135, 188, 207, 0.15);
+      border-radius: 17px;
+      overflow: hidden;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1.5fr 0.85fr 1.15fr 0.7fr;
+      align-items: center;
+      min-height: 68px;
+      padding: 0 18px;
+      border-bottom: 1px solid rgba(135, 188, 207, 0.1);
+      font-size: 14px;
+    }
+
+    .row:last-child { border-bottom: 0; }
+    .row.head { min-height: 46px; color: #748da3; background: rgba(6, 18, 31, 0.72); font-size: 12px; }
+    .file strong { display: block; color: #edf5f8; margin-bottom: 5px; }
+    .file span { color: #718ba1; font-size: 12px; }
+    .pill { width: max-content; padding: 6px 9px; border-radius: 8px; color: var(--cyan); background: rgba(35, 213, 195, 0.09); }
+
+    .report {
+      display: grid;
+      grid-template-columns: 0.8fr 1.2fr;
+      gap: 24px;
+      height: 510px;
+    }
+
+    .report-cover {
+      padding: 32px;
+      border-radius: 19px;
+      background:
+        linear-gradient(145deg, rgba(35, 213, 195, 0.13), rgba(79, 124, 255, 0.08)),
+        #0b1c2f;
+      border: 1px solid rgba(35, 213, 195, 0.2);
+    }
+
+    .report-cover .mark { font-size: 15px; color: var(--cyan); letter-spacing: 0.12em; }
+    .report-cover h3 { margin: 78px 0 16px; font-size: 34px; line-height: 1.3; }
+    .report-cover p { color: #8199ae; font-size: 15px; line-height: 1.7; }
+    .report-id { margin-top: 105px; font: 13px Consolas, monospace; color: #9bb0c1; }
+
+    .report-details {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 13px;
+    }
+
+    .report-item {
+      padding: 17px;
+      border-radius: 14px;
+      background: rgba(10, 26, 44, 0.86);
+      border: 1px solid rgba(135, 188, 207, 0.13);
+    }
+
+    .report-item span { display: block; color: #7891a6; font-size: 12px; margin-bottom: 7px; }
+    .report-item strong { font-size: 14px; font-weight: 650; }
+
+    .art-board {
+      width: 820px;
+      height: 650px;
+      position: relative;
+    }
+
+    .photo {
+      position: absolute;
+      width: 550px;
+      height: 380px;
+      left: 90px;
+      top: 100px;
+      border-radius: 28px;
+      overflow: hidden;
+      transform: rotate(-4deg);
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow: 0 36px 90px rgba(0,0,0,0.45);
+      background:
+        radial-gradient(circle at 72% 24%, rgba(255, 211, 126, 0.9) 0 5%, transparent 6%),
+        linear-gradient(175deg, transparent 0 48%, #142d39 49% 63%, #091923 64%),
+        linear-gradient(145deg, #537a88 0%, #173545 52%, #0a1722 100%);
+    }
+
+    .photo::before, .photo::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      clip-path: polygon(0 100%, 45% 10%, 62% 57%, 76% 34%, 100% 100%);
+    }
+
+    .photo::before { inset: 85px -60px 0 -30px; background: #254a55; opacity: 0.92; }
+    .photo::after { inset: 150px -100px 0 130px; background: #0d2834; opacity: 0.98; }
+
+    .copy-card {
+      position: absolute;
+      width: 360px;
+      height: 235px;
+      border-radius: 21px;
+      background: linear-gradient(145deg, rgba(22, 45, 68, 0.94), rgba(9, 23, 39, 0.96));
+      border: 1px solid rgba(255, 107, 124, 0.24);
+      box-shadow: 0 24px 70px rgba(0,0,0,0.35);
+      overflow: hidden;
+    }
+
+    .copy-card.one { right: 10px; top: 40px; transform: rotate(7deg); }
+    .copy-card.two { right: 5px; bottom: 30px; transform: rotate(-2deg); }
+    .copy-thumb { height: 135px; background: linear-gradient(145deg, #4d7482, #102b3a 55%, #07131e); opacity: 0.72; }
+    .copy-meta { padding: 16px; color: #829aaf; font-size: 13px; }
+    .copy-meta strong { display: block; margin-bottom: 8px; color: #e8f0f4; font-size: 15px; }
+
+    .network {
+      position: relative;
+      width: 850px;
+      height: 680px;
+    }
+
+    .node {
+      position: absolute;
+      width: 142px;
+      height: 142px;
+      display: grid;
+      place-items: center;
+      border-radius: 34px;
+      text-align: center;
+      color: #dfeaf0;
+      background: rgba(15, 34, 55, 0.96);
+      border: 1px solid rgba(125, 183, 204, 0.2);
+      box-shadow: 0 26px 60px rgba(0,0,0,0.28);
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .node.core {
+      width: 190px;
+      height: 190px;
+      left: 330px;
+      top: 245px;
+      border-radius: 46px;
+      border-color: rgba(35, 213, 195, 0.45);
+      background: linear-gradient(145deg, rgba(35, 213, 195, 0.18), rgba(79, 124, 255, 0.12)), #0d2237;
+      color: #f3fffd;
+    }
+
+    .node img { width: 65px; height: 65px; border-radius: 18px; margin-bottom: 8px; }
+    .node.n1 { left: 40px; top: 40px; }
+    .node.n2 { right: 35px; top: 55px; }
+    .node.n3 { left: 10px; bottom: 55px; }
+    .node.n4 { right: 5px; bottom: 45px; }
+    .node.n5 { left: 355px; top: 5px; }
+    .node.n6 { left: 355px; bottom: 0; }
+
+    .line {
+      position: absolute;
+      height: 2px;
+      transform-origin: left center;
+      background: linear-gradient(90deg, rgba(149, 109, 255, 0.15), rgba(35, 213, 195, 0.66), rgba(149, 109, 255, 0.15));
+      box-shadow: 0 0 18px rgba(35, 213, 195, 0.35);
+    }
+
+    .l1 { width: 355px; left: 165px; top: 167px; transform: rotate(23deg); }
+    .l2 { width: 352px; left: 465px; top: 330px; transform: rotate(-27deg); }
+    .l3 { width: 365px; left: 145px; top: 540px; transform: rotate(-27deg); }
+    .l4 { width: 360px; left: 465px; top: 395px; transform: rotate(25deg); }
+    .l5 { width: 250px; left: 425px; top: 145px; transform: rotate(90deg); }
+    .l6 { width: 250px; left: 425px; top: 435px; transform: rotate(90deg); }
+
+    .evidence-stack {
+      width: 760px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .evidence {
+      display: grid;
+      grid-template-columns: 64px 1fr auto;
+      align-items: center;
+      gap: 18px;
+      padding: 22px 24px;
+      border-radius: 20px;
+      background: rgba(13, 31, 51, 0.9);
+      border: 1px solid rgba(137, 188, 207, 0.16);
+      box-shadow: 0 20px 55px rgba(0,0,0,0.2);
+    }
+
+    .evidence-icon {
+      width: 58px;
+      height: 58px;
+      display: grid;
+      place-items: center;
+      border-radius: 17px;
+      color: var(--cyan);
+      background: rgba(35, 213, 195, 0.09);
+      font-size: 27px;
+    }
+
+    .evidence strong { display: block; font-size: 19px; margin-bottom: 7px; }
+    .evidence span { color: #819aae; font-size: 14px; }
+    .broken { color: var(--danger); font-weight: 700; font-size: 14px; }
+
+    .capability-grid {
+      width: 880px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+
+    .capability {
+      min-height: 205px;
+      padding: 28px;
+      border-radius: 25px;
+      background: linear-gradient(145deg, rgba(18, 40, 62, 0.95), rgba(8, 23, 39, 0.95));
+      border: 1px solid rgba(35, 213, 195, 0.18);
+      box-shadow: 0 25px 65px rgba(0,0,0,0.22);
+    }
+
+    .capability .cap-icon {
+      width: 50px;
+      height: 50px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 22px;
+      border-radius: 15px;
+      color: #07111f;
+      background: var(--cyan);
+      font-size: 24px;
+      font-weight: 900;
+    }
+
+    .capability h3 { margin: 0 0 12px; font-size: 23px; }
+    .capability p { margin: 0; color: #829caf; font-size: 15px; line-height: 1.65; }
+
+    .cloud {
+      width: 850px;
+      height: 650px;
+      position: relative;
+    }
+
+    .cloud-core {
+      position: absolute;
+      left: 250px;
+      top: 185px;
+      width: 350px;
+      height: 260px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      border-radius: 70px;
+      background: linear-gradient(145deg, rgba(149, 109, 255, 0.2), rgba(79, 124, 255, 0.13)), #10223a;
+      border: 1px solid rgba(149, 109, 255, 0.45);
+      box-shadow: 0 40px 100px rgba(41, 36, 99, 0.35);
+    }
+
+    .cloud-core strong { display: block; font-size: 34px; margin-bottom: 12px; }
+    .cloud-core span { color: #a7b3ca; font-size: 17px; line-height: 1.55; }
+
+    .cloud-item {
+      position: absolute;
+      width: 210px;
+      padding: 20px;
+      border-radius: 20px;
+      background: rgba(13, 30, 50, 0.94);
+      border: 1px solid rgba(149, 109, 255, 0.25);
+      font-size: 17px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .cloud-item small { display: block; margin-top: 8px; color: #8399ae; font-size: 12px; font-weight: 500; }
+    .cloud-item.c1 { left: 0; top: 40px; }
+    .cloud-item.c2 { right: 0; top: 60px; }
+    .cloud-item.c3 { left: 15px; bottom: 40px; }
+    .cloud-item.c4 { right: 10px; bottom: 45px; }
+
+    .api-flow {
+      width: 880px;
+      display: grid;
+      grid-template-columns: 1fr 220px 1fr;
+      align-items: center;
+      gap: 26px;
+    }
+
+    .api-column { display: grid; gap: 15px; }
+
+    .api-box {
+      min-height: 110px;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      border-radius: 20px;
+      text-align: center;
+      background: rgba(14, 32, 53, 0.95);
+      border: 1px solid rgba(149, 109, 255, 0.25);
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .api-center {
+      min-height: 300px;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 14px;
+      border-radius: 36px;
+      background: linear-gradient(145deg, rgba(149, 109, 255, 0.25), rgba(35, 213, 195, 0.1)), #10243a;
+      border: 1px solid rgba(149, 109, 255, 0.46);
+      box-shadow: 0 30px 75px rgba(37, 28, 91, 0.3);
+    }
+
+    .api-center strong { font-size: 32px; }
+    .api-center span { color: #b7a7eb; font: 18px Consolas, monospace; }
+
+    .cta {
+      flex: 1;
+      display: grid;
+      place-items: center;
+      text-align: center;
+    }
+
+    .cta img {
+      width: 170px;
+      height: 170px;
+      border-radius: 44px;
+      box-shadow: 0 35px 100px rgba(35, 213, 195, 0.25);
+    }
+
+    .cta h1 { max-width: 1200px; margin-top: 42px; font-size: 68px; }
+    .cta p { margin: 24px 0 0; color: #9ab0c2; font-size: 27px; }
+
+    .actions {
+      display: flex;
+      gap: 18px;
+      margin-top: 44px;
+      justify-content: center;
+    }
+
+    .action {
+      padding: 16px 24px;
+      border-radius: 14px;
+      color: #e9fffc;
+      background: rgba(35, 213, 195, 0.11);
+      border: 1px solid rgba(35, 213, 195, 0.28);
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .legal {
+      position: absolute;
+      left: 96px;
+      right: 96px;
+      bottom: 34px;
+      display: flex;
+      justify-content: space-between;
+      color: rgba(161, 183, 198, 0.64);
+      font-size: 14px;
+      letter-spacing: 0.04em;
+    }
+
+    .huge-logo {
+      width: 260px;
+      height: 260px;
+      border-radius: 68px;
+      box-shadow: 0 50px 120px rgba(35, 213, 195, 0.24);
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    const logo = "../../src-tauri/icons/icon.png";
+    const scene = Number(new URLSearchParams(location.search).get("scene") || 1);
+
+    const frame = (content, options = {}) => `
+      <main class="frame">
+        <header class="topbar">
+          <div class="brand"><img src="${logo}" alt="" />HiddenShield</div>
+          <div class="tag ${options.future ? "future" : ""}">${options.tag || "桌面端 · 中文宣传片"}</div>
+        </header>
+        ${content}
+        <footer class="legal">
+          <span>HiddenShield · 为个人创作者打造</span>
+          <span>${options.footer || "当前能力与未来规划已明确区分"}</span>
+        </footer>
+      </main>
+    `;
+
+    const split = (eyebrow, title, lead, visual, options = {}) => frame(`
+      <section class="content">
+        <div class="copy ${options.future ? "future-copy" : ""}">
+          <div class="eyebrow">${eyebrow}</div>
+          <h1>${title}</h1>
+          <p class="lead">${lead}</p>
+        </div>
+        <div class="visual">${visual}</div>
+      </section>
+    `, options);
+
+    const appWindow = (active, body) => `
+      <div class="window">
+        <div class="window-bar">
+          <div class="window-title"><img src="${logo}" alt="" />HiddenShield · 版权保护工作台</div>
+          <div class="window-dots"><span></span><span></span><span></span></div>
+        </div>
+        <div class="app">
+          <aside class="sidebar">
+            ${["工作台", "处理", "验证", "版权库", "批量队列", "设置", "帮助与能力边界"].map(item => `<div class="nav ${item === active ? "active" : ""}">${item}</div>`).join("")}
+          </aside>
+          <section class="main">${body}</section>
+        </div>
+      </div>
+    `;
+
+    const scenes = {
+      1: split(
+        "创作者面对的现实",
+        `作品发布之后，<span class="accent">控制权</span>往往迅速消失`,
+        "复制、改名、搬运，甚至进入从未授权的工作流。创作者需要的，不只是阻止复制，而是持续留下可以验证的作品信息。",
+        `<div class="art-board">
+          <div class="photo"></div>
+          <div class="copy-card one"><div class="copy-thumb"></div><div class="copy-meta"><strong>重新发布的副本</strong>作者信息已被移除</div></div>
+          <div class="copy-card two"><div class="copy-thumb"></div><div class="copy-meta"><strong>未知来源的素材</strong>传播路径无法确认</div></div>
+        </div>`
+      ),
+      2: split(
+        "问题一",
+        `作品被盗用，却难以说明<span class="accent">素材从哪里开始</span>`,
+        "原始文件、创作过程、保护副本和传播版本散落在不同位置。真正发生争议时，整理源头本身就成为成本。",
+        `<div class="evidence-stack">
+          <div class="evidence"><div class="evidence-icon">原</div><div><strong>原始素材</strong><span>创作设备与本地文件</span></div><div class="broken">彼此分离</div></div>
+          <div class="evidence"><div class="evidence-icon">副</div><div><strong>发布副本</strong><span>压缩、改名、再次导出</span></div><div class="broken">记录缺失</div></div>
+          <div class="evidence"><div class="evidence-icon">传</div><div><strong>传播版本</strong><span>平台、社交媒体与第三方</span></div><div class="broken">来源不明</div></div>
+        </div>`
+      ),
+      3: split(
+        "问题二",
+        `发布作品，<span class="accent">不等于放弃权利</span>`,
+        "个人创作者需要持续表达：禁止模型训练、需要单独授权、允许非商业使用，或者其他清晰的权利边界。",
+        `<div class="network">
+          <div class="line l1"></div><div class="line l2"></div><div class="line l3"></div><div class="line l4"></div><div class="line l5"></div><div class="line l6"></div>
+          <div class="node core">创作者<br/>权利声明</div>
+          <div class="node n1">内容平台</div><div class="node n2">AI 服务</div><div class="node n3">商业客户</div><div class="node n4">传播渠道</div>
+          <div class="node n5">创作工具</div><div class="node n6">版权服务</div>
+        </div>`
+      ),
+      4: split(
+        "问题三",
+        `原创作品缺少连续、<span class="accent">可验证的技术记录</span>`,
+        "只有一份原始文件，并不等于已经形成完整证明。作品信息需要被记录、验证、管理并按需导出。",
+        `<div class="evidence-stack">
+          <div class="evidence"><div class="evidence-icon">#</div><div><strong>作品指纹</strong><span>确认当前文件内容</span></div><div class="broken">缺少关联</div></div>
+          <div class="evidence"><div class="evidence-icon">✓</div><div><strong>保护验证</strong><span>确认保护信息仍可读取</span></div><div class="broken">缺少记录</div></div>
+          <div class="evidence"><div class="evidence-icon">档</div><div><strong>证据材料</strong><span>整理声明、摘要与时间信息</span></div><div class="broken">难以汇总</div></div>
+        </div>`
+      ),
+      5: split(
+        "HiddenShield",
+        `为个人创作者打造的<br/><span class="accent">作品保护与版权证据管理工具</span>`,
+        "从保护副本、技术验证，到版权库和报告，让个人作品拥有连续、可管理的记录。",
+        `<img class="huge-logo" src="${logo}" alt="HiddenShield" />`,
+        { tag: "桌面端产品" }
+      ),
+      6: split(
+        "桌面端现有能力 · 保护流程",
+        `把作品变成<span class="accent">可读取、可验证</span>的保护副本`,
+        "图片与音频在本机完成预检、写入、回读验证和版权库入库。界面示例使用演示素材，不上传原始媒体。",
+        appWindow("处理", `
+          <div class="main-head"><div><h2>处理作品</h2><div class="main-sub">选择图片或音频，生成保护副本与版权记录</div></div><div class="status">环境就绪</div></div>
+          <div class="dropzone"><div class="drop-icon">＋</div><div><div class="drop-title">雾岭清晨.jpg · 已导入</div><div class="drop-sub">图片 · 24.8 MB · 原始媒体保留在本机</div></div></div>
+          <div class="cards"><div class="card"><div class="card-label">创作者身份</div><div class="card-value">林川影像工作室</div></div><div class="card"><div class="card-label">作品来源</div><div class="card-value">人工创作</div></div><div class="card"><div class="card-label">训练许可</div><div class="card-value">禁止模型训练</div></div></div>
+          <div class="steps"><div class="step done"><strong>1</strong>读取作品</div><div class="step done"><strong>2</strong>准备版权信息</div><div class="step done"><strong>3</strong>生成保护副本</div><div class="step done"><strong>4</strong>验证保护结果</div><div class="step done"><strong>5</strong>保存版权记录</div></div>
+          <div class="result-card"><div class="check">✓</div><div><div class="result-title">保护副本已生成并完成回读验证</div><div class="result-sub">保护副本：雾岭清晨_HiddenShield.jpg</div></div><div class="uid">HS-7A10D9E2-51C34B8F<br/>-A6812E44-0C9F73B1</div></div>
+        `)
+      ),
+      7: split(
+        "桌面端现有能力 · 验证流程",
+        `不依赖文件名，重新读取<span class="accent">隐藏的保护信息</span>`,
+        "验证页面读取载荷、检查完整性，并将版权编号与本机版权记录匹配。技术验证不自动给出法律权属结论。",
+        appWindow("验证", `
+          <div class="main-head"><div><h2>验证记录</h2><div class="main-sub">选择图片或音频样本，读取保护信息</div></div><div class="status">本地验证</div></div>
+          <div class="dropzone"><div class="drop-icon">✓</div><div><div class="drop-title">雾岭清晨_平台压缩版.jpg</div><div class="drop-sub">开始读取隐藏载荷与完整性信息</div></div></div>
+          <div class="result-card"><div class="check">✓</div><div><div class="result-title">技术校验通过</div><div class="result-sub">已读取保护信息，并匹配本机版权记录</div></div><div class="pill">匹配成功</div></div>
+          <div class="cards"><div class="card"><div class="card-label">版权编号</div><div class="card-value">HS-7A10…73B1</div></div><div class="card"><div class="card-label">载荷完整性</div><div class="card-value">已验证</div></div><div class="card"><div class="card-label">作品记录</div><div class="card-value">雾岭清晨</div></div></div>
+          <div class="card" style="margin-top:18px"><div class="card-label">验证边界</div><div class="card-value" style="line-height:1.6">结果表示 HiddenShield 技术校验通过，不等同于实名认证、发行方数字签名或法律权属认定。</div></div>
+        `)
+      ),
+      8: split(
+        "桌面端现有能力 · 本地版权库",
+        `让每一次保护都成为<span class="accent">可以管理的作品记录</span>`,
+        "集中管理版权编号、作品指纹、保护副本摘要、创作者声明、训练许可、验证状态与时间记录。",
+        appWindow("版权库", `
+          <div class="main-head"><div><h2>本地版权库</h2><div class="main-sub">原始媒体、保护副本与本地路径默认留在设备中</div></div><div class="status">3 条记录</div></div>
+          <div class="table">
+            <div class="row head"><div>作品对象</div><div>类型</div><div>版权编号</div><div>状态</div></div>
+            <div class="row"><div class="file"><strong>雾岭清晨.jpg</strong><span>摄影作品 · 林川影像工作室</span></div><div>图片</div><div class="uid">HS-7A10…73B1</div><div class="pill">已验证</div></div>
+            <div class="row"><div class="file"><strong>留白与秩序.png</strong><span>视觉设计 · 林川影像工作室</span></div><div>图片</div><div class="uid">HS-82C4…11A8</div><div class="pill">已验证</div></div>
+            <div class="row"><div class="file"><strong>远岸回声.wav</strong><span>原创音乐 · 林川影像工作室</span></div><div>音频</div><div class="uid">HS-C140…8DE2</div><div class="pill">已验证</div></div>
+          </div>
+          <div class="cards"><div class="card"><div class="card-label">作品声明</div><div class="card-value">人工创作</div></div><div class="card"><div class="card-label">训练许可</div><div class="card-value">需单独授权</div></div><div class="card"><div class="card-label">同步状态</div><div class="card-value">本地记录</div></div></div>
+        `)
+      ),
+      9: split(
+        "桌面端现有能力 · 技术证据报告",
+        `从一条版权记录，生成<span class="accent">结构化证据材料</span>`,
+        "报告汇总作品信息、技术校验结果、完整性摘要与相关时间记录。它提供技术证据，不替代法律权属认定。",
+        appWindow("版权库", `
+          <div class="main-head"><div><h2>版权详细报告</h2><div class="main-sub">从版权记录生成结构化技术证据材料</div></div><div class="status">技术证据</div></div>
+          <div class="report">
+            <div class="report-cover"><div class="mark">HIDDENSHIELD</div><h3>版权技术证据报告</h3><p>作品：雾岭清晨<br/>媒体类型：图片<br/>创作者声明：林川影像工作室</p><div class="report-id">HS-7A10D9E2-51C34B8F<br/>-A6812E44-0C9F73B1</div></div>
+            <div class="report-details">
+              <div class="report-item"><span>作品指纹</span><strong>SHA-256 摘要已记录</strong></div>
+              <div class="report-item"><span>保护副本</span><strong>写入后回读验证通过</strong></div>
+              <div class="report-item"><span>载荷完整性</span><strong>技术校验通过</strong></div>
+              <div class="report-item"><span>作品来源声明</span><strong>人工创作</strong></div>
+              <div class="report-item"><span>训练许可</span><strong>禁止模型训练</strong></div>
+              <div class="report-item"><span>时间记录</span><strong>记录状态与来源可查看</strong></div>
+              <div class="report-item"><span>保护副本摘要</span><strong>SHA-256 摘要已记录</strong></div>
+              <div class="report-item"><span>法律边界</span><strong>不提供法律权属结论</strong></div>
+            </div>
+          </div>
+        `)
+      ),
+      10: split(
+        "今天的 HiddenShield",
+        `先把个人创作者真正需要的<span class="accent">本地能力</span>做好`,
+        "当前桌面端聚焦图片与音频。核心保护流程不要求上传原始媒体，也不依赖云服务才能完成。",
+        `<div class="capability-grid">
+          <div class="capability"><div class="cap-icon">＋</div><h3>图片 / 音频保护写入</h3><p>生成保护副本，写入后自动回读验证。</p></div>
+          <div class="capability"><div class="cap-icon">✓</div><h3>本地读取与验证</h3><p>读取保护信息，检查完整性和版权编号。</p></div>
+          <div class="capability"><div class="cap-icon">▣</div><h3>本地版权库</h3><p>管理作品指纹、声明、摘要和验证状态。</p></div>
+          <div class="capability"><div class="cap-icon">档</div><h3>技术证据报告</h3><p>按版权记录汇总可导出的结构化材料。</p></div>
+        </div>`,
+        { tag: "当前已验证能力" }
+      ),
+      11: split(
+        "未来规划 · 云版权库",
+        `让作品记录从一台设备，走向<span class="future-accent">可信连接</span>`,
+        "规划中的云版权库将同步必要版权元数据、登记状态与权利声明，而不是默认上传和保存全部原始作品。",
+        `<div class="cloud">
+          <div class="cloud-core"><div><strong>云版权库</strong><span>版权元数据 · 登记状态<br/>权利声明 · 同步记录</span></div></div>
+          <div class="cloud-item c1">桌面端<small>本地优先保护</small></div>
+          <div class="cloud-item c2">版权登记<small>编号与状态记录</small></div>
+          <div class="cloud-item c3">跨设备<small>必要元数据同步</small></div>
+          <div class="cloud-item c4">合作伙伴<small>按权限访问能力</small></div>
+        </div>`,
+        { future: true, tag: "未来规划 · 尚未作为生产云服务开放", footer: "未来规划不代表当前已开放服务或 SLA" }
+      ),
+      12: split(
+        "未来规划 · SDK + API",
+        `让创作工具、内容平台与版权服务<br/><span class="future-accent">连接作品身份</span>`,
+        "未来将通过标准化 SDK 与 API 提供权利信号查询、授权策略解析、批量验证与版权工作流接入。",
+        `<div class="api-flow">
+          <div class="api-column"><div class="api-box">创作软件</div><div class="api-box">内容平台</div><div class="api-box">AI 服务</div></div>
+          <div class="api-center"><strong>HiddenShield</strong><span>SDK</span><span>REST API</span></div>
+          <div class="api-column"><div class="api-box">权利信号查询</div><div class="api-box">授权策略解析</div><div class="api-box">批量验证工作流</div></div>
+        </div>`,
+        { future: true, tag: "未来规划 · 对外生产接入尚未开放", footer: "SDK / API 规划以生产安全、审计与运行门禁为前提" }
+      ),
+      13: split(
+        "终局愿景 · 个人作品身份",
+        `每一份作品，都应该拥有<br/><span class="future-accent">属于创作者的持续身份</span>`,
+        "从保护一份文件，到连接创作者、平台和服务机构，让作品权利能够被表达，也能够被验证。",
+        `<div class="network">
+          <div class="line l1"></div><div class="line l2"></div><div class="line l3"></div><div class="line l4"></div><div class="line l5"></div><div class="line l6"></div>
+          <div class="node core"><div><img src="${logo}" alt="" /><br/>作品身份</div></div>
+          <div class="node n1">摄影师</div><div class="node n2">设计师</div><div class="node n3">音乐创作者</div><div class="node n4">合作机构</div>
+          <div class="node n5">内容平台</div><div class="node n6">创作工具</div>
+        </div>`,
+        { future: true, tag: "终局愿景", footer: "愿景表达不代表身份认证或公共信任层已经上线" }
+      ),
+      14: frame(`
+        <section class="cta">
+          <div>
+            <img src="${logo}" alt="HiddenShield" />
+            <h1>保护作品，从留下第一条<span class="accent">可信记录</span>开始</h1>
+            <p>关注 HiddenShield，加入粉丝群，领取桌面版下载链接</p>
+            <div class="actions"><div class="action">关注项目动态</div><div class="action">加入粉丝群</div><div class="action">领取桌面版</div></div>
+          </div>
+        </section>
+      `, { tag: "HiddenShield · 桌面端" })
+    };
+
+    document.getElementById("root").innerHTML = scenes[scene] || scenes[1];
+  </script>
+</body>
+</html>

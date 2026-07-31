@@ -148,6 +148,8 @@
     "desktop:audio-preflight": "node scripts/verify-audio-duration-preflight.mjs",
     "watermark:audio-support-contract": "node scripts/verify-audio-support-contract.mjs",
     "watermark:bench": "cargo run --manifest-path watermark-core/Cargo.toml --bin robustness_bench --",
+    "watermark:promo-performance-fixtures": "node scripts/generate-promo-performance-fixtures.mjs",
+    "watermark:promo-performance-bench": "cargo run --release --manifest-path watermark-core/Cargo.toml --bin promo_performance_bench --",
     "watermark:bench:release": "cargo run --release --manifest-path watermark-core/Cargo.toml --bin robustness_bench --",
     "watermark:release-gate": "node scripts/verify-watermark-release-gate.mjs",
     "watermark:quality-gate:fast": "cargo run --manifest-path watermark-core/Cargo.toml --bin v3_quality_gate --",
