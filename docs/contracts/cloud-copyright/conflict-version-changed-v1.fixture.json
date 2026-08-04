@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "conflict_version_changed",
+  "change": {
+    "changeId": "ccc_01J4C0PYRIGHT000000000002",
+    "operation": "upsert_record",
+    "recordId": "ccr_01J4C0PYRIGHT000000000001",
+    "baseRecordVersion": 6,
+    "currentRecordVersion": 7,
+    "attemptedFields": ["rightsDeclaration"]
+  },
+  "expectedError": {
+    "code": "conflict_version_changed",
+    "retryable": false,
+    "remoteWriteCommitted": false,
+    "auditAppended": false
+  },
+  "localResolution": {
+    "preserveLocalDraft": true,
+    "requiresExplicitResolution": true
+  }
+}

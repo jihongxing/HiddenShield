@@ -1,5 +1,51 @@
 # HiddenShield 商业化落地 Roadmap
 
+## 2026-08-04 产品战略架构图 PPT 精简版完成
+
+状态：`3840 × 2160 PPT 首页 / 投屏版本已交付`
+
+- 基于内部战略图母版新增 `docs/product-strategy/HiddenShield-product-strategy-ppt-4k.html`、`docs/product-strategy/render-product-strategy-ppt.mjs` 和 `docs/product-strategy/HiddenShield-product-strategy-ppt-4k.png`。
+- 精简版保留一核、双翼、“原创权利身份 + AI 来源身份”双主线、增长飞轮和四阶段；删除五项服务清单与多数技术细节，每个主要模块压缩为标题和一句话。
+- ToC 远距文案固定为“从一次处理文件，升级为创作者长期使用的内容身份账户”；ToB 固定为“从个人工具，升级为团队、企业和 AI 平台共同使用的信任服务”。
+- AI 生成内容标识继续作为中央主线和阶段三第二增长曲线呈现，没有被精简为附属标签。
+- 当前位置继续固定为阶段一后半程；阶段三继续固定为“组织与 AI 平台服务”，并以紫色状态标记“第二增长曲线”。
+- 商业路径精简为“原创保护做入口、团队服务做规模、AI 标识做第二增长曲线、信任网络做长期壁垒”，未引入新套餐、价格或权益承诺。
+- 验证：Playwright 无网络重复渲染通过；PNG 为 `3840 × 2160`，文件约 `2.74 MiB`；全图和缩略预览人工检查确认主标题、双主线、ToC / ToB、飞轮和四阶段均未裁切。
+- 风险：该版本适合 PPT 首页与会议投屏，不适合作为完整产品说明；听众需要后续页面分别展开 ToC 商业模式、AI 标识平台链路和当前执行重点。
+- 下一商业化任务：制作紧随战略首页之后的第二张 PPT 页面，聚焦“当前位置与未来 12 个月”，只展示当前阶段、三个市场验证目标、内容团队收入线和 AI 平台 Sandbox 第二增长曲线。
+
+## 2026-08-04 产品战略架构图 V1 生成完成
+
+状态：`双主线已由创始人批准冻结；3840 × 2160 内部战略图已交付`
+
+- 创始人已批准并冻结“原创权利身份 + AI 来源身份”双主线。
+- 新增可编辑源稿 `docs/product-strategy/HiddenShield-product-strategy-4k.html`、渲染脚本 `docs/product-strategy/render-product-strategy.mjs` 和首版成图 `docs/product-strategy/HiddenShield-product-strategy-4k.png`。
+- 图面固定采用“一核、双翼、四阶段、一个增长飞轮”：中央为数字内容身份与信任引擎；左翼为 ToC 创作者版权服务平台；右翼为 ToB 组织与平台信任服务。
+- AI 生成内容标识在图中作为第二战略主线和第二增长曲线呈现，明确包含生成时来源标识、Manifest / Evidence、元数据与鲁棒锚点、SDK / API、Registry / Resolver 和监管 Profile。
+- 图中当前位置固定为阶段一后半程；近期收入验证来自个人订阅、报告和内容团队服务，AI 标识基础设施通过真实平台 Sandbox 验证第二增长曲线。
+- 内部图底部保留“不等同于当前全部能力已上线”的边界说明，没有新增用户可见套餐、价格或当前能力承诺。
+- 验证：Playwright 使用本机 Noto Sans SC 字体完成无网络渲染；PNG 尺寸为 `3840 × 2160`，文件约 `2.67 MiB`；人工视觉检查确认标题、双主线、ToC / ToB 服务、飞轮和四阶段均完整显示。
+- 风险：首版信息密度适合 4K 屏幕、内部会议和放大查看；在演示文稿缩略页或移动设备直接查看时，三级说明文字较小。
+- 下一商业化任务：以 V1 为母版制作一份 `16:9` 演示精简版，将正文缩减至每区块一个标题和一句话，并保留 AI 标识第二增长曲线与当前位置。
+
+## 2026-08-04 产品战略架构图中文线框稿完成（补充 AI 生成内容标识主线）
+
+状态：`战略叙事线框待创始人评审；未进入正式图片生成`
+
+- 新增并更新 `docs/HiddenShield产品战略架构图线框稿.md`，以“一核、双翼、四阶段、一个增长飞轮”统一表达 HiddenShield 的长期产品与商业方向。
+- “一核”升级为数字内容身份与信任引擎，并固定为“原创内容权利身份 + AI 生成内容来源身份”双主线；“双翼”保持 ToC 创作者版权服务平台与 ToB 组织及平台信任服务。
+- AI 生成内容标识不再只作为阶段四远期合规关键词，而是作为 ToB 第二增长曲线进入中央核心、服务矩阵、阶段三、增长飞轮和收入结构。
+- AI 标识战略定位固定为生成时事实基础设施：面向 AI 生成 / 编辑平台组合 Manifest、Evidence、开放元数据、C2PA 兼容声明、`watermark-core` 鲁棒锚点、Registry / Resolver 与监管 Profile；不定位为上传未知图片后的概率 AI 检测器。
+- 四阶段更新为创作者工具、版权资产平台、组织与 AI 平台服务、数字内容信任网络；阶段三同时承接内容团队解决方案和 AI 标识基础设施两条 ToB 产品线。
+- 当前战略位置标记为阶段一后半程：技术与产品底座已超过概念验证，当前主要缺口是付费、留存、续费、企业案例与可重复销售证据。
+- ToC 收入方向保持个人年度订阅为主、报告与证据服务按需增购、未来视频和云端处理作为高价值增量；未引入新的用户可见个人套餐层级。
+- ToB 保持为未来 capability entitlement 或组织合同产品，收入方向包括团队席位、企业用量、API / SDK 授权、私有化部署和行业项目，不把历史 `Studio / Enterprise` 技术码重新包装成当前个人套餐。
+- 市场进入顺序收束为个人创作者与小型团队起步，近期优先验证电商 / 广告内容团队的付费交付，同时推进 1 家 AI 图片平台真实 Sandbox 接入；随后扩展教育、媒体、更多 AI / 内容平台，最后发展跨平台信任网络。
+- 本轮只新增战略图内容底稿，没有修改订阅、支付、授权、同步、报告、团队、API、云视频或生产运行时行为，也不改变当前能力边界。
+- 验证：已对照 `docs/商业模式规划.md`、`docs/商业套餐与权益全局语义设计.md`、`docs/HiddenShield商业潜力与融资估值评估.md` 和当前商业化 Roadmap 收束文案。
+- 风险：战略愿景中的视频、团队、AI 标识 SDK / API、Registry / Resolver、私有化与信任网络均包含未来或未外部开放能力；正式对外图片若不使用阶段图例，可能被误读为当前已上线或已满足法规。
+- 下一商业化任务：创始人评审并冻结线框稿中的六项决策，重点确认“原创权利身份 + AI 来源身份”双主线和“内容团队近期收入 + AI 标识第二增长曲线”，随后生成内部战略图与带阶段图例的对外版本。
+
 当前桌面发布状态：`v0.1.3` RC / GA Gate `PASSED`（2026-07-26）；真实支付与公共信任层仍未进入当前发布范围。
 
 ## 2026-07-26 中文社交媒体宣传片
@@ -2602,3 +2648,104 @@ Creator 行为：
 - CI：`npm run ai-transparency:postgres-failure-matrix` 已纳入 `ai-transparency:ci`，确保新增或改名 runner 时矩阵登记不会静默丢失。
 - 边界：真实 IAM/KMS/HSM、signer/object-store、通知 provider、真实伙伴/provider 及 iOS runtime 恢复演练继续为外部依赖，不得由本地 PostgreSQL QA 代替。
 - 下一商业化任务：保持内部矩阵为回归基线；真实外部配置到位后，为对应行补充受控 provider recovery / 伙伴 Sandbox 演练证据。
+
+## 2026-07-29 AI Transparency PostgreSQL 统一 QA Suite
+
+- 状态：`internal_postgresql_qa_suite_verified_external_recovery_pending`。
+- 已完成：新增 `npm run ai-transparency:postgres-qa`，在同一个一次性 PostgreSQL 测试库中顺序运行迁移 smoke、approval、confirm、credential custody、image marking executor、external evidence review、platform API 和 post-embed signing QA，减少内部回归时漏跑 runner 的风险。
+- 执行边界：调用方可显式传入一次性 `HIDDENSHIELD_POSTGRES_TEST_DATABASE_URL`（或 `DATABASE_URL`）；未传入时脚本仅在 Podman/Docker 可用时创建并清理名称含 `hiddenshield_migrate_smoke` 的本地容器。该命令不纳入默认 CI，CI 继续只验证合同和矩阵登记，避免引入容器运行时依赖。
+- 安全 Gate：显式 URL 必须是 PostgreSQL 且数据库名包含 `hiddenshield_migrate_smoke`；普通开发、共享或生产数据库在迁移和写入前被 fail-closed 拒绝。无容器合同测试 `npm run ai-transparency:postgres-qa-contract` 已纳入 `ai-transparency:ci`。
+- 商业与能力边界：suite 仅提供内部 PostgreSQL 事务回归证据，不代表真实 IAM/KMS/HSM、signer/object-store、通知 provider、设计伙伴、iOS runtime、生产发放或三地法规合规已经验收。
+- 下一商业化任务：在真实外部配置到位后，使用受控测试库运行对应 provider recovery / 设计伙伴 Sandbox 验收，并将签署 evidence 通过 Evidence Intake 接收和双人审核。
+
+## 2026-07-29 AI Transparency 阶段性收尾
+
+- 状态：`phase_suspended_external_dependencies_internal_control_plane_frozen_through_0022`。
+- 已完成：内部控制面、外部证据接收/审核、SDK/API facade、最小 Resolver、synthetic Sandbox、PostgreSQL QA 故障矩阵和一次性测试库 fail-closed suite 已收束为回归基线。
+- 挂起范围：真实 provider/IAM/KMS/HSM/signer/object-store/notification 配置与恢复演练、CN/EU/US-CA 法务签署、真实设计伙伴 Sandbox、第三方处理链样本授权和 iOS runtime。
+- 商业边界：不得在暂停期发布 SDK、开放公网 Resolver/API、发放 production credential、确认收入或承诺 SLA/三地合规。
+- 恢复任务：先按 `docs/AI生成内容标识阶段性收尾与外部Gate交接.md` 接收并审核外部 evidence，再逐 Gate 执行 provider recovery 或 12 场景设计伙伴 Sandbox 验收。
+
+## 2026-07-29 云版权库多用户体系总体设计
+
+- 状态：`c0_contract_frozen_existing_sync_contracts_verified_no_production_migration`。
+- 决策：云版权库定位为多租户版权 metadata、协作、审计和恢复系统；原始媒体、保护副本、本地路径、creator seed 明文和凭据不进入默认云同步。
+- 商业模型：个人 workspace 是账户基础能力；Creator/Studio/Enterprise 的差异应以同步容量、历史保留、成员席位、审计/导出、私有化和 Enterprise SDK entitlement 表达，不改变记录所有权。
+- 安全前置：生产数据库必须为 PostgreSQL；设备绑定凭据须进入操作系统安全存储；workspace membership、角色、撤销、审计、冲突和删除保留期必须先完成真实 PostgreSQL Gate。
+- SDK 边界：首期只冻结内部 schema/transport package；`public-rights-sdk` 只读公开投影，AI Transparency SDK 仅通过最小 evidence link 关联，Enterprise SDK 在权限与计量 Gate 后另行开放。
+- 验证：临时 SQLite 后端上的 `cloud:contract`、`cloud:sync-reliability-contract`、双设备 `cloud:e2e` 与 PostgreSQL migration contract 通过；该结果不替代生产 PostgreSQL 多租户、凭据托管、团队权限或恢复演练。
+- C0 完成：`cloud-copyright-record-v1`、workspace membership/RBAC、change batch、冲突、成员撤销和隐私拒绝六类 fixture 已冻结；无容器 `cloud:copyright-contract` 已纳入 `cloud:ci`。
+- 下一商业化任务：仅评审 C1 PostgreSQL additive migration 与多租户并发 harness；评审通过前不创建迁移、不开放公开 SDK。
+
+## 2026-07-29 云版权库 C1 多租户迁移设计评审
+
+- 状态：`c1_design_review_approved_no_migration_created`。
+- 已冻结：`0023_cloud_copyright_multitenant_core` 的 additive 表清单、workspace membership/RBAC、私有 record projection、change/event/audit/cursor、RLS/repository guard 和八个真实 PostgreSQL 双连接竞争场景。
+- 商业边界：设计通过不代表 PostgreSQL 多租户云版权库、团队协作、备份恢复、Enterprise SDK 或 SLA 已实现；production database、公开 SDK 和客户发放继续关闭。
+- 实施前置：C0 contract 必须保持通过；迁移只能添加新表/索引，不改写 `0001` 或旧同步 payload；harness 必须使用名称含 `hiddenshield_migrate_smoke` 的 PostgreSQL 一次性库与两个真实连接。
+- 下一商业化任务：取得用户实施授权后创建 `0023`、`CloudCopyrightRepository` 和八场景 PostgreSQL QA；未通过 migration smoke 与并发 Gate 前不进入 C2。
+
+## 2026-07-29 云版权库 C1 PostgreSQL 核心实现
+
+- 状态：`c1_postgres_core_implemented_internal_only`。
+- 已完成：`0023_cloud_copyright_multitenant_core` additive migration、`CloudCopyrightRepository`、PostgreSQL migration smoke 和八场景双连接并发 QA；stale-version 竞争已验证为一次 `accepted` 与一次 `conflict_version_changed`。
+- 商业边界：该证据不开放 production 云版权库、团队协作、账户/成员管理 UI、公开 SDK、Enterprise entitlement、备份恢复承诺或 SLA。
+- 验证：`npm run cloud:postgres-migrate-smoke` 与 `npm run cloud:copyright-postgres-qa` 通过；仅连接名称含 `hiddenshield_migrate_smoke` 的一次性 PostgreSQL 库。
+- 下一商业化任务：冻结 C2 端侧 transport/RBAC mapping 与 production RLS/request-scope Gate，随后才评审受控内部 API。
+
+## 2026-07-29 云版权库 C2 合同冻结
+
+- 状态：`c2_contract_frozen_no_runtime_or_migration`。
+- 已冻结：Desktop Rust 与 Mobile Rust/Dart transport mapping、PostgreSQL transaction-local request scope/RLS、internal-only operation admission 与零公开暴露面。
+- 商业边界：合同不开放生产云版权库、团队协作、公开 API/SDK、Enterprise entitlement、客户凭据、成员管理 UI 或 SLA。
+- 验证：`npm run cloud:copyright-c2-contract` 已纳入 `cloud:ci`；contract verifier 拒绝任何 `0024` cloud copyright migration。
+- 下一商业化任务：仅评审 C3 RLS additive migration、internal identity receipt adapter 和真实 PostgreSQL scope QA 设计。
+
+## 2026-07-29 云版权库 C3 RLS 与身份 Receipt 设计评审
+
+- 状态：`c3_design_review_approved_no_migration_or_runtime_created`。
+- 已冻结：`0024_cloud_copyright_rls_request_scope` 的 additive/role/RLS 目标、异步 verified identity receipt adapter、12 场景 PostgreSQL 双连接 scope QA 与零公开路由边界。
+- 商业边界：评审不提供 production RLS、真实团队隔离、internal API、公开 SDK、客户 credential、恢复承诺或 SLA。
+- 阻塞：真实 Internal IAM/JWKS 或 mTLS provider、PostgreSQL role bootstrap 与 Secret reference 是外部配置依赖；未到位时 C3 实现必须保持 fail-closed。
+- 下一商业化任务：外部配置到位后，仅评审 `0024` SQL 和 adapter JSON/contract fixture，不先创建 migration。
+
+## 2026-07-29 云版权库 C3 无外部依赖合同包
+
+- 状态：`c3_contract_frozen_no_migration_or_runtime_created`。
+- 已完成：identity receipt Schema/canonical digest、invalid/expired/scope mismatch/unavailable fixture、RLS SQL static lint、Desktop/Android draft-retention fixture、role/Secret reference handoff template 与旧 sync/internal API 隔离审计。
+- 商业边界：所有资产均为内部合同或交接材料，不构成 IAM 接入、RLS runtime、客户同步、团队协作、公开 API/SDK 或 SLA。
+- 验证：`npm run cloud:copyright-c3-contract` 已接入 `cloud:ci`；该 Gate 拒绝 `0024` migration、公开/内部 cloud copyright route、RLS bypass、global scope 和 public grant。
+- 下一商业化任务：继续等待外部 identity/role 配置；到位后仅评审 `0024` SQL 与 adapter fixture。
+
+## 2026-07-29 云版权库 C3 External Readiness Dry-Run
+
+- 状态：`c3_external_readiness_dry_run_internal_only`。
+- 已完成：缺失配置返回 `blocked`、只接受 Secret/evidence/IAM reference、字面秘密或错误引用返回 `rejected`，并增加 C3 contract/交接材料 secret scanner。
+- 商业边界：dry-run 不连接真实 IAM/JWKS/mTLS、不连接 PostgreSQL、不创建 `0024`、不启动 internal API，也不代表 production readiness。
+- 验证：`cloud:copyright-c3-external-readiness-contract`、`cloud:copyright-c3-secret-scan` 已接入 `cloud:ci`。
+- 下一商业化任务：继续等待外部配置；收到引用后运行 dry-run，结果为 `ready_for_review` 时仅进入 `0024` SQL 与 adapter fixture 评审。
+
+## 2026-07-29 云版权库 C3 Receipt Boundary 与 RLS Mutation Gate
+
+- 状态：`c3_contract_hardening_internal_only`。
+- 已完成：receipt key-order、生命周期、时钟偏差与 replay fixture；RLS lint 已用缺失 `FORCE RLS`、`BYPASSRLS`、`SET ROLE`、`PUBLIC` grant、全局 scope 五类 mutation 验证拒绝。
+- 商业边界：mutation Gate 不执行 PostgreSQL SQL、不创建 role/migration、不验证真实 provider，也不开放任何端侧或公开能力。
+- 验证：`cloud:copyright-c3-rls-lint-mutations` 已接入 `cloud:ci`。
+- 下一商业化任务：继续等待外部配置；配置到位后先运行 external readiness，再仅评审 `0024` SQL 与 adapter fixture。
+
+## 2026-07-29 云版权库 C3 PostgreSQL Scope QA Artifact 合同
+
+- 状态：`c3_scope_qa_artifact_contract_frozen`。
+- 已完成：未来真实 PostgreSQL scope QA 的 machine-readable artifact Schema 与 12 场景预期 fixture，固定 PostgreSQL-only、双连接、receipt 脱敏、90 天内部安全证据保留和审计导出边界。
+- 商业边界：fixture 是未来验收格式，不是 RLS runtime、真实数据库 QA、客户可见报告或生产团队协作证据。
+- 验证：`cloud:copyright-c3-scope-qa-contract` 已接入 `cloud:ci`。
+- 下一商业化任务：继续等待外部配置；收到后先运行 external readiness，再仅评审 `0024` SQL 与 adapter fixture。
+
+## 2026-07-29 云版权库阶段性收尾
+
+- 状态：`phase_checkpoint_external_gates_suspended`。
+- 已收口：C0-C3 合同、C1 PostgreSQL 核心、八场景并发 QA、C3 external readiness/secret scan/RLS mutation 与 12 场景 scope artifact 格式。
+- 外部阻塞：真实 IAM/JWKS 或 mTLS、workload identity、PostgreSQL role bootstrap/Secret reference、审批与恢复演练 evidence。
+- 商业边界：生产云版权库、团队协作、端侧正式 transport、internal/public API、公开 SDK、RLS runtime、production role/credential 和 SLA 全部继续关闭。
+- 恢复入口：`docs/云版权库阶段性收尾与外部Gate交接.md`；只有 external readiness 为 `ready_for_review` 才能评审 `0024` SQL。
+- 下一商业化任务：暂停云版权库任务族，切换到用户指定的新任务族。

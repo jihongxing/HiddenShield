@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HiddenShield 产品战略全景图 · PPT 精简版</title>
+  <style>
+    @font-face {
+      font-family: "Noto Sans SC";
+      src: url("file:///C:/Windows/Fonts/NotoSansSC-VF.ttf") format("truetype");
+      font-weight: 100 900;
+      font-display: swap;
+    }
+
+    :root {
+      color-scheme: dark;
+      font-family: "Noto Sans SC", "Microsoft YaHei", sans-serif;
+      color: #f5f9fb;
+      background: #071018;
+      --cyan: #69eadb;
+      --cyan-soft: #a2f7ed;
+      --violet: #a991ff;
+      --violet-soft: #cbbfff;
+      --blue: #70b7ee;
+      --muted: #a2b3bd;
+      --line: rgba(164, 198, 215, 0.2);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 3840px;
+      height: 2160px;
+      margin: 0;
+      overflow: hidden;
+      background: #071018;
+    }
+
+    .poster {
+      position: relative;
+      width: 3840px;
+      height: 2160px;
+      padding: 84px 120px 66px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 39%, rgba(58, 184, 202, 0.15), transparent 31%),
+        radial-gradient(circle at 7% 32%, rgba(55, 211, 192, 0.12), transparent 25%),
+        radial-gradient(circle at 94% 30%, rgba(133, 104, 237, 0.16), transparent 28%),
+        linear-gradient(148deg, #071018 0%, #0b1721 50%, #071019 100%);
+    }
+
+    .poster::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: 0.48;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(108, 210, 208, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(108, 210, 208, 0.04) 1px, transparent 1px);
+      background-size: 80px 80px;
+      mask-image: linear-gradient(to bottom, black, rgba(0,0,0,.7) 68%, transparent);
+    }
+
+    .halo {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .halo.top {
+      width: 900px;
+      height: 900px;
+      top: -580px;
+      right: -180px;
+      border: 1px solid rgba(105, 234, 219, 0.13);
+      box-shadow: 0 0 0 100px rgba(105, 234, 219, 0.018), 0 0 0 205px rgba(105, 234, 219, 0.012);
+    }
+
+    .halo.bottom {
+      width: 690px;
+      height: 690px;
+      left: -400px;
+      bottom: -420px;
+      border: 1px solid rgba(169, 145, 255, 0.13);
+      box-shadow: 0 0 0 90px rgba(169, 145, 255, 0.014);
+    }
+
+    .content {
+      position: relative;
+      z-index: 2;
+      height: 100%;
+      display: grid;
+      grid-template-rows: 300px 920px 220px 400px 92px;
+      gap: 20px;
+    }
+
+    .header {
+      position: relative;
+      text-align: center;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      color: #e9f5f5;
+      font-size: 30px;
+      font-weight: 760;
+      letter-spacing: 0.18em;
+    }
+
+    .brand-mark {
+      width: 68px;
+      height: 78px;
+      display: grid;
+      place-items: center;
+      clip-path: polygon(50% 0, 92% 15%, 85% 72%, 50% 100%, 15% 72%, 8% 15%);
+      color: #06100f;
+      background: linear-gradient(145deg, #b2fff6, #4cd9c9 72%);
+      box-shadow: 0 12px 44px rgba(76, 217, 201, 0.3);
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -0.08em;
+    }
+
+    .tag {
+      position: absolute;
+      top: 0;
+      right: 0;
+      padding: 14px 22px;
+      border: 1px solid rgba(244, 190, 126, 0.38);
+      color: #f4c98f;
+      background: rgba(244, 190, 126, 0.055);
+      font-size: 20px;
+      font-weight: 650;
+      letter-spacing: 0.12em;
+    }
+
+    .eyebrow {
+      color: var(--cyan);
+      font-size: 24px;
+      font-weight: 760;
+      letter-spacing: 0.26em;
+    }
+
+    h1 {
+      margin: 17px 0 11px;
+      font-size: 90px;
+      line-height: 1.05;
+      font-weight: 830;
+      letter-spacing: -0.045em;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: #d4e0e5;
+      font-size: 39px;
+      line-height: 1.35;
+      font-weight: 600;
+    }
+
+    .vision {
+      margin-top: 13px;
+      color: #8fa4b1;
+      font-size: 24px;
+      letter-spacing: 0.03em;
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: 1fr 1.26fr 1fr;
+      gap: 32px;
+    }
+
+    .panel {
+      position: relative;
+      overflow: hidden;
+      padding: 48px 48px 42px;
+      border: 1px solid var(--line);
+      background: linear-gradient(155deg, rgba(18, 34, 46, 0.96), rgba(9, 21, 30, 0.91));
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.25);
+    }
+
+    .toc {
+      border-top: 5px solid var(--cyan);
+    }
+
+    .core {
+      border-top: 5px solid var(--blue);
+      background:
+        radial-gradient(circle at 50% 48%, rgba(78, 197, 211, 0.14), transparent 43%),
+        linear-gradient(155deg, rgba(15, 32, 44, 0.98), rgba(9, 20, 29, 0.95));
+    }
+
+    .tob {
+      border-top: 5px solid var(--violet);
+    }
+
+    .panel-kicker {
+      font-size: 24px;
+      font-weight: 760;
+      letter-spacing: 0.18em;
+    }
+
+    .toc .panel-kicker {
+      color: var(--cyan);
+    }
+
+    .core .panel-kicker {
+      color: #8fd5f2;
+      text-align: center;
+    }
+
+    .tob .panel-kicker {
+      color: var(--violet-soft);
+    }
+
+    .panel h2 {
+      margin: 20px 0 17px;
+      font-size: 59px;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+    }
+
+    .panel > p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 28px;
+      line-height: 1.65;
+    }
+
+    .big-icon {
+      width: 124px;
+      height: 124px;
+      display: grid;
+      place-items: center;
+      margin-top: 48px;
+      border: 1px solid rgba(105, 234, 219, 0.4);
+      color: var(--cyan);
+      background: rgba(105, 234, 219, 0.06);
+      font-size: 43px;
+      font-weight: 820;
+    }
+
+    .tob .big-icon {
+      border-color: rgba(169, 145, 255, 0.42);
+      color: var(--violet-soft);
+      background: rgba(169, 145, 255, 0.065);
+    }
+
+    .promise {
+      margin-top: 36px;
+      color: #dce8ed;
+      font-size: 34px;
+      line-height: 1.55;
+      font-weight: 640;
+    }
+
+    .model {
+      position: absolute;
+      left: 48px;
+      right: 48px;
+      bottom: 42px;
+      padding-top: 24px;
+      border-top: 1px solid var(--line);
+    }
+
+    .model-label {
+      color: #718794;
+      font-size: 19px;
+      font-weight: 750;
+      letter-spacing: 0.18em;
+    }
+
+    .model-copy {
+      margin-top: 10px;
+      color: #dce8ed;
+      font-size: 26px;
+      line-height: 1.45;
+      font-weight: 600;
+    }
+
+    .core {
+      text-align: center;
+      padding-left: 42px;
+      padding-right: 42px;
+    }
+
+    .core h2 {
+      margin-top: 15px;
+      font-size: 57px;
+    }
+
+    .core > p {
+      max-width: 980px;
+      margin: 0 auto;
+      font-size: 26px;
+    }
+
+    .tracks {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 42px;
+    }
+
+    .track {
+      min-height: 310px;
+      padding: 32px 28px;
+      border: 1px solid rgba(164, 198, 215, 0.2);
+      background: rgba(5, 16, 24, 0.56);
+      text-align: left;
+    }
+
+    .track.rights {
+      border-color: rgba(105, 234, 219, 0.38);
+      box-shadow: inset 0 4px 0 var(--cyan);
+    }
+
+    .track.ai {
+      border-color: rgba(169, 145, 255, 0.4);
+      box-shadow: inset 0 4px 0 var(--violet);
+    }
+
+    .track-label {
+      font-size: 19px;
+      font-weight: 760;
+      letter-spacing: 0.16em;
+    }
+
+    .rights .track-label {
+      color: var(--cyan);
+    }
+
+    .ai .track-label {
+      color: var(--violet-soft);
+    }
+
+    .track h3 {
+      margin: 17px 0 13px;
+      font-size: 41px;
+      line-height: 1.23;
+    }
+
+    .track p {
+      margin: 0;
+      color: #9cafba;
+      font-size: 23px;
+      line-height: 1.6;
+    }
+
+    .identity-layer {
+      margin-top: 25px;
+      padding: 28px 24px;
+      border: 1px solid rgba(112, 183, 238, 0.36);
+      background:
+        linear-gradient(90deg, rgba(105, 234, 219, 0.055), rgba(112, 183, 238, 0.07), rgba(169, 145, 255, 0.06)),
+        rgba(7, 18, 27, 0.76);
+    }
+
+    .identity-title {
+      color: #dfeef3;
+      font-size: 27px;
+      font-weight: 720;
+    }
+
+    .identity-copy {
+      margin-top: 11px;
+      color: #9fb2bd;
+      font-size: 22px;
+      line-height: 1.45;
+    }
+
+    .flywheel {
+      display: grid;
+      grid-template-columns: 650px 1fr;
+      align-items: center;
+      padding: 28px 40px;
+      border: 1px solid var(--line);
+      background: rgba(12, 27, 37, 0.82);
+    }
+
+    .flywheel h2 {
+      margin: 0;
+      font-size: 40px;
+    }
+
+    .flywheel p {
+      margin: 8px 0 0;
+      color: #91a5b1;
+      font-size: 21px;
+    }
+
+    .flow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .flow-node {
+      flex: 1;
+      min-height: 100px;
+      display: grid;
+      place-items: center;
+      padding: 13px;
+      border: 1px solid rgba(120, 190, 211, 0.26);
+      background: rgba(17, 40, 52, 0.72);
+      color: #e0ebef;
+      text-align: center;
+      font-size: 23px;
+      line-height: 1.35;
+      font-weight: 660;
+    }
+
+    .flow-node.ai-node {
+      border-color: rgba(169, 145, 255, 0.34);
+      background: rgba(48, 39, 77, 0.52);
+    }
+
+    .arrow {
+      color: #6b9db3;
+      font-size: 34px;
+    }
+
+    .stages {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+
+    .stages::before {
+      content: "";
+      position: absolute;
+      top: 58px;
+      left: 10%;
+      right: 10%;
+      height: 3px;
+      background: linear-gradient(90deg, var(--cyan), var(--blue), var(--violet), #8298a5);
+      opacity: 0.68;
+    }
+
+    .stage {
+      position: relative;
+      padding: 94px 34px 28px;
+      border: 1px solid var(--line);
+      background: linear-gradient(155deg, rgba(17, 33, 44, 0.94), rgba(9, 21, 30, 0.91));
+    }
+
+    .stage.current {
+      border-color: rgba(105, 234, 219, 0.4);
+      box-shadow: inset 0 5px 0 var(--cyan);
+    }
+
+    .stage.ai-stage {
+      border-color: rgba(169, 145, 255, 0.36);
+      box-shadow: inset 0 5px 0 var(--violet);
+    }
+
+    .dot {
+      position: absolute;
+      z-index: 2;
+      top: 38px;
+      left: 50%;
+      width: 42px;
+      height: 42px;
+      transform: translateX(-50%);
+      border: 9px solid #0a1720;
+      border-radius: 50%;
+      background: #76909d;
+      box-shadow: 0 0 0 2px rgba(142, 180, 198, 0.38);
+    }
+
+    .current .dot {
+      background: var(--cyan);
+      box-shadow: 0 0 0 2px rgba(105, 234, 219, 0.54), 0 0 34px rgba(105, 234, 219, 0.52);
+    }
+
+    .ai-stage .dot {
+      background: var(--violet);
+      box-shadow: 0 0 0 2px rgba(169, 145, 255, 0.48), 0 0 30px rgba(169, 145, 255, 0.42);
+    }
+
+    .stage-label {
+      color: #768b97;
+      font-size: 18px;
+      font-weight: 760;
+      letter-spacing: 0.17em;
+    }
+
+    .stage h3 {
+      margin: 12px 0 12px;
+      font-size: 38px;
+      line-height: 1.25;
+    }
+
+    .stage p {
+      margin: 0;
+      color: #9dafba;
+      font-size: 23px;
+      line-height: 1.55;
+    }
+
+    .status {
+      display: inline-block;
+      margin-top: 18px;
+      padding: 8px 13px;
+      border: 1px solid rgba(159, 176, 189, 0.24);
+      color: #a8b8c1;
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+    }
+
+    .current .status {
+      color: var(--cyan-soft);
+      border-color: rgba(105, 234, 219, 0.38);
+      background: rgba(105, 234, 219, 0.06);
+    }
+
+    .ai-stage .status {
+      color: var(--violet-soft);
+      border-color: rgba(169, 145, 255, 0.36);
+      background: rgba(169, 145, 255, 0.06);
+    }
+
+    .footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+      color: #748995;
+      font-size: 20px;
+    }
+
+    .strategy {
+      color: #b2c1c9;
+      font-size: 24px;
+      font-weight: 590;
+    }
+
+    .strategy strong {
+      color: #eef6f8;
+      font-weight: 730;
+    }
+  </style>
+</head>
+<body>
+  <main class="poster">
+    <div class="halo top"></div>
+    <div class="halo bottom"></div>
+    <div class="content">
+      <header class="header">
+        <div class="brand">
+          <div class="brand-mark">HS</div>
+          <div>HIDDENSHIELD</div>
+        </div>
+        <div class="tag">PPT 精简版 · V1</div>
+        <div class="eyebrow">PRODUCT STRATEGY · 2026</div>
+        <h1>HiddenShield 产品战略全景图</h1>
+        <p class="subtitle">原创内容权利身份 + AI 生成内容来源身份</p>
+        <div class="vision">从个人创作者保护工具，走向数字内容信任基础设施</div>
+      </header>
+
+      <section class="main">
+        <article class="panel toc">
+          <div class="panel-kicker">左翼 · TO C</div>
+          <h2>创作者版权服务平台</h2>
+          <p>陪伴创作者完成原创保护、AI 创作透明声明、长期资产管理和传播后验证。</p>
+          <div class="big-icon">C</div>
+          <div class="promise">从“一次处理文件”，升级为创作者长期使用的内容身份账户。</div>
+          <div class="model">
+            <div class="model-label">近期收入</div>
+            <div class="model-copy">个人年费订阅 · 报告与证据增购 · 视频与云端服务</div>
+          </div>
+        </article>
+
+        <article class="panel core">
+          <div class="panel-kicker">一核 · SHARED TRUST CORE</div>
+          <h2>数字内容身份与信任引擎</h2>
+          <p>统一连接内容标识、身份、验证、证据与可信流转。</p>
+          <div class="tracks">
+            <div class="track rights">
+              <div class="track-label">HUMAN RIGHTS IDENTITY</div>
+              <h3>原创内容权利身份</h3>
+              <p>回答“谁创作、保护和授权”，沉淀版权 ID、作品记录与验证证据。</p>
+            </div>
+            <div class="track ai">
+              <div class="track-label">AI PROVENANCE IDENTITY</div>
+              <h3>AI 生成内容来源身份</h3>
+              <p>回答“由谁、通过什么系统生成”，连接 Manifest、Evidence 与来源查询。</p>
+            </div>
+          </div>
+          <div class="identity-layer">
+            <div class="identity-title">统一能力层</div>
+            <div class="identity-copy">watermark-core · 元数据与鲁棒锚点 · Registry / Resolver · 跨端与跨组织验证</div>
+          </div>
+        </article>
+
+        <article class="panel tob">
+          <div class="panel-kicker">右翼 · TO B</div>
+          <h2>组织与平台信任服务</h2>
+          <p>嵌入企业内容工作流和 AI 生成链路，提供版权治理与 AI 标识基础设施。</p>
+          <div class="big-icon">B</div>
+          <div class="promise">从个人工具，升级为团队、企业和 AI 平台共同使用的信任服务。</div>
+          <div class="model">
+            <div class="model-label">规模与第二增长曲线</div>
+            <div class="model-copy">团队席位 · SDK / API 用量 · Registry · 私有化 / SLA</div>
+          </div>
+        </article>
+      </section>
+
+      <section class="flywheel">
+        <div>
+          <h2>内容身份与验证网络飞轮</h2>
+          <p>写入端越多，验证价值越高；验证覆盖越广，平台接入需求越强。</p>
+        </div>
+        <div class="flow">
+          <div class="flow-node">创作者与<br />AI 平台接入</div>
+          <div class="arrow">→</div>
+          <div class="flow-node ai-node">权利 / 来源<br />身份沉淀</div>
+          <div class="arrow">→</div>
+          <div class="flow-node">验证场景<br />持续增加</div>
+          <div class="arrow">→</div>
+          <div class="flow-node ai-node">平台采用与<br />标识价值提升</div>
+        </div>
+      </section>
+
+      <section class="stages">
+        <article class="stage current">
+          <div class="dot"></div>
+          <div class="stage-label">STAGE 01</div>
+          <h3>创作者工具</h3>
+          <p>以本地保护进入市场，找到真实付费切口。</p>
+          <div class="status">YOU ARE HERE · 阶段一后半程</div>
+        </article>
+        <article class="stage">
+          <div class="dot"></div>
+          <div class="stage-label">STAGE 02</div>
+          <h3>版权资产平台</h3>
+          <p>从文件处理升级为可持续积累的内容账户。</p>
+          <div class="status">下一跨越</div>
+        </article>
+        <article class="stage ai-stage">
+          <div class="dot"></div>
+          <div class="stage-label">STAGE 03</div>
+          <h3>组织与 AI 平台服务</h3>
+          <p>进入企业工作流和 AI 生成链路，形成规模收入。</p>
+          <div class="status">第二增长曲线</div>
+        </article>
+        <article class="stage">
+          <div class="dot"></div>
+          <div class="stage-label">STAGE 04</div>
+          <h3>数字内容信任网络</h3>
+          <p>连接权利、来源和验证，建立生态网络效应。</p>
+          <div class="status">长期愿景</div>
+        </article>
+      </section>
+
+      <footer class="footer">
+        <div class="strategy"><strong>战略路径：</strong>原创保护做入口 · 团队服务做规模 · AI 标识做第二增长曲线 · 信任网络做长期壁垒</div>
+        <div>内部规划图 · 不等同于当前全部能力已上线</div>
+      </footer>
+    </div>
+  </main>
+</body>
+</html>

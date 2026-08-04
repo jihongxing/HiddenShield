@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hiddenshield.local/contracts/cloud-copyright/cloud-copyright-c3-postgres-scope-qa-artifact-v1.schema.json",
+  "title": "HiddenShield cloud copyright C3 PostgreSQL scope QA artifact v1",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "artifactKind",
+    "evidenceClass",
+    "database",
+    "receiptProtection",
+    "retention",
+    "scenarios"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "artifactKind": { "const": "cloud_copyright_postgres_scope_qa" },
+    "evidenceClass": {
+      "enum": ["fixture_contract_only", "real_postgres_qa"]
+    }
+  }
+}

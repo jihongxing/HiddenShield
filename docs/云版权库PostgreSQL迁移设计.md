@@ -1,5 +1,7 @@
 # 云版权库 PostgreSQL 迁移设计
 
+> 多用户云版权库 C1 的当前权威评审见 `docs/云版权库C1_PostgreSQL多租户迁移与并发Harness设计评审.md`。本文保留既有通用 PostgreSQL 迁移、导入和生产切换设计；若与 C1 的 workspace/membership/record projection 或双连接并发要求冲突，以 C1 评审为准。
+
 更新时间：2026-07-03
 
 本文用于冻结 HiddenShield 云版权库从当前 SQLite 后端迁移到 PostgreSQL 的上线前决策。当前任务只做设计，不改运行时代码；代码迁移必须在本文评审通过后再进入实施。

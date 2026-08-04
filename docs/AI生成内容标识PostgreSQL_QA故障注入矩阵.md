@@ -8,6 +8,15 @@
 
 CI verifier 会自动扫描 `feedback-backend/src/bin/ai_transparency_*_qa.rs`；任何新 runner 未出现在本矩阵都会使 Gate 失败。
 
+统一本地执行入口为 `npm run ai-transparency:postgres-qa`：它在显式提供
+`HIDDENSHIELD_POSTGRES_TEST_DATABASE_URL`（或 `DATABASE_URL`）时只使用该一次性测试库；否则只在
+Podman/Docker 可用时创建并清理名称含 `hiddenshield_migrate_smoke` 的临时 PostgreSQL 容器。该入口不进入
+默认 CI，避免 CI 对本地容器运行时产生隐式依赖。
+
+显式 URL 同样 fail-closed：协议必须为 PostgreSQL，且数据库名必须包含
+`hiddenshield_migrate_smoke`；不满足时在启动容器、运行迁移或写入任何记录之前拒绝。普通开发库、
+共享库和生产库都不得作为该 suite 的目标。
+
 ## 覆盖准则
 
 - 并发：至少两个真实 PostgreSQL 连接竞争同一逻辑资源。
@@ -38,6 +47,7 @@ CI verifier 会自动扫描 `feedback-backend/src/bin/ai_transparency_*_qa.rs`�
 
 ## 必跑验证
 
+- `npm run ai-transparency:postgres-qa`
 - `cargo run --manifest-path feedback-backend/Cargo.toml --features postgres --bin ai_transparency_approval_concurrency_qa`
 - `cargo run --manifest-path feedback-backend/Cargo.toml --features postgres --bin ai_transparency_confirm_concurrency_qa`
 - `cargo run --manifest-path feedback-backend/Cargo.toml --features postgres --bin ai_transparency_credential_custody_qa`
@@ -46,4 +56,5 @@ CI verifier 会自动扫描 `feedback-backend/src/bin/ai_transparency_*_qa.rs`�
 - `cargo run --manifest-path feedback-backend/Cargo.toml --features postgres --bin ai_transparency_platform_api_qa`
 - `cargo run --manifest-path feedback-backend/Cargo.toml --features postgres --bin ai_transparency_post_embed_signing_qa`
 
-下一 Gate：仅在真实 provider 或设计伙伴配置到位后，把相应外部恢复演练附加到本矩阵；不得把内部 QA 提升为生产 SLA 或法律合规结论。
+下一 Gate：仅在真实 provider 或设计伙伴配置到位后，把相应外部恢复演练附加到本矩阵；不得把内部 QA
+或统一 suite runner 提升为生产 SLA 或法律合规结论。

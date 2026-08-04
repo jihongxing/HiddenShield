@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "identity_receipt_boundaries",
+  "canonicalization": "hs-cloud-copyright-identity-receipt-digest-v1",
+  "cases": [
+    {
+      "caseId": "key_order_independent_digest",
+      "receiptVariant": "same_claims_different_object_key_order",
+      "expected": {
+        "digestRelation": "equal",
+        "admitted": true
+      }
+    },
+    {
+      "caseId": "maximum_lifetime_boundary",
+      "receiptLifetimeSeconds": 300,
+      "expected": {
+        "admitted": true
+      }
+    },
+    {
+      "caseId": "lifetime_exceeds_limit",
+      "receiptLifetimeSeconds": 301,
+      "expected": {
+        "admitted": false,
+        "reasonCode": "identity_receipt_lifetime_exceeded",
+        "databaseWrites": 0
+      }
+    },
+    {
+      "caseId": "clock_skew_boundary",
+      "issuedAtOffsetSeconds": 30,
+      "expected": {
+        "admitted": true
+      }
+    },
+    {
+      "caseId": "clock_skew_exceeded",
+      "issuedAtOffsetSeconds": 31,
+      "expected": {
+        "admitted": false,
+        "reasonCode": "identity_receipt_not_yet_valid",
+        "databaseWrites": 0
+      }
+    },
+    {
+      "caseId": "receipt_replay_identity",
+      "replayKey": "provider_id+receipt_id+request_id",
+      "expected": {
+        "admitted": false,
+        "reasonCode": "identity_receipt_replay_detected",
+        "databaseWrites": 0
+      }
+    }
+  ]
+}

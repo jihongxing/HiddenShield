@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "transport_mapping",
+  "recordSchema": "cloud-copyright-record-v1",
+  "desktop": {
+    "bridge": "Rust",
+    "outboxEnvelope": {
+      "workspaceId": "ws_personal_123",
+      "recordId": "ccr_123",
+      "baseRecordVersion": 6,
+      "idempotencyKey": "desktop:device_123:queue_123",
+      "requestDigest": "sha256:request_123"
+    }
+  },
+  "mobile": {
+    "bridge": "Rust/Dart",
+    "outboxEnvelope": {
+      "workspaceId": "ws_personal_123",
+      "recordId": "ccr_123",
+      "baseRecordVersion": 6,
+      "idempotencyKey": "mobile:device_456:queue_123",
+      "requestDigest": "sha256:request_456"
+    }
+  },
+  "expectedResult": {
+    "accepted": {
+      "serverRecordVersion": 7,
+      "cursorSequence": 42,
+      "localState": "synced"
+    },
+    "conflict_version_changed": {
+      "localState": "draft_retained",
+      "retryAllowed": false
+    },
+    "blocked_by_membership_revoked": {
+      "localState": "draft_retained",
+      "retryAllowed": false
+    }
+  }
+}

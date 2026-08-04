@@ -1,0 +1,11 @@
+DROP TRIGGER IF EXISTS cloud_copyright_audit_events_append_only ON cloud_copyright_audit_events;
+DROP TRIGGER IF EXISTS cloud_copyright_events_append_only ON cloud_copyright_events;
+DROP FUNCTION IF EXISTS cloud_copyright_reject_append_only_mutation();
+DROP TABLE IF EXISTS cloud_copyright_workspace_cursors;
+DROP TABLE IF EXISTS cloud_copyright_audit_events;
+DROP TABLE IF EXISTS cloud_copyright_events;
+DROP TABLE IF EXISTS cloud_copyright_changes;
+DROP TABLE IF EXISTS cloud_copyright_records;
+DROP TABLE IF EXISTS cloud_copyright_creator_profiles;
+DROP TABLE IF EXISTS cloud_copyright_workspace_memberships;
+DROP TABLE IF EXISTS cloud_copyright_workspaces;

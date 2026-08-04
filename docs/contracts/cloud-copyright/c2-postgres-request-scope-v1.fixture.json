@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "postgres_request_scope",
+  "transactionScope": {
+    "source": "verified_internal_identity",
+    "setConfig": [
+      "app.account_id",
+      "app.workspace_id",
+      "app.device_id",
+      "app.membership_id",
+      "app.request_id"
+    ],
+    "scopeLifetime": "transaction_local",
+    "serviceRole": "cloud_copyright_internal_service"
+  },
+  "rlsPolicies": [
+    {
+      "table": "cloud_copyright_records",
+      "operation": "select_update",
+      "requires": ["active_membership", "workspace_match"]
+    },
+    {
+      "table": "cloud_copyright_changes",
+      "operation": "insert_select",
+      "requires": ["active_membership", "workspace_match", "device_match"]
+    },
+    {
+      "table": "cloud_copyright_events",
+      "operation": "select",
+      "requires": ["active_membership", "workspace_match"]
+    },
+    {
+      "table": "cloud_copyright_audit_events",
+      "operation": "select",
+      "requires": ["active_membership", "workspace_match", "role_owner_or_admin"]
+    }
+  ],
+  "failureCases": [
+    "scope_missing_zero_rows_or_zero_writes",
+    "workspace_mismatch_zero_rows_or_zero_writes",
+    "membership_revoked_zero_rows_or_zero_writes",
+    "service_role_without_reason_or_request_digest_zero_writes"
+  ]
+}

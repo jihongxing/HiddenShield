@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "transport_fail_closed",
+  "recordSchema": "cloud-copyright-record-v1",
+  "errorCases": [
+    "conflict_version_changed",
+    "blocked_by_membership_revoked",
+    "forbidden",
+    "role_denied",
+    "scope_mismatch",
+    "identity_receipt_expired",
+    "internal_identity_unavailable"
+  ],
+  "expected": {
+    "desktop": {
+      "bridge": "Rust",
+      "outboxState": "draft_retained",
+      "autoRetry": false,
+      "userMessage": "云版权库同步未获授权；本地草稿已保留，未标记为已备份。"
+    },
+    "android": {
+      "bridge": "Rust/Dart",
+      "outboxState": "draft_retained",
+      "autoRetry": false,
+      "userMessage": "云版权库同步未获授权；本地草稿已保留，未标记为已备份。"
+    }
+  }
+}

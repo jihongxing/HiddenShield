@@ -47,3 +47,19 @@ A record-level paid deliverable that expands a Basic Record Summary with structu
 ## Local Copyright Record
 
 A HiddenShield record created from local processing and verification facts. A local record may later receive registry or trusted-time materials, but its existence alone does not prove authorship, ownership, priority, authenticity, or third-party registration.
+
+## Cloud Copyright Workspace
+
+A tenant boundary that groups private copyright record projections, active memberships, change history, and audit history. It does not contain original media, local paths, plaintext creator seeds, or credentials.
+
+## Transport Admission
+
+The permission for a locally validated outbox item to enter a controlled cloud copyright transport flow. It is not permission for a client to call an internal API or database directly.
+
+## Request Scope
+
+The transaction-local account, workspace, device, membership, and request identity established by a verified internal identity receipt. Client-provided values do not establish or override Request Scope.
+
+## Internal API Admission
+
+The server-side decision that a verified internal caller may invoke one scoped operation. It is distinct from public API authorization, SDK licensing, and client credentials.

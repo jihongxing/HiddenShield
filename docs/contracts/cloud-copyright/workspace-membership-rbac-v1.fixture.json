@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "fixtureType": "workspace_membership_rbac",
+  "workspace": {
+    "workspaceId": "ws_team_01J4C0PYRIGHT000000000001",
+    "workspaceType": "team",
+    "status": "active",
+    "membershipVersion": 4
+  },
+  "memberships": [
+    { "accountId": "acct_owner", "role": "owner", "status": "active" },
+    { "accountId": "acct_admin", "role": "admin", "status": "active" },
+    { "accountId": "acct_editor", "role": "editor", "status": "active" },
+    { "accountId": "acct_viewer", "role": "viewer", "status": "active" }
+  ],
+  "permissionMatrix": {
+    "owner": ["read_record", "write_record", "invite_member", "change_role", "remove_member", "export_audit"],
+    "admin": ["read_record", "write_record", "invite_member", "change_role", "remove_member", "export_audit"],
+    "editor": ["read_record", "write_record"],
+    "viewer": ["read_record"]
+  }
+}

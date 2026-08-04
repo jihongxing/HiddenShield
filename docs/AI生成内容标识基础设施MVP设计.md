@@ -1,10 +1,10 @@
 # HiddenShield AI 生成内容标识基础设施 MVP 设计
 
-更新时间：2026-07-28
+更新时间：2026-07-29
 
-状态：`production_oriented_mvp_control_plane_implemented_through_0022`
+状态：`phase_suspended_external_dependencies_internal_control_plane_frozen_through_0022`
 
-实施状态：`生产导向控制面已实现至 PostgreSQL 0022；内部图片标识、签发、交付、安全治理、通知 outbox、provider-neutral delivery、server-side SDK/API facade、真实 PostgreSQL 平台端点与匿名免费 Resolver Gate，以及外部 Evidence 的 append-only intake/review 事务 QA 已通过；公网部署、真实 provider 注入和生产发放仍关闭`
+实施状态：`内部生产导向控制面已冻结至 PostgreSQL 0022；内部图片标识、签发、交付、安全治理、通知 outbox、provider-neutral delivery、server-side SDK/API facade、真实 PostgreSQL 平台端点与匿名免费 Resolver Gate，以及外部 Evidence 的 append-only intake/review 事务 QA 已通过；统一本地 PostgreSQL QA suite 已覆盖所有现有迁移 smoke 和 AI Transparency QA runner，并对显式数据库 URL 执行一次性库命名 fail-closed 校验。任务族因外部环境与配置依赖阶段性挂起；公网部署、真实 provider 注入和生产发放继续关闭`
 
 能力分类：`只能内部测试，不构成当前用户承诺或真实法律意见`
 
@@ -858,7 +858,7 @@ Android QA 不能替代 iOS QA。
 
 ### Phase C：平台接入与设计伙伴试点
 
-状态：`not_started`
+状态：`suspended_external_design_partner_configuration_required`
 
 范围：
 
@@ -871,7 +871,7 @@ Android QA 不能替代 iOS QA。
 
 ### Phase D：真实 Provider 激活、生产信任与公开验证
 
-状态：`blocked_by_external_environment_and_configuration`
+状态：`suspended_external_environment_and_configuration`
 
 范围：
 
@@ -986,7 +986,7 @@ AI Transparency SDK 是独立的 B2B 授权产品线，不复用当前桌面端�
 当前生产导向控制面已实现至：
 
 ```text
-0020_ai_transparency_public_resolver
+0022_ai_transparency_external_evidence_review
 ```
 
 已完成：
@@ -1001,6 +1001,9 @@ packages/ai-transparency-sdk
 + anonymous public Resolver
 + confirmed Manifest/marker/Profile 最小公共 PostgreSQL views
 + zero-auth / zero-write / zero-metering QA
++ append-only external Evidence intake/review
++ dual-approval decision、fail-closed reference/IAM 校验与真实 PostgreSQL QA
++ 一次性库命名 fail-closed 的本地 PostgreSQL 统一 QA suite
 ```
 
 已新增并冻结：
@@ -1020,12 +1023,14 @@ packages/ai-transparency-design-partner-kit
 
 已冻结 `docs/AI生成内容标识PostgreSQL_QA故障注入矩阵.md`：对所有 AI Transparency PostgreSQL QA 明确登记并发、回放、audit 故障、外部/读取故障与恢复覆盖；非事务 owner 必须标注下层委托关系，外部 provider/IAM/KMS 演练继续作为独立外部 Gate。
 
-CI 已新增独立 `AI Transparency contract gate`，固定运行 `npm run ai-transparency:ci`，将 SDK contract/test、接入包 contract/test、template preflight 和 synthetic Sandbox QA 设为必跑回归；GitHub active ruleset 已对 `main` / `master` 将其设为 required check，待工作流合并后的首个 PR 报告该 check。
+CI 已新增独立 `AI Transparency contract gate`，固定运行 `npm run ai-transparency:ci`，将 SDK contract/test、接入包 contract/test、template preflight、synthetic Sandbox QA、PostgreSQL QA 故障矩阵和一次性库 URL contract 设为必跑回归；GitHub active ruleset 已对 `main` / `master` 将其设为 required check。
 
-下一工程任务：
+恢复任务：
 
 ```text
 取得首个真实设计伙伴的外部配置后生成专属 bundle，
 完成 12 场景真实 Sandbox 验收并归档不可变 evidence；
 SDK 发布、production credential 和公网平台 API 继续关闭。
 ```
+
+阶段性收尾与恢复前置条件见 `docs/AI生成内容标识阶段性收尾与外部Gate交接.md`。

@@ -1,5 +1,37 @@
 # HiddenShield 双端能力一致性 Roadmap
 
+## 2026-08-04 产品战略架构图 PPT 精简版双端表达验收
+
+- PPT 精简版继续把 `watermark-core`、元数据与鲁棒锚点、Registry / Resolver 和跨端 / 跨组织验证收束在一个统一能力层内。
+- 原创权利身份与 AI 来源身份保持并列，未把 AI 标识表现为桌面或移动客户端的独立检测算法。
+- 图中没有使用桌面、移动或具体 AI 平台设备图标，因此不会暗示任一端点已完成正式发布；当前位置和内部规划边界仍可见。
+- 本次仅新增静态战略图源稿与 PNG，没有修改 Desktop/mobile runtime、bridge、payload、fixture、同步或验证合同。
+- 验证：缩略投屏预览中“双主线”“阶段一后半程”“第二增长曲线”仍可识别，文字未裁切。
+- 下一双端一致性任务：在未来 12 个月执行页中，以统一状态色分别标记桌面当前入口、移动端恢复条件、AI 平台 Sandbox 和公共验证端的阶段。
+
+## 2026-08-04 产品战略架构图 V1 双端表达验收
+
+- `docs/product-strategy/HiddenShield-product-strategy-4k.png` 已生成，中央明确把原创权利身份和 AI 来源身份放在同一共享数字内容身份与信任引擎内。
+- 图中原创保护底座明确包含 `watermark-core` 与跨端产品；AI 透明度底座明确包含开放元数据、C2PA 兼容声明和 AI Transparency Registry，没有表现为桌面、移动或 AI 平台各自拥有独立算法。
+- AI 平台生成时标识、桌面 / 移动读取、公共 Resolver 和未来企业端点在战略上共享标识与验证语义；本次没有修改任何 runtime、bridge、payload、fixture 或跨端 release Gate。
+- 内部图保留“当前处于阶段一后半程”和“不等同于当前全部能力已上线”提示，没有将移动端、视频或平台接入表现为当前正式发布状态。
+- 验证：人工检查 4K 成图中的中央双轨、端点文案、阶段标签和底部边界提示均可见且未裁切。
+- 下一双端一致性任务：制作演示精简版时，为桌面、移动、AI 生成平台和公共验证端设计统一状态图例，避免缩减文案后丢失端点阶段边界。
+
+## 2026-08-04 产品战略架构图双端表达记录（补充 AI 生成内容标识）
+
+- 新增 `docs/HiddenShield产品战略架构图线框稿.md`，其中“跨设备版权资产平台”和“跨端与跨组织协议”属于长期战略方向，不代表移动端已经恢复发布或当前具备与 Windows 桌面端完全相同的能力。
+- 战略图继续把共享数字内容身份与信任引擎作为 ToC 与 ToB 的共同底座，并增加“原创内容权利身份 + AI 生成内容来源身份”双主线；不允许未来桌面、移动、云端、AI 平台或企业接口分别形成独立的水印、版权 ID、来源 ID、验证或重写规则。
+- AI 平台生成时标识中的鲁棒锚点仍必须调用 `watermark-core`；Manifest、Evidence、Registry / Resolver 和监管 Profile 属于共享平台合同，不得由桌面端或移动端自行定义不同语义。
+- 图片、音频、未来视频及复合媒体在正式落地时仍受共享核心和跨端互验 Gate 约束；本次只固定战略叙事，没有修改 Desktop/mobile runtime、bridge、payload、fixture、同步字段或报告字段。
+- 正式对外战略图必须使用“当前 / 下一阶段 / 中长期规划”图例，避免将移动端、视频、团队或 AI 平台接入误读为已完成的双端能力。
+- 验证：已对照本 Roadmap、`docs/共享水印核心与跨端互验推进计划.md` 和 `docs/当前真实能力边界说明.md` 核对战略文案。
+- 风险：战略图追求方向感，若在渠道传播中裁切阶段标签，会造成桌面 / 移动能力一致性、视频能力或 AI 标识生产开放状态的错误承诺。
+
+下一双端一致性任务：
+
+- 正式战略图生成后，逐项检查桌面、移动、云端、AI 生成平台、传播平台和公共 Resolver 图标的状态标识，确保任何未来端点均没有被表现为当前正式支持。
+
 当前状态：Windows 桌面 `v0.1.3` RC / GA Gate `PASSED`（2026-07-26）；移动端继续冻结。
 
 ## 2026-07-26 中文宣传片桌面限定边界
@@ -1633,3 +1665,58 @@
 - synthetic QA 只验证 server-side SDK/facade 与公共 Resolver 响应 shape，不产出 Desktop、Android 或 iOS 可承诺的 protected-copy fixture。
 - synthetic marked PNG bytes 不是 `watermark-core` 写入产物，不得导入端侧 vault、用于跨端读取报告或替代正式 fixture。
 - 真实伙伴输出 confirmed PNG 后仍必须执行 Desktop/Android 读取和摘要 fail-closed；iOS runtime Gate 保持挂起。
+
+## 2026-07-29 云版权库多用户体系一致性边界
+
+- 状态：`c0_contract_frozen_cross_end_fixture_verified`。
+- 桌面与移动端必须共享 `cloud-copyright-record-v1`、workspace context、RBAC 结果、outbox 状态、cursor、冲突代码和数据白名单；不得各自解释团队记录、删除、撤销或公开状态。
+- 双端均继续本地优先：离线写入仅代表本地成功，媒体、保护副本、本地路径、seed 和 token 不同步；云端确认前不得显示“已备份”。
+- 团队 workspace 切换、成员撤销和冲突必须同步显示相同的 fail-closed 状态；撤销后保留本地草稿和诊断，不允许静默上传或覆盖。
+- `watermark-core` 继续只提供算法、payload、编号和读写验证；云版权库只同步其结果摘要和状态，不能复制算法或改写跨端验证语义。
+- C0 已完成：同一 fixture 覆盖 desktop-written/mobile-read、mobile-written/desktop-read、成员撤销和路径/媒体/seed/token/private key 零同步。
+- 下一双端任务：在 C1 migration 设计评审中冻结本地 record ID、workspace context、outbox 与 server version 的映射；不得改变现有 fixture。
+
+## 2026-07-29 云版权库 C1 迁移评审一致性边界
+
+- 状态：`c1_design_review_approved_no_client_implementation`。
+- 已冻结：C1 只添加 workspace-scoped 云投影、membership、record version、change/event/audit/cursor；桌面和移动现有本地 record、outbox、payload 与 UI 在 C1 实现前不改动。
+- 后续 C1 adapter 必须把 `cloud-copyright-record-v1` 的 `recordId`、workspace context、base record version、server version、disposition 和错误码以相同语义映射到 Rust/Dart bridge。
+- 设计中的 revoke-vs-push、stale version 和 workspace isolation 必须在 C2 形成 desktop↔mobile fixture；不得让任一端静默采用 last-write-wins。
+- 下一双端任务：待 C1 PostgreSQL QA 通过后，冻结 Rust/Dart transport mapping fixture 与端侧 outbox migration，不在本评审内提前修改客户端。
+
+## 2026-07-29 云版权库 C1 PostgreSQL 核心实现一致性边界
+
+- 状态：`c1_postgres_core_implemented_no_client_transport`。
+- C1 已通过 migration smoke 与八场景真实 PostgreSQL QA；本次没有修改 Desktop、Android、iOS、本地 vault、outbox 或 UI，因此没有产生单端产品承诺。
+- 后续 Rust/Dart transport 必须复用 C0 `cloud-copyright-record-v1` 的 workspace、base/server version、disposition 和错误码；不得把服务端 `accepted` 误显示为跨端已备份或团队已同步。
+- 生产团队协作、公开 SDK 和端侧同步入口继续关闭；下一双端任务是冻结同一份 Rust/Dart mapping fixture 和失败关闭文案。
+
+## 2026-07-29 云版权库 C2 Transport 合同一致性边界
+
+- 状态：`c2_contract_frozen_no_client_implementation`。
+- Desktop Rust 与 Mobile Rust/Dart 只能映射相同的 workspace、record、base/server version、idempotency key、request digest、cursor 和 disposition；两端均不得直连 internal API。
+- `conflict_version_changed`、`blocked_by_membership_revoked`、`forbidden`、`role_denied` 与 scope failure 一律保留本地草稿并停止自动重试，不能显示为“已备份”。
+- 本阶段不改端侧 bridge 或 UI；iOS runtime 环境 Gate 继续挂起，不能用 schema fixture 替代真实 runtime 互验。
+- 下一双端任务：C3 adapter 实现前冻结 Desktop/Android transport fixture 和同一份错误文案断言。
+
+## 2026-07-29 云版权库 C3 RLS 与身份 Receipt 评审边界
+
+- 状态：`c3_design_review_approved_no_client_implementation`。
+- C3 receipt 只能由受控 internal adapter 验真；Desktop/Android/iOS 不接收、缓存或重放 raw identity receipt，也不直连数据库或 internal API。
+- RLS scope failure、identity receipt failure 与 membership revoked 继续统一映射为保留本地草稿、停止自动重试；不得产生端侧“已备份”状态。
+- iOS runtime Gate 继续独立挂起；本评审既不修改 bridge，也不能替代 Desktop/Android 或 iOS 的真实 scope transport fixture。
+- 下一双端任务：待 C3 adapter 与 scope QA 实现后，执行 Desktop/Android transport fixture；iOS 环境可用后补测。
+
+## 2026-07-29 云版权库 C3 Fail-Closed Fixture
+
+- Desktop Rust 与 Android Rust/Dart 已冻结同一份 fail-closed fixture：所有 identity、scope、role、membership 或 conflict failure 均保留本地草稿、停止自动重试，并显示“未标记为已备份”。
+- 这是合同验证，不是 Desktop/Android runtime implementation；端侧 bridge、UI 与 vault 状态机未修改。
+- iOS runtime Gate 继续挂起；不得把 schema fixture 当作 iOS 运行态验收。
+
+## 2026-07-29 云版权库阶段性收尾一致性边界
+
+- 状态：`phase_checkpoint_external_gates_suspended`。
+- Desktop/Android/iOS 正式云版权库 transport 均未开放；当前只有跨端 schema、错误语义和 contract-only fixture。
+- Desktop/Android 必须继续本地优先；C3 identity/scope failure 保留草稿且不得显示“已备份”。iOS runtime Gate 继续挂起。
+- 恢复时必须先完成真实 RLS/identity adapter 与 PostgreSQL scope QA，再执行 Desktop/Android transport runtime fixture；不得提前改单端产品承诺。
+- 下一双端任务：暂停云版权库一致性工作，等待外部配置后按阶段性交接清单恢复。
