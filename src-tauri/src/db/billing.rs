@@ -44,6 +44,10 @@ pub struct EntitlementState {
     pub status: EntitlementStatus,
     pub plan_name: Option<String>,
     pub plan_code: String,
+    #[serde(default = "default_entitlement_plan_key")]
+    pub plan_key: String,
+    #[serde(default = "default_entitlement_plan_label")]
+    pub plan_label: String,
     pub features: BTreeMap<String, bool>,
     pub billing_source: Option<String>,
     pub subscription_id: Option<String>,
@@ -60,8 +64,10 @@ impl Default for EntitlementState {
     fn default() -> Self {
         Self {
             status: EntitlementStatus::Free,
-            plan_name: None,
+            plan_name: Some("未付费".to_string()),
             plan_code: "free".to_string(),
+            plan_key: "base_unpaid".to_string(),
+            plan_label: "未付费".to_string(),
             features: default_entitlement_features(),
             billing_source: None,
             subscription_id: None,
@@ -152,13 +158,18 @@ pub struct ReportPurchaseGrant {
 }
 
 fn row_to_entitlement(row: &rusqlite::Row<'_>) -> Result<EntitlementState, rusqlite::Error> {
+    let plan_code = row
+        .get::<_, Option<String>>(2)?
+        .unwrap_or_else(|| "free".to_string());
+    let features = features_from_json(row.get::<_, Option<String>>(3)?.as_deref());
+    let (plan_key, plan_label) = entitlement_plan_presentation(&plan_code, &features);
     Ok(EntitlementState {
         status: EntitlementStatus::from_db(&row.get::<_, String>(0)?),
-        plan_name: row.get(1)?,
-        plan_code: row
-            .get::<_, Option<String>>(2)?
-            .unwrap_or_else(|| "free".to_string()),
-        features: features_from_json(row.get::<_, Option<String>>(3)?.as_deref()),
+        plan_name: Some(plan_label.to_string()),
+        plan_code,
+        plan_key: plan_key.to_string(),
+        plan_label: plan_label.to_string(),
+        features,
         billing_source: row.get(4)?,
         subscription_id: row.get(5)?,
         trial_started_at: row.get(6)?,
@@ -169,6 +180,32 @@ fn row_to_entitlement(row: &rusqlite::Row<'_>) -> Result<EntitlementState, rusql
         last_checked_at: row.get(11)?,
         updated_at: row.get(12)?,
     })
+}
+
+fn default_entitlement_plan_key() -> String {
+    "base_unpaid".to_string()
+}
+
+fn default_entitlement_plan_label() -> String {
+    "未付费".to_string()
+}
+
+fn entitlement_plan_presentation(
+    plan_code: &str,
+    features: &BTreeMap<String, bool>,
+) -> (&'static str, &'static str) {
+    let has_annual_features = features.get("batch_processing") == Some(&true)
+        && features.get("cloud_sync") == Some(&true);
+    if has_annual_features
+        || matches!(
+            plan_code.trim().to_ascii_lowercase().as_str(),
+            "creator" | "studio" | "enterprise"
+        )
+    {
+        ("image_audio_annual", "图片 / 音频年费")
+    } else {
+        ("base_unpaid", "未付费")
+    }
 }
 
 fn entitlement_columns() -> &'static str {
@@ -642,12 +679,14 @@ mod tests {
         for (index, status) in statuses.into_iter().enumerate() {
             let state = EntitlementState {
                 status: status.clone(),
-                plan_name: Some(format!("plan-{index}")),
+                plan_name: Some("图片 / 音频年费".to_string()),
                 plan_code: "creator".to_string(),
+                plan_key: "image_audio_annual".to_string(),
+                plan_label: "图片 / 音频年费".to_string(),
                 features: BTreeMap::from([
                     ("cloud_sync".to_string(), true),
                     ("batch_processing".to_string(), true),
-                    ("report_export".to_string(), true),
+                    ("report_export".to_string(), false),
                 ]),
                 billing_source: Some("manual".to_string()),
                 subscription_id: Some(format!("sub-{index}")),
@@ -665,6 +704,8 @@ mod tests {
             assert_eq!(loaded.status, state.status);
             assert_eq!(loaded.plan_name, state.plan_name);
             assert_eq!(loaded.plan_code, state.plan_code);
+            assert_eq!(loaded.plan_key, "image_audio_annual");
+            assert_eq!(loaded.plan_label, "图片 / 音频年费");
             assert_eq!(loaded.features.get("batch_processing"), Some(&true));
             assert_eq!(loaded.features.get("api_access"), Some(&false));
             assert_eq!(loaded.subscription_id, state.subscription_id);

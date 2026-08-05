@@ -46,7 +46,7 @@ class OfflineLicenseSnapshot {
 
   Map<String, bool> get localFeatures => {
     'batch_processing': isActive,
-    'report_export': isActive,
+    'report_export': false,
   };
 }
 

@@ -2043,13 +2043,12 @@ impl Storage {
             sync_policy,
             auto_sync_enabled: request.auto_sync_enabled,
             cloud_vault_cursor,
-            entitlement: CloudEntitlement {
-                id: account.entitlement_id,
-                plan_name: Some(account.entitlement_plan_name),
-                plan_code: account.entitlement_plan_code,
-                status: account.entitlement_status,
-                features: entitlement_features,
-            },
+            entitlement: CloudEntitlement::from_legacy(
+                account.entitlement_id,
+                account.entitlement_plan_code,
+                account.entitlement_status,
+                entitlement_features,
+            ),
         })
     }
 
@@ -6289,7 +6288,7 @@ fn ensure_account(
     let entitlement_id = format!("ent_{}", short_id(&account_id));
     let display_name = identifier.to_string();
     let workspace_name = "个人空间".to_string();
-    let entitlement_plan_name = "免费版".to_string();
+    let entitlement_plan_name = "未付费".to_string();
     let entitlement_plan_code = "free".to_string();
     let entitlement_status = "free".to_string();
     let entitlement_features_json = default_entitlement_features().to_string();
@@ -6659,13 +6658,12 @@ fn account_snapshot_from_rows(
             display_name: account.creator_display_name,
             is_default: true,
         },
-        entitlement: CloudEntitlement {
-            id: account.entitlement_id,
-            plan_name: Some(account.entitlement_plan_name),
-            plan_code: account.entitlement_plan_code,
-            status: account.entitlement_status,
-            features: entitlement_features,
-        },
+        entitlement: CloudEntitlement::from_legacy(
+            account.entitlement_id,
+            account.entitlement_plan_code,
+            account.entitlement_status,
+            entitlement_features,
+        ),
         sync_policy,
         cloud_vault_cursor,
     })
@@ -6725,7 +6723,7 @@ fn ensure_free_entitlement(
         "INSERT INTO entitlements (
             entitlement_id, account_id, plan_code, plan_name, status, features_json,
             billing_source, subscription_id, updated_at
-        ) VALUES (?1, ?2, 'free', '免费版', 'free', ?3, NULL, NULL, ?4)
+        ) VALUES (?1, ?2, 'free', '未付费', 'free', ?3, NULL, NULL, ?4)
         ON CONFLICT(account_id) DO NOTHING",
         params![
             account_id,
@@ -10056,14 +10054,13 @@ fn cloud_entitlement_for_account(
         params![account_id],
         |row| {
             let features_json: String = row.get(4)?;
-            Ok(CloudEntitlement {
-                id: row.get(0)?,
-                plan_name: Some(row.get(1)?),
-                plan_code: row.get(2)?,
-                status: row.get(3)?,
-                features: serde_json::from_str(&features_json)
+            Ok(CloudEntitlement::from_legacy(
+                row.get(0)?,
+                row.get(2)?,
+                row.get(3)?,
+                serde_json::from_str(&features_json)
                     .unwrap_or_else(|_| default_entitlement_features()),
-            })
+            ))
         },
     )
     .map_err(StorageError::from)
@@ -10898,10 +10895,8 @@ fn provider_price_id(plan_code: &str, billing_cycle: &str) -> String {
 
 fn plan_name_for_code(plan_code: &str) -> &'static str {
     match plan_code {
-        "creator" => "Creator",
-        "studio" => "Studio",
-        "enterprise" => "Enterprise",
-        _ => "免费版",
+        "creator" | "studio" | "enterprise" => "图片 / 音频年费",
+        _ => "未付费",
     }
 }
 

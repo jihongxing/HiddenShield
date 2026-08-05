@@ -346,8 +346,44 @@ pub struct CloudEntitlement {
     pub id: String,
     pub plan_name: Option<String>,
     pub plan_code: String,
+    pub plan_key: String,
+    pub plan_label: String,
     pub status: String,
     pub features: Value,
+}
+
+impl CloudEntitlement {
+    pub fn from_legacy(id: String, plan_code: String, status: String, features: Value) -> Self {
+        let (plan_key, plan_label) = entitlement_plan_presentation(&plan_code, &features);
+        Self {
+            id,
+            plan_name: Some(plan_label.to_string()),
+            plan_code,
+            plan_key: plan_key.to_string(),
+            plan_label: plan_label.to_string(),
+            status,
+            features,
+        }
+    }
+}
+
+pub fn entitlement_plan_presentation(
+    plan_code: &str,
+    features: &Value,
+) -> (&'static str, &'static str) {
+    let has_annual_features = features.get("batch_processing").and_then(Value::as_bool)
+        == Some(true)
+        && features.get("cloud_sync").and_then(Value::as_bool) == Some(true);
+    if has_annual_features
+        || matches!(
+            plan_code.trim().to_ascii_lowercase().as_str(),
+            "creator" | "studio" | "enterprise"
+        )
+    {
+        ("image_audio_annual", "图片 / 音频年费")
+    } else {
+        ("base_unpaid", "未付费")
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

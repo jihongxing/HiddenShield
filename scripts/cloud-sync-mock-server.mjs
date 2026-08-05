@@ -7,6 +7,10 @@ const host = process.env.HIDDENSHIELD_CLOUD_HOST ?? '127.0.0.1';
 const accountsByIdentifier = new Map();
 const sessions = new Map();
 const events = [];
+const configuredPlanKey =
+  process.env.HIDDENSHIELD_CLOUD_MOCK_PLAN_KEY === 'image_audio_annual'
+    ? 'image_audio_annual'
+    : 'base_unpaid';
 let sequence = 0;
 
 const server = createServer(async (request, response) => {
@@ -70,17 +74,7 @@ async function handleAuthContinue(request, response) {
           body.localCreatorProfile?.displayName?.trim() || identifier,
         isDefault: true,
       },
-      entitlement: {
-        id: `ent_${suffix}`,
-        planName: '免费版',
-        planCode: 'free',
-        status: 'free',
-        features: {
-          cloud_sync: true,
-          batch_processing: false,
-          cloud_video_processing: false,
-        },
-      },
+      entitlement: mockEntitlement(`ent_${suffix}`),
       devices: new Map(),
     };
     accountsByIdentifier.set(identifier, account);
@@ -119,6 +113,10 @@ async function handleEventsBatch(request, response) {
   const session = authenticate(request);
   if (!session) {
     return sendJson(response, 401, { error: 'unauthorized' });
+  }
+  const account = accountForSession(session);
+  if (account?.entitlement.features.cloud_sync !== true) {
+    return sendJson(response, 403, { error: 'cloud_sync_not_entitled' });
   }
 
   const body = await readJson(request);
@@ -176,6 +174,10 @@ function handleChanges(request, response, url) {
   if (!session) {
     return sendJson(response, 401, { error: 'unauthorized' });
   }
+  const account = accountForSession(session);
+  if (account?.entitlement.features.cloud_sync !== true) {
+    return sendJson(response, 403, { error: 'cloud_sync_not_entitled' });
+  }
   const workspaceId = String(url.searchParams.get('workspaceId') ?? '').trim();
   if (!workspaceId) {
     return sendJson(response, 400, { error: 'workspace_id_required' });
@@ -207,6 +209,45 @@ function authenticate(request) {
   const header = request.headers.authorization ?? '';
   const token = header.startsWith('Bearer ') ? header.slice('Bearer '.length).trim() : '';
   return sessions.get(token);
+}
+
+function accountForSession(session) {
+  return [...accountsByIdentifier.values()].find(
+    (account) => account.id === session.accountId,
+  );
+}
+
+function mockEntitlement(id) {
+  if (configuredPlanKey === 'image_audio_annual') {
+    return {
+      id,
+      planName: '图片 / 音频年费',
+      planCode: 'creator',
+      planKey: 'image_audio_annual',
+      planLabel: '图片 / 音频年费',
+      status: 'active',
+      features: {
+        cloud_sync: true,
+        batch_processing: true,
+        report_export: false,
+        cloud_video_processing: false,
+      },
+    };
+  }
+  return {
+    id,
+    planName: '未付费',
+    planCode: 'free',
+    planKey: 'base_unpaid',
+    planLabel: '未付费',
+    status: 'free',
+    features: {
+      cloud_sync: false,
+      batch_processing: false,
+      report_export: false,
+      cloud_video_processing: false,
+    },
+  };
 }
 
 function cloudOperation(operation) {

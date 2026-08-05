@@ -147,7 +147,6 @@ class MobileAppState extends ChangeNotifier {
     final features = Map<String, bool>.from(_syncProfile.entitlementFeatures);
     if (_offlineLicenseSnapshot.isActive) {
       features['batch_processing'] = true;
-      features['report_export'] = true;
     }
     return Map.unmodifiable(features);
   }
@@ -156,12 +155,12 @@ class MobileAppState extends ChangeNotifier {
     if (!_offlineLicenseSnapshot.isActive) {
       return _syncProfile.entitlementLabel;
     }
-    final hasCloudCreator =
-        _syncProfile.entitlementFeatures['batch_processing'] == true ||
-        _syncProfile.entitlementFeatures['report_export'] == true;
-    return hasCloudCreator
+    final hasCloudAnnual =
+        _syncProfile.entitlementFeatures['batch_processing'] == true &&
+        _syncProfile.entitlementFeatures['cloud_sync'] == true;
+    return hasCloudAnnual
         ? '${_syncProfile.entitlementLabel} + 离线授权'
-        : 'Creator（离线授权）';
+        : '图片 / 音频年费（离线授权）';
   }
 
   List<VaultRecord> get recentRecords => records.take(3).toList();
@@ -507,12 +506,16 @@ class MobileAppState extends ChangeNotifier {
       );
     }
     await _refreshOfflineLicenseStatus();
+    final offlineAllowed =
+        _offlineLicenseSnapshot.localFeatures[feature] == true;
     return OfflineExecutionAuthorization(
       feature: feature,
-      allowed: _offlineLicenseSnapshot.isActive,
-      source: _offlineLicenseSnapshot.isActive ? 'offline_cdkey' : 'none',
-      errorCode: _offlineLicenseSnapshot.isActive
+      allowed: offlineAllowed,
+      source: offlineAllowed ? 'offline_cdkey' : 'none',
+      errorCode: offlineAllowed
           ? null
+          : _offlineLicenseSnapshot.isActive
+          ? 'offline_license_feature_not_allowed'
           : _offlineLicenseSnapshot.lastError ?? 'offline_license_required',
     );
   }
@@ -1526,9 +1529,10 @@ class MobileAppState extends ChangeNotifier {
       creatorSeedEnvelopeVersion: 1,
       creatorProfileSynced: true,
       entitlementId: 'ent_$suffix',
-      entitlementLabel: '免费版',
+      entitlementLabel: '未付费',
       entitlementStatus: EntitlementStatus.free,
       entitlementPlanCode: 'free',
+      entitlementPlanKey: 'base_unpaid',
       entitlementFeatures: entitlementFeatures,
       entitlementLastCheckedAt: now,
       cloudBaseUrl:
@@ -2723,7 +2727,7 @@ class MobileAppState extends ChangeNotifier {
           )
         : await authorizeLocalExecution('report_export');
     if (!authorization.allowed) {
-      throw StateError('正式报告从 Creator 开放，也可为当前记录单份购买。');
+      throw StateError('正式报告需为当前记录单份购买。');
     }
     final exportedAt = DateTime.now();
     final draft = FormalReportDraft.fromRecord(
@@ -3997,9 +4001,10 @@ class SyncProfile {
     this.creatorProfileSynced = false,
     this.onboardingCompleted = false,
     this.entitlementId,
-    this.entitlementLabel = '免费版',
+    this.entitlementLabel = '未付费',
     this.entitlementStatus = EntitlementStatus.free,
     this.entitlementPlanCode = 'free',
+    this.entitlementPlanKey = 'base_unpaid',
     this.entitlementFeatures = const {},
     this.entitlementLastCheckedAt,
     this.syncPolicy = 'manual_local_only',
@@ -4055,6 +4060,7 @@ class SyncProfile {
   final String entitlementLabel;
   final EntitlementStatus entitlementStatus;
   final String entitlementPlanCode;
+  final String entitlementPlanKey;
   final Map<String, bool> entitlementFeatures;
   final DateTime? entitlementLastCheckedAt;
   final String syncPolicy;
@@ -4116,6 +4122,7 @@ class SyncProfile {
     String? entitlementLabel,
     EntitlementStatus? entitlementStatus,
     String? entitlementPlanCode,
+    String? entitlementPlanKey,
     Map<String, bool>? entitlementFeatures,
     DateTime? entitlementLastCheckedAt,
     String? syncPolicy,
@@ -4181,7 +4188,7 @@ class SyncProfile {
           ? null
           : entitlementId ?? this.entitlementId,
       entitlementLabel: clearEntitlement
-          ? '免费版'
+          ? '未付费'
           : entitlementLabel ?? this.entitlementLabel,
       entitlementStatus: clearEntitlement
           ? EntitlementStatus.free
@@ -4189,6 +4196,9 @@ class SyncProfile {
       entitlementPlanCode: clearEntitlement
           ? 'free'
           : entitlementPlanCode ?? this.entitlementPlanCode,
+      entitlementPlanKey: clearEntitlement
+          ? 'base_unpaid'
+          : entitlementPlanKey ?? this.entitlementPlanKey,
       entitlementFeatures: clearEntitlement
           ? const {}
           : entitlementFeatures ?? this.entitlementFeatures,
@@ -4296,6 +4306,29 @@ enum SyncConnectionStatus { unconfigured, connected, connecting, failed }
 enum SyncTransportMode { localOnly, cloud, lanDebug }
 
 enum EntitlementStatus { free, trial, active, grace, expired }
+
+String normalizeEntitlementPlanKey({
+  String? planKey,
+  required String planCode,
+  required Map<String, bool> features,
+}) {
+  final normalizedPlanKey = planKey?.trim();
+  if (normalizedPlanKey == 'base_unpaid' ||
+      normalizedPlanKey == 'image_audio_annual') {
+    return normalizedPlanKey!;
+  }
+  final normalizedPlanCode = planCode.trim().toLowerCase();
+  final hasAnnualFeatures =
+      features['batch_processing'] == true && features['cloud_sync'] == true;
+  if (hasAnnualFeatures ||
+      const {'creator', 'studio', 'enterprise'}.contains(normalizedPlanCode)) {
+    return 'image_audio_annual';
+  }
+  return 'base_unpaid';
+}
+
+String entitlementPlanLabel(String planKey) =>
+    planKey == 'image_audio_annual' ? '图片 / 音频年费' : '未付费';
 
 enum BatchMediaKind { image, audio, unsupported }
 
@@ -5069,7 +5102,7 @@ String syncTransportModeLabel(SyncTransportMode mode) {
 
 String entitlementStatusLabel(EntitlementStatus status) {
   return switch (status) {
-    EntitlementStatus.free => '免费版',
+    EntitlementStatus.free => '未付费',
     EntitlementStatus.trial => '试用中',
     EntitlementStatus.active => '订阅有效',
     EntitlementStatus.grace => '宽限期',
