@@ -47,3 +47,40 @@ A record-level paid deliverable that expands a Basic Record Summary with structu
 ## Local Copyright Record
 
 A HiddenShield record created from local processing and verification facts. A local record may later receive registry or trusted-time materials, but its existence alone does not prove authorship, ownership, priority, authenticity, or third-party registration.
+
+## Commercial Language
+
+**基础状态**:
+The unpaid desktop product state. It includes the local single-file image/audio workflow and local copyright vault, but does not imply batch, cloud, team, API, or report-export entitlement.
+_Avoid_: Free 套餐, 免费版套餐
+
+**图片 / 音频年费**:
+The only current user-visible paid desktop plan. Its time-bounded annual entitlement grants image/audio batch processing and metadata-only cloud sync, but does not itself imply formal-report export, team access, API access, or video processing.
+_Avoid_: Creator 套餐, Creator 订阅
+
+**年度授权**:
+The trial, active, grace, expiry, renewal, and revocation lifecycle of the 图片 / 音频年费 plan. It is an entitlement term, not a separate user-visible plan.
+
+**单份报告商品**:
+A record- or case-scoped purchase that grants one named report deliverable without changing the user's desktop plan or other capability entitlements.
+_Avoid_: 报告套餐, 报告订阅
+
+**能力权益**:
+An explicit server- or license-issued authorization for one capability, such as batch processing, cloud sync, report export, team workspace, API access, or cloud video units. The current annual plan grants batch processing and cloud sync; other capabilities require their own product or contract authorization.
+_Avoid_: 套餐等级
+
+**组织产品线**:
+A future contract-backed product for teams or enterprises, such as a team workspace or enterprise integration. It is not a third or fourth desktop subscription tier.
+_Avoid_: Studio 套餐, Enterprise 套餐
+
+**Legacy Plan Code**:
+An existing persisted or wire-level value such as `free`, `creator`, `studio`, or `enterprise`. It is compatibility data only and must not be introduced as new user-facing copy or used alone for authorization.
+
+## Composite Media Language
+
+**苹果实况照片（Live Photo）**:
+A single user-visible media asset composed of a still-photo resource, a paired short-video resource that may contain audio, and association metadata such as the asset identifier and key-photo selection. It is not a standalone image encoding and must not be treated as an ordinary HEIC, JPEG, PNG, or WebP file.
+
+**实况照片复合保护**:
+A future HiddenShield capability that protects and verifies the still-photo and paired-video resources as one logical asset, preserves their association metadata and Live Photo behavior, and produces one coherent verification result. Protecting only the exported still frame is not 实况照片复合保护.
+_Avoid_: 支持 Live Photo（when only a still frame is processed）, 实况图片格式
