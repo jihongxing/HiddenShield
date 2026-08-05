@@ -15,7 +15,8 @@ use crate::schema::{
     AccountDevice, AccountDevicesResponse, AuthChallengeRequest, AuthChallengeResponse,
     AuthLogoutRequest, AuthLogoutResponse, AuthRefreshRequest, AuthSessionRequest, CloudAccount,
     CloudAccountSession, CloudAccountSnapshot, CloudCreatorProfile, CloudDevice, CloudEntitlement,
-    CloudWorkspace, ContinueAccountRequest, RevokeDeviceResponse,
+    CloudWorkspace, ContinueAccountRequest, RevokeDeviceResponse, SyncPreferencesRequest,
+    SyncPreferencesResponse, UpdateDeviceRequest,
 };
 use crate::storage::StorageError;
 
@@ -111,8 +112,44 @@ impl AuthRepository for PostgresAuthRepository {
         self.run(logout_auth_session_pg(self.pool.clone(), request.clone()))
     }
 
+    fn current_account_snapshot(
+        &self,
+        access_token: &str,
+    ) -> Result<CloudAccountSnapshot, StorageError> {
+        self.run(current_account_snapshot_pg(
+            self.pool.clone(),
+            access_token.to_string(),
+        ))
+    }
+
+    fn update_sync_preferences(
+        &self,
+        access_token: &str,
+        request: &SyncPreferencesRequest,
+    ) -> Result<SyncPreferencesResponse, StorageError> {
+        self.run(update_sync_preferences_pg(
+            self.pool.clone(),
+            access_token.to_string(),
+            request.clone(),
+        ))
+    }
+
     fn list_devices(&self, access_token: &str) -> Result<AccountDevicesResponse, StorageError> {
         self.run(list_devices_pg(self.pool.clone(), access_token.to_string()))
+    }
+
+    fn update_device(
+        &self,
+        access_token: &str,
+        device_id: &str,
+        request: &UpdateDeviceRequest,
+    ) -> Result<AccountDevice, StorageError> {
+        self.run(update_device_pg(
+            self.pool.clone(),
+            access_token.to_string(),
+            device_id.to_string(),
+            request.clone(),
+        ))
     }
 
     fn revoke_device(
@@ -126,6 +163,159 @@ impl AuthRepository for PostgresAuthRepository {
             device_id.to_string(),
         ))
     }
+
+    fn grant_cloud_sync_for_qa(
+        &self,
+        account_id: &str,
+        workspace_id: &str,
+    ) -> Result<CloudEntitlement, StorageError> {
+        self.run(grant_cloud_sync_for_qa_pg(
+            self.pool.clone(),
+            account_id.to_string(),
+            workspace_id.to_string(),
+        ))
+    }
+}
+
+async fn current_account_snapshot_pg(
+    pool: PgPool,
+    access_token: String,
+) -> Result<CloudAccountSnapshot, StorageError> {
+    let session = authenticate_pg(&pool, &access_token).await?;
+    let account = load_account_by_id_pg(&pool, &session.account_id).await?;
+    let device = load_device_by_id_pg(&pool, &session.account_id, &session.device_id).await?;
+    account_snapshot_pg(&pool, account, device).await
+}
+
+async fn update_sync_preferences_pg(
+    pool: PgPool,
+    access_token: String,
+    request: SyncPreferencesRequest,
+) -> Result<SyncPreferencesResponse, StorageError> {
+    let session = authenticate_pg(&pool, &access_token).await?;
+    let account = load_account_by_id_pg(&pool, &session.account_id).await?;
+    let cloud_sync_entitled = account
+        .entitlement_features
+        .get("cloud_sync")
+        .and_then(serde_json::Value::as_bool)
+        == Some(true);
+    if request.auto_sync_enabled && !cloud_sync_entitled {
+        return Err(StorageError::Forbidden);
+    }
+    sqlx::query(
+        "UPDATE cloud_devices
+         SET auto_sync_enabled = $3, updated_at = $4
+         WHERE account_id = $1 AND id = $2",
+    )
+    .bind(&session.account_id)
+    .bind(&session.device_id)
+    .bind(request.auto_sync_enabled)
+    .bind(Utc::now())
+    .execute(&pool)
+    .await?;
+    let device = load_device_by_id_pg(&pool, &session.account_id, &session.device_id).await?;
+    let snapshot = account_snapshot_pg(&pool, account, device).await?;
+    Ok(SyncPreferencesResponse {
+        sync_policy: snapshot.sync_policy,
+        auto_sync_enabled: request.auto_sync_enabled,
+        cloud_vault_cursor: snapshot.cloud_vault_cursor,
+        entitlement: snapshot.entitlement,
+    })
+}
+
+async fn update_device_pg(
+    pool: PgPool,
+    access_token: String,
+    device_id: String,
+    request: UpdateDeviceRequest,
+) -> Result<AccountDevice, StorageError> {
+    let session = authenticate_pg(&pool, &access_token).await?;
+    let device_id = device_id.trim();
+    let name = request.name.trim();
+    if device_id.is_empty() || name.is_empty() {
+        return Err(StorageError::BadRequest(
+            "device_id_and_name_required".to_string(),
+        ));
+    }
+    let updated = sqlx::query(
+        "UPDATE cloud_devices
+         SET name = $3, updated_at = $4
+         WHERE account_id = $1 AND id = $2
+         RETURNING id, client_device_id, name, platform, app_version, registered,
+                   auto_sync_enabled, created_at, updated_at",
+    )
+    .bind(&session.account_id)
+    .bind(device_id)
+    .bind(name)
+    .bind(Utc::now())
+    .fetch_optional(&pool)
+    .await?
+    .ok_or(StorageError::Unauthorized)?;
+    let active_session_count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM cloud_sessions
+         WHERE account_id = $1 AND device_id = $2 AND revoked_at IS NULL",
+    )
+    .bind(&session.account_id)
+    .bind(device_id)
+    .fetch_one(&pool)
+    .await?;
+    let last_seen_at = sqlx::query_scalar(
+        "SELECT MAX(last_used_at) FROM cloud_sessions
+         WHERE account_id = $1 AND device_id = $2",
+    )
+    .bind(&session.account_id)
+    .bind(device_id)
+    .fetch_one(&pool)
+    .await?;
+    Ok(AccountDevice {
+        id: updated.try_get("id")?,
+        client_device_id: updated.try_get("client_device_id")?,
+        name: updated.try_get("name")?,
+        platform: updated.try_get("platform")?,
+        app_version: updated.try_get("app_version")?,
+        registered: updated.try_get("registered")?,
+        auto_sync_enabled: updated.try_get("auto_sync_enabled")?,
+        is_current: device_id == session.device_id,
+        active_session_count: active_session_count as u32,
+        last_seen_at,
+        created_at: updated.try_get("created_at")?,
+        updated_at: updated.try_get("updated_at")?,
+    })
+}
+
+async fn grant_cloud_sync_for_qa_pg(
+    pool: PgPool,
+    account_id: String,
+    workspace_id: String,
+) -> Result<CloudEntitlement, StorageError> {
+    let mut features = default_entitlement_features();
+    features["cloud_sync"] = serde_json::Value::Bool(true);
+    features["batch_processing"] = serde_json::Value::Bool(true);
+    features["report_export"] = serde_json::Value::Bool(false);
+    let row = sqlx::query(
+        "UPDATE cloud_accounts
+         SET entitlement_plan_name = '图片 / 音频年费',
+             entitlement_plan_code = 'creator',
+             entitlement_status = 'active',
+             entitlement_features_json = $3,
+             updated_at = $4
+         WHERE id = $1 AND workspace_id = $2
+         RETURNING entitlement_id, entitlement_plan_name, entitlement_plan_code,
+                   entitlement_status, entitlement_features_json",
+    )
+    .bind(account_id)
+    .bind(workspace_id)
+    .bind(features)
+    .bind(Utc::now())
+    .fetch_optional(&pool)
+    .await?
+    .ok_or(StorageError::Forbidden)?;
+    Ok(CloudEntitlement::from_legacy(
+        row.try_get("entitlement_id")?,
+        row.try_get("entitlement_plan_code")?,
+        row.try_get("entitlement_status")?,
+        row.try_get("entitlement_features_json")?,
+    ))
 }
 
 async fn create_auth_challenge_pg(
@@ -729,7 +919,7 @@ async fn ensure_account_pg(
     .bind(creator_seed_ref)
     .bind(seed_envelope_version as i32)
     .bind(&entitlement_id)
-    .bind("免费版")
+    .bind("未付费")
     .bind("free")
     .bind("free")
     .bind(entitlement_features)
@@ -1003,13 +1193,12 @@ async fn account_snapshot_pg(
             display_name: account.creator_display_name,
             is_default: true,
         },
-        entitlement: CloudEntitlement {
-            id: account.entitlement_id,
-            plan_name: Some(account.entitlement_plan_name),
-            plan_code: account.entitlement_plan_code,
-            status: account.entitlement_status,
-            features: account.entitlement_features,
-        },
+        entitlement: CloudEntitlement::from_legacy(
+            account.entitlement_id,
+            account.entitlement_plan_code,
+            account.entitlement_status,
+            account.entitlement_features,
+        ),
         sync_policy,
         cloud_vault_cursor,
     })
@@ -1222,9 +1411,9 @@ fn sync_policy_for_entitlement_and_preference(
         .and_then(serde_json::Value::as_bool)
         == Some(true);
     if !cloud_sync_entitled {
-        "local_only_plan_limit".to_string()
+        "blocked_by_entitlement".to_string()
     } else if auto_sync_enabled {
-        "auto_sync_enabled".to_string()
+        "auto_cloud_vault".to_string()
     } else {
         "manual_local_only".to_string()
     }

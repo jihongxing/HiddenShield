@@ -33,7 +33,8 @@ const structuralChecks = [
       sources.storage.includes('Connection::open(sqlite_path)') &&
       sources.storage.includes('init_schema(&conn)') &&
       sources.packageJson.includes('"cloud:backend"') &&
-      sources.packageJson.includes('--db-path feedback-backend/cloud.sqlite'),
+      sources.packageJson.includes('--db-path feedback-backend/cloud.sqlite') &&
+      sources.packageJson.includes('"cloud:postgres-http-gate"'),
   },
 ];
 
