@@ -156,7 +156,7 @@ void main() {
 
     expect(state.canUseLocalBatchProcessing, isTrue);
     expect(state.canExportFormalReports, isFalse);
-    expect(state.effectiveEntitlementLabel, '图片 / 音频年费');
+    expect(state.effectiveEntitlementLabel, '图片 / 音频年费（离线授权）');
     expect(
       (await state.authorizeLocalExecution('batch_processing')).source,
       'offline_cdkey',
