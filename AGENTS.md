@@ -71,4 +71,4 @@ For any task that states, changes, sells, documents, or implies what HiddenShiel
 - Do not revert unrelated user changes.
 - Keep mobile and desktop behavior aligned unless explicitly told otherwise.
 - When planning app work, preserve shared terminology across platforms.
-- For commercial features, preserve the shared Free / Creator / Studio / Enterprise terminology across desktop, mobile, backend, and docs.
+- For commercial features, preserve the canonical terminology in `docs/商业套餐与权益全局语义设计.md`: user-facing desktop uses exactly two plan states, `未付费` / `图片 / 音频年费`. The paid plan includes local batch processing and cloud sync; `年度授权` describes its time-bounded license state, not a third display name. Report purchases remain record-scoped add-ons, while team workspaces and enterprise integrations remain future contract products rather than a Free / Creator / Studio / Enterprise tier ladder. Legacy `plan_code` values remain compatibility-only until their dedicated migration task is complete.
