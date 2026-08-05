@@ -107,6 +107,7 @@ try {
       env: {
         ...process.env,
         HIDDENSHIELD_POSTGRES_HTTP_QA_ENTITLEMENT_GRANT: '1',
+        HIDDENSHIELD_POSTGRES_HTTP_QA_INTERNAL_TOKEN: 'local-http-gate-internal-token',
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     },
@@ -119,6 +120,7 @@ try {
   const qaEnvironment = {
     HIDDENSHIELD_CLOUD_URL: cloudUrl,
     HIDDENSHIELD_CLOUD_QA_ENTITLEMENT_MODE: 'postgres_http_gate',
+    HIDDENSHIELD_CLOUD_QA_INTERNAL_TOKEN: 'local-http-gate-internal-token',
   };
   await runNodeScript('scripts/verify-cloud-sync-contract.mjs', qaEnvironment);
   checks.push({ key: 'cloud_contract_same_script', status: 'passed' });

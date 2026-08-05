@@ -6,7 +6,9 @@ use axum::{
     routing::{get, patch, post},
     Json, Router,
 };
+use hmac::{Hmac, Mac};
 use serde::Deserialize;
+use sha2::Sha256;
 
 use crate::{
     postgres_auth::PostgresAuthRepository,
@@ -28,6 +30,7 @@ pub struct PostgresHttpState {
     sync: Arc<PostgresCloudSyncRepository>,
     registry: Arc<PostgresWatermarkRegistryRepository>,
     qa_entitlement_grant_enabled: bool,
+    qa_internal_token: Option<String>,
 }
 
 impl PostgresHttpState {
@@ -35,6 +38,7 @@ impl PostgresHttpState {
         database_url: String,
         max_connections: u32,
         qa_entitlement_grant_enabled: bool,
+        qa_internal_token: Option<String>,
     ) -> Result<Self, crate::storage::StorageError> {
         Ok(Self {
             auth: Arc::new(PostgresAuthRepository::connect(
@@ -50,6 +54,7 @@ impl PostgresHttpState {
                 max_connections,
             )?),
             qa_entitlement_grant_enabled,
+            qa_internal_token,
         })
     }
 }
@@ -303,12 +308,24 @@ struct QaEntitlementGrantRequest {
 
 async fn grant_cloud_sync_for_qa(
     State(state): State<PostgresHttpState>,
+    headers: HeaderMap,
     Json(request): Json<QaEntitlementGrantRequest>,
 ) -> Result<Json<crate::schema::CloudEntitlement>, ApiError> {
     if !state.qa_entitlement_grant_enabled {
         return Err(ApiError::NotFound(
             "qa_entitlement_grant_not_enabled".to_string(),
         ));
+    }
+    let token = headers
+        .get("x-hiddenshield-internal-token")
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or_default();
+    let expected = state
+        .qa_internal_token
+        .as_deref()
+        .ok_or(ApiError::Forbidden)?;
+    if !constant_time_token_matches(token, expected) {
+        return Err(ApiError::Forbidden);
     }
     call_auth(state.auth, move |repo| {
         repo.grant_cloud_sync_for_qa(&request.account_id, &request.workspace_id)
@@ -365,4 +382,36 @@ where
 
 fn bearer_token_owned(headers: &HeaderMap) -> Result<String, ApiError> {
     super::bearer_token(headers).map(ToOwned::to_owned)
+}
+
+fn constant_time_token_matches(actual: &str, expected: &str) -> bool {
+    type TokenMac = Hmac<Sha256>;
+    let key = [0_u8; 32];
+    let mut expected_mac = TokenMac::new_from_slice(&key).expect("fixed HMAC key is valid");
+    expected_mac.update(expected.as_bytes());
+    let expected_tag = expected_mac.finalize().into_bytes();
+    let mut actual_mac = TokenMac::new_from_slice(&key).expect("fixed HMAC key is valid");
+    actual_mac.update(actual.as_bytes());
+    actual_mac.verify_slice(&expected_tag).is_ok()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::constant_time_token_matches;
+
+    #[test]
+    fn qa_internal_token_requires_exact_match() {
+        assert!(constant_time_token_matches(
+            "local-http-gate-internal-token",
+            "local-http-gate-internal-token"
+        ));
+        assert!(!constant_time_token_matches(
+            "local-http-gate-internal-token-wrong",
+            "local-http-gate-internal-token"
+        ));
+        assert!(!constant_time_token_matches(
+            "",
+            "local-http-gate-internal-token"
+        ));
+    }
 }

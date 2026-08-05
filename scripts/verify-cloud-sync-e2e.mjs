@@ -359,6 +359,10 @@ async function request(method, path, body, token) {
   if (token) {
     headers.authorization = `Bearer ${token}`;
   }
+  if (path === '/internal/qa/entitlements/cloud-sync') {
+    headers['x-hiddenshield-internal-token'] =
+      process.env.HIDDENSHIELD_CLOUD_QA_INTERNAL_TOKEN ?? '';
+  }
 
   let response;
   try {

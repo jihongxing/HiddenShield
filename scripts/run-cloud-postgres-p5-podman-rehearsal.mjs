@@ -243,6 +243,7 @@ async function buildAndStartBackend() {
       env: {
         ...process.env,
         HIDDENSHIELD_POSTGRES_HTTP_QA_ENTITLEMENT_GRANT: '1',
+        HIDDENSHIELD_POSTGRES_HTTP_QA_INTERNAL_TOKEN: 'local-p5-rehearsal-internal-token',
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     },
@@ -610,6 +611,10 @@ async function request(method, path, body, token) {
   }
   if (token) {
     headers.authorization = `Bearer ${token}`;
+  }
+  if (path === '/internal/qa/entitlements/cloud-sync') {
+    headers['x-hiddenshield-internal-token'] =
+      process.env.HIDDENSHIELD_POSTGRES_HTTP_QA_INTERNAL_TOKEN ?? '';
   }
   const response = await fetch(`${backendUrl}${path}`, {
     method,

@@ -2813,3 +2813,10 @@ Creator 行为：
 下一商业化任务：
 
 - 继续完成既定 P2 授权去 tier 化；Live Photo 任务保持暂停，待视频画面水印生产 Gate 通过后从只读 fixture 与复合资产 Schema 开始。
+## 2026-08-05 PostgreSQL HTTP 内部 Gate 安全收口
+
+- 状态：`内部/staging Gate 已增加 fail-closed 约束；生产仍未解锁`。
+- 已完成：QA entitlement grant 端点要求专用内部 token；QA 开关开启时服务仅允许 loopback bind；生产 PostgreSQL 启动必须提供通过校验的 production readiness artifact，且 artifact 明确允许生产数据库，否则启动失败。
+- 验证：`cargo fmt --manifest-path feedback-backend/Cargo.toml -- --check`、`cargo check --manifest-path feedback-backend/Cargo.toml --features postgres` 已通过；正式 HTTP Gate 与 production readiness Gate 待本轮复跑。
+- 风险：当前 readiness artifact 默认仍保持 `productionDatabaseAllowed=false`，因此不会打开生产云版权库；真实 staging、备份恢复、观测、切换 runbook 和 release-owner signoff 仍是必要外部证据。
+- 下一步：在隔离 PostgreSQL staging 环境注入真实内部 token、完成 readiness artifacts 后，复跑 production 启动演练；未完成前不得合入生产路径。

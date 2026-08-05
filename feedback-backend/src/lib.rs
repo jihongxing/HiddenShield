@@ -647,11 +647,38 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
                 .ok()
                 .as_deref()
                 == Some("1");
+        if qa_entitlement_grant_enabled && !args.bind_addr.ip().is_loopback() {
+            return Err(
+                "PostgreSQL HTTP QA entitlement grant requires a loopback bind address".into(),
+            );
+        }
+        let qa_internal_token = if qa_entitlement_grant_enabled {
+            let token = std::env::var("HIDDENSHIELD_POSTGRES_HTTP_QA_INTERNAL_TOKEN")
+                .map_err(|_| "missing HIDDENSHIELD_POSTGRES_HTTP_QA_INTERNAL_TOKEN")?;
+            if token.trim().is_empty() {
+                return Err(
+                    "HIDDENSHIELD_POSTGRES_HTTP_QA_INTERNAL_TOKEN must not be empty".into(),
+                );
+            }
+            Some(token)
+        } else {
+            None
+        };
+        if database_config.runtime_mode.is_production() {
+            let artifact_path = std::env::var(
+                "HIDDENSHIELD_POSTGRES_PRODUCTION_READINESS_ARTIFACT",
+            )
+            .map_err(|_| {
+                "missing HIDDENSHIELD_POSTGRES_PRODUCTION_READINESS_ARTIFACT for production PostgreSQL"
+            })?;
+            validate_postgres_production_readiness_artifact(&artifact_path)?;
+        }
         let state = tokio::task::spawn_blocking(move || {
             crate::postgres_http::PostgresHttpState::connect(
                 database_url,
                 10,
                 qa_entitlement_grant_enabled,
+                qa_internal_token,
             )
         })
         .await??;
@@ -3409,6 +3436,35 @@ fn bearer_token(headers: &HeaderMap) -> Result<&str, ApiError> {
     }
 }
 
+fn validate_postgres_production_readiness_artifact(
+    artifact_path: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let contents = fs::read_to_string(artifact_path)?;
+    let artifact: serde_json::Value = serde_json::from_str(&contents)?;
+    let schema_version = artifact
+        .get("schemaVersion")
+        .and_then(serde_json::Value::as_str);
+    let status = artifact.get("status").and_then(serde_json::Value::as_str);
+    let ok = artifact
+        .get("ok")
+        .and_then(serde_json::Value::as_bool)
+        .unwrap_or(false);
+    let production_database_allowed = artifact
+        .get("productionDatabaseAllowed")
+        .and_then(serde_json::Value::as_bool)
+        .unwrap_or(false);
+    if schema_version != Some("cloud_postgres_production_readiness_gate_v1")
+        || status != Some("passed")
+        || !ok
+        || !production_database_allowed
+    {
+        return Err(
+            "PostgreSQL production readiness artifact is not an approved passing artifact".into(),
+        );
+    }
+    Ok(())
+}
+
 fn admin_bearer_token(headers: &HeaderMap) -> Option<String> {
     headers
         .get(axum::http::header::AUTHORIZATION)
@@ -3788,6 +3844,7 @@ mod tests {
     use crate::schema::{AnonymousEventOutcome, AnonymousFeedbackBatch, AnonymousFeedbackEvent};
     use axum::body::Body;
     use http::Request;
+    use std::io::Write;
     use tempfile::NamedTempFile;
     use tower::util::ServiceExt;
 
@@ -3831,6 +3888,40 @@ mod tests {
                 seed_envelope_version: 1,
             },
         }
+    }
+
+    #[test]
+    fn postgres_production_readiness_requires_approved_artifact() {
+        let file = NamedTempFile::new().unwrap();
+        std::fs::write(
+            file.path(),
+            r#"{
+                "schemaVersion": "cloud_postgres_production_readiness_gate_v1",
+                "status": "passed",
+                "ok": true,
+                "productionDatabaseAllowed": false
+            }"#,
+        )
+        .unwrap();
+        assert!(
+            validate_postgres_production_readiness_artifact(file.path().to_str().unwrap()).is_err()
+        );
+
+        let approved = NamedTempFile::new().unwrap();
+        std::fs::write(
+            approved.path(),
+            r#"{
+                "schemaVersion": "cloud_postgres_production_readiness_gate_v1",
+                "status": "passed",
+                "ok": true,
+                "productionDatabaseAllowed": true
+            }"#,
+        )
+        .unwrap();
+        assert!(
+            validate_postgres_production_readiness_artifact(approved.path().to_str().unwrap())
+                .is_ok()
+        );
     }
 
     fn sample_cloud_video_task_request(
