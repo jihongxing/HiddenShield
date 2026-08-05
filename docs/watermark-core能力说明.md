@@ -518,3 +518,16 @@
 - 新增 synthetic Sandbox QA 仅模拟 SDK/facade transport；未调用、修改或包装 `watermark-core`。
 - synthetic marked PNG 不含可对外承诺的 HiddenShield V3 盲水印，不进入 core fixture、性能快照或跨端互验。
 - 回滚路径：移除 synthetic harness 不影响 core API、现有图片写读算法或正式 executor。
+
+## 2026-08-01 苹果实况照片未来能力影响
+
+- 本次只登记未来产品方向，`watermark-core` 没有代码、公共 API、payload、算法、fixture、Gate 或性能变化。
+- Live Photo 被定义为静态照片、配对短视频和关联元数据组成的复合资产；当前图片正式能力不能自动外推为 Live Photo 支持。
+- 未来图片、视频画面和适用音轨的写入与读取算法仍必须全部来自 `watermark-core`，不得建立 Live Photo 专用第二算法源。
+- 外部执行层可以处理 HEIC / HEIF 解码、MOV 容器、资源配对、Apple 元数据和事务编排，但不能拥有盲水印算法。
+- 外部暴露边界：`明确不能承诺`；视频画面水印生产 Gate、复合资产 envelope、真实 Apple fixture、跨端互读和回导 Gate 均未完成。
+- 回滚路径：删除未来任务和复合资产编排设计不会影响当前静态 PNG / JPEG / WebP 与音频正式能力。
+
+下一核心任务：
+
+- 先完成通用视频画面水印生产 Gate；通过后再设计 Live Photo 逻辑资产标识与组件级验证 envelope，不提前修改现有 V3 图片 payload。
