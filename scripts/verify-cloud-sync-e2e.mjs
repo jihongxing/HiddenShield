@@ -50,6 +50,16 @@ assert(
     mobileSession.entitlement.features?.cloud_sync === false,
   'free cloud_sync entitlement must be disabled on both clients',
 );
+assert(
+  desktopSession.entitlement.features?.batch_processing === false &&
+    mobileSession.entitlement.features?.batch_processing === false,
+  'unpaid batch_processing entitlement must be disabled on both clients',
+);
+assert(
+  desktopSession.entitlement.planKey === 'base_unpaid' &&
+    mobileSession.entitlement.planKey === 'base_unpaid',
+  'unpaid entitlement must map to base_unpaid on both clients',
+);
 const freeChanges = await request(
   'GET',
   `/v1/sync/changes?workspaceId=${encodeURIComponent(desktopSession.workspace.id)}`,
@@ -72,7 +82,17 @@ const creatorMobileSession = await continueAccount({
 assert(
   creatorDesktopSession.entitlement.features?.cloud_sync === true &&
     creatorMobileSession.entitlement.features?.cloud_sync === true,
-  'creator cloud_sync entitlement must be enabled on both clients',
+  'image/audio annual cloud_sync entitlement must be enabled on both clients',
+);
+assert(
+  creatorDesktopSession.entitlement.features?.batch_processing === true &&
+    creatorMobileSession.entitlement.features?.batch_processing === true,
+  'image/audio annual batch_processing entitlement must be enabled on both clients',
+);
+assert(
+  creatorDesktopSession.entitlement.planKey === 'image_audio_annual' &&
+    creatorMobileSession.entitlement.planKey === 'image_audio_annual',
+  'annual entitlement must map to image_audio_annual on both clients',
 );
 assert(
   creatorDesktopSession.syncPolicy === 'auto_cloud_vault' &&
@@ -192,6 +212,16 @@ async function continueAccount({ deviceId, name, platform }) {
 }
 
 async function upgradeToCreator(session) {
+  if (process.env.HIDDENSHIELD_CLOUD_QA_ENTITLEMENT_MODE === 'postgres_http_gate') {
+    const grant = await request('POST', '/internal/qa/entitlements/cloud-sync', {
+      accountId: session.account.id,
+      workspaceId: session.workspace.id,
+    });
+    assert(grant.status === 200, 'PostgreSQL HTTP Gate entitlement grant must return 200');
+    assert(grant.body.features?.cloud_sync === true, 'PostgreSQL HTTP Gate grant must enable cloud_sync');
+    return;
+  }
+
   const payment = await request(
     'POST',
     '/v1/billing/payment-sessions',
@@ -328,6 +358,10 @@ async function request(method, path, body, token) {
   }
   if (token) {
     headers.authorization = `Bearer ${token}`;
+  }
+  if (path === '/internal/qa/entitlements/cloud-sync') {
+    headers['x-hiddenshield-internal-token'] =
+      process.env.HIDDENSHIELD_CLOUD_QA_INTERNAL_TOKEN ?? '';
   }
 
   let response;

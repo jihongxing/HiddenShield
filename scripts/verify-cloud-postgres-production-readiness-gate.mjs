@@ -7,6 +7,12 @@ const artifactDir = resolve('tmp-ui-qa/postgres-production-readiness');
 
 const requiredArtifacts = [
   {
+    key: 'formalHttpGateArtifact',
+    env: 'HIDDENSHIELD_POSTGRES_FORMAL_HTTP_GATE_ARTIFACT',
+    schemaVersion: 'cloud_postgres_formal_http_gate_v1',
+    description: 'Formal backend binary starts with PostgreSQL and passes the unchanged cloud contract/E2E plus registry HTTP round trip',
+  },
+  {
     key: 'stagingLoadArtifact',
     env: 'HIDDENSHIELD_POSTGRES_STAGING_LOAD_ARTIFACT',
     schemaVersion: 'cloud_postgres_load_gate_artifact_v1',
@@ -58,7 +64,7 @@ const artifact = {
     reason: item.status,
     description: item.description,
   })),
-  nextPhaseCandidate: blocked ? 'provide_real_staging_load_restore_monitoring_and_signoff_artifacts' : 'P6_sqlite_production_path_shutdown',
+  nextPhaseCandidate: blocked ? 'provide_formal_http_and_real_staging_operational_artifacts' : 'P6_sqlite_production_path_shutdown',
 };
 
 mkdirSync(artifactDir, { recursive: true });
@@ -94,7 +100,18 @@ function validateArtifact(item) {
       actualSchemaVersion: parsed.schemaVersion ?? null,
     };
   }
-  if (parsed.ok !== true || parsed.status === 'blocked') {
+  const semanticFailure = validateArtifactSemantics(item, parsed);
+  if (semanticFailure) {
+    return {
+      ...item,
+      path: normalizePath(absolutePath),
+      status: semanticFailure,
+      environmentClass: parsed.environmentClass ?? null,
+      reviewStatus: parsed.reviewStatus ?? null,
+      decision: parsed.decision ?? null,
+    };
+  }
+  if (parsed.ok !== true || parsed.status !== 'passed') {
     return {
       ...item,
       path: normalizePath(absolutePath),
@@ -109,6 +126,39 @@ function validateArtifact(item) {
     status: 'accepted',
     artifactRunId: parsed.runId ?? null,
   };
+}
+
+function validateArtifactSemantics(item, parsed) {
+  if (
+    ['stagingLoadArtifact', 'backupRestoreArtifact', 'observabilityArtifact'].includes(item.key) &&
+    !['external_staging', 'local_podman_staging_equivalent'].includes(parsed.environmentClass)
+  ) {
+    return 'environment_class_not_accepted';
+  }
+  if (
+    ['stagingLoadArtifact', 'backupRestoreArtifact', 'observabilityArtifact'].includes(item.key) &&
+    parsed.scope !== 'cloud_copyright_core_auth_sync_registry'
+  ) {
+    return 'scope_mismatch';
+  }
+  if (
+    item.key === 'cutoverRunbookArtifact' &&
+    (parsed.releaseOwnerReviewed !== true || parsed.reviewStatus !== 'approved')
+  ) {
+    return 'release_owner_review_missing';
+  }
+  if (
+    item.key === 'releaseOwnerSignoffArtifact' &&
+    (parsed.humanAttestation !== true ||
+      parsed.decision !== 'approved' ||
+      typeof parsed.signedBy !== 'string' ||
+      parsed.signedBy.trim() === '' ||
+      typeof parsed.signedAt !== 'string' ||
+      parsed.signedAt.trim() === '')
+  ) {
+    return 'release_owner_signoff_missing';
+  }
+  return null;
 }
 
 function normalizePath(path) {

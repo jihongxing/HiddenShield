@@ -116,7 +116,7 @@ void main() {
     );
   });
 
-  test('offline Creator merges only local batch and report features', () async {
+  test('offline annual authorization enables local batch only', () async {
     final secureStore = MemoryOfflineLicenseSecureStore();
     final manager = _manager(
       secureStore: secureStore,
@@ -155,15 +155,15 @@ void main() {
     await state.load();
 
     expect(state.canUseLocalBatchProcessing, isTrue);
-    expect(state.canExportFormalReports, isTrue);
-    expect(state.effectiveEntitlementLabel, 'Creator（离线授权）');
+    expect(state.canExportFormalReports, isFalse);
+    expect(state.effectiveEntitlementLabel, '图片 / 音频年费（离线授权）');
     expect(
       (await state.authorizeLocalExecution('batch_processing')).source,
       'offline_cdkey',
     );
     expect(
-      (await state.authorizeLocalExecution('report_export')).source,
-      'offline_cdkey',
+      (await state.authorizeLocalExecution('report_export')).allowed,
+      isFalse,
     );
     final metadata = await store.loadOfflineLicenseMetadata();
     expect(metadata?.licenseId, 'lic_k3_test');

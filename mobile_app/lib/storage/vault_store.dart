@@ -802,6 +802,15 @@ FROM $_usageLedgerTable
               ? 'lanDebug'
               : 'localOnly'),
     );
+    final entitlementFeatures = _decodeBoolMap(
+      values['entitlement_features_json'],
+    );
+    final entitlementPlanCode = values['entitlement_plan_code'] ?? 'free';
+    final entitlementPlanKey = normalizeEntitlementPlanKey(
+      planKey: values['entitlement_plan_key'],
+      planCode: entitlementPlanCode,
+      features: entitlementFeatures,
+    );
     return SyncProfile(
       mode: mode,
       status: _syncConnectionStatusFromName(values['status'] ?? 'unconfigured'),
@@ -826,12 +835,13 @@ FROM $_usageLedgerTable
       creatorProfileSynced: values['creator_profile_synced'] == 'true',
       onboardingCompleted: values['onboarding_completed'] == 'true',
       entitlementId: values['entitlement_id'],
-      entitlementLabel: values['entitlement_label'] ?? '免费版',
+      entitlementLabel: entitlementPlanLabel(entitlementPlanKey),
       entitlementStatus: _entitlementStatusFromName(
         values['entitlement_status'] ?? 'free',
       ),
-      entitlementPlanCode: values['entitlement_plan_code'] ?? 'free',
-      entitlementFeatures: _decodeBoolMap(values['entitlement_features_json']),
+      entitlementPlanCode: entitlementPlanCode,
+      entitlementPlanKey: entitlementPlanKey,
+      entitlementFeatures: entitlementFeatures,
       entitlementLastCheckedAt: _parseDateTime(
         values['entitlement_last_checked_at'],
       ),
@@ -1024,6 +1034,7 @@ FROM $_usageLedgerTable
       await put('entitlement_label', profile.entitlementLabel);
       await put('entitlement_status', profile.entitlementStatus.name);
       await put('entitlement_plan_code', profile.entitlementPlanCode);
+      await put('entitlement_plan_key', profile.entitlementPlanKey);
       await put(
         'entitlement_features_json',
         jsonEncode(profile.entitlementFeatures),

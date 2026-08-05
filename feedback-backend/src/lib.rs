@@ -38,6 +38,8 @@ pub mod database;
 #[cfg(feature = "postgres")]
 pub mod postgres_auth;
 #[cfg(feature = "postgres")]
+pub mod postgres_http;
+#[cfg(feature = "postgres")]
 pub mod postgres_registry;
 #[cfg(feature = "postgres")]
 pub mod postgres_sync;
@@ -210,6 +212,20 @@ pub struct HealthResponse {
     version: &'static str,
     timestamp: chrono::DateTime<chrono::Utc>,
     cloud_sync: bool,
+}
+
+impl HealthResponse {
+    #[cfg(feature = "postgres")]
+    fn postgres() -> Self {
+        Self {
+            ok: true,
+            service: "hidden-shield-feedback-backend",
+            status: "ok",
+            version: env!("CARGO_PKG_VERSION"),
+            timestamp: Utc::now(),
+            cloud_sync: true,
+        }
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -619,6 +635,61 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     );
     if database_config.runtime_mode.is_production() {
         crate::ai_transparency_production_provider::ProductionProviderDeploymentConfig::from_environment()?;
+    }
+    #[cfg(feature = "postgres")]
+    if database_config.backend == DatabaseBackendKind::Postgres {
+        let database_url = database_config
+            .postgres_url
+            .clone()
+            .ok_or(crate::database::DatabaseConfigError::MissingPostgresUrl)?;
+        let qa_entitlement_grant_enabled = !database_config.runtime_mode.is_production()
+            && std::env::var("HIDDENSHIELD_POSTGRES_HTTP_QA_ENTITLEMENT_GRANT")
+                .ok()
+                .as_deref()
+                == Some("1");
+        if qa_entitlement_grant_enabled && !args.bind_addr.ip().is_loopback() {
+            return Err(
+                "PostgreSQL HTTP QA entitlement grant requires a loopback bind address".into(),
+            );
+        }
+        let qa_internal_token = if qa_entitlement_grant_enabled {
+            let token = std::env::var("HIDDENSHIELD_POSTGRES_HTTP_QA_INTERNAL_TOKEN")
+                .map_err(|_| "missing HIDDENSHIELD_POSTGRES_HTTP_QA_INTERNAL_TOKEN")?;
+            if token.trim().is_empty() {
+                return Err(
+                    "HIDDENSHIELD_POSTGRES_HTTP_QA_INTERNAL_TOKEN must not be empty".into(),
+                );
+            }
+            Some(token)
+        } else {
+            None
+        };
+        if database_config.runtime_mode.is_production() {
+            let artifact_path = std::env::var(
+                "HIDDENSHIELD_POSTGRES_PRODUCTION_READINESS_ARTIFACT",
+            )
+            .map_err(|_| {
+                "missing HIDDENSHIELD_POSTGRES_PRODUCTION_READINESS_ARTIFACT for production PostgreSQL"
+            })?;
+            validate_postgres_production_readiness_artifact(&artifact_path)?;
+        }
+        let state = tokio::task::spawn_blocking(move || {
+            crate::postgres_http::PostgresHttpState::connect(
+                database_url,
+                10,
+                qa_entitlement_grant_enabled,
+                qa_internal_token,
+            )
+        })
+        .await??;
+        let app = crate::postgres_http::build_postgres_app(state);
+        let listener = tokio::net::TcpListener::bind(args.bind_addr).await?;
+        tracing::info!(
+            "HiddenShield feedback backend listening on {} with PostgreSQL auth/sync/registry",
+            args.bind_addr
+        );
+        axum::serve(listener, app.into_make_service()).await?;
+        return Ok(());
     }
     let storage = Arc::new(Storage::open_with_database_config(
         &database_config,
@@ -1125,13 +1196,12 @@ async fn apply_wechat_pay_webhook(
                 provider: applied.provider,
                 provider_event_id: applied.provider_event_id,
                 duplicate: applied.duplicate,
-                entitlement: crate::schema::CloudEntitlement {
-                    id: "report_purchase_grant".to_string(),
-                    plan_name: Some("Free".to_string()),
-                    plan_code: "free".to_string(),
-                    status: applied.status,
-                    features: serde_json::json!({ "report_export": false }),
-                },
+                entitlement: crate::schema::CloudEntitlement::from_legacy(
+                    "report_purchase_grant".to_string(),
+                    "free".to_string(),
+                    applied.status,
+                    serde_json::json!({ "report_export": false }),
+                ),
             }))
         }
     }
@@ -3366,6 +3436,35 @@ fn bearer_token(headers: &HeaderMap) -> Result<&str, ApiError> {
     }
 }
 
+fn validate_postgres_production_readiness_artifact(
+    artifact_path: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let contents = fs::read_to_string(artifact_path)?;
+    let artifact: serde_json::Value = serde_json::from_str(&contents)?;
+    let schema_version = artifact
+        .get("schemaVersion")
+        .and_then(serde_json::Value::as_str);
+    let status = artifact.get("status").and_then(serde_json::Value::as_str);
+    let ok = artifact
+        .get("ok")
+        .and_then(serde_json::Value::as_bool)
+        .unwrap_or(false);
+    let production_database_allowed = artifact
+        .get("productionDatabaseAllowed")
+        .and_then(serde_json::Value::as_bool)
+        .unwrap_or(false);
+    if schema_version != Some("cloud_postgres_production_readiness_gate_v1")
+        || status != Some("passed")
+        || !ok
+        || !production_database_allowed
+    {
+        return Err(
+            "PostgreSQL production readiness artifact is not an approved passing artifact".into(),
+        );
+    }
+    Ok(())
+}
+
 fn admin_bearer_token(headers: &HeaderMap) -> Option<String> {
     headers
         .get(axum::http::header::AUTHORIZATION)
@@ -3745,6 +3844,7 @@ mod tests {
     use crate::schema::{AnonymousEventOutcome, AnonymousFeedbackBatch, AnonymousFeedbackEvent};
     use axum::body::Body;
     use http::Request;
+    use std::io::Write;
     use tempfile::NamedTempFile;
     use tower::util::ServiceExt;
 
@@ -3788,6 +3888,40 @@ mod tests {
                 seed_envelope_version: 1,
             },
         }
+    }
+
+    #[test]
+    fn postgres_production_readiness_requires_approved_artifact() {
+        let file = NamedTempFile::new().unwrap();
+        std::fs::write(
+            file.path(),
+            r#"{
+                "schemaVersion": "cloud_postgres_production_readiness_gate_v1",
+                "status": "passed",
+                "ok": true,
+                "productionDatabaseAllowed": false
+            }"#,
+        )
+        .unwrap();
+        assert!(
+            validate_postgres_production_readiness_artifact(file.path().to_str().unwrap()).is_err()
+        );
+
+        let approved = NamedTempFile::new().unwrap();
+        std::fs::write(
+            approved.path(),
+            r#"{
+                "schemaVersion": "cloud_postgres_production_readiness_gate_v1",
+                "status": "passed",
+                "ok": true,
+                "productionDatabaseAllowed": true
+            }"#,
+        )
+        .unwrap();
+        assert!(
+            validate_postgres_production_readiness_artifact(approved.path().to_str().unwrap())
+                .is_ok()
+        );
     }
 
     fn sample_cloud_video_task_request(

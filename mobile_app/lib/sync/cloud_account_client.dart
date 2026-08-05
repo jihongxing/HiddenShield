@@ -1309,9 +1309,10 @@ class CloudAccountSession {
       creatorDisplayName: creatorProfile.displayName,
       creatorProfileSynced: true,
       entitlementId: entitlement.id,
-      entitlementLabel: entitlement.planName ?? entitlement.planCode,
+      entitlementLabel: entitlement.planLabel,
       entitlementStatus: entitlement.status,
       entitlementPlanCode: entitlement.planCode,
+      entitlementPlanKey: entitlement.planKey,
       entitlementFeatures: entitlement.features,
       entitlementLastCheckedAt: now,
       syncPolicy: normalizedSyncPolicy,
@@ -1400,9 +1401,10 @@ class SyncPreferencesResponse {
           ? SyncTransportMode.cloud
           : SyncTransportMode.localOnly,
       entitlementId: entitlement.id,
-      entitlementLabel: entitlement.planName ?? entitlement.planCode,
+      entitlementLabel: entitlement.planLabel,
       entitlementStatus: entitlement.status,
       entitlementPlanCode: entitlement.planCode,
+      entitlementPlanKey: entitlement.planKey,
       entitlementFeatures: entitlement.features,
       entitlementLastCheckedAt: now,
       syncPolicy: normalizedSyncPolicy,
@@ -1480,23 +1482,39 @@ class CloudEntitlement {
     required this.id,
     required this.planName,
     required this.planCode,
+    required this.planKey,
+    required this.planLabel,
     required this.status,
     required this.features,
   });
 
   factory CloudEntitlement.fromJson(Map<String, Object?> json) {
+    final planCode = json['planCode'] as String? ?? 'free';
+    final features = _decodeFeatureMap(json['features']);
+    final planKey = normalizeEntitlementPlanKey(
+      planKey: json['planKey'] as String?,
+      planCode: planCode,
+      features: features,
+    );
+    final planLabel = (json['planLabel'] as String?)?.trim();
     return CloudEntitlement(
       id: json['id'] as String? ?? '',
       planName: json['planName'] as String?,
-      planCode: json['planCode'] as String? ?? 'free',
+      planCode: planCode,
+      planKey: planKey,
+      planLabel: planLabel?.isNotEmpty == true
+          ? planLabel!
+          : entitlementPlanLabel(planKey),
       status: _entitlementStatusFromName(json['status'] as String? ?? 'free'),
-      features: _decodeFeatureMap(json['features']),
+      features: features,
     );
   }
 
   final String id;
   final String? planName;
   final String planCode;
+  final String planKey;
+  final String planLabel;
   final EntitlementStatus status;
   final Map<String, bool> features;
 
@@ -1510,9 +1528,10 @@ class CloudEntitlement {
           ? SyncTransportMode.cloud
           : SyncTransportMode.localOnly,
       entitlementId: id,
-      entitlementLabel: planName ?? planCode,
+      entitlementLabel: planLabel,
       entitlementStatus: status,
       entitlementPlanCode: planCode,
+      entitlementPlanKey: planKey,
       entitlementFeatures: features,
       entitlementLastCheckedAt: now,
       syncPolicy: syncPolicy,

@@ -63,6 +63,7 @@ Map<String, Object?> _syncProfileToJson(SyncProfile profile) {
     'entitlementLabel': profile.entitlementLabel,
     'entitlementStatus': profile.entitlementStatus.name,
     'entitlementPlanCode': profile.entitlementPlanCode,
+    'entitlementPlanKey': profile.entitlementPlanKey,
     'entitlementFeatures': profile.entitlementFeatures,
     'entitlementLastCheckedAt': profile.entitlementLastCheckedAt
         ?.toIso8601String(),
@@ -94,6 +95,14 @@ Map<String, Object?> _syncProfileToJson(SyncProfile profile) {
 }
 
 SyncProfile _syncProfileFromJson(Map<String, Object?> values) {
+  final entitlementFeatures = _boolMap(values['entitlementFeatures']);
+  final entitlementPlanCode =
+      _string(values['entitlementPlanCode']) ?? 'free';
+  final entitlementPlanKey = normalizeEntitlementPlanKey(
+    planKey: _string(values['entitlementPlanKey']),
+    planCode: entitlementPlanCode,
+    features: entitlementFeatures,
+  );
   return SyncProfile(
     mode: _enumByName(
       SyncTransportMode.values,
@@ -125,14 +134,15 @@ SyncProfile _syncProfileFromJson(Map<String, Object?> values) {
     creatorProfileSynced: values['creatorProfileSynced'] == true,
     onboardingCompleted: values['onboardingCompleted'] == true,
     entitlementId: _string(values['entitlementId']),
-    entitlementLabel: _string(values['entitlementLabel']) ?? '免费版',
+    entitlementLabel: entitlementPlanLabel(entitlementPlanKey),
     entitlementStatus: _enumByName(
       EntitlementStatus.values,
       values['entitlementStatus'],
       EntitlementStatus.free,
     ),
-    entitlementPlanCode: _string(values['entitlementPlanCode']) ?? 'free',
-    entitlementFeatures: _boolMap(values['entitlementFeatures']),
+    entitlementPlanCode: entitlementPlanCode,
+    entitlementPlanKey: entitlementPlanKey,
+    entitlementFeatures: entitlementFeatures,
     entitlementLastCheckedAt: _dateTime(values['entitlementLastCheckedAt']),
     syncPolicy:
         _string(values['syncPolicy']) ??

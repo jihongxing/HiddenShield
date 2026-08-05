@@ -1,14 +1,15 @@
 use crate::schema::{
-    AccountDevicesResponse, AuthChallengeRequest, AuthChallengeResponse, AuthLogoutRequest,
-    AuthLogoutResponse, AuthRefreshRequest, AuthSessionRequest, CloudAccountSession,
-    CloudSyncBatchRequest, CloudSyncBatchResult, CloudSyncChangesResult, ContinueAccountRequest,
-    RevokeDeviceResponse, WatermarkIdConfirmRequest, WatermarkIdReconcileRequest,
-    WatermarkIdRegistryResponse, WatermarkIdReissueRequest, WatermarkIdReissueResponse,
-    WatermarkIdReserveRequest,
+    AccountDevice, AccountDevicesResponse, AuthChallengeRequest, AuthChallengeResponse,
+    AuthLogoutRequest, AuthLogoutResponse, AuthRefreshRequest, AuthSessionRequest,
+    CloudAccountSession, CloudAccountSnapshot, CloudEntitlement, CloudSyncBatchRequest,
+    CloudSyncBatchResult, CloudSyncChangesResult, ContinueAccountRequest, RevokeDeviceResponse,
+    SyncPreferencesRequest, SyncPreferencesResponse, UpdateDeviceRequest,
+    WatermarkIdConfirmRequest, WatermarkIdReconcileRequest, WatermarkIdRegistryResponse,
+    WatermarkIdReissueRequest, WatermarkIdReissueResponse, WatermarkIdReserveRequest,
 };
 use crate::storage::{Storage, StorageError};
 
-pub trait AuthRepository {
+pub trait AuthRepository: Send + Sync {
     fn continue_account(
         &self,
         request: &ContinueAccountRequest,
@@ -34,16 +35,40 @@ pub trait AuthRepository {
         request: &AuthLogoutRequest,
     ) -> Result<AuthLogoutResponse, StorageError>;
 
+    fn current_account_snapshot(
+        &self,
+        access_token: &str,
+    ) -> Result<CloudAccountSnapshot, StorageError>;
+
+    fn update_sync_preferences(
+        &self,
+        access_token: &str,
+        request: &SyncPreferencesRequest,
+    ) -> Result<SyncPreferencesResponse, StorageError>;
+
     fn list_devices(&self, access_token: &str) -> Result<AccountDevicesResponse, StorageError>;
+
+    fn update_device(
+        &self,
+        access_token: &str,
+        device_id: &str,
+        request: &UpdateDeviceRequest,
+    ) -> Result<AccountDevice, StorageError>;
 
     fn revoke_device(
         &self,
         access_token: &str,
         device_id: &str,
     ) -> Result<RevokeDeviceResponse, StorageError>;
+
+    fn grant_cloud_sync_for_qa(
+        &self,
+        account_id: &str,
+        workspace_id: &str,
+    ) -> Result<CloudEntitlement, StorageError>;
 }
 
-pub trait CloudSyncRepository {
+pub trait CloudSyncRepository: Send + Sync {
     fn push_cloud_events_batch(
         &self,
         access_token: &str,
@@ -58,7 +83,7 @@ pub trait CloudSyncRepository {
     ) -> Result<CloudSyncChangesResult, StorageError>;
 }
 
-pub trait WatermarkRegistryRepository {
+pub trait WatermarkRegistryRepository: Send + Sync {
     fn reserve_watermark_id(
         &self,
         access_token: &str,
@@ -120,8 +145,32 @@ impl AuthRepository for Storage {
         Storage::logout_auth_session(self, request)
     }
 
+    fn current_account_snapshot(
+        &self,
+        access_token: &str,
+    ) -> Result<CloudAccountSnapshot, StorageError> {
+        Storage::current_account_snapshot(self, access_token)
+    }
+
+    fn update_sync_preferences(
+        &self,
+        access_token: &str,
+        request: &SyncPreferencesRequest,
+    ) -> Result<SyncPreferencesResponse, StorageError> {
+        Storage::update_sync_preferences(self, access_token, request)
+    }
+
     fn list_devices(&self, access_token: &str) -> Result<AccountDevicesResponse, StorageError> {
         Storage::list_devices(self, access_token)
+    }
+
+    fn update_device(
+        &self,
+        access_token: &str,
+        device_id: &str,
+        request: &UpdateDeviceRequest,
+    ) -> Result<AccountDevice, StorageError> {
+        Storage::update_device(self, access_token, device_id, request)
     }
 
     fn revoke_device(
@@ -130,6 +179,16 @@ impl AuthRepository for Storage {
         device_id: &str,
     ) -> Result<RevokeDeviceResponse, StorageError> {
         Storage::revoke_device(self, access_token, device_id)
+    }
+
+    fn grant_cloud_sync_for_qa(
+        &self,
+        _account_id: &str,
+        _workspace_id: &str,
+    ) -> Result<CloudEntitlement, StorageError> {
+        Err(StorageError::BadRequest(
+            "qa_entitlement_grant_requires_postgres_http_gate".to_string(),
+        ))
     }
 }
 

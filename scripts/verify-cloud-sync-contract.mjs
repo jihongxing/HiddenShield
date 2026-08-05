@@ -37,9 +37,15 @@ assert(Boolean(session.body.workspace?.id), 'auth/sessions must return workspace
 assert(Boolean(session.body.device?.id), 'auth/sessions must return device.id');
 assert(Boolean(session.body.creatorProfile?.id), 'auth/sessions must return creatorProfile.id');
 assert(
-  session.body.entitlement?.features?.cloud_sync === false,
-  'free entitlement must disable cloud_sync',
+  session.body.entitlement?.features?.batch_processing === false,
+  'unpaid entitlement must disable batch_processing',
 );
+assert(
+  session.body.entitlement?.features?.cloud_sync === false,
+  'unpaid entitlement must disable cloud_sync',
+);
+assert(session.body.entitlement?.planKey === 'base_unpaid', 'unpaid entitlement must expose base_unpaid');
+assert(session.body.entitlement?.planLabel === '未付费', 'unpaid entitlement must expose 未付费');
 assert(
   session.body.syncPolicy === 'blocked_by_entitlement',
   'free auth session must return syncPolicy=blocked_by_entitlement',
@@ -75,38 +81,7 @@ const freeResume = await request(
 );
 assert(freeResume.status === 403, 'free auto cloud sync resume must return 403');
 
-const payment = await request(
-  'POST',
-  '/v1/billing/payment-sessions',
-  {
-    accountId: session.body.account.id,
-    workspaceId: session.body.workspace.id,
-    planCode: 'creator',
-    billingCycle: 'monthly',
-    preferredProvider: 'fixture',
-  },
-  token,
-);
-assert(payment.status === 200, 'fixture creator payment session must return 200');
-const fixtureEvent = await request('POST', '/v1/billing/webhooks/fixture', {
-  providerEventId: `fixture-cloud-sync-${Date.now()}`,
-  providerOrderId: payment.body.providerOrderId,
-  providerTransactionId: `fixture-txn-${Date.now()}`,
-  accountId: session.body.account.id,
-  workspaceId: session.body.workspace.id,
-  planCode: 'creator',
-  billingCycle: 'monthly',
-  amountCents: 1900,
-  currency: 'CNY',
-  eventType: 'payment.succeeded',
-  occurredAt: new Date().toISOString(),
-  rawPayloadJson: {
-    provider: 'fixture',
-    eventType: 'payment.succeeded',
-    providerOrderId: payment.body.providerOrderId,
-  },
-});
-assert(fixtureEvent.status === 200, 'fixture creator payment event must return 200');
+await upgradeToCreator(session.body, token);
 
 const creatorSession = await request('POST', '/v1/auth/sessions', {
   identifier,
@@ -126,8 +101,20 @@ const creatorSession = await request('POST', '/v1/auth/sessions', {
 });
 assert(creatorSession.status === 200, 'creator auth/sessions must return 200');
 assert(
+  creatorSession.body.entitlement?.features?.batch_processing === true,
+  'image/audio annual entitlement must enable batch_processing',
+);
+assert(
   creatorSession.body.entitlement?.features?.cloud_sync === true,
-  'creator entitlement must enable cloud_sync',
+  'image/audio annual entitlement must enable cloud_sync',
+);
+assert(
+  creatorSession.body.entitlement?.planKey === 'image_audio_annual',
+  'image/audio annual entitlement must expose image_audio_annual',
+);
+assert(
+  creatorSession.body.entitlement?.planLabel === '图片 / 音频年费',
+  'image/audio annual entitlement must expose 图片 / 音频年费',
 );
 assert(
   creatorSession.body.syncPolicy === 'auto_cloud_vault',
@@ -329,6 +316,10 @@ async function request(method, path, body, token) {
   if (token) {
     headers.authorization = `Bearer ${token}`;
   }
+  if (path === '/internal/qa/entitlements/cloud-sync') {
+    headers['x-hiddenshield-internal-token'] =
+      process.env.HIDDENSHIELD_CLOUD_QA_INTERNAL_TOKEN ?? '';
+  }
   let response;
   try {
     response = await fetch(`${endpoint}${path}`, {
@@ -349,6 +340,51 @@ async function request(method, path, body, token) {
     parsed = { raw: text };
   }
   return { status: response.status, body: parsed };
+}
+
+async function upgradeToCreator(session, token) {
+  if (process.env.HIDDENSHIELD_CLOUD_QA_ENTITLEMENT_MODE === 'postgres_http_gate') {
+    const grant = await request('POST', '/internal/qa/entitlements/cloud-sync', {
+      accountId: session.account.id,
+      workspaceId: session.workspace.id,
+    });
+    assert(grant.status === 200, 'PostgreSQL HTTP Gate entitlement grant must return 200');
+    assert(grant.body.features?.cloud_sync === true, 'PostgreSQL HTTP Gate grant must enable cloud_sync');
+    return;
+  }
+
+  const payment = await request(
+    'POST',
+    '/v1/billing/payment-sessions',
+    {
+      accountId: session.account.id,
+      workspaceId: session.workspace.id,
+      planCode: 'creator',
+      billingCycle: 'monthly',
+      preferredProvider: 'fixture',
+    },
+    token,
+  );
+  assert(payment.status === 200, 'fixture creator payment session must return 200');
+  const fixtureEvent = await request('POST', '/v1/billing/webhooks/fixture', {
+    providerEventId: `fixture-cloud-sync-${Date.now()}`,
+    providerOrderId: payment.body.providerOrderId,
+    providerTransactionId: `fixture-txn-${Date.now()}`,
+    accountId: session.account.id,
+    workspaceId: session.workspace.id,
+    planCode: 'creator',
+    billingCycle: 'monthly',
+    amountCents: 1900,
+    currency: 'CNY',
+    eventType: 'payment.succeeded',
+    occurredAt: new Date().toISOString(),
+    rawPayloadJson: {
+      provider: 'fixture',
+      eventType: 'payment.succeeded',
+      providerOrderId: payment.body.providerOrderId,
+    },
+  });
+  assert(fixtureEvent.status === 200, 'fixture creator payment event must return 200');
 }
 
 function assert(condition, message) {

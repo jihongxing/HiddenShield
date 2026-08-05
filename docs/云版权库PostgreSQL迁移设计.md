@@ -1,6 +1,13 @@
 # 云版权库 PostgreSQL 迁移设计
 
 > 多用户云版权库 C1 的当前权威评审见 `docs/云版权库C1_PostgreSQL多租户迁移与并发Harness设计评审.md`。本文保留既有通用 PostgreSQL 迁移、导入和生产切换设计；若与 C1 的 workspace/membership/record projection 或双连接并发要求冲突，以 C1 评审为准。
+## 2026-07-31 P5 Podman staging-equivalent 技术演练
+
+- 新增 `cloud:postgres-p5-podman-rehearsal`，对已迁移的云版权库核心 auth / sync / registry 执行正式 HTTP 并发负载、数据库观测和 PITR 恢复。
+- 本次负载为 8 账号、16 设备、160 push、160 pull、并发 8，零失败；push / pull p95 分别为 `59.34 ms` / `64.34 ms`。
+- Observability 覆盖 `pg_stat_database`、`pg_stat_statements`、`pg_stat_user_tables`、锁等待和连接池峰值；PITR 使用 base backup、WAL archive 与 `recovery_target_time`，恢复约 `2.51 s`。
+- 本地 Podman artifact 可作为核心主链 staging-equivalent 技术证据，但不能自动批准 cutover；P5 强制 Gate 仍要求 release owner 对 runbook 显式 review 并生成具名人工 signoff。
+- 当前剩余阻塞：release owner 审批与签字。Enterprise、支付、团队和云视频等未进入正式 PostgreSQL Router 的模块继续维持各自迁移与发布 Gate，不得由本次核心演练代替。
 
 更新时间：2026-07-03
 

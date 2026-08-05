@@ -46,6 +46,44 @@
 - 风险：战略愿景中的视频、团队、AI 标识 SDK / API、Registry / Resolver、私有化与信任网络均包含未来或未外部开放能力；正式对外图片若不使用阶段图例，可能被误读为当前已上线或已满足法规。
 - 下一商业化任务：创始人评审并冻结线框稿中的六项决策，重点确认“原创权利身份 + AI 来源身份”双主线和“内容团队近期收入 + AI 标识第二增长曲线”，随后生成内部战略图与带阶段图例的对外版本。
 
+## 2026-07-31 云版权库核心数据主链外部配置 / 审批解阻完成
+
+状态：`核心 auth / sync / registry PostgreSQL 主链代码与 production readiness Gate 全部通过`
+
+- Release owner `jihx` 已审阅正式 PostgreSQL HTTP、Podman 负载、PITR 恢复、observability 与切换 / 回滚 runbook 五类证据，并完成具名人工签署。
+- 具名审批 artifacts：`tmp-ui-qa/postgres-p5-podman/cloud-postgres-p5-release-owner-1785471686131-cutover-runbook.json`、`tmp-ui-qa/postgres-p5-podman/cloud-postgres-p5-release-owner-1785471686131-release-owner-signoff.json`。
+- `HIDDENSHIELD_POSTGRES_REQUIRE_PRODUCTION_READY=1 npm run cloud:postgres-production-readiness-gate` 已由审批脚本自动强制运行并通过，最终证据为 `tmp-ui-qa/postgres-production-readiness/cloud-postgres-production-readiness-gate-1785471686743.json`。
+- 审批首次执行暴露 Windows PowerShell 5 `Set-Content -Encoding UTF8` 写入 BOM、Node 严格 JSON 解析失败的可移植性问题；审批脚本已改为使用 `System.Text.UTF8Encoding($false)` 输出无 BOM JSON，复跑通过。
+- 正式完成范围固定为 `cloud_copyright_core_auth_sync_registry`。可以把“云版权库核心数据主链”标记为外部配置 / 审批解阻完成，不再把 auth、device、cloud sync、watermark registry 的 PostgreSQL repository、正式 HTTP 注入、合同可移植性或 release owner 审批列为代码阻塞。
+- 本结论不等于生产云版权库产品已上线，不开放独立云版权库 UI、支付、团队工作区、企业集成、云视频、公开 API、跨区容灾或生产 SLA；`productionDatabaseAllowed` 继续保持 `false`。
+- 下一商业化任务：先执行 `docs/商业套餐与权益全局语义设计.md` 的 P1 DTO 与合同对齐。桌面套餐固定为“未付费 / 图片 / 音频年费”，图片 / 音频年费的有效年度授权内含 `batch_processing` 与 `cloud_sync`；独立云版权库 UI 暂停，待 P1 完成后再恢复。
+
+## 2026-07-31 云版权库 P5 Podman 技术演练（审批前快照）
+
+状态：`负载 / observability / PITR 技术演练通过；当时仅 release owner 审批与签字阻塞，现已由同日最终 Gate 解阻`
+
+- 新增 `cloud:postgres-p5-podman-rehearsal`，使用本机 Podman 5.7.1 与缓存镜像 `localhost/postgres:16` 启动 staging-equivalent 单节点 PostgreSQL，并以正式 PostgreSQL HTTP 后端执行云版权库核心 auth / sync / registry 技术演练。
+- 负载结果：8 个账号、16 个设备、20 轮、160 次 push 与 160 次 pull，并发 8；失败 0，成功率 100%；push p50 `37.50 ms`、p95 `59.34 ms`，pull p50 `38.19 ms`、p95 `64.34 ms`，峰值数据库连接 3 / 配置池上限 10。
+- Observability 结果：`pg_stat_statements` 可用，主动制造并观测到 1 个锁等待，deadlock 为 0，临时文件为 0；保存数据库、热点 SQL、表访问和连接池快照。
+- PITR 结果：使用 `pg_basebackup + archive_mode + archive_command + recovery_target_time` 完成时间点恢复；恢复约 `2.51 s`，目标点前 marker 存在、目标点后 marker 被排除，恢复完成后自动 promote。
+- 技术 artifacts：`tmp-ui-qa/postgres-p5-podman/cloud-postgres-p5-podman-1785470518287-load.json`、`...-observability.json`、`...-restore.json`。它们的 `environmentClass=local_podman_staging_equivalent`，只覆盖 `cloud_copyright_core_auth_sync_registry`，不代表 Enterprise、支付、团队、云视频、公开 API 或生产 SLA。
+- 新增显式 release owner 审批脚本 `scripts/approve-cloud-postgres-p5-release-owner.ps1`。脚本要求人工提供 `SignedBy` 和 `-Approve`，校验正式 HTTP、负载、恢复、监控与 runbook 后才生成通过的 runbook/signoff，并自动运行强制 readiness Gate；自动化不得代替人类签字。
+- 强制 Gate 在该审批前快照中已接受正式 HTTP、负载、恢复和 observability，当时只剩 `cutoverRunbookArtifact` 的 release owner review 与 `releaseOwnerSignoffArtifact` 的人工签字阻塞。历史 blocked artifact：`tmp-ui-qa/postgres-production-readiness/cloud-postgres-production-readiness-gate-1785470658371.json`；最终状态以同日通过的 `cloud-postgres-production-readiness-gate-1785471686743.json` 为准。
+- 风险：本地单节点 Podman 不证明云厂商跨区容灾、生产网络、真实告警投递或全商业后端 PostgreSQL 化；本次只允许作为云版权库核心主链的 staging-equivalent 技术验收。
+- 后续状态：release owner `jihx` 已完成具名审批，核心数据主链已标记为外部配置 / 审批解阻完成；下一任务转为 `docs/独立云版权库UI产品任务.md`。
+
+## 2026-07-31 云版权库正式 PostgreSQL HTTP 启动 Gate
+
+状态：`仓库内正式主链完成；真实 staging / 运维 / 签字外部证据阻塞`
+
+- 正式 `hiddenshield-feedback-backend` 现可在 `--database-backend postgres` 下启动独立 PostgreSQL Router；auth、cloud sync、watermark registry 三组 repository 注入正式 HTTP 路由，不再经过会返回 `PostgresAdapterNotImplemented` 的 SQLite `Storage` 启动链。
+- PostgreSQL 模式只开放已迁移的 health / auth / device / sync / watermark registry 路由；支付、团队、云视频等尚未迁移模块不会通过 SQLite sidecar 伪装为 PostgreSQL 生产能力。Creator 权益 grant 仅在显式 `HIDDENSHIELD_POSTGRES_HTTP_QA_ENTITLEMENT_GRANT=1` Gate 环境开放。
+- 新增 `cloud:postgres-http-gate`：优先使用本地 PostgreSQL 16 镜像或受控 disposable URL，重置 P1 schema、构建并启动正式后端二进制，原样执行 `cloud:contract`、`cloud:e2e`，再执行 watermark registry reserve / confirm HTTP 往返。
+- Gate 实跑修复两处 SQLite / PostgreSQL 语义漂移：Free `syncPolicy` 统一为 `blocked_by_entitlement`，Creator 自动同步统一为 `auto_cloud_vault`；Free 用户恢复自动同步继续返回 403。
+- 验证：`cloud:db-portability-contract` 通过；`cloud:postgres-http-gate` 通过，最新 artifact 为 `tmp-ui-qa/postgres-http-gate/cloud-postgres-http-gate-1785467985680.json`，包含正式二进制启动、同脚本 contract/E2E 与 registry HTTP round trip 六项通过证据。
+- P5 production readiness 现新增 `HIDDENSHIELD_POSTGRES_FORMAL_HTTP_GATE_ARTIFACT` 硬依赖。仓库内正式 auth / sync / registry PostgreSQL HTTP 代码不再是阻塞项；仍需外部提供 staging 负载、备份 / PITR 恢复、observability、切换 runbook 和 release owner 签字。该结论不代表独立云版权库 UI、完整商业后端 PostgreSQL 化或生产开放已经完成。
+- 下一商业化任务：由 release owner 使用真实 staging PostgreSQL 执行负载与恢复演练，并将本次 formal HTTP artifact 与四类运维 artifact、签字 artifact 一并注入 `HIDDENSHIELD_POSTGRES_REQUIRE_PRODUCTION_READY=1 npm run cloud:postgres-production-readiness-gate`。
+
 当前桌面发布状态：`v0.1.3` RC / GA Gate `PASSED`（2026-07-26）；真实支付与公共信任层仍未进入当前发布范围。
 
 ## 2026-07-26 中文社交媒体宣传片
@@ -305,6 +343,7 @@
 | 图片 / 音频单文件处理与验证 | 可用 | 可用 |
 | 本地版权库 | 可用 | 可用 |
 | 图片 / 音频批量处理 | 不可用 | 可用 |
+| metadata-only 云同步 | 不可用 | 可用；服务端校验有效年度授权与 `cloud_sync=true` |
 | 正式报告 | 按记录单独购买 | 按记录单独购买 |
 | HSLIC1 | 无 | 一年期激活 / 按年续期 |
 | 视频 | 当前不可用 | 当前不可用；未来独立收费 |
@@ -314,7 +353,7 @@
 - `report_export` 不属于未付费或年度基础权益，不能由 HSLIC1、年度在线订阅或历史 Creator 映射直接授予。
 - 报告授权必须是记录级 purchase grant；已付年度基础权益也不能绕过逐份购买。
 - `creator_offline` 仅作为 HSLIC1 V1 token 的兼容产品代码保留，用户界面必须显示为“图片 / 音频年费授权”。
-- 云同步及未来云能力继续由服务端权威决定，不得由离线许可证开放。
+- 在线云同步是年度授权内含权益，由服务端校验有效年度授权与 `cloud_sync=true`；HSLIC1 离线许可证只开放本地批量，不能在无服务端授权时单独开放云同步。团队、API、云端批量和视频继续是独立未来能力。
 - 视频当前隐藏且不可售；恢复时必须建立独立商品、权益、计费和发布 Gate。
 
 ### 桌面端基线对齐
@@ -408,12 +447,12 @@
 
 ### 1.1 产品边界
 
-- 单文件本地图片 / 音频写入与验证是 Free 入口。
-- 本地批量处理是 Creator 订阅权益。
-- Free 不提供小批量试用。
-- 云同步是 Creator 订阅权益；已登录且 `cloud_sync=true` 的 Creator / Studio / Enterprise 用户应默认自动云同步双端版权库，不再要求手动开启。
-- 正式报告默认是 Creator 订阅权益；Free 用户可按份购买“单份版权详细报告”或“维权证据包”，购买后只解锁对应记录 / 案件的报告，不改变订阅等级。
-- 本版只预留 Studio 团队空间入口、成员权限模型、共享版权库模型和团队审计模型；真实团队成员管理、共享操作和团队报告后置。
+- 单文件本地图片 / 音频写入与验证是“未付费”入口。
+- 图片 / 音频本地批量处理和 metadata-only 云同步是“图片 / 音频年费”的有效年度授权内含权益。
+- 未付费不提供小批量试用或云同步。
+- 已登录且年度授权有效、`cloud_sync=true` 的账户应默认自动云同步双端版权库，不再要求手动开启；服务端权威校验不构成第三档个人套餐。
+- 正式报告不属于年度授权；未付费和年度授权用户均可按份购买“单份版权详细报告”或“维权证据包”，购买后只解锁对应记录 / 案件的报告，不改变套餐。
+- 本版只预留团队工作区入口、成员权限模型、共享版权库模型和团队审计模型；真实团队成员管理、共享操作和团队报告后置。
 - 云端视频盲水印是未来高阶能力，采用订阅 + 额度。
 - 云端批量与本地批量分开计费。
 
@@ -441,11 +480,11 @@
 - 审计记录。
 - 同步状态摘要。
 - 版权编号登记元数据：`watermarkUid`、签发模式、登记收据、原作品摘要、保护副本摘要、父编号和版本次数。
-- Creator 自动云同步的版权库内容白名单：版权记录基础字段、验证字段、登记字段、作品声明字段、报告购买授权状态、L2 不可逆指纹存证字段。
+- 年度授权自动云同步的版权库内容白名单：版权记录基础字段、验证字段、登记字段、作品声明字段、报告购买授权状态、L2 不可逆指纹存证字段。
 
 ### 1.3 计费边界
 
-- 本地批量不按次扣点，作为 Creator 订阅期内权益。
+- 本地批量不按次扣点，作为图片 / 音频年费有效期内权益。
 - 云端视频按处理分钟数或合同额度计费。
 - 云端任务失败、取消、崩溃、格式不支持不扣额度。
 - 成功完成的云端任务才入账。
@@ -457,10 +496,10 @@
 | Phase 0 | 商业模式与 Roadmap 固化 | 已完成 | 统一商业化执行口径 |
 | Phase 1 | 权益模型与后端契约 | 已完成 | 定义订阅、功能、额度和账本 API |
 | Phase 2 | 前端订阅与权益页面 | 已完成 | 桌面端和移动端展示一致的套餐、权益和升级入口 |
-| Phase 3 | 本地批量订阅门禁 | 已完成 | Free 阻止批量执行，Creator 开放本地批量 |
-| Phase 4 | 云同步订阅门禁 | 已完成 | 将云同步绑定到 Creator 权益 |
-| Phase 5 | 正式报告订阅门禁 | 已完成 | 将正式报告和批量摘要绑定到 Creator 权益 |
-| Phase 6 | Studio 团队能力预留 | 已完成 | 团队空间、席位、共享版权库和审计模型 |
+| Phase 3 | 年费本地批量门禁 | 已完成 | 未付费阻止批量，图片 / 音频年费开放本地批量 |
+| Phase 4 | 年费云同步门禁 | 已完成 | 未付费阻止云同步，图片 / 音频年费开放 metadata-only 云同步 |
+| Phase 5 | 单份报告商品门禁 | 已完成 | 报告按记录 / 案件购买，不随套餐自动开放 |
+| Phase 6 | 团队工作区能力预留 | 已完成 | 团队空间、席位、共享版权库和审计模型 |
 | Phase 7 | 视频云端能力预留 | 已完成 | 云端视频任务、分钟额度、队列和账本模型 |
 | Phase 8 | 支付与订阅状态闭环 | 阶段性完成 | 支付、试用、宽限期、过期回收 |
 | Phase 9 | 商业化验收与上线 | 阶段性完成 | 端到端验证、文案、合规和指标 |
@@ -470,12 +509,12 @@
 本次状态收口以“本阶段目标是否已经由代码、契约脚本或文档固定”为准：
 
 - Phase 0-3 已完成，不再挂未完成项。
-- Phase 4 已完成的是“云同步订阅门禁 + 正式 `auth/sessions` 路径下的 Creator 默认自动云同步 + 当前设备暂停 / 恢复自动同步”：Free 不能启用正式云同步，后端同步 API 对 Free push / pull 返回 403；Creator / Studio / Enterprise 在 `auth/sessions`、`me`、refresh 中返回 `syncPolicy=auto_cloud_vault`，用户暂停后保持 `manual_local_only`；双端登录或权益升级后自动 pull / flush / pull；`PATCH /v1/me/sync-preferences` 可把当前设备切换为 `manual_local_only` 或恢复自动同步。真实双设备截图 QA 归入 `docs/用户体系与登录注册体系规划.md` 后续实施。订阅过期、恢复订阅、宽限期属于 Phase 8 支付与订阅状态生命周期。
-- Phase 5 已完成的是“Creator 正式报告门禁与双端报告能力”。Studio 团队报告不再作为 Phase 5 未完成项，归入 Studio 团队能力后续上线验收。
-- Phase 6 已完成的是“Studio 团队能力预留”：模型、入口、权益门禁和不暴露未完成能力。真实团队成员管理、共享版权库操作和团队报告不属于本阶段上线范围。
+- Phase 4 已完成的是“图片 / 音频年费云同步门禁 + 正式 `auth/sessions` 路径下默认自动云同步 + 当前设备暂停 / 恢复自动同步”：未付费不能启用正式云同步，后端同步 API 对未付费 push / pull 返回 403；图片 / 音频年费的有效年度授权映射 `cloud_sync=true`，在 `auth/sessions`、`me`、refresh 中返回 `syncPolicy=auto_cloud_vault`，用户暂停后保持 `manual_local_only`；双端登录或年费激活后自动 pull / flush / pull；`PATCH /v1/me/sync-preferences` 可把当前设备切换为 `manual_local_only` 或恢复自动同步。真实双设备截图 QA 归入 `docs/用户体系与登录注册体系规划.md` 后续实施。到期、恢复和宽限期属于 Phase 8 支付与授权状态生命周期。
+- Phase 5 已完成的是“单份报告商品门禁与双端报告能力”。报告授权绑定记录 / 案件 purchase grant，不由年度授权、历史 Creator 或组织身份自动授予；团队报告归入团队工作区后续上线验收。
+- Phase 6 已完成的是“团队工作区能力预留”：模型、入口、权益门禁和不暴露未完成能力。真实团队成员管理、共享版权库操作和团队报告不属于本阶段上线范围，也不是桌面第三档套餐。
 - Phase 7 已完成的是“L1 视频音轨水印可用 + L2 视频指纹存证闭环”。L3 端云协同画面盲水印已进入 release candidate 准备：独立 `watermark:l3-video-visual-release-gate` 已强制跑完整 24 个 2K 样本池并过线，后端任务成功态已拆到 trusted worker/admin completion API 并绑定完整自检收据，受控 fixture worker 已能调用 `watermark-core` 完成策略、写入、自检和 completion；真实 worker first-pass 已完成受控上传清单解析、FFmpeg sandbox、registry-reserved UID 与 core payload 绑定、claim / lease / replay protection 和失败归因。但真实用户视频对象读取、真实输出封装、用户可下载产物、桌面 / 移动正式入口、正式报告、版权库、跨端验证和用户可见 SLA 仍未完成。
 - Phase 7 当前承诺的视频容器口径收口到 MP4 / MOV / MKV / WebM；AVI / M4V 仅保留为北极星目标，不写成当前承诺。L1 支持多音轨但静音 / 极短 / 低于 30 秒视频明确拒绝，L2 继续作为不可逆画面指纹存证。
-- Phase 8 已阶段性完成：支付 provider 抽象层、首期微信支付、订阅 webhook、entitlement 更新链路、payment session、查单补偿和双端入口已由代码、文档和合同脚本固定。Free 单份报告付费已完成后端 fixture 购买会话与授权核销，并已接入双端版权库购买入口与记录级导出核销；后端已完成真实微信一次性商品下单、查单 / webhook 授权和退款撤销授权的可测试核心。真实微信商户联调、真实支付回调验收、退款撤销运行态验收和双端付费 QA 属于生产上线准备。
+- Phase 8 已阶段性完成：支付 provider 抽象层、首期微信支付、授权 webhook、entitlement 更新链路、payment session、查单补偿和双端入口已由代码、文档和合同脚本固定。未付费用户的单份报告付费已完成后端 fixture 购买会话与授权核销，并已接入双端版权库购买入口与记录级导出核销；后端已完成真实微信一次性商品下单、查单 / webhook 授权和退款撤销授权的可测试核心。真实微信商户联调、真实支付回调验收、退款撤销运行态验收和双端付费 QA 属于生产上线准备。
 - Phase 9 已阶段性完成：商业化验收 checklist、双端 QA 记录、法务条款草案、商业指标看板、管理员 token 鉴权和访问审计已落地。法务审阅与生产 token 配置属于正式上线准备。
 
 `Roadmap 回写记录` 保留当时任务推进状态，不作为当前阶段状态判断依据；当前状态以阶段总览和各 Phase 的“状态 / 当前边界 / 下一步任务”为准。
@@ -495,22 +534,22 @@
 - `npm run cloud:contract` 需要已有云端后端监听 `127.0.0.1:43188`，单独执行时如果未启动后端会失败；状态收口以会自动启动临时后端的 `npm run cloud:ci` 为准。
 - `npm run cloud-video:ci` 与 `npm run cloud:ci` 都默认使用 `127.0.0.1:43188`，不能并行执行；串行执行已通过。
 
-## 3. Phase 0：商业模式与 Roadmap 固化
+## 3. Phase 0：商业模式与 Roadmap 固化（历史四档模型，已由 2026-07-31 两档设计取代）
 
 状态：已完成
 
 目标：
 
 - 固化商业模式。
-- 固化本地批量作为 Creator 订阅权益。
+- 固化本地批量商业权益；当前规范已更新为图片 / 音频年费的有效年度授权内含本地批量与云同步。
 - 固化后续任务必须回写 Roadmap。
 - 更新 AGENTS.md。
 
 任务：
 
 - [x] 编写 `docs/商业模式规划.md`。
-- [x] 明确 Free / Creator / Studio / Enterprise 分层。
-- [x] 明确本地批量不提供 Free 小批量试用。
+- [x] 历史上曾明确 Free / Creator / Studio / Enterprise 分层；现已由 `docs/商业套餐与权益全局语义设计.md` 取代。
+- [x] 明确本地批量不向未付费提供小批量试用。
 - [x] 编写 `docs/商业化落地Roadmap.md`。
 - [x] 更新 `AGENTS.md`，要求商业化任务按 Roadmap 实施并回写。
 
@@ -522,8 +561,8 @@
 验收结果：
 
 - 已完成。商业化相关任务必须按 Roadmap 执行并回写。
-- 已明确 Free / Creator / Studio / Enterprise 术语。
-- 已明确本地批量处理是 Creator 订阅权益，Free 不提供小批量试用。
+- 当前已明确用户可见套餐只有“未付费 / 图片 / 音频年费”，历史四档术语仅兼容保留。
+- 已明确本地批量与 metadata-only 云同步是年度授权权益，未付费不提供小批量试用或云同步。
 
 ## 4. Phase 1：权益模型与后端契约
 
@@ -2749,3 +2788,35 @@ Creator 行为：
 - 商业边界：生产云版权库、团队协作、端侧正式 transport、internal/public API、公开 SDK、RLS runtime、production role/credential 和 SLA 全部继续关闭。
 - 恢复入口：`docs/云版权库阶段性收尾与外部Gate交接.md`；只有 external readiness 为 `ready_for_review` 才能评审 `0024` SQL。
 - 下一商业化任务：暂停云版权库任务族，切换到用户指定的新任务族。
+## 2026-07-31 P1 两档 Entitlement DTO 与合同对齐
+
+- 状态：`代码与 SQLite / disposable PostgreSQL 合同 Gate 已完成`。
+- 桌面、移动、后端和 mock 统一为用户可见两档：`未付费` 与 `图片 / 音频年费`；保留 `free / creator / studio / enterprise` 作为 legacy 技术码，不再作为新套餐文案。
+- 年费权益合同固定为 `batch_processing=true`、`cloud_sync=true`、`report_export=false`；正式报告继续按记录或案件独立购买。
+- 新增四项真实 HTTP 合同断言：未付费无批量、未付费无云同步、年费有批量、年费有云同步；同时断言 `planKey / planLabel`。
+- 验证通过：`npm run build`、`cargo check --manifest-path feedback-backend/Cargo.toml --features postgres`、`cargo check --manifest-path src-tauri/Cargo.toml`、`npm run cloud:ci`、`npm run cloud:postgres-http-gate`、`git diff --check`。
+- 风险：本机 Dart / Flutter 命令挂起，移动端静态分析与定向测试证据待可用 Flutter 环境补齐；该风险不改变后端 HTTP 合同已通过的事实。
+
+下一商业化任务：
+
+- 实施 P2 授权去 tier 化，优先审计批量、报告、云同步、团队、API 与云视频运行时中对 `creator / studio / enterprise` 的直接判断；独立云版权库 UI 继续暂停。
+
+## 2026-08-01 苹果实况照片未来产品承诺登记
+
+- 状态：`future_product_commitment_recorded_implementation_blocked`。
+- 已明确将苹果实况照片定义为静态照片、配对短视频和关联元数据组成的复合媒体资产，不是新的普通图片格式。
+- 未来产品方向是对完整 Live Photo 进行图片、视频画面及适用音轨保护，并保留 Apple Photos 中的关联、关键照片和播放能力。
+- 当前商业分类仍为 `明确不能承诺`：视频画面水印尚未达到生产标准，HEIC / HEIF、复合资产 Schema、Apple 回导和跨端 Gate 均未完成。
+- 当前可提供的唯一降级路径是保护用户导出的静态 PNG / JPEG / WebP；不得销售或展示为“支持 Live Photo”。
+- 已建立独立任务 `docs/苹果实况照片复合媒体保护产品任务.md`，该任务在视频生产 Gate 前不进入实施排期。
+
+下一商业化任务：
+
+- 继续完成既定 P2 授权去 tier 化；Live Photo 任务保持暂停，待视频画面水印生产 Gate 通过后从只读 fixture 与复合资产 Schema 开始。
+## 2026-08-05 PostgreSQL HTTP 内部 Gate 安全收口
+
+- 状态：`内部/staging Gate 已增加 fail-closed 约束；生产仍未解锁`。
+- 已完成：QA entitlement grant 端点要求专用内部 token；QA 开关开启时服务仅允许 loopback bind；生产 PostgreSQL 启动必须提供通过校验的 production readiness artifact，且 artifact 明确允许生产数据库，否则启动失败。
+- 验证：`cargo fmt --manifest-path feedback-backend/Cargo.toml -- --check`、`cargo check --manifest-path feedback-backend/Cargo.toml --features postgres` 已通过；正式 HTTP Gate 与 production readiness Gate 待本轮复跑。
+- 风险：当前 readiness artifact 默认仍保持 `productionDatabaseAllowed=false`，因此不会打开生产云版权库；真实 staging、备份恢复、观测、切换 runbook 和 release-owner signoff 仍是必要外部证据。
+- 下一步：在隔离 PostgreSQL staging 环境注入真实内部 token、完成 readiness artifacts 后，复跑 production 启动演练；未完成前不得合入生产路径。

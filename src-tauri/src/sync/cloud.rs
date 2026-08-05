@@ -128,8 +128,32 @@ pub struct CloudEntitlement {
     pub id: String,
     pub plan_name: Option<String>,
     pub plan_code: String,
+    #[serde(default)]
+    pub plan_key: String,
+    #[serde(default)]
+    pub plan_label: String,
     pub status: String,
     pub features: serde_json::Value,
+}
+
+impl CloudEntitlement {
+    fn normalized_plan_key(&self) -> String {
+        if !self.plan_key.trim().is_empty() {
+            return self.plan_key.clone();
+        }
+        entitlement_plan_presentation(&self.plan_code, &self.features)
+            .0
+            .to_string()
+    }
+
+    fn normalized_plan_label(&self) -> String {
+        if !self.plan_label.trim().is_empty() {
+            return self.plan_label.clone();
+        }
+        entitlement_plan_presentation(&self.plan_code, &self.features)
+            .1
+            .to_string()
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -720,6 +744,8 @@ pub struct DesktopCloudSyncProfile {
     pub entitlement_label: String,
     pub entitlement_status: String,
     pub entitlement_plan_code: String,
+    #[serde(default)]
+    pub entitlement_plan_key: String,
     pub entitlement_features: serde_json::Value,
     #[serde(default)]
     pub sync_policy: String,
@@ -729,11 +755,8 @@ pub struct DesktopCloudSyncProfile {
 
 impl DesktopCloudSyncProfile {
     pub fn from_session(base_url: &str, session: CloudAccountSession) -> Self {
-        let entitlement_label = session
-            .entitlement
-            .plan_name
-            .clone()
-            .unwrap_or_else(|| session.entitlement.plan_code.clone());
+        let entitlement_label = session.entitlement.normalized_plan_label();
+        let entitlement_plan_key = session.entitlement.normalized_plan_key();
         Self {
             cloud_base_url: base_url.trim().trim_end_matches('/').to_string(),
             account_id: session.account.id,
@@ -751,6 +774,7 @@ impl DesktopCloudSyncProfile {
             entitlement_label,
             entitlement_status: session.entitlement.status,
             entitlement_plan_code: session.entitlement.plan_code,
+            entitlement_plan_key,
             sync_policy: normalized_sync_policy(
                 &session.sync_policy,
                 &session.entitlement.features,
@@ -762,6 +786,8 @@ impl DesktopCloudSyncProfile {
     }
 
     pub fn apply_snapshot(&mut self, snapshot: CloudAccountSnapshot) {
+        let entitlement_label = snapshot.entitlement.normalized_plan_label();
+        let entitlement_plan_key = snapshot.entitlement.normalized_plan_key();
         self.account_id = snapshot.account.id;
         self.account_label = snapshot.account.display_name;
         self.workspace_id = snapshot.workspace.id;
@@ -772,10 +798,8 @@ impl DesktopCloudSyncProfile {
         self.creator_profile_id = snapshot.creator_profile.id;
         self.creator_display_name = snapshot.creator_profile.display_name;
         self.entitlement_id = snapshot.entitlement.id;
-        self.entitlement_label = snapshot
-            .entitlement
-            .plan_name
-            .unwrap_or_else(|| snapshot.entitlement.plan_code.clone());
+        self.entitlement_label = entitlement_label;
+        self.entitlement_plan_key = entitlement_plan_key;
         self.entitlement_status = snapshot.entitlement.status;
         self.entitlement_plan_code = snapshot.entitlement.plan_code;
         self.sync_policy =
@@ -790,10 +814,11 @@ impl DesktopCloudSyncProfile {
     }
 
     pub fn apply_entitlement(&mut self, entitlement: CloudEntitlement) {
+        let entitlement_label = entitlement.normalized_plan_label();
+        let entitlement_plan_key = entitlement.normalized_plan_key();
         self.entitlement_id = entitlement.id;
-        self.entitlement_label = entitlement
-            .plan_name
-            .unwrap_or_else(|| entitlement.plan_code.clone());
+        self.entitlement_label = entitlement_label;
+        self.entitlement_plan_key = entitlement_plan_key;
         self.entitlement_status = entitlement.status;
         self.entitlement_plan_code = entitlement.plan_code;
         self.entitlement_features = entitlement.features;
@@ -2007,6 +2032,30 @@ fn finish_sha256(hasher: Sha256) -> String {
 
 fn desktop_record_kind(record: &VaultRecord) -> &'static str {
     queries::infer_vault_record_file_type(record)
+}
+
+fn entitlement_plan_presentation(
+    plan_code: &str,
+    features: &serde_json::Value,
+) -> (&'static str, &'static str) {
+    let has_annual_features = features
+        .get("batch_processing")
+        .and_then(serde_json::Value::as_bool)
+        == Some(true)
+        && features
+            .get("cloud_sync")
+            .and_then(serde_json::Value::as_bool)
+            == Some(true);
+    if has_annual_features
+        || matches!(
+            plan_code.trim().to_ascii_lowercase().as_str(),
+            "creator" | "studio" | "enterprise"
+        )
+    {
+        ("image_audio_annual", "图片 / 音频年费")
+    } else {
+        ("base_unpaid", "未付费")
+    }
 }
 
 pub fn load_desktop_cloud_sync_profile(app_data_dir: &Path) -> Option<DesktopCloudSyncProfile> {
