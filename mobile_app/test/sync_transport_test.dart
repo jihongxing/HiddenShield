@@ -27,7 +27,7 @@ void main() {
         },
         'entitlement': {
           'id': 'ent-1',
-          'planName': '免费版',
+          'planName': '未付费',
           'planCode': 'free',
           'status': 'free',
           'features': {
@@ -88,7 +88,7 @@ void main() {
     expect(profile.entitlementFeatures['cloud_sync'], isFalse);
     expect(profile.entitlementFeatures['report_export'], isFalse);
     expect(profile.entitlementFeatures['api_access'], isFalse);
-    expect(profile.entitlementLabel, '免费版');
+    expect(profile.entitlementLabel, '未付费');
   });
 
   test(
