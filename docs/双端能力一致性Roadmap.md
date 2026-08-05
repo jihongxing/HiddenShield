@@ -32,6 +32,38 @@
 
 - 正式战略图生成后，逐项检查桌面、移动、云端、AI 生成平台、传播平台和公共 Resolver 图标的状态标识，确保任何未来端点均没有被表现为当前正式支持。
 
+## 2026-07-31 云版权库核心同步主链 Gate 完成
+
+状态：`核心 PostgreSQL 同步合同与 release owner 审批通过；独立云版权库 UI 另行推进`
+
+- Release owner `jihx` 已具名审阅 formal HTTP、负载、PITR、observability 与 runbook，强制 production readiness Gate 最终通过；证据为 `tmp-ui-qa/postgres-production-readiness/cloud-postgres-production-readiness-gate-1785471686743.json`。
+- 桌面 / 移动共用的 auth、device、sync payload、cursor、workspace、权益和 registry 合同没有因审批收口发生变化；当前统一套餐语义为“未付费无云同步、图片 / 音频年费的有效年度授权含 `cloud_sync=true`”，正式完成范围仍为 `cloud_copyright_core_auth_sync_registry`。
+- 当前可把核心数据同步主链标记为外部配置 / 审批解阻完成，但不能把独立云版权库 UI、移动端发布解冻、真实公网网络 QA 或完整云版权库产品标记为完成。
+- 独立 UI 必须共用同一云记录字段和状态词，不得引入桌面专属或移动专属的同步、冲突、登记、公开元数据或报告状态语义；不修改 `watermark-core` payload、版权编号和验证规则。
+- 移动端继续遵守现有发布冻结边界。UI 第一阶段允许先建立共享信息架构、接口模型和可复用状态映射，但形成移动端用户承诺前仍需 Android / iOS 各自页面级 QA 与既有跨端 Gate。
+- 下一双端一致性任务：先按 `docs/商业套餐与权益全局语义设计.md` 完成 P1 entitlement DTO / contract 对齐，覆盖“未付费无云同步、图片 / 音频年费的有效年度授权含云同步、报告 / 团队 / API / 视频不随年费自动开放”；独立云版权库 UI 保持暂停。
+
+## 2026-07-31 云同步 P5 Podman 负载与恢复演练（审批前快照）
+
+状态：`双端同步技术演练通过；当时 release owner 人工审批待完成，现已由同日最终 Gate 解阻`
+
+- 使用正式 PostgreSQL HTTP 后端完成 8 账号 / 16 设备 / 320 次同步操作的并发演练，失败 0；push p95 `59.34 ms`，pull p95 `64.34 ms`。
+- 演练保持桌面 / 移动既有 payload、权益、cursor、workspace 和 device 边界不变；不新增桌面独占或移动端发布承诺。
+- PostgreSQL 观测确认锁等待可见、deadlock 为 0、连接池未饱和；PITR 在目标时间点正确保留前置记录并排除后置记录。
+- 证据范围仅为云版权库核心 auth / sync / registry，本机 Podman 不替代真实设备发布 QA、外网网络条件或独立云版权库 UI 验收。
+- 后续状态：release owner `jihx` 已完成人工审批；页面级同步状态复核并入 `docs/独立云版权库UI产品任务.md` 的个人库只读闭环和跨端发布 Gate。
+
+## 2026-07-31 云同步正式 PostgreSQL HTTP 双端 Gate（P5 审批前快照）
+
+状态：`桌面 / 移动同一同步合同已在正式 PostgreSQL HTTP 服务通过；当时 P5 外部证据待补，现已由同日最终 Gate 解阻`
+
+- 正式后端 PostgreSQL 模式已注入 auth、cloud sync、watermark registry repository；未修改桌面 / 移动同步 payload、版权库字段、游标语义或用户可见同步策略。
+- `cloud:postgres-http-gate` 对正式二进制原样执行 `cloud:contract` 与 `cloud:e2e`，验证 Free 权益拒绝、Creator `auto_cloud_vault`、暂停 / 恢复、桌面写入移动读取、移动写入桌面读取、设备 / workspace 边界和 cursor 往返。
+- 本轮修复 PostgreSQL adapter 的同步策略漂移和 Free 恢复自动同步权益守卫，使其与 SQLite 及双端既有合同一致。
+- 验证 artifact：`tmp-ui-qa/postgres-http-gate/cloud-postgres-http-gate-1785467985680.json`。移动端仍保持当前发布冻结状态；该后端 Gate 不构成新的移动端发布承诺，也不等于独立云版权库 UI 已完成。
+- 风险：真实 staging 延迟、锁等待、恢复时间和跨公网网络条件尚未进入本机 disposable Gate。
+- 下一双端一致性任务：在真实 staging PostgreSQL 上用当前桌面 / Android 安装候选复跑自动同步、暂停 / 恢复和双向记录往返，并把 p50 / p95、失败重试与 cursor 一致性写入 P5 staging load artifact。
+
 当前状态：Windows 桌面 `v0.1.3` RC / GA Gate `PASSED`（2026-07-26）；移动端继续冻结。
 
 ## 2026-07-26 中文宣传片桌面限定边界
@@ -1707,3 +1739,27 @@
 下一双端任务：
 
 - 移动端正式恢复前，任何渠道不得裁掉海报中的 Windows 平台标签和移动端排除说明。
+
+## 2026-07-31 两档 Entitlement DTO 双端对齐
+
+- 桌面与移动统一持久化规范 `planKey`，显示名只使用 `未付费` 与 `图片 / 音频年费`；旧 `planCode` 继续兼容历史数据。
+- 双端对年费的能力解释一致：本地批量与 metadata-only 云同步同时开放，正式报告不随年费自动开放。
+- 移动离线授权已收窄为只开放本地 `batch_processing`，不再合并 `report_export`，也不单独开放 `cloud_sync`。
+- 后端 SQLite 与 disposable PostgreSQL 的同一套 `cloud:contract / cloud:e2e` 已验证双设备未付费和年费四项权限映射。
+- 风险：本机 Dart / Flutter 工具挂起，移动端 analyze/test 仍需在可用环境补跑；桌面 TypeScript 构建和 Rust 编译已通过。
+
+下一双端一致性任务：
+
+- 在可用 Flutter 环境执行 entitlement DTO、SyncProfile 持久化和离线许可证定向测试，固化 legacy 响应回退 fixture 后再进入 P2。
+
+## 2026-08-01 苹果实况照片复合资产双端边界
+
+- 苹果实况照片被统一定义为静态照片、配对短视频及关联元数据组成的一个逻辑资产，桌面端和移动端不得将其解释为普通单张图片。
+- 未来正式能力必须保证一个端写入后，其他正式支持端能够读取静态、视频画面和适用音轨组件，并解释同一逻辑版权资产标识。
+- 任一平台若只能处理静态帧，必须显示为“导出的静态图片”，不得显示为已保护 Live Photo。
+- 当前桌面和移动端均不得新增“支持实况照片”的用户文案；视频生产 Gate、复合 Schema、真实 Apple fixture 和回导 Gate 未完成。
+- 未来平台限制、HEIC / HEIF 解码差异、MOV 重封装差异和 Apple Photos 回导限制必须在双端发布前显式记录。
+
+下一双端一致性任务：
+
+- Live Photo 保持未来任务；视频画面水印生产 Gate 通过后，先用同一真实 Apple fixture 完成 Desktop / iOS 只读资源识别和配对关系对照，不先实现写入 UI。
