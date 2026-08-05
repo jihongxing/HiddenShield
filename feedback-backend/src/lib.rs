@@ -36,6 +36,8 @@ pub mod database;
 #[cfg(feature = "postgres")]
 pub mod postgres_auth;
 #[cfg(feature = "postgres")]
+pub mod postgres_http;
+#[cfg(feature = "postgres")]
 pub mod postgres_registry;
 #[cfg(feature = "postgres")]
 pub mod postgres_sync;
@@ -208,6 +210,20 @@ pub struct HealthResponse {
     version: &'static str,
     timestamp: chrono::DateTime<chrono::Utc>,
     cloud_sync: bool,
+}
+
+impl HealthResponse {
+    #[cfg(feature = "postgres")]
+    fn postgres() -> Self {
+        Self {
+            ok: true,
+            service: "hidden-shield-feedback-backend",
+            status: "ok",
+            version: env!("CARGO_PKG_VERSION"),
+            timestamp: Utc::now(),
+            cloud_sync: true,
+        }
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -617,6 +633,34 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
     );
     if database_config.runtime_mode.is_production() {
         crate::ai_transparency_production_provider::ProductionProviderDeploymentConfig::from_environment()?;
+    }
+    #[cfg(feature = "postgres")]
+    if database_config.backend == DatabaseBackendKind::Postgres {
+        let database_url = database_config
+            .postgres_url
+            .clone()
+            .ok_or(crate::database::DatabaseConfigError::MissingPostgresUrl)?;
+        let qa_entitlement_grant_enabled = !database_config.runtime_mode.is_production()
+            && std::env::var("HIDDENSHIELD_POSTGRES_HTTP_QA_ENTITLEMENT_GRANT")
+                .ok()
+                .as_deref()
+                == Some("1");
+        let state = tokio::task::spawn_blocking(move || {
+            crate::postgres_http::PostgresHttpState::connect(
+                database_url,
+                10,
+                qa_entitlement_grant_enabled,
+            )
+        })
+        .await??;
+        let app = crate::postgres_http::build_postgres_app(state);
+        let listener = tokio::net::TcpListener::bind(args.bind_addr).await?;
+        tracing::info!(
+            "HiddenShield feedback backend listening on {} with PostgreSQL auth/sync/registry",
+            args.bind_addr
+        );
+        axum::serve(listener, app.into_make_service()).await?;
+        return Ok(());
     }
     let storage = Arc::new(Storage::open_with_database_config(
         &database_config,
@@ -1123,13 +1167,12 @@ async fn apply_wechat_pay_webhook(
                 provider: applied.provider,
                 provider_event_id: applied.provider_event_id,
                 duplicate: applied.duplicate,
-                entitlement: crate::schema::CloudEntitlement {
-                    id: "report_purchase_grant".to_string(),
-                    plan_name: Some("Free".to_string()),
-                    plan_code: "free".to_string(),
-                    status: applied.status,
-                    features: serde_json::json!({ "report_export": false }),
-                },
+                entitlement: crate::schema::CloudEntitlement::from_legacy(
+                    "report_purchase_grant".to_string(),
+                    "free".to_string(),
+                    applied.status,
+                    serde_json::json!({ "report_export": false }),
+                ),
             }))
         }
     }

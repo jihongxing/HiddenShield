@@ -25,6 +25,8 @@ const sources = {
   postgresImportSmokeScript: readFileSync('scripts/run-postgres-import-smoke.mjs', 'utf8'),
   postgresProductionReadinessGate: readFileSync('scripts/verify-cloud-postgres-production-readiness-gate.mjs', 'utf8'),
   postgresSqliteShutdownGate: readFileSync('scripts/verify-cloud-postgres-sqlite-shutdown-gate.mjs', 'utf8'),
+  postgresP5PodmanRehearsal: readFileSync('scripts/run-cloud-postgres-p5-podman-rehearsal.mjs', 'utf8'),
+  postgresP5ReleaseOwnerApproval: readFileSync('scripts/approve-cloud-postgres-p5-release-owner.ps1', 'utf8'),
   backendStorage: readFileSync('feedback-backend/src/storage.rs', 'utf8'),
   backendLib: readFileSync('feedback-backend/src/lib.rs', 'utf8'),
 };
@@ -118,12 +120,20 @@ assert(
 
 assert(
   sources.backendCargo.includes('[features]') &&
-    sources.backendCargo.includes('postgres = ["dep:sqlx"]') &&
+    /postgres\s*=\s*\[[^\]]*"dep:sqlx"[^\]]*\]/.test(sources.backendCargo) &&
     sources.backendCargo.includes('sqlx = {') &&
     sources.backendCargo.includes('runtime-tokio-rustls') &&
     sources.backendCargo.includes('"postgres"') &&
     sources.backendCargo.includes('optional = true'),
   'feedback-backend Cargo.toml must gate sqlx behind postgres feature',
+);
+
+assert(
+  sources.backendLib.includes('pub mod postgres_http;') &&
+    sources.backendLib.includes('build_postgres_app') &&
+    sources.backendLib.includes('PostgresHttpState::connect') &&
+    sources.backendLib.includes('DatabaseBackendKind::Postgres'),
+  'feedback-backend formal startup must route PostgreSQL auth/sync/registry through postgres_http',
 );
 
 assert(
@@ -305,8 +315,29 @@ assert(
     sources.postgresProductionReadinessGate.includes('cloud_postgres_release_owner_signoff_v1') &&
     sources.postgresProductionReadinessGate.includes('productionDatabaseAllowed') &&
     sources.postgresProductionReadinessGate.includes('formalUiMockReleaseDefaultPath') &&
+    sources.postgresProductionReadinessGate.includes('release_owner_review_missing') &&
+    sources.postgresProductionReadinessGate.includes('release_owner_signoff_missing') &&
     sources.postgresProductionReadinessGate.includes('blocked'),
   'P5 production readiness gate must machine-block staging load, restore, observability, cutover and owner signoff gaps',
+);
+
+assert(
+  sources.packageJson.includes('"cloud:postgres-p5-podman-rehearsal"') &&
+    sources.postgresP5PodmanRehearsal.includes('cloud_postgres_load_gate_artifact_v1') &&
+    sources.postgresP5PodmanRehearsal.includes('cloud_postgres_restore_drill_artifact_v1') &&
+    sources.postgresP5PodmanRehearsal.includes('cloud_postgres_observability_artifact_v1') &&
+    sources.postgresP5PodmanRehearsal.includes('pg_basebackup_plus_archive_wal_recovery_target_time') &&
+    sources.postgresP5PodmanRehearsal.includes('local_podman_staging_equivalent'),
+  'P5 Podman rehearsal must produce scoped load, PITR and observability evidence without claiming production',
+);
+
+assert(
+  sources.packageJson.includes('"cloud:postgres-p5-release-owner-approve"') &&
+    sources.postgresP5ReleaseOwnerApproval.includes('[switch]$Approve') &&
+    sources.postgresP5ReleaseOwnerApproval.includes('humanAttestation = $true') &&
+    sources.postgresP5ReleaseOwnerApproval.includes('releaseOwnerReviewed = $true') &&
+    sources.postgresP5ReleaseOwnerApproval.includes('HIDDENSHIELD_POSTGRES_REQUIRE_PRODUCTION_READY'),
+  'P5 release-owner approval must require explicit human approval before producing passing artifacts',
 );
 
 assert(
