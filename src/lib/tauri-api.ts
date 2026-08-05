@@ -161,11 +161,14 @@ export function formatTimeProofService(value?: string | null): string {
 }
 
 export type EntitlementStatus = "free" | "trial" | "active" | "grace" | "expired";
+export type EntitlementPlanKey = "base_unpaid" | "image_audio_annual";
 
 export interface EntitlementState {
   status: EntitlementStatus;
   planName: string | null;
   planCode: string;
+  planKey: EntitlementPlanKey;
+  planLabel: "未付费" | "图片 / 音频年费";
   features: Record<string, boolean>;
   billingSource: string | null;
   subscriptionId: string | null;
@@ -355,6 +358,7 @@ export interface DesktopCloudSyncProfile {
   entitlementLabel: string;
   entitlementStatus: string;
   entitlementPlanCode: string;
+  entitlementPlanKey: EntitlementPlanKey;
   entitlementFeatures: Record<string, boolean>;
   syncPolicy: string;
   lastRemoteCursor: string | null;
@@ -536,6 +540,8 @@ export interface BillingPaymentSessionStatus {
     id: string;
     planName: string | null;
     planCode: string;
+    planKey: EntitlementPlanKey;
+    planLabel: "未付费" | "图片 / 音频年费";
     status: EntitlementStatus;
     features: Record<string, boolean>;
   };
@@ -1136,8 +1142,10 @@ const mockVault: VaultRecord[] = [
 
 const mockEntitlement: EntitlementState = {
   status: "free",
-  planName: null,
+  planName: "未付费",
   planCode: "free",
+  planKey: "base_unpaid",
+  planLabel: "未付费",
   features: {
     cloud_sync: false,
     batch_processing: false,
@@ -1914,9 +1922,10 @@ export async function continueCloudAccount(
       creatorProfileId: "creator_mock",
       creatorDisplayName,
       entitlementId: "ent_mock",
-      entitlementLabel: "免费版",
+      entitlementLabel: "未付费",
       entitlementStatus: "free",
       entitlementPlanCode: "free",
+      entitlementPlanKey: "base_unpaid",
       entitlementFeatures: {
         cloud_sync: false,
         batch_processing: false,
@@ -1956,13 +1965,14 @@ export async function setDesktopCloudAutoSyncEnabled(
       creatorProfileId: "creator_mock",
       creatorDisplayName: "本机创作者",
       entitlementId: "ent_creator",
-      entitlementLabel: "图片 / 音频年费授权",
+      entitlementLabel: "图片 / 音频年费",
       entitlementStatus: "active",
       entitlementPlanCode: "creator",
+      entitlementPlanKey: "image_audio_annual",
       entitlementFeatures: {
         cloud_sync: true,
         batch_processing: true,
-        report_export: true,
+        report_export: false,
       },
       syncPolicy: enabled ? "auto_cloud_vault" : "manual_local_only",
       lastRemoteCursor: null,
@@ -2052,13 +2062,14 @@ export async function refreshDesktopAuthSession(): Promise<DesktopCloudSyncProfi
       creatorProfileId: "creator_mock",
       creatorDisplayName: "本机创作者",
       entitlementId: "ent_creator",
-      entitlementLabel: "图片 / 音频年费授权",
+      entitlementLabel: "图片 / 音频年费",
       entitlementStatus: "active",
       entitlementPlanCode: "creator",
+      entitlementPlanKey: "image_audio_annual",
       entitlementFeatures: {
         cloud_sync: true,
         batch_processing: true,
-        report_export: true,
+        report_export: false,
       },
       syncPolicy: "auto_cloud_vault",
       lastRemoteCursor: null,
@@ -2085,13 +2096,14 @@ export async function refreshDesktopCloudAccountSnapshot(): Promise<DesktopCloud
       creatorProfileId: "creator_mock",
       creatorDisplayName: "本机创作者",
       entitlementId: "ent_creator",
-      entitlementLabel: "图片 / 音频年费授权",
+      entitlementLabel: "图片 / 音频年费",
       entitlementStatus: "active",
       entitlementPlanCode: "creator",
+      entitlementPlanKey: "image_audio_annual",
       entitlementFeatures: {
         cloud_sync: true,
         batch_processing: true,
-        report_export: true,
+        report_export: false,
       },
       syncPolicy: "auto_cloud_vault",
       lastRemoteCursor: null,
@@ -2147,8 +2159,10 @@ export async function getBillingPaymentSessionStatus(
       checkAttempts: 0,
       entitlement: {
         id: "ent_mock",
-        planName: "免费版",
+        planName: "未付费",
         planCode: "free",
+        planKey: "base_unpaid",
+        planLabel: "未付费",
         status: "free",
         features: mockEntitlement.features,
       },
@@ -2170,14 +2184,16 @@ export async function reconcileBillingPaymentSession(
       message: "支付已确认，权益已生效。",
       entitlement: {
         id: "ent_mock_creator",
-        planName: "图片 / 音频年费授权",
+        planName: "图片 / 音频年费",
         planCode: "creator",
+        planKey: "image_audio_annual",
+        planLabel: "图片 / 音频年费",
         status: "active",
         features: {
           ...mockEntitlement.features,
           cloud_sync: true,
           batch_processing: true,
-          report_export: true,
+          report_export: false,
         },
       },
     };
@@ -2290,13 +2306,14 @@ export async function refreshBillingEntitlement(): Promise<DesktopCloudSyncProfi
       creatorProfileId: "creator_mock",
       creatorDisplayName: "本机创作者",
       entitlementId: "ent_mock_creator",
-      entitlementLabel: "图片 / 音频年费授权",
+      entitlementLabel: "图片 / 音频年费",
       entitlementStatus: "active",
       entitlementPlanCode: "creator",
+      entitlementPlanKey: "image_audio_annual",
       entitlementFeatures: {
         cloud_sync: true,
         batch_processing: true,
-        report_export: true,
+        report_export: false,
         cloud_batch_processing: false,
         cloud_video_processing: false,
         priority_queue: false,

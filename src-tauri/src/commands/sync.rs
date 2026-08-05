@@ -2185,6 +2185,8 @@ fn cloud_profile_to_local_entitlement(profile: &DesktopCloudSyncProfile) -> Enti
         status: EntitlementStatus::from_db(&profile.entitlement_status),
         plan_name: Some(profile.entitlement_label.clone()),
         plan_code: profile.entitlement_plan_code.clone(),
+        plan_key: profile.entitlement_plan_key.clone(),
+        plan_label: profile.entitlement_label.clone(),
         features: cloud_features_to_bool_map(&profile.entitlement_features),
         billing_source: None,
         subscription_id: None,
